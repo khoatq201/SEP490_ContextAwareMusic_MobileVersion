@@ -1,0 +1,23 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="100" cy="100" r="90" fill="#1976D2"/>
+  
+  <!-- Inner Circle -->
+  <circle cx="100" cy="100" r="75" fill="none" stroke="#FFFFFF" stroke-width="3"/>
+  
+  <!-- CAMS Text -->
+  <text x="100" y="85" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#FFFFFF" text-anchor="middle">
+    CAMS
+  </text>
+  
+  <!-- Subtitle -->
+  <text x="100" y="120" font-family="Arial, sans-serif" font-size="16" fill="#BBDEFB" text-anchor="middle">
+    Store Manager
+  </text>
+  
+  <!-- Music Wave Icon -->
+  <path d="M 70 140 Q 75 135, 80 140 T 90 140 T 100 140 T 110 140 T 120 140 T 130 140" 
+        stroke="#4CAF50" stroke-width="3" fill="none"/>
+  <circle cx="70" cy="140" r="3" fill="#4CAF50"/>
+  <circle cx="130" cy="140" r="3" fill="#4CAF50"/>
+</svg>
