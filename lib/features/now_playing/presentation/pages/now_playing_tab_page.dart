@@ -1,0 +1,1154 @@
+﻿import 'dart:ui';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/player/player_bloc.dart';
+import '../../../../core/player/player_event.dart';
+import '../../../../core/player/player_state.dart' as ps;
+import '../../../../features/space_control/presentation/bloc/music_control_bloc.dart';
+import '../../../../features/space_control/presentation/bloc/music_control_event.dart';
+import '../../../../features/space_control/presentation/bloc/music_control_state.dart';
+import '../../../../features/space_control/presentation/bloc/space_monitoring_bloc.dart';
+import '../../../../features/space_control/presentation/bloc/space_monitoring_state.dart';
+import '../../../../features/space_control/domain/entities/sensor_data.dart';
+import '../../../../features/space_control/presentation/utils/mood_color_helper.dart';
+
+/// Dedicated "Now Playing" tab â€“ always visible in BottomBar.
+/// Reads from global [PlayerBloc], [MusicControlBloc], and [SpaceMonitoringBloc].
+class NowPlayingTabPage extends StatefulWidget {
+  const NowPlayingTabPage({super.key});
+
+  @override
+  State<NowPlayingTabPage> createState() => _NowPlayingTabPageState();
+}
+
+class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
+  double _volume = 0.6;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = _NPPalette.fromBrightness(Theme.of(context).brightness);
+
+    return BlocBuilder<PlayerBloc, ps.PlayerState>(
+      builder: (context, playerState) {
+        return BlocBuilder<SpaceMonitoringBloc, SpaceMonitoringState>(
+          builder: (context, spaceState) {
+            return BlocBuilder<MusicControlBloc, MusicControlState>(
+              builder: (context, musicState) {
+                return Scaffold(
+                  backgroundColor: palette.bg,
+                  body: NestedScrollView(
+                    headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                      SliverAppBar(
+                        pinned: true,
+                        floating: true,
+                        backgroundColor: palette.bg,
+                        surfaceTintColor: Colors.transparent,
+                        forceElevated: innerBoxIsScrolled,
+                        elevation: innerBoxIsScrolled ? 2 : 0,
+                        shadowColor: palette.shadow.withOpacity(0.1),
+                        automaticallyImplyLeading: false,
+                        title: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              spaceState.space?.name ?? 'Now Playing',
+                              style: GoogleFonts.poppins(
+                                color: palette.textPrimary,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _StatusDot(
+                                    isOnline:
+                                        spaceState.space?.isOnline ?? false),
+                                const SizedBox(width: 6),
+                                Text(
+                                  spaceState.space?.isOnline ?? false
+                                      ? 'Online'
+                                      : playerState.hasTrack
+                                          ? 'Streaming'
+                                          : 'No active space',
+                                  style: GoogleFonts.inter(
+                                    color: palette.textMuted,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        centerTitle: true,
+                      ),
+                    ],
+                    body: _buildPlayerContent(
+                      context,
+                      playerState,
+                      spaceState,
+                      musicState,
+                      palette,
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildPlayerContent(
+    BuildContext context,
+    ps.PlayerState playerState,
+    SpaceMonitoringState spaceState,
+    MusicControlState musicState,
+    _NPPalette palette,
+  ) {
+    final track = playerState.currentTrack;
+    final trackMoodTags = track?.moodTags;
+    final mood = (trackMoodTags != null && trackMoodTags.isNotEmpty)
+        ? trackMoodTags.first
+        : spaceState.space?.currentMood;
+    final moodGradient = MoodColorHelper.gradientFor(mood);
+    final moodShadow = MoodColorHelper.shadowColorFor(mood);
+    final duration = playerState.duration;
+    final currentPosition = playerState.currentPosition;
+    // isPlaying: prefer MusicControlBloc (space-connected) but fall back to
+    // PlayerBloc's own flag (e.g. local track tapped from a playlist).
+    final isPlaying = musicState.status == MusicControlStatus.playing ||
+        (musicState.status == MusicControlStatus.initial &&
+            playerState.isPlaying);
+
+    // "No space" hint shown at top when neither space nor track is active
+    final hasNoContext = !playerState.hasTrack && spaceState.space == null;
+
+    return Stack(
+      children: [
+        RefreshIndicator(
+          color: palette.accent,
+          backgroundColor: palette.card,
+          onRefresh: () async {},
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 200),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── "No space connected" banner ─────────────────────────
+                if (hasNoContext) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: palette.accent.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(14),
+                      border:
+                          Border.all(color: palette.accent.withOpacity(0.2)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(LucideIcons.info, color: palette.accent, size: 18),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Mở một Space để bắt đầu phát nhạc tự động, '
+                            'hoặc bấm vào một bài nhạc từ trang Home.',
+                            style: GoogleFonts.inter(
+                              color: palette.textMuted,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ).animate().fadeIn(duration: 400.ms),
+                  const SizedBox(height: 16),
+                ],
+
+                //  Sensor dashboard
+                if (spaceState.latestSensorData != null ||
+                    spaceState.status == SpaceMonitoringStatus.monitoring) ...[
+                  _SensorDashboard(
+                    sensorData: spaceState.latestSensorData,
+                    palette: palette,
+                  ).animate().fadeIn(duration: 350.ms).slideY(begin: 0.08),
+                  const SizedBox(height: 20),
+                ],
+
+                //  Album art hero
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(28),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: palette.isDark
+                          ? const [Color(0xFF1F2937), Color(0xFF111827)]
+                          : [palette.card, palette.card.withOpacity(0.92)],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                          color: palette.shadow,
+                          blurRadius: 20,
+                          offset: const Offset(0, 12)),
+                    ],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(24),
+                          child: Container(
+                            width: double.infinity,
+                            height: 260,
+                            decoration: BoxDecoration(
+                              gradient: moodGradient,
+                              boxShadow: [
+                                BoxShadow(
+                                    color: moodShadow,
+                                    blurRadius: 22,
+                                    offset: const Offset(0, 12)),
+                              ],
+                            ),
+                            child: track?.albumArt != null
+                                ? Image.network(
+                                    track!.albumArt!,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) =>
+                                        _artPlaceholder(palette, mood),
+                                  )
+                                : _artPlaceholder(palette, mood),
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            if (mood != null)
+                              _MoodBadge(mood: mood, palette: palette),
+                            if (track?.isAvailableOffline ?? false) ...[
+                              const SizedBox(width: 10),
+                              _MiniBadge(
+                                  label: 'Offline Cache', palette: palette),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        Text(
+                          track?.title ?? 'No track playing',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.poppins(
+                            color: palette.textPrimary,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.1,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          track?.artist ?? '',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(
+                            color: palette.textMuted,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ).animate().fadeIn(duration: 380.ms).slideY(begin: 0.1),
+
+                const SizedBox(height: 16),
+
+                //  Controls card
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: palette.card,
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(color: palette.border),
+                  ),
+                  child: Column(
+                    children: [
+                      if (duration > 0) ...[
+                        SliderTheme(
+                          data: SliderTheme.of(context).copyWith(
+                            trackHeight: 3,
+                            thumbShape: const RoundSliderThumbShape(
+                                enabledThumbRadius: 6),
+                            overlayShape: const RoundSliderOverlayShape(
+                                overlayRadius: 14),
+                            activeTrackColor: palette.accent,
+                            inactiveTrackColor:
+                                palette.textMuted.withOpacity(0.2),
+                            thumbColor: palette.accentAlt,
+                            overlayColor: palette.accent.withOpacity(0.2),
+                          ),
+                          child: Slider(
+                            value:
+                                currentPosition.clamp(0, duration).toDouble(),
+                            min: 0,
+                            max: duration.toDouble(),
+                            onChanged: (_) {},
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(_fmt(currentPosition),
+                                  style: GoogleFonts.inter(
+                                      color: palette.textMuted, fontSize: 12)),
+                              Text(_fmt(duration),
+                                  style: GoogleFonts.inter(
+                                      color: palette.textMuted, fontSize: 12)),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                      ],
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _ControlIcon(
+                            icon: LucideIcons.skipBack,
+                            onTap: () {},
+                            palette: palette,
+                          ),
+                          const SizedBox(width: 16),
+                          GestureDetector(
+                            onTap: () => context
+                                .read<PlayerBloc>()
+                                .add(const PlayerPlayPauseToggled()),
+                            child: Container(
+                              width: 76,
+                              height: 76,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: LinearGradient(colors: [
+                                  palette.accent,
+                                  palette.accentAlt
+                                ]),
+                                boxShadow: [
+                                  BoxShadow(
+                                      color: palette.accent.withOpacity(0.4),
+                                      blurRadius: 18,
+                                      offset: const Offset(0, 10)),
+                                ],
+                              ),
+                              child: Icon(
+                                isPlaying
+                                    ? LucideIcons.pause
+                                    : LucideIcons.play,
+                                color: palette.textOnAccent,
+                                size: 36,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          _ControlIcon(
+                            icon: LucideIcons.skipForward,
+                            onTap: () => context
+                                .read<PlayerBloc>()
+                                .add(const PlayerSkipRequested()),
+                            palette: palette,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Icon(LucideIcons.volume,
+                              color: palette.textMuted, size: 18),
+                          Expanded(
+                            child: SliderTheme(
+                              data: SliderTheme.of(context).copyWith(
+                                trackHeight: 3,
+                                activeTrackColor: palette.accent,
+                                inactiveTrackColor:
+                                    palette.textMuted.withOpacity(0.2),
+                                thumbColor: palette.accentAlt,
+                                overlayColor: palette.accent.withOpacity(0.2),
+                              ),
+                              child: Slider(
+                                value: _volume,
+                                onChanged: (v) => setState(() => _volume = v),
+                              ),
+                            ),
+                          ),
+                          Text('${(_volume * 100).round()}%',
+                              style: GoogleFonts.inter(
+                                  color: palette.textMuted, fontSize: 12)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ).animate().fadeIn(duration: 420.ms).slideY(begin: 0.12),
+
+                const SizedBox(height: 16),
+
+                //  Override Mood CTA
+                if (playerState.activeSpaceId != null)
+                  _OverrideMoodCTA(
+                    spaceId: playerState.activeSpaceId!,
+                    currentMood: mood,
+                    palette: palette,
+                  ).animate().fadeIn(duration: 450.ms).slideY(begin: 0.12),
+
+                const SizedBox(height: 12),
+              ],
+            ),
+          ),
+        ),
+
+        //  Next Queue draggable panel
+        Positioned.fill(
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: _NextTrackPanel(
+              state: playerState,
+              palette: palette,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _artPlaceholder(_NPPalette palette, String? mood) {
+    return Container(
+      decoration: BoxDecoration(gradient: MoodColorHelper.gradientFor(mood)),
+      child: Center(
+        child: Icon(LucideIcons.music4,
+            color: palette.textOnAccent.withOpacity(0.7), size: 64),
+      ),
+    );
+  }
+
+  String _fmt(int sec) {
+    final m = sec ~/ 60;
+    final s = sec % 60;
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
+}
+
+//
+// Sensor Dashboard
+//
+class _SensorDashboard extends StatelessWidget {
+  const _SensorDashboard({required this.sensorData, required this.palette});
+  final SensorData? sensorData;
+  final _NPPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    final cards = [
+      _SensorCard(
+        icon: LucideIcons.thermometer,
+        label: 'Temperature',
+        value: sensorData != null
+            ? '${sensorData!.temperature.toStringAsFixed(1)}C'
+            : '--',
+        badge: 'Stable',
+        gradient: [palette.accentAlt, palette.accent],
+        palette: palette,
+        isAlert: false,
+      ),
+      _SensorCard(
+        icon: LucideIcons.volume2,
+        label: 'Noise',
+        value: sensorData != null
+            ? '${sensorData!.noiseLevel.toStringAsFixed(0)} dB'
+            : '--',
+        badge: _noiseBadge(sensorData?.noiseLevel),
+        gradient: [palette.accent, palette.accentAlt],
+        palette: palette,
+        isAlert: _noiseBadge(sensorData?.noiseLevel) == 'Loud',
+      ),
+      _SensorCard(
+        icon: LucideIcons.users,
+        label: 'Crowd',
+        value: sensorData != null ? _crowdEstimate(sensorData!) : 'N/A',
+        badge: 'Live',
+        gradient: [palette.accentAlt, palette.accent.withOpacity(0.9)],
+        palette: palette,
+        isAlert: false,
+      ),
+      _SensorCard(
+        icon: LucideIcons.cloudRain,
+        label: 'Humidity',
+        value: sensorData != null
+            ? '${sensorData!.humidity.toStringAsFixed(0)}%'
+            : '--',
+        badge: _humidityBadge(sensorData?.humidity),
+        gradient: [palette.accent.withOpacity(0.85), palette.accentAlt],
+        palette: palette,
+        isAlert: false,
+      ),
+    ];
+
+    return SizedBox(
+      height: 140,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: cards.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        itemBuilder: (_, i) => cards[i],
+      ),
+    );
+  }
+
+  String _noiseBadge(double? n) {
+    if (n == null) return 'N/A';
+    if (n < 50) return 'Quiet';
+    if (n < 70) return 'Moderate';
+    return 'Loud';
+  }
+
+  String _crowdEstimate(SensorData d) {
+    if (d.noiseLevel < 45) return 'Low';
+    if (d.noiseLevel < 65) return 'Medium';
+    return 'High';
+  }
+
+  String _humidityBadge(double? h) {
+    if (h == null) return 'N/A';
+    if (h < 30) return 'Dry';
+    if (h < 60) return 'Optimal';
+    return 'Humid';
+  }
+}
+
+class _SensorCard extends StatelessWidget {
+  const _SensorCard({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.badge,
+    required this.gradient,
+    required this.palette,
+    required this.isAlert,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final String badge;
+  final List<Color> gradient;
+  final _NPPalette palette;
+  final bool isAlert;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color dynamicTone = isAlert
+        ? Theme.of(context).colorScheme.error.withOpacity(0.9)
+        : palette.accent;
+
+    final BoxDecoration wrapperDec = palette.isDark
+        ? BoxDecoration(
+            color: const Color(0xFF0B0F19),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.black.withOpacity(0.35),
+                  blurRadius: 24,
+                  offset: const Offset(0, 12))
+            ],
+            border:
+                Border.all(color: dynamicTone.withOpacity(0.25), width: 0.8),
+          )
+        : BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: gradient),
+            boxShadow: [
+              BoxShadow(
+                  color: gradient.first.withOpacity(0.35),
+                  blurRadius: 18,
+                  offset: const Offset(0, 10))
+            ],
+          );
+
+    return Container(
+      width: 160,
+      decoration: wrapperDec,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: palette.isDark
+                  ? LinearGradient(colors: [
+                      dynamicTone.withOpacity(0.10),
+                      dynamicTone.withOpacity(0.04),
+                    ])
+                  : LinearGradient(colors: [
+                      palette.textOnAccent.withOpacity(0.18),
+                      palette.textOnAccent.withOpacity(0.12),
+                    ]),
+              border: Border.all(
+                color: palette.isDark
+                    ? dynamicTone.withOpacity(0.35)
+                    : palette.border.withOpacity(0.6),
+                width: palette.isDark ? 0.8 : 1,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: palette.isDark
+                            ? dynamicTone.withOpacity(0.14)
+                            : palette.textOnAccent.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(icon,
+                          color: palette.isDark
+                              ? dynamicTone
+                              : palette.textOnAccent,
+                          size: 20),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: palette.isDark
+                            ? Colors.white.withOpacity(0.05)
+                            : palette.textOnAccent.withOpacity(0.14),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                            color: palette.textOnAccent.withOpacity(0.2)),
+                      ),
+                      child: Text(badge,
+                          style: GoogleFonts.inter(
+                              color: palette.textOnAccent,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700)),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                Text(
+                  value,
+                  style: GoogleFonts.poppins(
+                    color: palette.isDark ? dynamicTone : palette.textOnAccent,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(label,
+                    style: GoogleFonts.inter(
+                        color: palette.textOnAccent.withOpacity(0.8),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+//
+// Override Mood CTA
+//
+class _OverrideMoodCTA extends StatelessWidget {
+  const _OverrideMoodCTA({
+    required this.spaceId,
+    required this.currentMood,
+    required this.palette,
+  });
+
+  final String spaceId;
+  final String? currentMood;
+  final _NPPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = palette.accent;
+    final gradientColors = palette.isDark
+        ? [
+            palette.accent.withOpacity(0.75),
+            palette.accentAlt.withOpacity(0.55)
+          ]
+        : [accent, accent.withOpacity(0.7)];
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        gradient: LinearGradient(colors: gradientColors),
+        boxShadow: [
+          BoxShadow(
+              color: accent.withOpacity(0.35),
+              blurRadius: 16,
+              offset: const Offset(0, 10))
+        ],
+      ),
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
+        ),
+        onPressed: () => _openOverrideDialog(context),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Override Mood',
+                    style: GoogleFonts.poppins(
+                        color: palette.textOnAccent,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700)),
+                const SizedBox(height: 4),
+                Text(
+                  currentMood != null
+                      ? 'Current: ${currentMood!.toUpperCase()}'
+                      : 'Set a new atmosphere',
+                  style: GoogleFonts.inter(
+                      color: palette.textOnAccent.withOpacity(0.85),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+            Icon(LucideIcons.slidersHorizontal, color: palette.textOnAccent),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _openOverrideDialog(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: palette.card,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (sheetCtx) {
+        String mood = currentMood ?? 'happy';
+        int durationMin = 30;
+        final moods = ['happy', 'chill', 'energetic', 'romantic', 'focus'];
+        return StatefulBuilder(
+          builder: (ctx, setModalState) => Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                        color: palette.border,
+                        borderRadius: BorderRadius.circular(20)),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text('Override Mood',
+                    style: GoogleFonts.poppins(
+                        color: palette.textPrimary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700)),
+                const SizedBox(height: 14),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: moods
+                      .map(
+                        (m) => ChoiceChip(
+                          label: Text(m.toUpperCase(),
+                              style: GoogleFonts.inter(
+                                  color: mood == m
+                                      ? palette.textOnAccent
+                                      : palette.textPrimary,
+                                  fontWeight: FontWeight.w700)),
+                          selected: mood == m,
+                          onSelected: (_) => setModalState(() => mood = m),
+                          backgroundColor: palette.overlay,
+                          selectedColor: palette.accent,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              side: BorderSide(color: palette.border)),
+                        ),
+                      )
+                      .toList(),
+                ),
+                const SizedBox(height: 20),
+                Text('Duration (minutes)',
+                    style: GoogleFonts.inter(
+                        color: palette.textMuted, fontSize: 12)),
+                Slider(
+                  value: durationMin.toDouble(),
+                  min: 10,
+                  max: 120,
+                  divisions: 11,
+                  activeColor: palette.accent,
+                  inactiveColor: palette.textMuted.withOpacity(0.2),
+                  label: '$durationMin',
+                  onChanged: (v) =>
+                      setModalState(() => durationMin = v.round()),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                            foregroundColor: palette.textMuted,
+                            side: BorderSide(color: palette.border),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14))),
+                        onPressed: () => Navigator.pop(sheetCtx),
+                        child: const Text('Cancel'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: palette.accent,
+                            foregroundColor: palette.textOnAccent,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14)),
+                            padding: const EdgeInsets.symmetric(vertical: 14)),
+                        onPressed: () {
+                          context.read<MusicControlBloc>().add(
+                                OverrideMoodRequested(
+                                    spaceId: spaceId,
+                                    moodId: mood,
+                                    duration: durationMin),
+                              );
+                          Navigator.pop(sheetCtx);
+                        },
+                        child: const Text('Apply',
+                            style: TextStyle(fontWeight: FontWeight.w700)),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+//
+// Shared small widgets
+//
+class _ControlIcon extends StatelessWidget {
+  const _ControlIcon(
+      {required this.icon, required this.onTap, required this.palette});
+  final IconData icon;
+  final VoidCallback onTap;
+  final _NPPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 52,
+        height: 52,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: palette.overlay,
+          border: Border.all(color: palette.border),
+        ),
+        child: Icon(icon, color: palette.textPrimary, size: 22),
+      ),
+    );
+  }
+}
+
+class _MoodBadge extends StatelessWidget {
+  const _MoodBadge({required this.mood, required this.palette});
+  final String mood;
+  final _NPPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    final gradient = MoodColorHelper.gradientFor(mood);
+    final shadowColor = MoodColorHelper.shadowColorFor(mood);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: gradient,
+        boxShadow: [
+          BoxShadow(
+              color: shadowColor, blurRadius: 14, offset: const Offset(0, 6))
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(LucideIcons.flame, color: Colors.white, size: 16),
+          const SizedBox(width: 6),
+          Text(mood.toUpperCase(),
+              style: GoogleFonts.inter(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13)),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniBadge extends StatelessWidget {
+  const _MiniBadge({required this.label, required this.palette});
+  final String label;
+  final _NPPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: palette.overlay,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: palette.border),
+      ),
+      child: Text(label,
+          style: GoogleFonts.inter(
+              color: palette.textPrimary,
+              fontSize: 11,
+              fontWeight: FontWeight.w600)),
+    );
+  }
+}
+
+class _StatusDot extends StatelessWidget {
+  const _StatusDot({required this.isOnline});
+  final bool isOnline;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 8,
+      height: 8,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          colors: isOnline
+              ? [const Color(0xFF34D399), const Color(0xFF10B981)]
+              : [const Color(0xFFF59E0B), const Color(0xFFF97316)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: (isOnline ? Colors.greenAccent : Colors.orangeAccent)
+                .withOpacity(0.4),
+            blurRadius: 6,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Next track draggable bottom panel
+// ─────────────────────────────────────────────────────────────────────────────
+class _NextTrackPanel extends StatelessWidget {
+  const _NextTrackPanel({required this.state, required this.palette});
+  final ps.PlayerState state;
+  final _NPPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    final track = state.currentTrack;
+    final accent = palette.accent;
+    return DraggableScrollableSheet(
+      minChildSize: 0.09,
+      initialChildSize: 0.09,
+      maxChildSize: 0.32,
+      builder: (context, controller) {
+        return Container(
+          decoration: BoxDecoration(
+            color: palette.card,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            boxShadow: [
+              BoxShadow(
+                  color: palette.shadow,
+                  blurRadius: 20,
+                  offset: const Offset(0, -6))
+            ],
+          ),
+          child: ListView(
+            controller: controller,
+            padding: EdgeInsets.zero,
+            children: [
+              const SizedBox(height: 6),
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                      color: palette.border,
+                      borderRadius: BorderRadius.circular(20)),
+                ),
+              ),
+              ListTile(
+                dense: true,
+                visualDensity: VisualDensity.compact,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                leading: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    width: 50,
+                    height: 50,
+                    color: palette.overlay,
+                    child: track?.albumArt != null
+                        ? Image.network(track!.albumArt!, fit: BoxFit.cover)
+                        : Icon(LucideIcons.music4,
+                            color: palette.textMuted, size: 20),
+                  ),
+                ),
+                title: Text('Next Track',
+                    style: GoogleFonts.inter(
+                        color: palette.textMuted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600)),
+                subtitle: Text(
+                  track?.title ?? 'No upcoming track',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                      color: palette.textPrimary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700),
+                ),
+                trailing: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: accent.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: accent.withOpacity(0.4)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(LucideIcons.timer, color: accent, size: 16),
+                      const SizedBox(width: 6),
+                      Text('ETA 00:30',
+                          style: GoogleFonts.inter(
+                              color: accent,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Palette
+// ─────────────────────────────────────────────────────────────────────────────
+class _NPPalette {
+  const _NPPalette({
+    required this.isDark,
+    required this.bg,
+    required this.card,
+    required this.overlay,
+    required this.border,
+    required this.textPrimary,
+    required this.textMuted,
+    required this.accent,
+    required this.accentAlt,
+    required this.textOnAccent,
+    required this.shadow,
+  });
+
+  factory _NPPalette.fromBrightness(Brightness brightness) {
+    final isDark = brightness == Brightness.dark;
+    if (isDark) {
+      return _NPPalette(
+        isDark: true,
+        bg: AppColors.backgroundDarkPrimary,
+        card: AppColors.surfaceDark,
+        overlay: Colors.white.withOpacity(0.06),
+        border: AppColors.borderDarkMedium,
+        textPrimary: AppColors.textDarkPrimary,
+        textMuted: AppColors.textDarkSecondary,
+        accent: AppColors.primaryCyan,
+        accentAlt: AppColors.secondaryLime,
+        textOnAccent: AppColors.textDarkPrimary,
+        shadow: AppColors.shadowDark,
+      );
+    }
+    return _NPPalette(
+      isDark: false,
+      bg: AppColors.backgroundPrimary,
+      card: AppColors.surface,
+      overlay: AppColors.backgroundSecondary,
+      border: AppColors.borderLight,
+      textPrimary: AppColors.textPrimary,
+      textMuted: AppColors.textTertiary,
+      accent: AppColors.primaryOrange,
+      accentAlt: AppColors.secondaryTeal,
+      textOnAccent: AppColors.textInverse,
+      shadow: AppColors.shadow,
+    );
+  }
+
+  final bool isDark;
+  final Color bg;
+  final Color card;
+  final Color overlay;
+  final Color border;
+  final Color textPrimary;
+  final Color textMuted;
+  final Color accent;
+  final Color accentAlt;
+  final Color textOnAccent;
+  final Color shadow;
+}
