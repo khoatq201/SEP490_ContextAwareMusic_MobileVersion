@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import '../../features/space_control/domain/entities/track.dart';
+import 'space_info.dart';
 
 class PlayerState extends Equatable {
   final Track? currentTrack;
@@ -11,6 +12,13 @@ class PlayerState extends Equatable {
   final String? activeStoreId;
   final String? activeSpaceId;
 
+  /// Display name of the active space (e.g. "Main Floor").
+  final String? activeSpaceName;
+
+  /// All spaces belonging to the active store — used for the space-swap sheet
+  /// in the Now Playing tab.
+  final List<SpaceInfo> availableSpaces;
+
   const PlayerState({
     this.currentTrack,
     this.isPlaying = false,
@@ -18,6 +26,8 @@ class PlayerState extends Equatable {
     this.duration = 0,
     this.activeStoreId,
     this.activeSpaceId,
+    this.activeSpaceName,
+    this.availableSpaces = const [],
   });
 
   /// Whether we have enough data to render the MiniPlayer.
@@ -33,6 +43,8 @@ class PlayerState extends Equatable {
     int? duration,
     String? activeStoreId,
     String? activeSpaceId,
+    String? activeSpaceName,
+    List<SpaceInfo>? availableSpaces,
     bool clearTrack = false,
   }) {
     return PlayerState(
@@ -42,6 +54,8 @@ class PlayerState extends Equatable {
       duration: duration ?? this.duration,
       activeStoreId: activeStoreId ?? this.activeStoreId,
       activeSpaceId: activeSpaceId ?? this.activeSpaceId,
+      activeSpaceName: activeSpaceName ?? this.activeSpaceName,
+      availableSpaces: availableSpaces ?? this.availableSpaces,
     );
   }
 
@@ -53,5 +67,7 @@ class PlayerState extends Equatable {
         duration,
         activeStoreId,
         activeSpaceId,
+        activeSpaceName,
+        availableSpaces,
       ];
 }

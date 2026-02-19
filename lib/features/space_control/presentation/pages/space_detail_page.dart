@@ -66,6 +66,8 @@ class _SpaceDetailPageState extends State<SpaceDetailPage>
     playerBloc.add(PlayerContextUpdated(
       storeId: widget.storeId,
       spaceId: widget.spaceId,
+      spaceName: context.read<SpaceMonitoringBloc>().state.space?.name ??
+          widget.spaceId,
     ));
     playerBloc.attachMusicBloc(context.read<MusicControlBloc>());
   }

@@ -10,10 +10,12 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/player/player_bloc.dart';
 import '../../../../core/player/player_event.dart';
 import '../../../../core/player/player_state.dart' as ps;
+import '../../../../core/player/space_info.dart';
 import '../../../../features/space_control/presentation/bloc/music_control_bloc.dart';
 import '../../../../features/space_control/presentation/bloc/music_control_event.dart';
 import '../../../../features/space_control/presentation/bloc/music_control_state.dart';
 import '../../../../features/space_control/presentation/bloc/space_monitoring_bloc.dart';
+import '../../../../features/space_control/presentation/bloc/space_monitoring_event.dart';
 import '../../../../features/space_control/presentation/bloc/space_monitoring_state.dart';
 import '../../../../features/space_control/domain/entities/sensor_data.dart';
 import '../../../../features/space_control/presentation/utils/mood_color_helper.dart';
@@ -53,40 +55,26 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                         elevation: innerBoxIsScrolled ? 2 : 0,
                         shadowColor: palette.shadow.withOpacity(0.1),
                         automaticallyImplyLeading: false,
-                        title: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              spaceState.space?.name ?? 'Now Playing',
-                              style: GoogleFonts.poppins(
-                                color: palette.textPrimary,
-                                fontSize: 20,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                _StatusDot(
-                                    isOnline:
-                                        spaceState.space?.isOnline ?? false),
-                                const SizedBox(width: 6),
-                                Text(
-                                  spaceState.space?.isOnline ?? false
-                                      ? 'Online'
-                                      : playerState.hasTrack
-                                          ? 'Streaming'
-                                          : 'No active space',
-                                  style: GoogleFonts.inter(
-                                    color: palette.textMuted,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                        title: _SpaceNameTitle(
+                          spaceName: spaceState.space?.name ??
+                              playerState.activeSpaceName ??
+                              'Now Playing',
+                          isOnline: spaceState.space?.isOnline ?? false,
+                          hasTrack: playerState.hasTrack,
+                          canSwap: playerState.availableSpaces.length > 1,
+                          palette: palette,
+                          onTap: playerState.availableSpaces.length > 1
+                              ? () => showModalBottomSheet(
+                                    context: context,
+                                    useRootNavigator: true,
+                                    backgroundColor: Colors.transparent,
+                                    isScrollControlled: true,
+                                    builder: (_) => _SpaceSwapSheet(
+                                      playerState: playerState,
+                                      palette: palette,
+                                    ),
+                                  )
+                              : null,
                         ),
                         centerTitle: true,
                       ),
@@ -1087,6 +1075,302 @@ class _NextTrackPanel extends StatelessWidget {
         );
       },
     );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Space Name Title (AppBar widget — tappable if multiple spaces available)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _SpaceNameTitle extends StatelessWidget {
+  const _SpaceNameTitle({
+    required this.spaceName,
+    required this.isOnline,
+    required this.hasTrack,
+    required this.canSwap,
+    required this.palette,
+    this.onTap,
+  });
+
+  final String spaceName;
+  final bool isOnline;
+  final bool hasTrack;
+  final bool canSwap;
+  final _NPPalette palette;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                spaceName,
+                style: GoogleFonts.poppins(
+                  color: palette.textPrimary,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              if (canSwap) ...[
+                const SizedBox(width: 4),
+                Icon(Icons.expand_more, color: palette.textMuted, size: 20),
+              ],
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _StatusDot(isOnline: isOnline),
+              const SizedBox(width: 6),
+              Text(
+                isOnline
+                    ? 'Online'
+                    : hasTrack
+                        ? 'Streaming'
+                        : 'No active space',
+                style: GoogleFonts.inter(
+                  color: palette.textMuted,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              if (canSwap) ...[
+                const SizedBox(width: 6),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: palette.accent.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'Đổi',
+                    style: GoogleFonts.inter(
+                      color: palette.accent,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Space Swap Sheet
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _SpaceSwapSheet extends StatelessWidget {
+  const _SpaceSwapSheet({
+    required this.playerState,
+    required this.palette,
+  });
+
+  final ps.PlayerState playerState;
+  final _NPPalette palette;
+
+  void _switchSpace(BuildContext context, SpaceInfo space) {
+    context.read<SpaceMonitoringBloc>().add(
+          StartMonitoring(storeId: space.storeId, spaceId: space.id),
+        );
+    context.read<MusicControlBloc>().add(
+          StartMusicMonitoring(storeId: space.storeId, spaceId: space.id),
+        );
+    context.read<PlayerBloc>().add(
+          PlayerContextUpdated(
+            storeId: space.storeId,
+            spaceId: space.id,
+            spaceName: space.name,
+            availableSpaces: playerState.availableSpaces,
+          ),
+        );
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final spaces = playerState.availableSpaces;
+    return Container(
+      decoration: BoxDecoration(
+        color: palette.card,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+          20, 12, 20, 32 + MediaQuery.of(context).viewInsets.bottom),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Handle bar ──────────────────────────────────────────────
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: palette.border,
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          // ── Title ───────────────────────────────────────────────────
+          Row(
+            children: [
+              Icon(Icons.spatial_audio_outlined,
+                  color: palette.accent, size: 22),
+              const SizedBox(width: 10),
+              Text(
+                'Chọn không gian',
+                style: GoogleFonts.poppins(
+                  color: palette.textPrimary,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Đổi space sẽ cập nhật cảm biến, nhạc và trạng thái Hub.',
+            style: GoogleFonts.inter(color: palette.textMuted, fontSize: 12),
+          ),
+          const SizedBox(height: 16),
+          Divider(color: palette.border, height: 1),
+          // ── Space list ──────────────────────────────────────────────
+          if (spaces.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Text(
+                  'Không có không gian nào.',
+                  style: GoogleFonts.inter(color: palette.textMuted),
+                ),
+              ),
+            )
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: spaces.length,
+              separatorBuilder: (_, __) =>
+                  Divider(color: palette.border, height: 1),
+              itemBuilder: (context, i) {
+                final space = spaces[i];
+                final isActive = space.id == playerState.activeSpaceId;
+                final moodColor = _moodColor(space.currentMood, palette);
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: isActive
+                          ? palette.accent.withOpacity(0.15)
+                          : palette.overlay,
+                      borderRadius: BorderRadius.circular(12),
+                      border: isActive
+                          ? Border.all(color: palette.accent, width: 1.5)
+                          : null,
+                    ),
+                    child: Icon(
+                      Icons.spatial_audio_outlined,
+                      color: isActive ? palette.accent : palette.textMuted,
+                      size: 20,
+                    ),
+                  ),
+                  title: Text(
+                    space.name,
+                    style: GoogleFonts.inter(
+                      color: palette.textPrimary,
+                      fontSize: 14,
+                      fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                    ),
+                  ),
+                  subtitle: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: space.isOnline ? Colors.green : Colors.orange,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        space.isOnline ? 'Online' : 'Offline',
+                        style: GoogleFonts.inter(
+                            color: palette.textMuted, fontSize: 11),
+                      ),
+                      if (space.currentMood != null) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: moodColor.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            space.currentMood!.toUpperCase(),
+                            style: GoogleFonts.inter(
+                              color: moodColor,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  trailing: isActive
+                      ? Icon(Icons.check_circle_rounded,
+                          color: palette.accent, size: 22)
+                      : Icon(Icons.chevron_right,
+                          color: palette.textMuted, size: 22),
+                  onTap: isActive ? null : () => _switchSpace(context, space),
+                );
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  Color _moodColor(String? mood, _NPPalette palette) {
+    if (mood == null) return palette.accent;
+    switch (mood.toLowerCase()) {
+      case 'energetic':
+        return Colors.orange;
+      case 'calm':
+      case 'chill':
+        return Colors.blue;
+      case 'happy':
+        return Colors.amber;
+      case 'romantic':
+        return Colors.pink;
+      case 'focus':
+        return Colors.teal;
+      case 'welcoming':
+        return Colors.green;
+      default:
+        return palette.accent;
+    }
   }
 }
 

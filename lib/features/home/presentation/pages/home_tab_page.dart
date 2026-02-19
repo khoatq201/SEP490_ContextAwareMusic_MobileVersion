@@ -8,6 +8,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/player/player_bloc.dart';
+import '../../../../core/player/player_state.dart' as ps;
 import '../../data/datasources/mock_home_data_source.dart';
 import '../../data/repositories/mock_home_repository_impl.dart';
 import '../../domain/entities/category_entity.dart';
@@ -268,7 +270,12 @@ class _SwitchSpaceSheet extends StatelessWidget {
               ),
               onPressed: () {
                 Navigator.pop(context);
-                // TODO: router.go('/store-selection') khi đã wired
+                final storeId = context.read<PlayerBloc>().state.activeStoreId;
+                if (storeId != null && storeId.isNotEmpty) {
+                  context.go('/store/$storeId');
+                } else {
+                  context.go('/store-selection');
+                }
               },
             ),
           ),

@@ -4,9 +4,16 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/constants/app_typography.dart';
+import '../../../../core/player/player_bloc.dart';
+import '../../../../core/player/player_event.dart';
+import '../../../../core/player/space_info.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
+import '../../../space_control/presentation/bloc/music_control_bloc.dart';
+import '../../../space_control/presentation/bloc/music_control_event.dart';
+import '../../../space_control/presentation/bloc/space_monitoring_bloc.dart';
+import '../../../space_control/presentation/bloc/space_monitoring_event.dart';
 import '../bloc/store_dashboard_bloc.dart';
 import '../bloc/store_dashboard_event.dart';
 import '../bloc/store_dashboard_state.dart';
@@ -386,8 +393,39 @@ class StoreDashboardPage extends StatelessWidget {
                         return SpaceGridCard(
                           space: space,
                           onTap: () {
-                            context.go(
-                                '/home/space?storeId=$storeId&spaceId=${space.id}');
+                            // 1. Start global space monitoring
+                            context.read<SpaceMonitoringBloc>().add(
+                                  StartMonitoring(
+                                    storeId: storeId,
+                                    spaceId: space.id,
+                                  ),
+                                );
+                            // 2. Start global music monitoring
+                            context.read<MusicControlBloc>().add(
+                                  StartMusicMonitoring(
+                                    storeId: storeId,
+                                    spaceId: space.id,
+                                  ),
+                                );
+                            // 3. Update global player context (name + space list)
+                            context.read<PlayerBloc>().add(
+                                  PlayerContextUpdated(
+                                    storeId: storeId,
+                                    spaceId: space.id,
+                                    spaceName: space.name,
+                                    availableSpaces: state.spaces
+                                        .map((s) => SpaceInfo(
+                                              id: s.id,
+                                              storeId: s.storeId,
+                                              name: s.name,
+                                              isOnline: s.isOnline,
+                                              currentMood: s.currentMood,
+                                            ))
+                                        .toList(),
+                                  ),
+                                );
+                            // 4. Go directly to the Now Playing tab
+                            context.go('/now-playing');
                           },
                         );
                       },

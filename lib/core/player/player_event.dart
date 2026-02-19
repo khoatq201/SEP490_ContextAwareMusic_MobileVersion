@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import '../../../features/space_control/domain/entities/track.dart';
+import 'space_info.dart';
 
 abstract class PlayerEvent extends Equatable {
   const PlayerEvent();
@@ -39,14 +40,21 @@ class PlayerSkipRequested extends PlayerEvent {
 class PlayerContextUpdated extends PlayerEvent {
   final String storeId;
   final String spaceId;
+  final String spaceName;
+
+  /// Full list of spaces in the current store so the NowPlayingTab
+  /// can offer a space-swap sheet.
+  final List<SpaceInfo> availableSpaces;
 
   const PlayerContextUpdated({
     required this.storeId,
     required this.spaceId,
+    required this.spaceName,
+    this.availableSpaces = const [],
   });
 
   @override
-  List<Object?> get props => [storeId, spaceId];
+  List<Object?> get props => [storeId, spaceId, spaceName, availableSpaces];
 }
 
 /// Fired when leaving the space (no active space).

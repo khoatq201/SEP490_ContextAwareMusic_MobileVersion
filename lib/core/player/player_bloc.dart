@@ -63,6 +63,8 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     emit(state.copyWith(
       activeStoreId: event.storeId,
       activeSpaceId: event.spaceId,
+      activeSpaceName: event.spaceName,
+      availableSpaces: event.availableSpaces,
     ));
   }
 

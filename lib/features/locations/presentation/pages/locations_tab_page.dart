@@ -1,29 +1,12 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
+import '../../../hub_management/presentation/pages/space_device_page.dart';
+
+/// Shell entry-point for the Locations tab (/locations).
+/// All logic lives in [SpaceDevicePage].
 class LocationsTabPage extends StatelessWidget {
   const LocationsTabPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.location_on_outlined, size: 64, color: Colors.grey),
-            SizedBox(height: 16),
-            Text(
-              'Locations',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Quản lý Hub & Zone - Coming soon',
-              style: TextStyle(color: Colors.grey),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => const SpaceDevicePage();
 }
