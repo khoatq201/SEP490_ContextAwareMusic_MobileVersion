@@ -9,7 +9,6 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/player/player_bloc.dart';
-import '../../../../core/player/player_state.dart' as ps;
 import '../../data/datasources/mock_home_data_source.dart';
 import '../../data/repositories/mock_home_repository_impl.dart';
 import '../../domain/entities/category_entity.dart';
@@ -175,7 +174,7 @@ class _HomeSliverAppBar extends StatelessWidget {
       ),
       actions: [
         GestureDetector(
-          onTap: () => _showSpaceSheet(context),
+          onTap: () => context.push('/settings'),
           child: Container(
             margin: const EdgeInsets.only(right: 16, top: 10, bottom: 10),
             decoration: BoxDecoration(

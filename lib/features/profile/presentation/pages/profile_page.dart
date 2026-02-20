@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/constants/app_typography.dart';
-import '../../../../core/widgets/app_drawer.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 
@@ -17,9 +16,9 @@ class ProfilePage extends StatelessWidget {
       backgroundColor: isDark
           ? AppColors.backgroundDarkPrimary
           : AppColors.backgroundPrimary,
-      drawer: const AppDrawer(currentRoute: '/profile'),
       appBar: AppBar(
-        title: const Text('Profile'),
+        leading: const BackButton(),
+        title: const Text('Hồ sơ'),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),
@@ -34,8 +33,16 @@ class ProfilePage extends StatelessWidget {
         builder: (context, authState) {
           final user = authState.user;
 
+          final bottomPad = MediaQuery.of(context).padding.bottom +
+              kBottomNavigationBarHeight +
+              AppDimensions.spacingMd;
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(AppDimensions.spacingMd),
+            padding: EdgeInsets.fromLTRB(
+              AppDimensions.spacingMd,
+              AppDimensions.spacingMd,
+              AppDimensions.spacingMd,
+              bottomPad,
+            ),
             child: Column(
               children: [
                 // Profile Header

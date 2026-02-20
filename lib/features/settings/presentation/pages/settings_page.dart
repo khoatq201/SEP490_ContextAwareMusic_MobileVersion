@@ -1,249 +1,341 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_dimensions.dart';
-import '../../../../core/constants/app_typography.dart';
-import '../../../../core/widgets/app_drawer.dart';
 import '../../../../core/theme/theme_provider.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// SettingsPage — màn hình Cài đặt (standalone, đè lên Bottom Nav Bar)
+// ─────────────────────────────────────────────────────────────────────────────
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Scaffold(
-      backgroundColor: isDark
-          ? AppColors.backgroundDarkPrimary
-          : AppColors.backgroundPrimary,
-      drawer: const AppDrawer(currentRoute: '/settings'),
-      appBar: AppBar(
-        title: const Text('Settings'),
-      ),
-      body: BlocBuilder<AuthBloc, AuthState>(
-        builder: (context, authState) {
-          return ListView(
-            padding: const EdgeInsets.all(AppDimensions.spacingMd),
-            children: [
-              // Appearance Section
-              _buildSectionHeader('Appearance'),
-              Card(
-                child: Column(
-                  children: [
-                    _buildThemeToggle(context),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppDimensions.spacingLg),
+    final themeProvider = context.watch<ThemeProvider>();
 
-              // Notifications Section
-              _buildSectionHeader('Notifications'),
-              Card(
-                child: Column(
-                  children: [
-                    _buildSwitchTile(
-                      title: 'Push Notifications',
-                      subtitle: 'Receive alerts and updates',
-                      value: true,
-                      onChanged: (value) {
-                        // TODO: Implement notification toggle
-                      },
-                    ),
-                    const Divider(height: 1),
-                    _buildSwitchTile(
-                      title: 'Space Alerts',
-                      subtitle: 'Get notified about space events',
-                      value: true,
-                      onChanged: (value) {
-                        // TODO: Implement space alerts toggle
-                      },
-                    ),
-                    const Divider(height: 1),
-                    _buildSwitchTile(
-                      title: 'Music Updates',
-                      subtitle: 'Notifications for playlist changes',
-                      value: false,
-                      onChanged: (value) {
-                        // TODO: Implement music updates toggle
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppDimensions.spacingLg),
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state.status == AuthStatus.unauthenticated) {
+          context.go('/login');
+        }
+      },
+      child: Scaffold(
+        backgroundColor: isDark
+            ? AppColors.backgroundDarkPrimary
+            : AppColors.backgroundPrimary,
+        appBar: AppBar(
+          title: Text(
+            'Cài đặt',
+            style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+          ),
+          backgroundColor: isDark
+              ? AppColors.backgroundDarkPrimary
+              : AppColors.backgroundPrimary,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+        ),
+        body: BlocBuilder<AuthBloc, AuthState>(
+          builder: (context, authState) {
+            final user = authState.user;
+            final displayName =
+                user?.fullName ?? user?.username ?? 'Người dùng';
+            final email = user?.email ?? '';
+            final words = displayName.trim().split(' ');
+            final initials = words.length >= 2
+                ? '${words.first[0]}${words.last[0]}'
+                : displayName.isNotEmpty
+                    ? displayName[0]
+                    : 'U';
 
-              // Storage Section
-              _buildSectionHeader('Storage'),
-              Card(
-                child: Column(
+            return ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              children: [
+                // ── Nhóm: TÀI KHOẢN ──────────────────────────────────────
+                _SectionHeader(label: 'TÀI KHOẢN', isDark: isDark),
+                const SizedBox(height: 8),
+                _SettingsCard(
+                  isDark: isDark,
                   children: [
-                    ListTile(
-                      leading: const Icon(Icons.folder,
-                          color: AppColors.primaryOrange),
-                      title: const Text('Cache Size'),
-                      subtitle: const Text('0 MB'),
-                      trailing: TextButton(
-                        onPressed: () {
-                          // TODO: Clear cache
-                        },
-                        child: const Text('Clear'),
+                    // Profile row
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 16),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 32,
+                            backgroundColor:
+                                AppColors.primaryOrange.withOpacity(0.15),
+                            backgroundImage: user?.avatarUrl != null
+                                ? NetworkImage(user!.avatarUrl!)
+                                : null,
+                            child: user?.avatarUrl == null
+                                ? Text(
+                                    initials.toUpperCase(),
+                                    style: GoogleFonts.poppins(
+                                      color: AppColors.primaryOrange,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  )
+                                : null,
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  displayName,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark
+                                        ? AppColors.textDarkPrimary
+                                        : AppColors.textPrimary,
+                                  ),
+                                ),
+                                if (email.isNotEmpty) ...[
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    email,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 13,
+                                      color: isDark
+                                          ? AppColors.textDarkSecondary
+                                          : AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const Divider(height: 1),
+                    Divider(
+                        height: 1,
+                        color: isDark
+                            ? Colors.white12
+                            : Colors.black.withOpacity(0.06)),
+                    // Chỉnh sửa hồ sơ
                     ListTile(
-                      leading: const Icon(Icons.music_note,
-                          color: AppColors.secondaryTeal),
-                      title: const Text('Downloaded Playlists'),
-                      subtitle: const Text('0 playlists'),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () {
-                        // Navigate to playlist management
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppDimensions.spacingLg),
-
-              // Account Section
-              _buildSectionHeader('Account'),
-              Card(
-                child: Column(
-                  children: [
-                    ListTile(
-                      leading: const Icon(Icons.person,
+                      leading: const Icon(Icons.person_outline,
                           color: AppColors.primaryOrange),
-                      title: Text(authState.user?.username ?? 'User'),
-                      subtitle: Text(authState.user?.email ?? ''),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () {
-                        // TODO: Navigate to profile
-                      },
+                      title: Text('Chỉnh sửa hồ sơ', style: _tileStyle(isDark)),
+                      trailing: Icon(Icons.chevron_right,
+                          size: 20,
+                          color: isDark
+                              ? AppColors.textDarkSecondary
+                              : AppColors.textSecondary),
+                      onTap: () => context.push('/profile'),
                     ),
-                    const Divider(height: 1),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // ── Nhóm: HIỂN THỊ & GIAO DIỆN ───────────────────────────
+                _SectionHeader(label: 'HIỂN THỊ & GIAO DIỆN', isDark: isDark),
+                const SizedBox(height: 8),
+                _SettingsCard(
+                  isDark: isDark,
+                  children: [
+                    // Dark Mode toggle
                     ListTile(
-                      leading: const Icon(Icons.store,
+                      leading: Icon(
+                        themeProvider.isDarkMode
+                            ? Icons.dark_mode
+                            : Icons.light_mode,
+                        color: AppColors.primaryOrange,
+                      ),
+                      title: Text('Chế độ Tối (Dark Mode)',
+                          style: _tileStyle(isDark)),
+                      trailing: Switch(
+                        value: themeProvider.isDarkMode,
+                        onChanged: (_) => themeProvider.toggleTheme(),
+                        activeColor: AppColors.primaryOrange,
+                      ),
+                    ),
+                    Divider(
+                        height: 1,
+                        color: isDark
+                            ? Colors.white12
+                            : Colors.black.withOpacity(0.06)),
+                    // Ngôn ngữ
+                    ListTile(
+                      leading: const Icon(Icons.language,
                           color: AppColors.secondaryTeal),
-                      title: const Text('Stores'),
-                      subtitle: Text(
-                          '${authState.user?.storeIds.length ?? 0} stores'),
-                      trailing: const Icon(Icons.chevron_right),
+                      title: Text('Ngôn ngữ', style: _tileStyle(isDark)),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Tiếng Việt',
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color: isDark
+                                  ? AppColors.textDarkSecondary
+                                  : AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(Icons.chevron_right,
+                              size: 20,
+                              color: isDark
+                                  ? AppColors.textDarkSecondary
+                                  : AppColors.textSecondary),
+                        ],
+                      ),
                       onTap: () {
-                        // TODO: Navigate to store selection
+                        /* TODO: language picker */
                       },
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: AppDimensions.spacingLg),
+                const SizedBox(height: 24),
 
-              // About Section
-              _buildSectionHeader('About'),
-              Card(
-                child: Column(
+                // ── Nhóm: HỆ THỐNG ───────────────────────────────────────
+                _SectionHeader(label: 'HỆ THỐNG', isDark: isDark),
+                const SizedBox(height: 8),
+                _SettingsCard(
+                  isDark: isDark,
                   children: [
                     ListTile(
-                      leading: const Icon(Icons.info,
-                          color: AppColors.textSecondary),
-                      title: const Text('Version'),
-                      subtitle: const Text('1.0.0'),
-                    ),
-                    const Divider(height: 1),
-                    ListTile(
-                      leading: const Icon(Icons.description,
-                          color: AppColors.textSecondary),
-                      title: const Text('Terms & Privacy'),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () {
-                        // TODO: Show terms
-                      },
+                      leading:
+                          const Icon(Icons.logout, color: Colors.redAccent),
+                      title: Text(
+                        'Đăng xuất',
+                        style: _tileStyle(isDark).copyWith(
+                          color: Colors.redAccent,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      onTap: () => _confirmLogout(context, isDark),
                     ),
                   ],
                 ),
-              ),
-            ],
-          );
-        },
+                const SizedBox(height: 40),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Builder(
-      builder: (context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        return Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppDimensions.spacingSm,
-            vertical: AppDimensions.spacingSm,
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  TextStyle _tileStyle(bool isDark) => GoogleFonts.inter(
+        fontSize: 14,
+        color: isDark ? AppColors.textDarkPrimary : AppColors.textPrimary,
+      );
+
+  void _confirmLogout(BuildContext context, bool isDark) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor:
+            isDark ? AppColors.backgroundDarkSecondary : Colors.white,
+        title: Text(
+          'Đăng xuất',
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w600,
+            color: isDark ? AppColors.textDarkPrimary : AppColors.textPrimary,
           ),
-          child: Text(
-            title,
-            style: AppTypography.titleMedium.copyWith(
-              color:
-                  isDark ? AppColors.textDarkPrimary : AppColors.textSecondary,
-              fontWeight: FontWeight.w600,
+        ),
+        content: Text(
+          'Bạn có chắc muốn đăng xuất không?',
+          style: GoogleFonts.inter(
+            color:
+                isDark ? AppColors.textDarkSecondary : AppColors.textSecondary,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Huỷ',
+              style: TextStyle(
+                color: isDark ? Colors.white54 : Colors.black54,
+              ),
             ),
           ),
-        );
-      },
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.read<AuthBloc>().add(const LogoutRequested());
+            },
+            child: const Text(
+              'Đăng xuất',
+              style: TextStyle(color: Colors.redAccent),
+            ),
+          ),
+        ],
+      ),
     );
   }
+}
 
-  Widget _buildThemeToggle(BuildContext context) {
-    final themeProvider = context.watch<ThemeProvider>();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+// ─────────────────────────────────────────────────────────────────────────────
+// _SectionHeader — grey uppercase label above each group
+// ─────────────────────────────────────────────────────────────────────────────
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.label, required this.isDark});
 
-    return ListTile(
-      leading: Icon(
-        themeProvider.isDarkMode ? Icons.dark_mode : Icons.light_mode,
-        color: AppColors.primaryOrange,
-      ),
-      title: const Text('Dark Mode'),
-      subtitle: Text(
-        'Toggle dark/light theme',
-        style: AppTypography.bodySmall.copyWith(
+  final String label;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 4),
+      child: Text(
+        label,
+        style: GoogleFonts.inter(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 1.3,
           color: isDark ? AppColors.textDarkSecondary : AppColors.textSecondary,
         ),
       ),
-      trailing: Switch(
-        value: themeProvider.isDarkMode,
-        onChanged: (value) {
-          themeProvider.toggleTheme();
-        },
-        activeColor: AppColors.primaryOrange,
-      ),
     );
   }
+}
 
-  Widget _buildSwitchTile({
-    required String title,
-    required String subtitle,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-  }) {
-    return Builder(
-      builder: (context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        return ListTile(
-          title: Text(title),
-          subtitle: Text(
-            subtitle,
-            style: AppTypography.bodySmall.copyWith(
-              color: isDark
-                  ? AppColors.textDarkSecondary
-                  : AppColors.textSecondary,
-            ),
+// ─────────────────────────────────────────────────────────────────────────────
+// _SettingsCard — rounded card container for a group of ListTiles
+// ─────────────────────────────────────────────────────────────────────────────
+class _SettingsCard extends StatelessWidget {
+  const _SettingsCard({required this.isDark, required this.children});
+
+  final bool isDark;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.backgroundDarkSecondary : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.25 : 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
-          trailing: Switch(
-            value: value,
-            onChanged: onChanged,
-            activeColor: AppColors.primaryOrange,
-          ),
-        );
-      },
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Column(children: children),
+      ),
     );
   }
 }
