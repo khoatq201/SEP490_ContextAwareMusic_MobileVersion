@@ -1,6 +1,4 @@
-﻿import 'dart:ui';
-
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -18,7 +16,6 @@ import '../../../../features/space_control/presentation/bloc/space_monitoring_bl
 import '../../../../features/space_control/presentation/bloc/space_monitoring_event.dart';
 import '../../../../features/space_control/presentation/bloc/space_monitoring_state.dart';
 import '../../../../features/space_control/domain/entities/sensor_data.dart';
-import '../../../../features/space_control/presentation/utils/mood_color_helper.dart';
 
 /// Dedicated "Now Playing" tab â€“ always visible in BottomBar.
 /// Reads from global [PlayerBloc], [MusicControlBloc], and [SpaceMonitoringBloc].
@@ -108,8 +105,6 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
     final mood = (trackMoodTags != null && trackMoodTags.isNotEmpty)
         ? trackMoodTags.first
         : spaceState.space?.currentMood;
-    final moodGradient = MoodColorHelper.gradientFor(mood);
-    final moodShadow = MoodColorHelper.shadowColorFor(mood);
     final duration = playerState.duration;
     final currentPosition = playerState.currentPosition;
     // isPlaying: prefer MusicControlBloc (space-connected) but fall back to
@@ -179,19 +174,8 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                 Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(28),
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: palette.isDark
-                          ? const [Color(0xFF1F2937), Color(0xFF111827)]
-                          : [palette.card, palette.card.withOpacity(0.92)],
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                          color: palette.shadow,
-                          blurRadius: 20,
-                          offset: const Offset(0, 12)),
-                    ],
+                    color: palette.card,
+                    border: Border.all(color: palette.border),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(20),
@@ -200,26 +184,17 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                       children: [
                         ClipRRect(
                           borderRadius: BorderRadius.circular(24),
-                          child: Container(
+                          child: SizedBox(
                             width: double.infinity,
                             height: 260,
-                            decoration: BoxDecoration(
-                              gradient: moodGradient,
-                              boxShadow: [
-                                BoxShadow(
-                                    color: moodShadow,
-                                    blurRadius: 22,
-                                    offset: const Offset(0, 12)),
-                              ],
-                            ),
                             child: track?.albumArt != null
                                 ? Image.network(
                                     track!.albumArt!,
                                     fit: BoxFit.cover,
                                     errorBuilder: (_, __, ___) =>
-                                        _artPlaceholder(palette, mood),
+                                        _artPlaceholder(palette),
                                   )
-                                : _artPlaceholder(palette, mood),
+                                : _artPlaceholder(palette),
                           ),
                         ),
                         const SizedBox(height: 18),
@@ -332,16 +307,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                               height: 76,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                gradient: LinearGradient(colors: [
-                                  palette.accent,
-                                  palette.accentAlt
-                                ]),
-                                boxShadow: [
-                                  BoxShadow(
-                                      color: palette.accent.withOpacity(0.4),
-                                      blurRadius: 18,
-                                      offset: const Offset(0, 10)),
-                                ],
+                                color: palette.accent,
                               ),
                               child: Icon(
                                 isPlaying
@@ -422,12 +388,11 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
     );
   }
 
-  Widget _artPlaceholder(_NPPalette palette, String? mood) {
+  Widget _artPlaceholder(_NPPalette palette) {
     return Container(
-      decoration: BoxDecoration(gradient: MoodColorHelper.gradientFor(mood)),
+      color: palette.isDark ? Colors.grey.shade800 : Colors.grey.shade200,
       child: Center(
-        child: Icon(LucideIcons.music4,
-            color: palette.textOnAccent.withOpacity(0.7), size: 64),
+        child: Icon(Icons.music_note, color: Colors.grey.shade400, size: 64),
       ),
     );
   }
@@ -457,7 +422,6 @@ class _SensorDashboard extends StatelessWidget {
             ? '${sensorData!.temperature.toStringAsFixed(1)}C'
             : '--',
         badge: 'Stable',
-        gradient: [palette.accentAlt, palette.accent],
         palette: palette,
         isAlert: false,
       ),
@@ -468,7 +432,6 @@ class _SensorDashboard extends StatelessWidget {
             ? '${sensorData!.noiseLevel.toStringAsFixed(0)} dB'
             : '--',
         badge: _noiseBadge(sensorData?.noiseLevel),
-        gradient: [palette.accent, palette.accentAlt],
         palette: palette,
         isAlert: _noiseBadge(sensorData?.noiseLevel) == 'Loud',
       ),
@@ -477,7 +440,6 @@ class _SensorDashboard extends StatelessWidget {
         label: 'Crowd',
         value: sensorData != null ? _crowdEstimate(sensorData!) : 'N/A',
         badge: 'Live',
-        gradient: [palette.accentAlt, palette.accent.withOpacity(0.9)],
         palette: palette,
         isAlert: false,
       ),
@@ -488,7 +450,6 @@ class _SensorDashboard extends StatelessWidget {
             ? '${sensorData!.humidity.toStringAsFixed(0)}%'
             : '--',
         badge: _humidityBadge(sensorData?.humidity),
-        gradient: [palette.accent.withOpacity(0.85), palette.accentAlt],
         palette: palette,
         isAlert: false,
       ),
@@ -532,7 +493,6 @@ class _SensorCard extends StatelessWidget {
     required this.label,
     required this.value,
     required this.badge,
-    required this.gradient,
     required this.palette,
     required this.isAlert,
   });
@@ -541,128 +501,67 @@ class _SensorCard extends StatelessWidget {
   final String label;
   final String value;
   final String badge;
-  final List<Color> gradient;
   final _NPPalette palette;
   final bool isAlert;
 
   @override
   Widget build(BuildContext context) {
-    final Color dynamicTone = isAlert
-        ? Theme.of(context).colorScheme.error.withOpacity(0.9)
-        : palette.accent;
-
-    final BoxDecoration wrapperDec = palette.isDark
-        ? BoxDecoration(
-            color: const Color(0xFF0B0F19),
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.black.withOpacity(0.35),
-                  blurRadius: 24,
-                  offset: const Offset(0, 12))
-            ],
-            border:
-                Border.all(color: dynamicTone.withOpacity(0.25), width: 0.8),
-          )
-        : BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: gradient),
-            boxShadow: [
-              BoxShadow(
-                  color: gradient.first.withOpacity(0.35),
-                  blurRadius: 18,
-                  offset: const Offset(0, 10))
-            ],
-          );
+    final Color accentColor =
+        isAlert ? Theme.of(context).colorScheme.error : palette.accent;
 
     return Container(
       width: 160,
-      decoration: wrapperDec,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              gradient: palette.isDark
-                  ? LinearGradient(colors: [
-                      dynamicTone.withOpacity(0.10),
-                      dynamicTone.withOpacity(0.04),
-                    ])
-                  : LinearGradient(colors: [
-                      palette.textOnAccent.withOpacity(0.18),
-                      palette.textOnAccent.withOpacity(0.12),
-                    ]),
-              border: Border.all(
-                color: palette.isDark
-                    ? dynamicTone.withOpacity(0.35)
-                    : palette.border.withOpacity(0.6),
-                width: palette.isDark ? 0.8 : 1,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: palette.card,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: palette.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: accentColor.withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: accentColor, size: 18),
               ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: palette.isDark
-                            ? dynamicTone.withOpacity(0.14)
-                            : palette.textOnAccent.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(icon,
-                          color: palette.isDark
-                              ? dynamicTone
-                              : palette.textOnAccent,
-                          size: 20),
-                    ),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: palette.isDark
-                            ? Colors.white.withOpacity(0.05)
-                            : palette.textOnAccent.withOpacity(0.14),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                            color: palette.textOnAccent.withOpacity(0.2)),
-                      ),
-                      child: Text(badge,
-                          style: GoogleFonts.inter(
-                              color: palette.textOnAccent,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700)),
-                    ),
-                  ],
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: palette.overlay,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: palette.border),
                 ),
-                const Spacer(),
-                Text(
-                  value,
-                  style: GoogleFonts.poppins(
-                    color: palette.isDark ? dynamicTone : palette.textOnAccent,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(label,
+                child: Text(badge,
                     style: GoogleFonts.inter(
-                        color: palette.textOnAccent.withOpacity(0.8),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500)),
-              ],
+                        color: palette.textMuted,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600)),
+              ),
+            ],
+          ),
+          const Spacer(),
+          Text(
+            value,
+            style: GoogleFonts.poppins(
+              color: palette.textPrimary,
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
             ),
           ),
-        ),
+          const SizedBox(height: 4),
+          Text(label,
+              style: GoogleFonts.inter(
+                  color: palette.textMuted,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500)),
+        ],
       ),
     );
   }
@@ -684,60 +583,33 @@ class _OverrideMoodCTA extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = palette.accent;
-    final gradientColors = palette.isDark
-        ? [
-            palette.accent.withOpacity(0.75),
-            palette.accentAlt.withOpacity(0.55)
-          ]
-        : [accent, accent.withOpacity(0.7)];
-
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        gradient: LinearGradient(colors: gradientColors),
-        boxShadow: [
-          BoxShadow(
-              color: accent.withOpacity(0.35),
-              blurRadius: 16,
-              offset: const Offset(0, 10))
-        ],
+    return FilledButton(
+      style: FilledButton.styleFrom(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
       ),
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
-        ),
-        onPressed: () => _openOverrideDialog(context),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Override Mood',
-                    style: GoogleFonts.poppins(
-                        color: palette.textOnAccent,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700)),
-                const SizedBox(height: 4),
-                Text(
-                  currentMood != null
-                      ? 'Current: ${currentMood!.toUpperCase()}'
-                      : 'Set a new atmosphere',
-                  style: GoogleFonts.inter(
-                      color: palette.textOnAccent.withOpacity(0.85),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600),
-                ),
-              ],
-            ),
-            Icon(LucideIcons.slidersHorizontal, color: palette.textOnAccent),
-          ],
-        ),
+      onPressed: () => _openOverrideDialog(context),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Override Mood',
+                  style: GoogleFonts.poppins(
+                      fontSize: 16, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 4),
+              Text(
+                currentMood != null
+                    ? 'Current: ${currentMood!.toUpperCase()}'
+                    : 'Set a new atmosphere',
+                style: GoogleFonts.inter(
+                    fontSize: 12, fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+          const Icon(LucideIcons.slidersHorizontal),
+        ],
       ),
     );
   }
@@ -895,28 +767,22 @@ class _MoodBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final gradient = MoodColorHelper.gradientFor(mood);
-    final shadowColor = MoodColorHelper.shadowColorFor(mood);
+    final accent = palette.accent;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        gradient: gradient,
-        boxShadow: [
-          BoxShadow(
-              color: shadowColor, blurRadius: 14, offset: const Offset(0, 6))
-        ],
+        color: accent.withOpacity(0.12),
+        border: Border.all(color: accent.withOpacity(0.4)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(LucideIcons.flame, color: Colors.white, size: 16),
+          Icon(LucideIcons.flame, color: accent, size: 14),
           const SizedBox(width: 6),
           Text(mood.toUpperCase(),
               style: GoogleFonts.inter(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13)),
+                  color: accent, fontWeight: FontWeight.w700, fontSize: 12)),
         ],
       ),
     );
@@ -957,19 +823,7 @@ class _StatusDot extends StatelessWidget {
       height: 8,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: LinearGradient(
-          colors: isOnline
-              ? [const Color(0xFF34D399), const Color(0xFF10B981)]
-              : [const Color(0xFFF59E0B), const Color(0xFFF97316)],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: (isOnline ? Colors.greenAccent : Colors.orangeAccent)
-                .withOpacity(0.4),
-            blurRadius: 6,
-            spreadRadius: 1,
-          ),
-        ],
+        color: isOnline ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
       ),
     );
   }

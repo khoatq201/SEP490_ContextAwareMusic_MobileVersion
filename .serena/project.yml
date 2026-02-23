@@ -5,19 +5,26 @@ project_name: cams_store_manager
 
 # Các file/thư mục cần bỏ qua
 ignore_patterns:
-  - build/
-  - .dart_tool/
-  - .flutter-plugins
-  - .flutter-plugins-dependencies
-  - .packages
-  - "**/*.g.dart"
-  - "**/*.freezed.dart"
-  - android/.gradle/
-  - ios/Pods/
-  - ios/Flutter/Flutter.framework/
-  - ios/Flutter/Flutter.podspec
+- build/
+- .dart_tool/
+- .flutter-plugins
+- .flutter-plugins-dependencies
+- .packages
+- "**/*.g.dart"
+- "**/*.freezed.dart"
+- android/.gradle/
+- ios/Pods/
+- ios/Flutter/Flutter.framework/
+- ios/Flutter/Flutter.podspec
 
 # Ngôn ngữ chính của project
+
+# list of mode names to that are always to be included in the set of active modes
+# The full set of modes to be activated is base_modes + default_modes.
+# If the setting is undefined, the base_modes from the global configuration (serena_config.yml) apply.
+# Otherwise, this setting overrides the global configuration.
+# Set this to [] to disable base modes for this project.
+# Set this to a list of mode names to always include the respective modes for this project.
 
 # list of mode names to that are always to be included in the set of active modes
 # The full set of modes to be activated is base_modes + default_modes.
@@ -127,4 +134,8 @@ encoding: utf-8
 # The first language is the default language and the respective language server will be used as a fallback.
 # Note that when using the JetBrains backend, language servers are not used and this list is correspondingly ignored.
 languages:
-  - dart
+- dart
+
+# override of the corresponding setting in serena_config.yml, see the documentation there.
+# If null or missing, the value from the global config is used.
+symbol_info_budget:

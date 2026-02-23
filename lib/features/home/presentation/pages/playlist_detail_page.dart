@@ -22,7 +22,7 @@ class PlaylistDetailPage extends StatelessWidget {
     final palette = _Palette.fromBrightness(Theme.of(context).brightness);
 
     return Scaffold(
-      backgroundColor: palette.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
@@ -95,7 +95,7 @@ class _CoverSliverAppBar extends StatelessWidget {
     return SliverAppBar(
       pinned: true,
       expandedHeight: 250,
-      backgroundColor: palette.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       leading: GestureDetector(
@@ -139,38 +139,14 @@ class _CoverBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        // Cover image
-        if (coverUrl != null)
-          Image.network(
-            coverUrl!,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => _Fallback(palette: palette),
-          )
-        else
-          _Fallback(palette: palette),
-
-        // Bottom-fade gradient so the title is always readable
-        Positioned.fill(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  Colors.black.withOpacity(0.25),
-                  palette.bg.withOpacity(0.85),
-                ],
-                stops: const [0.40, 0.75, 1.0],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
+    if (coverUrl != null) {
+      return Image.network(
+        coverUrl!,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _Fallback(palette: palette),
+      );
+    }
+    return _Fallback(palette: palette);
   }
 }
 
@@ -181,18 +157,14 @@ class _Fallback extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            palette.accent.withOpacity(0.6),
-            palette.accentAlt.withOpacity(0.4),
-          ],
+      color: palette.isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+      child: Center(
+        child: Icon(
+          Icons.music_note,
+          color: Colors.grey.shade400,
+          size: 72,
         ),
       ),
-      child: Icon(LucideIcons.music4,
-          color: Colors.white.withOpacity(0.5), size: 72),
     );
   }
 }
@@ -285,13 +257,9 @@ class _PlaylistHeader extends StatelessWidget {
           // Play button
           SizedBox(
             width: double.infinity,
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: palette.accent,
-                foregroundColor: palette.textOnAccent,
+            child: FilledButton.icon(
+              style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                elevation: 4,
-                shadowColor: palette.accent.withOpacity(0.45),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),

@@ -36,9 +36,9 @@ class MiniPlayerWidget extends StatelessWidget {
               borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.18),
-                  blurRadius: 16,
-                  offset: const Offset(0, -2),
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 8,
+                  offset: const Offset(0, -1),
                 ),
               ],
             ),
@@ -182,5 +182,10 @@ class _AlbumArt extends StatelessWidget {
     );
   }
 
-  Widget _placeholder() => const Icon(Icons.music_note, color: Colors.grey);
+  Widget _placeholder() => Container(
+        color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+        child: Center(
+          child: Icon(Icons.music_note, color: Colors.grey.shade400, size: 22),
+        ),
+      );
 }

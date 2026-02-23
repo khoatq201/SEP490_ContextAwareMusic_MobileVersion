@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,7 +8,6 @@ import '../../constants/app_colors.dart';
 import '../player_bloc.dart';
 import '../player_event.dart';
 import '../player_state.dart' as ps;
-import '../../../features/space_control/presentation/utils/mood_color_helper.dart';
 
 /// Full-screen music player shown via showModalBottomSheet.
 /// Receives [PlayerBloc] from parent via BlocProvider.value.
@@ -41,8 +38,6 @@ class FullScreenPlayerPage extends StatelessWidget {
           final moodTags = track?.moodTags;
           final mood =
               (moodTags != null && moodTags.isNotEmpty) ? moodTags.first : null;
-          final moodGradient = MoodColorHelper.gradientFor(mood);
-          final moodShadow = MoodColorHelper.shadowColorFor(mood);
 
           return Column(
             children: [
@@ -110,31 +105,14 @@ class FullScreenPlayerPage extends StatelessWidget {
                       const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(28),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(28),
-                        gradient: moodGradient,
-                        boxShadow: [
-                          BoxShadow(
-                            color: moodShadow,
-                            blurRadius: 28,
-                            offset: const Offset(0, 14),
-                          ),
-                        ],
-                      ),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 0, sigmaY: 0),
-                        child: track?.albumArt != null
-                            ? Image.network(
-                                track!.albumArt!,
-                                fit: BoxFit.cover,
-                                width: double.infinity,
-                                errorBuilder: (_, __, ___) =>
-                                    _placeholder(palette, mood),
-                              )
-                            : _placeholder(palette, mood),
-                      ),
-                    ),
+                    child: track?.albumArt != null
+                        ? Image.network(
+                            track!.albumArt!,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            errorBuilder: (_, __, ___) => _placeholder(palette),
+                          )
+                        : _placeholder(palette),
                   ),
                 ),
               ).animate().fadeIn(duration: 350.ms).scale(
@@ -158,24 +136,21 @@ class FullScreenPlayerPage extends StatelessWidget {
                             horizontal: 14, vertical: 7),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20),
-                          gradient: moodGradient,
-                          boxShadow: [
-                            BoxShadow(
-                                color: moodShadow,
-                                blurRadius: 12,
-                                offset: const Offset(0, 5)),
-                          ],
+                          color: palette.accent.withOpacity(0.12),
+                          border: Border.all(
+                            color: palette.accent.withOpacity(0.4),
+                          ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(LucideIcons.flame,
-                                color: Colors.white, size: 14),
+                            Icon(LucideIcons.flame,
+                                color: palette.accent, size: 14),
                             const SizedBox(width: 6),
                             Text(
                               mood.toUpperCase(),
                               style: GoogleFonts.inter(
-                                color: Colors.white,
+                                color: palette.accent,
                                 fontWeight: FontWeight.w700,
                                 fontSize: 12,
                               ),
@@ -316,7 +291,7 @@ class FullScreenPlayerPage extends StatelessWidget {
                     ),
                     const SizedBox(width: 20),
 
-                    // Play / Pause – large gradient circle
+                    // Play / Pause
                     GestureDetector(
                       onTap: () => context
                           .read<PlayerBloc>()
@@ -326,16 +301,7 @@ class FullScreenPlayerPage extends StatelessWidget {
                         height: 76,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            colors: [palette.accent, palette.accentAlt],
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: palette.accent.withOpacity(0.45),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
+                          color: palette.accent,
                         ),
                         child: Icon(
                           isPlaying ? LucideIcons.pause : LucideIcons.play,
@@ -375,14 +341,11 @@ class FullScreenPlayerPage extends StatelessWidget {
     );
   }
 
-  Widget _placeholder(_FSPalette palette, String? mood) {
+  Widget _placeholder(_FSPalette palette) {
     return Container(
-      decoration: BoxDecoration(
-        gradient: MoodColorHelper.gradientFor(mood),
-      ),
+      color: palette.isDark ? Colors.grey.shade800 : Colors.grey.shade200,
       child: Center(
-        child: Icon(LucideIcons.music4,
-            color: palette.textOnAccent.withOpacity(0.7), size: 64),
+        child: Icon(Icons.music_note, color: Colors.grey.shade400, size: 64),
       ),
     );
   }
