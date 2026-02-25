@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
@@ -228,7 +229,42 @@ class StoreDashboardPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Scaffold(
+    final authState = context.read<AuthBloc>().state;
+    final hasMultipleStores = (authState.user?.storeIds.length ?? 0) > 1;
+
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+
+        if (hasMultipleStores) {
+          // Go back to store selection
+          context.go('/store-selection');
+        } else {
+          // Only one store — show exit dialog
+          final shouldExit = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Thoát ứng dụng'),
+              content: const Text('Bạn có muốn thoát ứng dụng không?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('Không'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: const Text('Thoát'),
+                ),
+              ],
+            ),
+          );
+          if (shouldExit == true && context.mounted) {
+            SystemNavigator.pop();
+          }
+        }
+      },
+      child: Scaffold(
       backgroundColor: isDark
           ? AppColors.backgroundDarkPrimary
           : AppColors.backgroundPrimary,
@@ -436,6 +472,7 @@ class StoreDashboardPage extends StatelessWidget {
           );
         },
       ),
+    ),
     );
   }
 }

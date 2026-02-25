@@ -28,7 +28,13 @@ class SettingsUserPage extends StatelessWidget {
           surfaceTintColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            onPressed: () => context.pop(),
+            onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/home');
+              }
+            },
             icon: Icon(Icons.arrow_back_ios_new, color: palette.textPrimary),
           ),
           title: Text(

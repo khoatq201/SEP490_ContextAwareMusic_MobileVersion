@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
@@ -108,18 +109,62 @@ class MainShellPage extends StatelessWidget {
     );
 
     // ── Scaffold with Stack: tab content + MiniPlayer above BottomBar ──
-    return Scaffold(
-      resizeToAvoidBottomInset: false,
-      // extendBody lets the body go behind the MiniPlayer + BottomBar area
-      extendBody: true,
-      body: child,
-      bottomNavigationBar: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // MiniPlayer sits directly above the BottomNavigationBar
-          const MiniPlayerWidget(),
-          bottomNav,
-        ],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+
+        // If on a sub-route within the shell (e.g. /home/space), pop normally
+        if (GoRouter.of(context).canPop()) {
+          GoRouter.of(context).pop();
+          return;
+        }
+
+        // If not on the Home tab, navigate to Home first
+        if (currentIndex != 0) {
+          context.go('/home');
+          return;
+        }
+
+        // On the Home tab with nowhere to go — confirm app exit
+        final shouldExit = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Thoát ứng dụng'),
+            content: const Text('Bạn có muốn thoát ứng dụng không?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Không'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Thoát'),
+              ),
+            ],
+          ),
+        );
+
+        if (shouldExit == true) {
+          // Allow the system to handle the pop (exit the app)
+          if (context.mounted) {
+            SystemNavigator.pop();
+          }
+        }
+      },
+      child: Scaffold(
+        resizeToAvoidBottomInset: false,
+        // extendBody lets the body go behind the MiniPlayer + BottomBar area
+        extendBody: true,
+        body: child,
+        bottomNavigationBar: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // MiniPlayer sits directly above the BottomNavigationBar
+            const MiniPlayerWidget(),
+            bottomNav,
+          ],
+        ),
       ),
     );
   }

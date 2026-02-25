@@ -117,7 +117,7 @@ class AppDrawer extends StatelessWidget {
                   title: const Text('Playlists'),
                   onTap: () {
                     Navigator.of(context).pop();
-                    context.go('/playlists');
+                    context.push('/playlists');
                   },
                 ),
                 ListTile(
@@ -125,7 +125,7 @@ class AppDrawer extends StatelessWidget {
                   title: const Text('Settings'),
                   onTap: () {
                     Navigator.of(context).pop();
-                    context.go('/settings');
+                    context.push('/settings');
                   },
                 ),
                 ListTile(
@@ -133,7 +133,7 @@ class AppDrawer extends StatelessWidget {
                   title: const Text('Profile'),
                   onTap: () {
                     Navigator.of(context).pop();
-                    context.go('/profile');
+                    context.push('/profile');
                   },
                 ),
               ],

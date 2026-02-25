@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
@@ -42,88 +43,96 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Scaffold(
-      backgroundColor: isDark
-          ? AppColors.backgroundDarkPrimary
-          : AppColors.backgroundPrimary,
-      appBar: AppBar(
-        title: const Text('Select Store'),
-        automaticallyImplyLeading: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () => _showLogoutDialog(context),
-            tooltip: 'Logout',
-          ),
-        ],
-      ),
-      body: BlocConsumer<StoreSelectionBloc, StoreSelectionState>(
-        listener: (context, state) {
-          if (state is StoreSelected) {
-            context.go('/store/${state.storeId}');
-          }
-        },
-        builder: (context, state) {
-          if (state is StoreSelectionLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        // Show logout confirmation instead of exiting
+        _showLogoutDialog(context);
+      },
+      child: Scaffold(
+        backgroundColor: isDark
+            ? AppColors.backgroundDarkPrimary
+            : AppColors.backgroundPrimary,
+        appBar: AppBar(
+          title: const Text('Select Store'),
+          automaticallyImplyLeading: false,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.logout),
+              onPressed: () => _showLogoutDialog(context),
+              tooltip: 'Logout',
+            ),
+          ],
+        ),
+        body: BlocConsumer<StoreSelectionBloc, StoreSelectionState>(
+          listener: (context, state) {
+            if (state is StoreSelected) {
+              context.go('/store/${state.storeId}');
+            }
+          },
+          builder: (context, state) {
+            if (state is StoreSelectionLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          if (state is StoreSelectionError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+            if (state is StoreSelectionError) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: Colors.red,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Error loading stores',
+                      style: AppTypography.titleLarge,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      state.message,
+                      style: AppTypography.bodyMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        final authState = context.read<AuthBloc>().state;
+                        if (authState.status == AuthStatus.authenticated &&
+                            authState.user != null) {
+                          context.read<StoreSelectionBloc>().add(
+                                LoadUserStores(authState.user!.storeIds),
+                              );
+                        }
+                      },
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            if (state is StoreSelectionLoaded) {
+              return Column(
                 children: [
-                  const Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: Colors.red,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Error loading stores',
-                    style: AppTypography.titleLarge,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    state.message,
-                    style: AppTypography.bodyMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      final authState = context.read<AuthBloc>().state;
-                      if (authState.status == AuthStatus.authenticated &&
-                          authState.user != null) {
-                        context.read<StoreSelectionBloc>().add(
-                              LoadUserStores(authState.user!.storeIds),
-                            );
-                      }
-                    },
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('Retry'),
-                  ),
+                  _buildSearchBar(),
+                  if (state.filteredStores.isEmpty)
+                    _buildEmptyState()
+                  else
+                    Expanded(
+                      child: _buildStoreGrid(state.filteredStores),
+                    ),
                 ],
-              ),
-            );
-          }
+              );
+            }
 
-          if (state is StoreSelectionLoaded) {
-            return Column(
-              children: [
-                _buildSearchBar(),
-                if (state.filteredStores.isEmpty)
-                  _buildEmptyState()
-                else
-                  Expanded(
-                    child: _buildStoreGrid(state.filteredStores),
-                  ),
-              ],
-            );
-          }
-
-          return const SizedBox.shrink();
-        },
+            return const SizedBox.shrink();
+          },
+        ),
       ),
     );
   }

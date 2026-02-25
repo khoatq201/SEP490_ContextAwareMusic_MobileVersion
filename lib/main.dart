@@ -6,6 +6,7 @@ import 'router.dart';
 import 'core/services/local_storage_service.dart';
 import 'core/services/mqtt_service.dart';
 import 'core/presentation/splash_screen.dart';
+import 'core/session/session_cubit.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_provider.dart';
 import 'core/player/player_bloc.dart';
@@ -17,6 +18,8 @@ void main() {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        // SessionCubit — global session state (role, store, space, permissions)
+        BlocProvider(create: (_) => SessionCubit()),
         // PlayerBloc lives above the router so MiniPlayer persists across tabs
         BlocProvider(create: (_) => PlayerBloc()),
         // MusicControlBloc & SpaceMonitoringBloc are global so NowPlayingTab
