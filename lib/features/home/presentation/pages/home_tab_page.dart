@@ -184,8 +184,8 @@ class _HomeSliverAppBar extends StatelessWidget {
             ),
             child: Padding(
               padding: const EdgeInsets.all(8),
-              child: Icon(LucideIcons.settings2,
-                  color: palette.textPrimary, size: 18),
+              child: Icon(LucideIcons.settings,
+                   color: palette.textPrimary, size: 18),
             ),
           ),
         ),
@@ -565,7 +565,7 @@ class _MasterControlCard extends StatelessWidget {
       ),
     );
     return GestureDetector(
-      onTap: () => context.push('/context-rules'),
+      onTap: () => context.go('/create'),
       child: card,
     );
   }

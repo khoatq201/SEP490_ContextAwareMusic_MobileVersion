@@ -15,6 +15,11 @@ import 'features/auth/domain/usecases/logout.dart';
 import 'features/auth/domain/usecases/get_current_user.dart';
 import 'features/auth/domain/usecases/request_password_reset.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
+import 'features/settings/data/datasources/settings_mock_data_source.dart';
+import 'features/settings/data/repositories/settings_repository_impl.dart';
+import 'features/settings/domain/repositories/settings_repository.dart';
+import 'features/settings/domain/usecases/get_settings_snapshot.dart';
+import 'features/settings/presentation/bloc/settings_cubit.dart';
 
 // Space Control Feature
 import 'features/space_control/data/datasources/space_remote_datasource.dart';
@@ -120,6 +125,30 @@ Future<void> initializeDependencies() async {
       getCurrentUser: sl(),
       requestPasswordReset: sl(),
     ),
+  );
+
+  // =============================================
+  // Settings Feature
+  // =============================================
+
+  // Data sources
+  sl.registerLazySingleton<SettingsDataSource>(
+    () => SettingsMockDataSource(),
+  );
+
+  // Repositories
+  sl.registerLazySingleton<SettingsRepository>(
+    () => SettingsRepositoryImpl(
+      dataSource: sl(),
+    ),
+  );
+
+  // Use cases
+  sl.registerLazySingleton(() => GetSettingsSnapshot(sl()));
+
+  // Cubits
+  sl.registerFactory(
+    () => SettingsCubit(sl()),
   );
 
   // =============================================

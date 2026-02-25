@@ -15,7 +15,10 @@ import 'features/space_control/presentation/pages/space_detail_page.dart';
 import 'features/space_control/presentation/bloc/space_monitoring_bloc.dart';
 import 'features/space_control/presentation/bloc/music_control_bloc.dart';
 import 'features/space_control/presentation/bloc/offline_library_bloc.dart';
+import 'features/settings/presentation/bloc/settings_cubit.dart';
 import 'features/settings/presentation/pages/settings_page.dart';
+import 'features/settings/presentation/pages/settings_user_page.dart';
+import 'features/settings/presentation/pages/settings_company_page.dart';
 import 'features/profile/presentation/pages/profile_page.dart';
 import 'features/playlist_management/presentation/pages/playlist_management_page.dart';
 import 'core/presentation/component_showcase_page.dart';
@@ -158,11 +161,58 @@ class AppRouter {
             ],
           ),
           GoRoute(
+            path: '/settings',
+            name: 'settings',
+            builder: (context, state) => MultiBlocProvider(
+              providers: [
+                BlocProvider.value(value: sl<AuthBloc>()),
+                BlocProvider(create: (_) => sl<SettingsCubit>()..load()),
+              ],
+              child: const SettingsPage(),
+            ),
+          ),
+          GoRoute(
+            path: '/settings/user',
+            name: 'settings-user',
+            builder: (context, state) => BlocProvider.value(
+              value: sl<AuthBloc>(),
+              child: const SettingsUserPage(),
+            ),
+          ),
+          GoRoute(
+            path: '/settings/company',
+            name: 'settings-company',
+            builder: (context, state) => MultiBlocProvider(
+              providers: [
+                BlocProvider.value(value: sl<AuthBloc>()),
+                BlocProvider(create: (_) => sl<SettingsCubit>()..load()),
+              ],
+              child: const SettingsCompanyPage(),
+            ),
+          ),
+          GoRoute(
             path: '/search',
             name: 'search',
             pageBuilder: (context, state) => const NoTransitionPage(
               child: SearchTabPage(),
             ),
+          ),
+          GoRoute(
+            path: '/create',
+            name: 'create',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: ContextRulesPage(
+                showBackButton: false,
+                createRulePath: '/create/new',
+              ),
+            ),
+            routes: [
+              GoRoute(
+                path: 'new',
+                name: 'create-rule-tab',
+                builder: (context, state) => const CreateRulePage(),
+              ),
+            ],
           ),
           GoRoute(
             path: '/now-playing',
@@ -191,14 +241,6 @@ class AppRouter {
       // ---------------------------------------------------------------
       // Standalone pages (outside the shell)
       // ---------------------------------------------------------------
-      GoRoute(
-        path: '/settings',
-        name: 'settings',
-        builder: (context, state) => BlocProvider.value(
-          value: sl<AuthBloc>(),
-          child: const SettingsPage(),
-        ),
-      ),
       GoRoute(
         path: '/profile',
         name: 'profile',

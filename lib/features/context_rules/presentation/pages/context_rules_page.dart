@@ -10,7 +10,14 @@ import '../../../../core/player/player_state.dart' as ps;
 import '../../domain/entities/context_rule_entity.dart';
 
 class ContextRulesPage extends StatefulWidget {
-  const ContextRulesPage({super.key});
+  const ContextRulesPage({
+    super.key,
+    this.showBackButton = true,
+    this.createRulePath = '/context-rules/create',
+  });
+
+  final bool showBackButton;
+  final String createRulePath;
 
   @override
   State<ContextRulesPage> createState() => _ContextRulesPageState();
@@ -82,19 +89,22 @@ class _ContextRulesPageState extends State<ContextRulesPage> {
         backgroundColor: palette.bg,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        leading: GestureDetector(
-          onTap: () => context.pop(),
-          child: Container(
-            margin: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: palette.overlay,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: palette.border),
-            ),
-            child: Icon(LucideIcons.chevronLeft,
-                color: palette.textPrimary, size: 20),
-          ),
-        ),
+        automaticallyImplyLeading: widget.showBackButton,
+        leading: widget.showBackButton
+            ? GestureDetector(
+                onTap: () => context.pop(),
+                child: Container(
+                  margin: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: palette.overlay,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: palette.border),
+                  ),
+                  child: Icon(LucideIcons.chevronLeft,
+                      color: palette.textPrimary, size: 20),
+                ),
+              )
+            : null,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -125,10 +135,10 @@ class _ContextRulesPageState extends State<ContextRulesPage> {
           return Padding(
             padding: EdgeInsets.only(bottom: bottomPad),
             child: FloatingActionButton(
-              onPressed: () {
-                debugPrint('Navigate to Create Rule Page');
-                context.push('/context-rules/create');
-              },
+                onPressed: () {
+                  debugPrint('Navigate to Create Rule Page');
+                  context.push(widget.createRulePath);
+                },
               backgroundColor: palette.accent,
               foregroundColor: palette.textOnAccent,
               elevation: 6,

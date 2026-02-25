@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../constants/app_colors.dart';
-import '../player/player_bloc.dart';
-import '../player/player_state.dart' as ps;
 import '../player/widgets/mini_player_widget.dart';
 
 /// The main shell page that wraps the 5-tab bottom navigation.
@@ -21,7 +18,7 @@ class MainShellPage extends StatelessWidget {
   static const List<String> _tabRoutes = [
     '/home',
     '/search',
-    '/now-playing',
+    '/create',
     '/library',
     '/locations',
   ];
@@ -80,15 +77,11 @@ class MainShellPage extends StatelessWidget {
                 activeColor: colorScheme.primary,
               ),
               // Centre "Now Playing" tab – visually prominent
-              BlocBuilder<PlayerBloc, ps.PlayerState>(
-                builder: (context, playerState) => _NavItemCenter(
-                  index: 2,
-                  currentIndex: currentIndex,
-                  isPlaying: playerState.isPlaying,
-                  hasTrack: playerState.hasTrack,
-                  onTap: () => _onTap(context, 2),
-                  activeColor: colorScheme.primary,
-                ),
+              _NavItemCenter(
+                index: 2,
+                currentIndex: currentIndex,
+                onTap: () => _onTap(context, 2),
+                activeColor: colorScheme.primary,
               ),
               _NavItem(
                 index: 3,
@@ -189,16 +182,12 @@ class _NavItem extends StatelessWidget {
 class _NavItemCenter extends StatelessWidget {
   final int index;
   final int currentIndex;
-  final bool isPlaying;
-  final bool hasTrack;
   final VoidCallback onTap;
   final Color activeColor;
 
   const _NavItemCenter({
     required this.index,
     required this.currentIndex,
-    required this.isPlaying,
-    required this.hasTrack,
     required this.onTap,
     required this.activeColor,
   });
@@ -213,67 +202,45 @@ class _NavItemCenter extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Stack(
-              alignment: Alignment.topRight,
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    gradient: isActive || isPlaying
-                        ? LinearGradient(
-                            colors: [
-                              activeColor,
-                              activeColor.withOpacity(0.7),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          )
-                        : null,
-                    color: isActive || isPlaying
-                        ? null
-                        : activeColor.withOpacity(0.12),
-                    shape: BoxShape.circle,
-                    boxShadow: isActive || isPlaying
-                        ? [
-                            BoxShadow(
-                              color: activeColor.withOpacity(0.45),
-                              blurRadius: 10,
-                              offset: const Offset(0, 3),
-                            ),
-                          ]
-                        : null,
-                  ),
-                  child: Icon(
-                    LucideIcons.music4,
-                    color: isActive || isPlaying ? Colors.white : activeColor,
-                    size: 24,
-                  ),
-                ),
-                // Live dot when playing
-                if (isPlaying)
-                  Container(
-                    width: 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: const Color(0xFF34D399),
-                      border: Border.all(color: Colors.white, width: 1.5),
-                    ),
-                  ),
-              ],
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                gradient: isActive
+                    ? LinearGradient(
+                        colors: [
+                          activeColor,
+                          activeColor.withOpacity(0.7),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      )
+                    : null,
+                color: isActive ? null : activeColor.withOpacity(0.12),
+                shape: BoxShape.circle,
+                boxShadow: isActive
+                    ? [
+                        BoxShadow(
+                          color: activeColor.withOpacity(0.45),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Icon(
+                LucideIcons.plus,
+                color: isActive ? Colors.white : activeColor,
+                size: 24,
+              ),
             ),
             const SizedBox(height: 2),
             Text(
-              'Playing',
+              'Create',
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                color: isActive
-                    ? activeColor
-                    : isPlaying
-                        ? activeColor.withOpacity(0.8)
-                        : AppColors.textSecondary,
+                color: isActive ? activeColor : AppColors.textSecondary,
               ),
             ),
           ],
