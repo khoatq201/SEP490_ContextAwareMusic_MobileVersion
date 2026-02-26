@@ -231,7 +231,7 @@ class _LoginPageV2State extends State<LoginPageV2>
                                   ),
                                 ),
                                 const SizedBox(height: AppDimensions.spacingMd),
-                                SizedBox(
+                                 SizedBox(
                                   height: AppDimensions.buttonHeightLg,
                                   width: double.infinity,
                                   child: ElevatedButton.icon(
@@ -253,6 +253,49 @@ class _LoginPageV2State extends State<LoginPageV2>
                                         : const Text('Sign In'),
                                   ),
                                 ),
+                                const SizedBox(height: AppDimensions.spacingMd),
+                                // ── Divider OR ──
+                                Row(children: [
+                                  Expanded(child: Divider(color: isDark ? AppColors.borderDarkMedium : AppColors.borderLight)),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                                    child: Text('or', style: AppTypography.bodySmall.copyWith(
+                                      color: isDark ? AppColors.textDarkTertiary : AppColors.textTertiary,
+                                    )),
+                                  ),
+                                  Expanded(child: Divider(color: isDark ? AppColors.borderDarkMedium : AppColors.borderLight)),
+                                ]),
+                                const SizedBox(height: AppDimensions.spacingMd),
+                                // ── Google Sign In ──
+                                SizedBox(
+                                  height: AppDimensions.buttonHeightLg,
+                                  width: double.infinity,
+                                  child: OutlinedButton.icon(
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: isDark ? AppColors.textDarkPrimary : AppColors.textPrimary,
+                                      side: BorderSide(
+                                        color: isDark ? AppColors.borderDarkMedium : AppColors.borderMedium,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+                                      ),
+                                    ),
+                                    onPressed: () {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: const Text('Google sign-in coming soon!'),
+                                          backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
+                                          behavior: SnackBarBehavior.floating,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    icon: _GoogleIcon(),
+                                    label: const Text('Continue with Google'),
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -263,19 +306,6 @@ class _LoginPageV2State extends State<LoginPageV2>
                               color: isDark
                                   ? AppColors.textDarkTertiary
                                   : AppColors.textTertiary,
-                            ),
-                          ),
-                          const SizedBox(height: AppDimensions.spacingLg),
-                          TextButton(
-                            onPressed: () => context.push('/pair-device'),
-                            child: Text(
-                              'Set up as Playback Device',
-                              style: AppTypography.labelMedium.copyWith(
-                                color: isDark
-                                    ? AppColors.textDarkSecondary
-                                    : AppColors.textSecondary,
-                                decoration: TextDecoration.underline,
-                              ),
                             ),
                           ),
                         ],
@@ -316,6 +346,35 @@ class _LoginPageV2State extends State<LoginPageV2>
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Google "G" logo built with Flutter widgets (no asset needed).
+class _GoogleIcon extends StatelessWidget {
+  const _GoogleIcon();
+
+  @override
+  Widget build(BuildContext context) {
+    // Simple letter-G approach using a Container with styled text
+    return Container(
+      width: 20,
+      height: 20,
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white,
+      ),
+      child: const Center(
+        child: Text(
+          'G',
+          style: TextStyle(
+            color: Color(0xFF4285F4), // Google blue
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            height: 1,
+          ),
+        ),
+      ),
     );
   }
 }

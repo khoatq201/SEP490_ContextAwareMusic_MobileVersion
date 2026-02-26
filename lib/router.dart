@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'features/auth/presentation/pages/login_page_v2.dart';
+import 'features/auth/presentation/pages/welcome_page.dart';
 import 'features/auth/presentation/pages/forgot_password_page.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/bloc/auth_state.dart';
@@ -41,7 +42,7 @@ import 'injection_container.dart';
 
 class AppRouter {
   static GoRouter router = GoRouter(
-    initialLocation: '/login',
+    initialLocation: '/welcome',
     redirect: (BuildContext context, GoRouterState state) {
       final authBloc = sl<AuthBloc>();
       final sessionCubit = sl<SessionCubit>();
@@ -49,12 +50,12 @@ class AppRouter {
       final isAuthenticated = authBloc.state.status == AuthStatus.authenticated;
       final isPaired = sessionCubit.state.isPlaybackDevice;
       final location = state.matchedLocation;
-      final isPublic = location == '/login' || location == '/forgot-password' || location == '/pair-device';
+      final isPublic = location == '/welcome' || location == '/login' || location == '/forgot-password' || location == '/pair-device';
 
       // 1. If operating as a paired playback device, force them into the shell (home)
       // unless they are already on a valid tab. Do not let them go to login.
       if (isPaired) {
-        if (location == '/login' || location == '/pair-device' || location == '/store-selection') {
+        if (location == '/welcome' || location == '/login' || location == '/pair-device' || location == '/store-selection') {
           return '/home';
         }
         return null;
@@ -72,8 +73,8 @@ class AppRouter {
           sessionCubit.setRoleFromString(user.role);
         }
 
-        // If on login/pair page, redirect to appropriate start.
-        if (location == '/login' || location == '/pair-device') {
+        // If on welcome/login/pair page, redirect to appropriate start.
+        if (location == '/welcome' || location == '/login' || location == '/pair-device') {
           final user = authBloc.state.user;
           if (user != null && user.storeIds.isNotEmpty) {
             if (user.storeIds.length > 1) return '/store-selection';
@@ -88,6 +89,11 @@ class AppRouter {
       // ---------------------------------------------------------------
       // Public / pre-auth routes
       // ---------------------------------------------------------------
+      GoRoute(
+        path: '/welcome',
+        name: 'welcome',
+        builder: (context, state) => const WelcomePage(),
+      ),
       GoRoute(
         path: '/login',
         name: 'login',
