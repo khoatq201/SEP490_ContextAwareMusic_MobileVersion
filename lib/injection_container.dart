@@ -4,6 +4,7 @@ import 'core/network/dio_client.dart';
 import 'core/network/network_info.dart';
 import 'core/services/mqtt_service.dart';
 import 'core/services/local_storage_service.dart';
+import 'core/session/session_cubit.dart';
 
 // Auth Feature
 import 'features/auth/data/datasources/auth_remote_datasource.dart';
@@ -15,6 +16,23 @@ import 'features/auth/domain/usecases/logout.dart';
 import 'features/auth/domain/usecases/get_current_user.dart';
 import 'features/auth/domain/usecases/request_password_reset.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
+
+// Device Pairing Feature
+import 'features/device_pairing/data/datasources/device_pairing_remote_datasource.dart';
+import 'features/device_pairing/data/datasources/device_pairing_mock_datasource.dart';
+import 'features/device_pairing/data/repositories/device_pairing_repository_impl.dart';
+import 'features/device_pairing/domain/repositories/device_pairing_repository.dart';
+import 'features/device_pairing/domain/usecases/pair_device.dart';
+import 'features/device_pairing/presentation/bloc/device_pairing_bloc.dart';
+
+// Location Feature
+import 'features/locations/data/datasources/location_remote_datasource.dart';
+import 'features/locations/data/datasources/location_mock_datasource.dart';
+import 'features/locations/data/repositories/location_repository_impl.dart';
+import 'features/locations/domain/repositories/location_repository.dart';
+import 'features/locations/domain/usecases/location_usecases.dart';
+import 'features/locations/presentation/bloc/location_bloc.dart';
+
 import 'features/settings/data/datasources/settings_mock_data_source.dart';
 import 'features/settings/data/repositories/settings_repository_impl.dart';
 import 'features/settings/domain/repositories/settings_repository.dart';
@@ -92,6 +110,9 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton<NetworkInfo>(
     () => NetworkInfoImpl(sl()),
   );
+  
+  // Session
+  sl.registerLazySingleton(() => SessionCubit());
 
   // =============================================
   // Auth Feature
@@ -124,6 +145,66 @@ Future<void> initializeDependencies() async {
       logout: sl(),
       getCurrentUser: sl(),
       requestPasswordReset: sl(),
+    ),
+  );
+
+  // =============================================
+  // Device Pairing Feature
+  // =============================================
+
+  // Data sources
+  sl.registerLazySingleton<DevicePairingRemoteDataSource>(
+    () => DevicePairingMockDataSource(),
+  );
+
+  // Repositories
+  sl.registerLazySingleton<DevicePairingRepository>(
+    () => DevicePairingRepositoryImpl(
+      remoteDataSource: sl(),
+      networkInfo: sl(),
+    ),
+  );
+
+  // Use cases
+  sl.registerLazySingleton(() => PairDevice(sl()));
+
+  // BLoCs
+  sl.registerFactory(
+    () => DevicePairingBloc(
+      pairDeviceUseCase: sl(),
+    ),
+  );
+
+  // =============================================
+  // Location Feature
+  // =============================================
+
+  // Data sources
+  sl.registerLazySingleton<LocationRemoteDataSource>(
+    () => LocationMockDataSource(),
+  );
+
+  // Repositories
+  sl.registerLazySingleton<LocationRepository>(
+    () => LocationRepositoryImpl(
+      remoteDataSource: sl(),
+      networkInfo: sl(),
+    ),
+  );
+
+  // Use cases
+  sl.registerLazySingleton(() => GetPairedSpace(sl()));
+  sl.registerLazySingleton(() => GetSpacesForStore(sl()));
+  sl.registerLazySingleton(() => GetSpacesForBrand(sl()));
+
+  // BLoCs
+  sl.registerFactory(
+    () => LocationBloc(
+      sessionCubit: sl(),
+      authBloc: sl(),
+      getPairedSpace: sl(),
+      getSpacesForStore: sl(),
+      getSpacesForBrand: sl(),
     ),
   );
 

@@ -16,6 +16,7 @@ import '../../domain/entities/playlist_entity.dart';
 import '../../domain/entities/sensor_entity.dart';
 import '../bloc/home_cubit.dart';
 import '../bloc/home_state.dart';
+import '../../../../core/session/session_cubit.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Entry point — wraps the page with its own HomeCubit (self-contained)
@@ -125,6 +126,9 @@ class _HomeSliverAppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final session = context.watch<SessionCubit>().state;
+    final isPlayback = session.isPlaybackDevice;
+
     return SliverAppBar(
       pinned: true,
       floating: false,
@@ -136,13 +140,13 @@ class _HomeSliverAppBar extends StatelessWidget {
         collapseMode: CollapseMode.pin,
         titlePadding: const EdgeInsets.only(left: 20, bottom: 14),
         title: GestureDetector(
-          onTap: () => _showSpaceSheet(context),
+          onTap: isPlayback ? null : () => _showSpaceSheet(context),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'REMOTE CONTROLLING',
+                isPlayback ? 'PLAYBACK DEVICE' : 'REMOTE CONTROLLING',
                 style: GoogleFonts.inter(
                   color: palette.textMuted,
                   fontSize: 9,
@@ -155,7 +159,7 @@ class _HomeSliverAppBar extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Sảnh Chính',
+                    isPlayback ? (session.currentSpace?.name ?? 'Unknown Space') : 'Sảnh Chính',
                     style: GoogleFonts.poppins(
                       color: palette.textPrimary,
                       fontSize: 18,
@@ -163,9 +167,11 @@ class _HomeSliverAppBar extends StatelessWidget {
                       letterSpacing: -0.3,
                     ),
                   ),
-                  const SizedBox(width: 4),
-                  Icon(LucideIcons.chevronsUpDown,
-                      color: palette.accent, size: 14),
+                  if (!isPlayback) ...[
+                    const SizedBox(width: 4),
+                    Icon(LucideIcons.chevronsUpDown,
+                        color: palette.accent, size: 14),
+                  ],
                 ],
               ),
             ],

@@ -19,7 +19,7 @@ void main() {
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         // SessionCubit — global session state (role, store, space, permissions)
-        BlocProvider(create: (_) => SessionCubit()),
+        BlocProvider(create: (_) => sl<SessionCubit>()),
         // PlayerBloc lives above the router so MiniPlayer persists across tabs
         BlocProvider(create: (_) => PlayerBloc()),
         // MusicControlBloc & SpaceMonitoringBloc are global so NowPlayingTab

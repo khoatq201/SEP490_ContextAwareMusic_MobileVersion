@@ -265,6 +265,19 @@ class _LoginPageV2State extends State<LoginPageV2>
                                   : AppColors.textTertiary,
                             ),
                           ),
+                          const SizedBox(height: AppDimensions.spacingLg),
+                          TextButton(
+                            onPressed: () => context.push('/pair-device'),
+                            child: Text(
+                              'Set up as Playback Device',
+                              style: AppTypography.labelMedium.copyWith(
+                                color: isDark
+                                    ? AppColors.textDarkSecondary
+                                    : AppColors.textSecondary,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),

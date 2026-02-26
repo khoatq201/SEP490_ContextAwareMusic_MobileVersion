@@ -11,6 +11,7 @@ import '../../../../core/player/space_info.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
+import '../../../../core/session/session_cubit.dart';
 import '../../../space_control/presentation/bloc/music_control_bloc.dart';
 import '../../../space_control/presentation/bloc/music_control_event.dart';
 import '../../../space_control/presentation/bloc/space_monitoring_bloc.dart';
@@ -299,6 +300,12 @@ class StoreDashboardPage extends StatelessWidget {
       ),
       body: BlocConsumer<StoreDashboardBloc, StoreDashboardState>(
         listener: (context, state) {
+          if (state.status == StoreDashboardStatus.loaded && state.store != null) {
+            final sessionCubit = context.read<SessionCubit>();
+            if (sessionCubit.state.currentStore?.id != state.store!.id) {
+               sessionCubit.changeStore(state.store!);
+            }
+          }
           if (state.status == StoreDashboardStatus.error &&
               state.errorMessage != null) {
             ScaffoldMessenger.of(context).showSnackBar(

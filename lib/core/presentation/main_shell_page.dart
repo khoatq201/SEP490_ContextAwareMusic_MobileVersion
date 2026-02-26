@@ -96,9 +96,9 @@ class MainShellPage extends StatelessWidget {
               _NavItem(
                 index: 4,
                 currentIndex: currentIndex,
-                icon: Icons.router_outlined,
-                activeIcon: Icons.router,
-                label: 'Thiết bị',
+                icon: Icons.location_on_outlined,
+                activeIcon: Icons.location_on,
+                label: 'Location',
                 onTap: () => _onTap(context, 4),
                 activeColor: colorScheme.primary,
               ),

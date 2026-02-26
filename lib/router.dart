@@ -6,6 +6,8 @@ import 'features/auth/presentation/pages/login_page_v2.dart';
 import 'features/auth/presentation/pages/forgot_password_page.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/bloc/auth_state.dart';
+import 'features/device_pairing/presentation/pages/device_pairing_page.dart';
+import 'features/device_pairing/presentation/bloc/device_pairing_bloc.dart';
 import 'features/store_selection/presentation/pages/store_selection_page.dart';
 import 'features/store_selection/presentation/bloc/store_selection_bloc.dart';
 import 'features/store_dashboard/presentation/pages/store_dashboard_page.dart';
@@ -34,6 +36,7 @@ import 'features/library/presentation/pages/library_tab_page.dart';
 import 'features/locations/presentation/pages/locations_tab_page.dart';
 import 'features/context_rules/presentation/pages/context_rules_page.dart';
 import 'features/context_rules/presentation/pages/create_rule_page.dart';
+import 'core/session/session_cubit.dart';
 import 'injection_container.dart';
 
 class AppRouter {
@@ -41,19 +44,41 @@ class AppRouter {
     initialLocation: '/login',
     redirect: (BuildContext context, GoRouterState state) {
       final authBloc = sl<AuthBloc>();
+      final sessionCubit = sl<SessionCubit>();
+      
       final isAuthenticated = authBloc.state.status == AuthStatus.authenticated;
+      final isPaired = sessionCubit.state.isPlaybackDevice;
       final location = state.matchedLocation;
-      final isPublic = location == '/login' || location == '/forgot-password';
+      final isPublic = location == '/login' || location == '/forgot-password' || location == '/pair-device';
 
-      // If not authenticated, gate everything except public routes.
+      // 1. If operating as a paired playback device, force them into the shell (home)
+      // unless they are already on a valid tab. Do not let them go to login.
+      if (isPaired) {
+        if (location == '/login' || location == '/pair-device' || location == '/store-selection') {
+          return '/home';
+        }
+        return null;
+      }
+
+      // 2. If not authenticated and not public, force login.
       if (!isAuthenticated && !isPublic) return '/login';
 
-      // If authenticated and on login, redirect based on store count.
-      if (isAuthenticated && location == '/login') {
+      // 3. Whenever authenticated, ensure role is in sync with user data.
+      if (isAuthenticated) {
         final user = authBloc.state.user;
-        if (user != null && user.storeIds.isNotEmpty) {
-          if (user.storeIds.length > 1) return '/store-selection';
-          return '/store/${user.storeIds.first}';
+        if (user != null) {
+          // Always keep the session role in sync with the user's role.
+          // This guards against any code path that might reset the role.
+          sessionCubit.setRoleFromString(user.role);
+        }
+
+        // If on login/pair page, redirect to appropriate start.
+        if (location == '/login' || location == '/pair-device') {
+          final user = authBloc.state.user;
+          if (user != null && user.storeIds.isNotEmpty) {
+            if (user.storeIds.length > 1) return '/store-selection';
+            return '/store/${user.storeIds.first}';
+          }
         }
       }
 
@@ -77,6 +102,14 @@ class AppRouter {
         builder: (context, state) => BlocProvider.value(
           value: sl<AuthBloc>(),
           child: const ForgotPasswordPage(),
+        ),
+      ),
+      GoRoute(
+        path: '/pair-device',
+        name: 'pair-device',
+        builder: (context, state) => BlocProvider(
+          create: (_) => sl<DevicePairingBloc>(),
+          child: const DevicePairingPage(),
         ),
       ),
 

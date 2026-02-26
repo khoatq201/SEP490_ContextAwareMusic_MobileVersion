@@ -16,24 +16,24 @@ class StoreSelectionRemoteDataSourceImpl
     // Mock data based on storeIds
     final mockStores = <StoreSummaryModel>[
       const StoreSummaryModel(
-        id: 'store-001',
-        name: 'Downtown Store',
+        id: 'store-1',
+        name: 'Highlands Coffee',
         address: '123 Main Street, District 1, Ho Chi Minh City',
-        spacesCount: 5,
+        spacesCount: 2,
         imageUrl: null,
       ),
       const StoreSummaryModel(
-        id: 'store-002',
-        name: 'Shopping Mall Branch',
+        id: 'store-2',
+        name: 'The Coffee House',
         address: '456 Nguyen Hue, District 1, Ho Chi Minh City',
-        spacesCount: 8,
+        spacesCount: 1,
         imageUrl: null,
       ),
       const StoreSummaryModel(
-        id: 'store-003',
+        id: 'store-3',
         name: 'Airport Store',
         address: 'Tan Son Nhat Airport, Tan Binh District, Ho Chi Minh City',
-        spacesCount: 3,
+        spacesCount: 0,
         imageUrl: null,
       ),
     ];

@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../features/home/domain/entities/song_entity.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../core/session/session_cubit.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Enum: the set of actions the user can pick from the bottom sheet
@@ -36,6 +38,8 @@ class SongOptionsBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final session = context.watch<SessionCubit>().state;
+    final isPlayback = session.isPlaybackDevice;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? const Color(0xFF1C1C1E) : Colors.white;
     final cardColor = isDark
@@ -143,8 +147,9 @@ class SongOptionsBottomSheet extends StatelessWidget {
             const SizedBox(height: 8),
             Divider(color: dividerColor, height: 1, indent: 16, endIndent: 16),
 
-            // ── Thêm vào Playlist ────────────────────────────────────────
-            ListTile(
+            if (!isPlayback)
+              // ── Thêm vào Playlist ────────────────────────────────────────
+              ListTile(
               leading: Icon(
                 Icons.playlist_add,
                 color: isDark ? Colors.white70 : Colors.black54,

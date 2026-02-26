@@ -8,6 +8,7 @@ import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../bloc/settings_cubit.dart';
 import '../bloc/settings_state.dart';
+import '../../../../core/session/session_cubit.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -67,9 +68,11 @@ class SettingsPage extends StatelessWidget {
               );
             }
 
+            final session = context.watch<SessionCubit>().state;
+            final isPlayback = session.isPlaybackDevice;
             final authState = context.watch<AuthBloc>().state;
             final user = authState.user;
-            final displayName = _getDisplayName(user?.fullName, user?.username);
+            final displayName = isPlayback ? (session.currentSpace?.name ?? 'Device') : _getDisplayName(user?.fullName, user?.username);
             final snapshot = state.snapshot!;
 
             return ListView(
@@ -79,36 +82,38 @@ class SettingsPage extends StatelessWidget {
                   palette: palette,
                   children: [
                     _SettingsTile(
-                      icon: Icons.person_outline_rounded,
-                      title: 'User',
+                      icon: isPlayback ? Icons.speaker_group_outlined : Icons.person_outline_rounded,
+                      title: isPlayback ? 'Device' : 'User',
                       trailingText: displayName,
                       palette: palette,
                       onTap: () => context.push('/settings/user'),
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
-                _SectionLabel(label: 'COMPANY', palette: palette),
-                const SizedBox(height: 8),
-                _SettingsGroup(
-                  palette: palette,
-                  children: [
-                    _SettingsTile(
-                      icon: Icons.storefront_outlined,
-                      title: snapshot.companyName,
-                      palette: palette,
-                      onTap: () => context.push('/settings/company'),
-                    ),
-                    _Divider(palette: palette),
-                    _SettingsTile(
-                      icon: Icons.explicit_outlined,
-                      title: 'Explicit music',
-                      trailingText: snapshot.explicitMusicLabel,
-                      palette: palette,
-                      onTap: () => context.push('/settings/company'),
-                    ),
-                  ],
-                ),
+                if (!isPlayback) ...[
+                  const SizedBox(height: 20),
+                  _SectionLabel(label: 'COMPANY', palette: palette),
+                  const SizedBox(height: 8),
+                  _SettingsGroup(
+                    palette: palette,
+                    children: [
+                      _SettingsTile(
+                        icon: Icons.storefront_outlined,
+                        title: snapshot.companyName,
+                        palette: palette,
+                        onTap: () => context.push('/settings/company'),
+                      ),
+                      _Divider(palette: palette),
+                      _SettingsTile(
+                        icon: Icons.explicit_outlined,
+                        title: 'Explicit music',
+                        trailingText: snapshot.explicitMusicLabel,
+                        palette: palette,
+                        onTap: () => context.push('/settings/company'),
+                      ),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 20),
                 _SectionLabel(label: 'APP', palette: palette),
                 const SizedBox(height: 8),
