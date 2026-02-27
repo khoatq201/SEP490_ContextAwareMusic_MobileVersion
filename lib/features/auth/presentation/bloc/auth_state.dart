@@ -6,6 +6,7 @@ enum AuthStatus {
   loading,
   authenticated,
   unauthenticated,
+  paired, // New: for Playback Device mode
   error,
   forgotPasswordSuccess
 }

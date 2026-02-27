@@ -8,6 +8,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/player/player_bloc.dart';
+import '../../../../core/player/player_event.dart';
 import '../utils/mood_color_helper.dart';
 
 import '../bloc/music_control_bloc.dart';
@@ -58,6 +60,16 @@ class _SpaceDetailPageState extends State<SpaceDetailPage>
           ),
         );
     context.read<OfflineLibraryBloc>().add(const LoadOfflinePlaylists());
+
+    // ── Global PlayerBloc: register context + attach MusicControlBloc ──
+    final playerBloc = context.read<PlayerBloc>();
+    playerBloc.add(PlayerContextUpdated(
+      storeId: widget.storeId,
+      spaceId: widget.spaceId,
+      spaceName: context.read<SpaceMonitoringBloc>().state.space?.name ??
+          widget.spaceId,
+    ));
+    playerBloc.attachMusicBloc(context.read<MusicControlBloc>());
   }
 
   @override
@@ -65,6 +77,8 @@ class _SpaceDetailPageState extends State<SpaceDetailPage>
     _tabController.dispose();
     context.read<SpaceMonitoringBloc>().add(const StopMonitoring());
     context.read<MusicControlBloc>().add(const StopMusicMonitoring());
+    // Clear global player context when leaving the space
+    context.read<PlayerBloc>().add(const PlayerContextCleared());
     super.dispose();
   }
 
@@ -72,177 +86,190 @@ class _SpaceDetailPageState extends State<SpaceDetailPage>
   Widget build(BuildContext context) {
     final palette = _Palette.fromBrightness(Theme.of(context).brightness);
 
-    return BlocBuilder<SpaceMonitoringBloc, SpaceMonitoringState>(
-      builder: (context, spaceState) {
-        if (spaceState.status == SpaceMonitoringStatus.loading) {
+    // ── Sync MusicControlBloc → global PlayerBloc ────────────────────
+    return BlocListener<MusicControlBloc, MusicControlState>(
+      listener: (context, musicState) {
+        context.read<PlayerBloc>().syncFromMusicState(musicState);
+      },
+      child: BlocBuilder<SpaceMonitoringBloc, SpaceMonitoringState>(
+        builder: (context, spaceState) {
+          if (spaceState.status == SpaceMonitoringStatus.loading) {
+            return Scaffold(
+              backgroundColor: palette.bg,
+              body: _buildLoading(palette),
+            );
+          }
+
+          if (spaceState.status == SpaceMonitoringStatus.error) {
+            return Scaffold(
+              backgroundColor: palette.bg,
+              body: SafeArea(
+                child: _buildError(palette, spaceState.errorMessage),
+              ),
+            );
+          }
+
           return Scaffold(
             backgroundColor: palette.bg,
-            body: _buildLoading(palette),
-          );
-        }
-
-        if (spaceState.status == SpaceMonitoringStatus.error) {
-          return Scaffold(
-            backgroundColor: palette.bg,
-            body: SafeArea(
-              child: _buildError(palette, spaceState.errorMessage),
-            ),
-          );
-        }
-
-        return Scaffold(
-          backgroundColor: palette.bg,
-          body: NestedScrollView(
-            headerSliverBuilder: (context, innerBoxIsScrolled) {
-              return [
-                SliverAppBar(
-                  pinned: true,
-                  floating: true,
-                  backgroundColor: palette.bg,
-                  surfaceTintColor: Colors.transparent,
-                  forceElevated: innerBoxIsScrolled,
-                  elevation: innerBoxIsScrolled ? 2 : 0,
-                  shadowColor: palette.shadow.withOpacity(0.1),
-                  leading: GestureDetector(
-                    onTap: () => context.go('/store/${widget.storeId}'),
-                    child: Container(
-                      margin: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: palette.overlay,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: palette.border),
-                      ),
-                      child: Icon(
-                        LucideIcons.chevronLeft,
-                        color: palette.textPrimary,
+            body: NestedScrollView(
+              headerSliverBuilder: (context, innerBoxIsScrolled) {
+                return [
+                  SliverAppBar(
+                    pinned: true,
+                    floating: true,
+                    backgroundColor: palette.bg,
+                    surfaceTintColor: Colors.transparent,
+                    forceElevated: innerBoxIsScrolled,
+                    elevation: innerBoxIsScrolled ? 2 : 0,
+                    shadowColor: palette.shadow.withOpacity(0.1),
+                    leading: GestureDetector(
+                      onTap: () {
+                        // Pop back to StoreDashboard; if can't pop, go to store route
+                        if (context.canPop()) {
+                          context.pop();
+                        } else {
+                          context.go('/store/${widget.storeId}');
+                        }
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: palette.overlay,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: palette.border),
+                        ),
+                        child: Icon(
+                          LucideIcons.chevronLeft,
+                          color: palette.textPrimary,
+                        ),
                       ),
                     ),
-                  ),
-                  title: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        spaceState.space?.name ?? 'Space',
-                        style: GoogleFonts.poppins(
-                          color: palette.textPrimary,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: spaceState.space?.isOnline ?? false
-                                  ? Colors.green
-                                  : Colors.orange,
-                            ),
+                    title: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          spaceState.space?.name ?? 'Space',
+                          style: GoogleFonts.poppins(
+                            color: palette.textPrimary,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
                           ),
-                          const SizedBox(width: 6),
-                          Text(
-                            spaceState.space?.isOnline ?? false
-                                ? 'Online'
-                                : 'Offline',
-                            style: GoogleFonts.inter(
-                              color: palette.textMuted,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  centerTitle: true,
-                  actions: [
-                    Container(
-                      margin: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: palette.overlay,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: palette.border),
-                      ),
-                      child: IconButton(
-                        icon: Icon(
-                          LucideIcons.settings,
-                          color: palette.textPrimary,
                         ),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => SpaceSettingsPage(
-                                storeId: widget.storeId,
-                                spaceId: widget.spaceId,
-                                spaceName: spaceState.space?.name ?? 'Space',
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: spaceState.space?.isOnline ?? false
+                                    ? Colors.green
+                                    : Colors.orange,
                               ),
                             ),
-                          );
-                        },
-                      ),
+                            const SizedBox(width: 6),
+                            Text(
+                              spaceState.space?.isOnline ?? false
+                                  ? 'Online'
+                                  : 'Offline',
+                              style: GoogleFonts.inter(
+                                color: palette.textMuted,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                  ],
-                  bottom: TabBar(
-                    controller: _tabController,
-                    indicatorColor: palette.accent,
-                    indicatorWeight: 2.5,
-                    indicatorSize: TabBarIndicatorSize.tab,
-                    labelColor: palette.accent,
-                    unselectedLabelColor: palette.textMuted,
-                    dividerColor: palette.border.withOpacity(0.3),
-                    labelStyle: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.5,
-                    ),
-                    unselectedLabelStyle: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    tabs: const [
-                      Tab(
-                        icon: Icon(LucideIcons.music4, size: 18),
-                        text: 'Player',
-                      ),
-                      Tab(
-                        icon: Icon(LucideIcons.activity, size: 18),
-                        text: 'Sensors',
-                      ),
-                      Tab(
-                        icon: Icon(LucideIcons.download, size: 18),
-                        text: 'Offline',
+                    centerTitle: true,
+                    actions: [
+                      Container(
+                        margin: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: palette.overlay,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: palette.border),
+                        ),
+                        child: IconButton(
+                          icon: Icon(
+                            LucideIcons.settings,
+                            color: palette.textPrimary,
+                          ),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => SpaceSettingsPage(
+                                  storeId: widget.storeId,
+                                  spaceId: widget.spaceId,
+                                  spaceName: spaceState.space?.name ?? 'Space',
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                       ),
                     ],
+                    bottom: TabBar(
+                      controller: _tabController,
+                      indicatorColor: palette.accent,
+                      indicatorWeight: 2.5,
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      labelColor: palette.accent,
+                      unselectedLabelColor: palette.textMuted,
+                      dividerColor: palette.border.withOpacity(0.3),
+                      labelStyle: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                      ),
+                      unselectedLabelStyle: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      tabs: const [
+                        Tab(
+                          icon: Icon(LucideIcons.music4, size: 18),
+                          text: 'Player',
+                        ),
+                        Tab(
+                          icon: Icon(LucideIcons.activity, size: 18),
+                          text: 'Sensors',
+                        ),
+                        Tab(
+                          icon: Icon(LucideIcons.download, size: 18),
+                          text: 'Offline',
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ];
-            },
-            body: BlocBuilder<MusicControlBloc, MusicControlState>(
-              builder: (context, musicState) {
-                return TabBarView(
-                  controller: _tabController,
-                  children: [
-                    // Player Tab
-                    _buildPlayerTab(context, spaceState, musicState, palette),
-
-                    // Sensors Tab
-                    _buildSensorsTab(palette),
-
-                    // Offline Tab
-                    SpaceOfflineTab(isDarkMode: palette.isDark),
-                  ],
-                );
+                ];
               },
+              body: BlocBuilder<MusicControlBloc, MusicControlState>(
+                builder: (context, musicState) {
+                  return TabBarView(
+                    controller: _tabController,
+                    children: [
+                      // Player Tab
+                      _buildPlayerTab(context, spaceState, musicState, palette),
+
+                      // Sensors Tab
+                      _buildSensorsTab(palette),
+
+                      // Offline Tab
+                      SpaceOfflineTab(isDarkMode: palette.isDark),
+                    ],
+                  );
+                },
+              ),
             ),
-          ),
-        );
-      },
-    );
+          );
+        },
+      ), // end BlocBuilder
+    ); // end BlocListener
   }
 
   Widget _buildLoading(_Palette palette) {
