@@ -20,11 +20,13 @@ class BrandLocationsView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.business_outlined, size: 48, color: AppColors.textTertiary),
+            const Icon(Icons.business_outlined,
+                size: 48, color: AppColors.textTertiary),
             const SizedBox(height: 12),
             Text(
               'No locations found.',
-              style: GoogleFonts.inter(color: AppColors.textTertiary, fontSize: 14),
+              style: GoogleFonts.inter(
+                  color: AppColors.textTertiary, fontSize: 14),
             ),
           ],
         ),
@@ -40,7 +42,8 @@ class BrandLocationsView extends StatelessWidget {
       itemBuilder: (context, index) {
         final storeId = storeIds[index];
         final spaces = brandSpaces[storeId]!;
-        final storeName = spaces.isNotEmpty ? spaces.first.storeName : 'Unknown Store';
+        final storeName =
+            spaces.isNotEmpty ? spaces.first.storeName : 'Unknown Store';
 
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
@@ -54,10 +57,13 @@ class BrandLocationsView extends StatelessWidget {
             data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
             child: ExpansionTile(
               initiallyExpanded: index == 0,
-              tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              tilePadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              collapsedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+              collapsedShape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
               leading: Container(
                 width: 40,
                 height: 40,
@@ -83,8 +89,11 @@ class BrandLocationsView extends StatelessWidget {
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              trailing: Icon(LucideIcons.chevronDown, color: palette.textMuted, size: 18),
-              children: spaces.map((space) => SpaceManagementTile(space: space)).toList(),
+              trailing: Icon(LucideIcons.chevronDown,
+                  color: palette.textMuted, size: 18),
+              children: spaces
+                  .map((space) => SpaceManagementTile(space: space))
+                  .toList(),
             ),
           ),
         );

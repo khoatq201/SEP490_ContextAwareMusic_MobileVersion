@@ -5,10 +5,10 @@ class MoodDisplayWidget extends StatelessWidget {
   final bool isOffline;
 
   const MoodDisplayWidget({
-    Key? key,
+    super.key,
     this.mood,
     required this.isOffline,
-  }) : super(key: key);
+  });
 
   IconData _getMoodIcon(String? mood) {
     switch (mood?.toLowerCase()) {

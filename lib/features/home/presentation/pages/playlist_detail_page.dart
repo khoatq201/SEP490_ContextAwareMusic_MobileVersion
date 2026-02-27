@@ -181,7 +181,7 @@ class _PlaylistHeader extends StatelessWidget {
     final h = seconds ~/ 3600;
     final m = (seconds % 3600) ~/ 60;
     if (h > 0) return '${h}h ${m}m';
-    return '${m} phút';
+    return '$m phút';
   }
 
   @override
@@ -350,7 +350,7 @@ class _Palette {
         shadow: AppColors.shadowDark,
       );
     }
-    return _Palette(
+    return const _Palette(
       isDark: false,
       bg: AppColors.backgroundPrimary,
       card: AppColors.surface,

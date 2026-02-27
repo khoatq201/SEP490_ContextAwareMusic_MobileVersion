@@ -30,7 +30,8 @@ class _WelcomePageState extends State<WelcomePage>
     );
     _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
     _slideAnim = Tween<Offset>(begin: const Offset(0, 0.14), end: Offset.zero)
-        .animate(CurvedAnimation(parent: _animController, curve: Curves.easeOut));
+        .animate(
+            CurvedAnimation(parent: _animController, curve: Curves.easeOut));
     _animController.forward();
   }
 
@@ -73,7 +74,9 @@ class _WelcomePageState extends State<WelcomePage>
 
               // ── Bottom action area ────────────────────────────────────
               Positioned(
-                left: 0, right: 0, bottom: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
                 child: FadeTransition(
                   opacity: _fadeAnim,
                   child: SlideTransition(
@@ -104,22 +107,28 @@ class _CAMSSymbol extends StatelessWidget {
         children: [
           // Top-left: solid primary
           Positioned(
-            left: 0, top: 0,
+            left: 0,
+            top: 0,
             child: Container(
-              width: s, height: s,
-              decoration: BoxDecoration(
+              width: s,
+              height: s,
+              decoration: const BoxDecoration(
                 color: AppColors.primaryOrange,
-                borderRadius: const BorderRadius.only(
-                  topLeft: r, topRight: r, bottomLeft: r,
+                borderRadius: BorderRadius.only(
+                  topLeft: r,
+                  topRight: r,
+                  bottomLeft: r,
                 ),
               ),
             ),
           ),
           // Top-right: slightly transparent
           Positioned(
-            right: 0, top: 0,
+            right: 0,
+            top: 0,
             child: Container(
-              width: s, height: s,
+              width: s,
+              height: s,
               decoration: BoxDecoration(
                 color: AppColors.primaryOrange.withOpacity(0.7),
                 shape: BoxShape.circle,
@@ -128,9 +137,11 @@ class _CAMSSymbol extends StatelessWidget {
           ),
           // Bottom-left: circle accent
           Positioned(
-            left: 0, bottom: 0,
+            left: 0,
+            bottom: 0,
             child: Container(
-              width: s, height: s,
+              width: s,
+              height: s,
               decoration: BoxDecoration(
                 color: AppColors.primaryOrange.withOpacity(0.5),
                 shape: BoxShape.circle,
@@ -139,10 +150,12 @@ class _CAMSSymbol extends StatelessWidget {
           ),
           // Bottom-right: small dot
           Positioned(
-            right: s * 0.1, bottom: s * 0.1,
+            right: s * 0.1,
+            bottom: s * 0.1,
             child: Container(
-              width: s * 0.65, height: s * 0.65,
-              decoration: BoxDecoration(
+              width: s * 0.65,
+              height: s * 0.65,
+              decoration: const BoxDecoration(
                 color: AppColors.primaryOrange,
                 shape: BoxShape.circle,
               ),
@@ -163,18 +176,50 @@ class _CardCollage extends StatelessWidget {
 
     // Card definitions: [angle, left%, top%, colorHex, label, sublabel]
     final cards = [
-      _CardDef(angle: -0.18, leftF: 0.52, topF: 0.12, color: const Color(0xFF1A3A5C), label: 'Jazz Lounge', sub: 'HOTEL'),
-      _CardDef(angle: 0.08, leftF: 0.1, topF: 0.22, color: const Color(0xFF2C1654), label: 'Night Vibes', sub: 'BAR'),
-      _CardDef(angle: 0.25, leftF: 0.35, topF: 0.30, color: const Color(0xFF1B3A2D), label: 'Chill Afternoon', sub: 'CAFÉ'),
-      _CardDef(angle: -0.08, leftF: 0.55, topF: 0.35, color: const Color(0xFF3A1A1A), label: 'Hip Bar Grooves', sub: 'BAR'),
-      _CardDef(angle: 0.12, leftF: 0.0, topF: 0.38, color: const Color(0xFF1A2C3A), label: 'Retail Rush', sub: 'STORE'),
+      const _CardDef(
+          angle: -0.18,
+          leftF: 0.52,
+          topF: 0.12,
+          color: Color(0xFF1A3A5C),
+          label: 'Jazz Lounge',
+          sub: 'HOTEL'),
+      const _CardDef(
+          angle: 0.08,
+          leftF: 0.1,
+          topF: 0.22,
+          color: Color(0xFF2C1654),
+          label: 'Night Vibes',
+          sub: 'BAR'),
+      const _CardDef(
+          angle: 0.25,
+          leftF: 0.35,
+          topF: 0.30,
+          color: Color(0xFF1B3A2D),
+          label: 'Chill Afternoon',
+          sub: 'CAFÉ'),
+      const _CardDef(
+          angle: -0.08,
+          leftF: 0.55,
+          topF: 0.35,
+          color: Color(0xFF3A1A1A),
+          label: 'Hip Bar Grooves',
+          sub: 'BAR'),
+      const _CardDef(
+          angle: 0.12,
+          leftF: 0.0,
+          topF: 0.38,
+          color: Color(0xFF1A2C3A),
+          label: 'Retail Rush',
+          sub: 'STORE'),
     ];
 
     return Stack(
       children: [
         // Gradient overlay at bottom so cards fade into the action area
         Positioned(
-          left: 0, right: 0, bottom: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
           height: screenH * 0.45,
           child: Container(
             decoration: const BoxDecoration(
@@ -197,8 +242,11 @@ class _CardCollage extends StatelessWidget {
             child: Transform.rotate(
               angle: c.angle,
               child: _SpaceCard(
-                width: cardW, height: cardH,
-                color: c.color, label: c.label, sub: c.sub,
+                width: cardW,
+                height: cardH,
+                color: c.color,
+                label: c.label,
+                sub: c.sub,
               ),
             ),
           );
@@ -212,21 +260,31 @@ class _CardDef {
   final double angle, leftF, topF;
   final Color color;
   final String label, sub;
-  const _CardDef({required this.angle, required this.leftF, required this.topF,
-    required this.color, required this.label, required this.sub});
+  const _CardDef(
+      {required this.angle,
+      required this.leftF,
+      required this.topF,
+      required this.color,
+      required this.label,
+      required this.sub});
 }
 
 class _SpaceCard extends StatelessWidget {
   final double width, height;
   final Color color;
   final String label, sub;
-  const _SpaceCard({required this.width, required this.height, required this.color,
-    required this.label, required this.sub});
+  const _SpaceCard(
+      {required this.width,
+      required this.height,
+      required this.color,
+      required this.label,
+      required this.sub});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: width, height: height,
+      width: width,
+      height: height,
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(12),
@@ -264,19 +322,29 @@ class _SpaceCard extends StatelessWidget {
           ),
           // Label at bottom
           Positioned(
-            bottom: 12, left: 12, right: 12,
+            bottom: 12,
+            left: 12,
+            right: 12,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(sub, style: GoogleFonts.inter(
-                  color: Colors.white54, fontSize: 9, fontWeight: FontWeight.w700,
-                  letterSpacing: 1.5,
-                )),
+                Text(sub,
+                    style: GoogleFonts.inter(
+                      color: Colors.white54,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.5,
+                    )),
                 const SizedBox(height: 2),
-                Text(label, style: GoogleFonts.poppins(
-                  color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700,
-                ), maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text(label,
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
               ],
             ),
           ),
@@ -331,9 +399,11 @@ class _BottomActions extends StatelessWidget {
                   ),
                 );
               },
-              child: Text('Sign up', style: GoogleFonts.poppins(
-                fontSize: 16, fontWeight: FontWeight.w700,
-              )),
+              child: Text('Sign up',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  )),
             ),
           ),
           const SizedBox(height: 12),
@@ -351,9 +421,11 @@ class _BottomActions extends StatelessWidget {
                 ),
               ),
               onPressed: () => context.go('/login'),
-              child: Text('Log in', style: GoogleFonts.poppins(
-                fontSize: 16, fontWeight: FontWeight.w600,
-              )),
+              child: Text('Log in',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  )),
             ),
           ),
           const SizedBox(height: 20),

@@ -1,73 +1,106 @@
 import '../../../../core/error/exceptions.dart';
-import '../models/user_model.dart';
+import '../models/auth_response_model.dart';
+import '../models/profile_response_model.dart';
 import 'auth_remote_datasource.dart';
 
-/// Mock Auth Data Source for demo purposes
-/// Allows login with demo credentials: admin/admin123
+/// Mock Auth Data Source for demo/development purposes.
+/// Allows login with demo credentials: admin@example.com / Admin@123
 class AuthMockDataSource implements AuthRemoteDataSource {
-  final Map<String, UserModel> _mockUsers = {
-    'admin': const UserModel(
-      id: 'demo-admin-001',
-      username: 'admin',
-      email: 'admin@cams-demo.com',
-      fullName: 'Demo Administrator',
-      role: 'admin',
-      storeIds: ['store-1', 'store-2', 'store-3'],
+  static const _mockProfiles = {
+    'admin@example.com': ProfileResponseModel(
+      userId: 'demo-admin-001',
+      email: 'admin@example.com',
+      firstName: 'Demo',
+      lastName: 'Administrator',
+      roles: ['SystemAdmin'],
+      phoneNumber: null,
+      avatarPath: null,
     ),
-    'store': const UserModel(
-      id: 'demo-store-123',
-      username: 'store',
-      email: 'manager@store.com',
-      fullName: 'Store Manager',
-      role: 'store_manager',
-      storeIds: ['store-1'],
+    'store@example.com': ProfileResponseModel(
+      userId: 'demo-store-123',
+      email: 'store@example.com',
+      firstName: 'Store',
+      lastName: 'Manager',
+      roles: ['StoreManager'],
+      phoneNumber: null,
+      avatarPath: null,
     ),
-    'brand': const UserModel(
-      id: 'demo-brand-999',
-      username: 'brand',
-      email: 'director@brand.com',
-      fullName: 'Brand Director',
-      role: 'brand_manager',
-      storeIds: ['store-1', 'store-2', 'store-3'],
+    'brand@example.com': ProfileResponseModel(
+      userId: 'demo-brand-999',
+      email: 'brand@example.com',
+      firstName: 'Brand',
+      lastName: 'Director',
+      roles: ['BrandManager'],
+      phoneNumber: null,
+      avatarPath: null,
     ),
   };
 
+  static const _mockPasswords = {
+    'admin@example.com': 'Admin@123',
+    'store@example.com': 'Store@123',
+    'brand@example.com': 'Brand@123',
+  };
+
+  String? _loggedInEmail;
+
   @override
-  Future<UserModel> login({
-    required String username,
+  Future<AuthResponseModel> login({
+    required String email,
     required String password,
+    bool rememberMe = false,
   }) async {
-    // Simulate network delay
     await Future.delayed(const Duration(milliseconds: 800));
 
-    // Check demo credentials
-    final user = _mockUsers[username.toLowerCase()];
-    if (user != null && password == '${username.toLowerCase()}123') {
-      return user;
+    final expectedPassword = _mockPasswords[email.toLowerCase()];
+    if (expectedPassword != null && password == expectedPassword) {
+      _loggedInEmail = email.toLowerCase();
+      final profile = _mockProfiles[_loggedInEmail]!;
+      return AuthResponseModel(
+        accessToken: 'mock_access_token_${profile.userId}',
+        expiresAt: DateTime.now().add(const Duration(hours: 1)),
+        roles: profile.roles,
+      );
     }
 
-    // Invalid credentials
-    throw ServerException('Invalid username or password');
+    throw ServerException('Invalid email or password');
   }
 
   @override
   Future<void> logout() async {
-    // Simulate network delay
     await Future.delayed(const Duration(milliseconds: 300));
-    // Mock logout - always succeeds
+    _loggedInEmail = null;
   }
 
   @override
-  Future<UserModel> getCurrentUser() async {
-    // Simulate network delay
+  Future<ProfileResponseModel> getProfile() async {
     await Future.delayed(const Duration(milliseconds: 300));
-    return _mockUsers['admin']!;
+    final email = _loggedInEmail ?? 'admin@example.com';
+    return _mockProfiles[email]!;
   }
 
   @override
-  Future<String> requestPasswordReset(String email) async {
-    // Simulate network delay
+  Future<AuthResponseModel> refreshToken() async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    final email = _loggedInEmail ?? 'admin@example.com';
+    final profile = _mockProfiles[email]!;
+    return AuthResponseModel(
+      accessToken: 'mock_refreshed_token_${profile.userId}',
+      expiresAt: DateTime.now().add(const Duration(hours: 1)),
+      roles: profile.roles,
+    );
+  }
+
+  @override
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
     await Future.delayed(const Duration(milliseconds: 500));
-    return 'Password reset instructions have been sent to $email';
+    if (newPassword != confirmPassword) {
+      throw ServerException('New password and confirm password do not match');
+    }
+    // Mock: always succeeds
   }
 }

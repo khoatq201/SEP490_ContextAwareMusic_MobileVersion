@@ -48,8 +48,12 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                   body: SafeArea(
                     bottom: false,
                     child: _buildBody(
-                      context, playerState, spaceState, musicState,
-                      palette, isPlayback,
+                      context,
+                      playerState,
+                      spaceState,
+                      musicState,
+                      palette,
+                      isPlayback,
                     ),
                   ),
                 );
@@ -77,9 +81,11 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
     final duration = playerState.duration;
     final currentPosition = playerState.currentPosition;
     final isPlaying = musicState.status == MusicControlStatus.playing ||
-        (musicState.status == MusicControlStatus.initial && playerState.isPlaying);
+        (musicState.status == MusicControlStatus.initial &&
+            playerState.isPlaying);
 
-    final spaceName = spaceState.space?.name ?? playerState.activeSpaceName ?? 'No Space';
+    final spaceName =
+        spaceState.space?.name ?? playerState.activeSpaceName ?? 'No Space';
     final playlistName = mood?.toUpperCase() ?? 'MUSIC';
 
     // Device label for "Playing from"
@@ -147,12 +153,16 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                           ? Image.network(
                               track!.albumArt!,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => _artPlaceholder(palette),
+                              errorBuilder: (_, __, ___) =>
+                                  _artPlaceholder(palette),
                             )
                           : _artPlaceholder(palette),
                     ),
                   ),
-                ).animate().fadeIn(duration: 380.ms).scale(begin: const Offset(0.96, 0.96)),
+                )
+                    .animate()
+                    .fadeIn(duration: 380.ms)
+                    .scale(begin: const Offset(0.96, 0.96)),
 
                 const SizedBox(height: 28),
 
@@ -198,8 +208,12 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                   volume: _volume,
                   palette: palette,
                   onShuffle: () => setState(() => _isShuffleOn = !_isShuffleOn),
-                  onPlayPause: () => context.read<PlayerBloc>().add(const PlayerPlayPauseToggled()),
-                  onSkip: () => context.read<PlayerBloc>().add(const PlayerSkipRequested()),
+                  onPlayPause: () => context
+                      .read<PlayerBloc>()
+                      .add(const PlayerPlayPauseToggled()),
+                  onSkip: () => context
+                      .read<PlayerBloc>()
+                      .add(const PlayerSkipRequested()),
                   onVolumeChanged: (v) => setState(() => _volume = v),
                 ),
 
@@ -240,7 +254,8 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
   }
 
   // ── Song Options Bottom Sheet ──────────────────────────────────────────────
-  void _showSongOptionsSheet(BuildContext ctx, ps.PlayerState state, _NPPalette palette) {
+  void _showSongOptionsSheet(
+      BuildContext ctx, ps.PlayerState state, _NPPalette palette) {
     final track = state.currentTrack;
     showModalBottomSheet(
       context: ctx,
@@ -257,7 +272,8 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
               const SizedBox(height: 8),
               Center(
                 child: Container(
-                  width: 40, height: 4,
+                  width: 40,
+                  height: 4,
                   decoration: BoxDecoration(
                     color: palette.border,
                     borderRadius: BorderRadius.circular(20),
@@ -273,12 +289,14 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                     ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: SizedBox(
-                        width: 48, height: 48,
+                        width: 48,
+                        height: 48,
                         child: track?.albumArt != null
                             ? Image.network(track!.albumArt!, fit: BoxFit.cover)
                             : Container(
                                 color: palette.overlay,
-                                child: Icon(Icons.music_note, color: palette.textMuted, size: 24),
+                                child: Icon(Icons.music_note,
+                                    color: palette.textMuted, size: 24),
                               ),
                       ),
                     ),
@@ -289,15 +307,20 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                         children: [
                           Text(
                             track?.title ?? 'No track',
-                            maxLines: 1, overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.poppins(
-                              color: palette.textPrimary, fontSize: 15, fontWeight: FontWeight.w600,
+                              color: palette.textPrimary,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                           Text(
                             track?.artist ?? '',
-                            maxLines: 1, overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.inter(color: palette.textMuted, fontSize: 13),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(
+                                color: palette.textMuted, fontSize: 13),
                           ),
                         ],
                       ),
@@ -307,12 +330,36 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
               ),
               const SizedBox(height: 12),
               Divider(color: palette.border, height: 1),
-              _SheetOption(icon: LucideIcons.listMusic, label: 'Go to playlist', palette: palette, onTap: () => Navigator.pop(ctx)),
-              _SheetOption(icon: LucideIcons.listPlus, label: 'Add to playlist', palette: palette, onTap: () => Navigator.pop(ctx)),
-              _SheetOption(icon: LucideIcons.ban, label: 'Block song', palette: palette, onTap: () => Navigator.pop(ctx)),
-              _SheetOption(icon: LucideIcons.listEnd, label: 'Add to queue', palette: palette, onTap: () => Navigator.pop(ctx)),
-              _SheetOption(icon: LucideIcons.disc, label: 'Go to album', palette: palette, onTap: () => Navigator.pop(ctx)),
-              _SheetOption(icon: LucideIcons.mic2, label: 'Go to artist', palette: palette, onTap: () => Navigator.pop(ctx)),
+              _SheetOption(
+                  icon: LucideIcons.listMusic,
+                  label: 'Go to playlist',
+                  palette: palette,
+                  onTap: () => Navigator.pop(ctx)),
+              _SheetOption(
+                  icon: LucideIcons.listPlus,
+                  label: 'Add to playlist',
+                  palette: palette,
+                  onTap: () => Navigator.pop(ctx)),
+              _SheetOption(
+                  icon: LucideIcons.ban,
+                  label: 'Block song',
+                  palette: palette,
+                  onTap: () => Navigator.pop(ctx)),
+              _SheetOption(
+                  icon: LucideIcons.listEnd,
+                  label: 'Add to queue',
+                  palette: palette,
+                  onTap: () => Navigator.pop(ctx)),
+              _SheetOption(
+                  icon: LucideIcons.disc,
+                  label: 'Go to album',
+                  palette: palette,
+                  onTap: () => Navigator.pop(ctx)),
+              _SheetOption(
+                  icon: LucideIcons.mic2,
+                  label: 'Go to artist',
+                  palette: palette,
+                  onTap: () => Navigator.pop(ctx)),
               const SizedBox(height: 16),
             ],
           ),
@@ -322,7 +369,8 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
   }
 
   // ── Queue Bottom Sheet ─────────────────────────────────────────────────────
-  void _showQueueSheet(BuildContext ctx, ps.PlayerState state, _NPPalette palette) {
+  void _showQueueSheet(
+      BuildContext ctx, ps.PlayerState state, _NPPalette palette) {
     final track = state.currentTrack;
     // Mock upcoming tracks for demo
     final upNext = [
@@ -352,7 +400,8 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
               const SizedBox(height: 8),
               Center(
                 child: Container(
-                  width: 40, height: 4,
+                  width: 40,
+                  height: 4,
                   decoration: BoxDecoration(
                     color: palette.border,
                     borderRadius: BorderRadius.circular(20),
@@ -364,14 +413,20 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Queue', style: GoogleFonts.poppins(
-                      color: palette.textPrimary, fontSize: 20, fontWeight: FontWeight.w700,
-                    )),
+                    Text('Queue',
+                        style: GoogleFonts.poppins(
+                          color: palette.textPrimary,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                        )),
                     TextButton(
                       onPressed: () => Navigator.pop(ctx),
-                      child: Text('Clear', style: GoogleFonts.inter(
-                        color: palette.textMuted, fontSize: 14, fontWeight: FontWeight.w600,
-                      )),
+                      child: Text('Clear',
+                          style: GoogleFonts.inter(
+                            color: palette.textMuted,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          )),
                     ),
                   ],
                 ),
@@ -389,9 +444,12 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                child: Text('Up next', style: GoogleFonts.poppins(
-                  color: palette.textPrimary, fontSize: 16, fontWeight: FontWeight.w600,
-                )),
+                child: Text('Up next',
+                    style: GoogleFonts.poppins(
+                      color: palette.textPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    )),
               ),
               Expanded(
                 child: ListView.builder(
@@ -428,9 +486,12 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
 // ── Top Bar ──────────────────────────────────────────────────────────────────
 class _TopBar extends StatelessWidget {
   const _TopBar({
-    required this.spaceName, required this.playlistName,
-    required this.palette, required this.canSwap,
-    required this.onMinimize, required this.onMenu,
+    required this.spaceName,
+    required this.playlistName,
+    required this.palette,
+    required this.canSwap,
+    required this.onMinimize,
+    required this.onMenu,
     this.onTitleTap,
   });
   final String spaceName, playlistName;
@@ -446,7 +507,8 @@ class _TopBar extends StatelessWidget {
       child: Row(
         children: [
           IconButton(
-            icon: Icon(LucideIcons.chevronDown, color: palette.textMuted, size: 26),
+            icon: Icon(LucideIcons.chevronDown,
+                color: palette.textMuted, size: 26),
             onPressed: onMinimize,
           ),
           Expanded(
@@ -462,24 +524,31 @@ class _TopBar extends StatelessWidget {
                       Flexible(
                         child: Text(
                           spaceName,
-                          maxLines: 1, overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.poppins(
-                            color: palette.textPrimary, fontSize: 14, fontWeight: FontWeight.w700,
+                            color: palette.textPrimary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
                       if (canSwap) ...[
                         const SizedBox(width: 4),
-                        Icon(Icons.expand_more, color: palette.textMuted, size: 18),
+                        Icon(Icons.expand_more,
+                            color: palette.textMuted, size: 18),
                       ],
                     ],
                   ),
                   Text(
                     playlistName,
-                    maxLines: 1, overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
-                      color: palette.textMuted, fontSize: 11,
-                      fontWeight: FontWeight.w600, letterSpacing: 1.2,
+                      color: palette.textMuted,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 1.2,
                     ),
                   ),
                 ],
@@ -487,7 +556,8 @@ class _TopBar extends StatelessWidget {
             ),
           ),
           IconButton(
-            icon: Icon(LucideIcons.moreVertical, color: palette.textMuted, size: 22),
+            icon: Icon(LucideIcons.moreVertical,
+                color: palette.textMuted, size: 22),
             onPressed: onMenu,
           ),
         ],
@@ -498,7 +568,10 @@ class _TopBar extends StatelessWidget {
 
 // ── Progress Bar ─────────────────────────────────────────────────────────────
 class _ProgressBar extends StatelessWidget {
-  const _ProgressBar({required this.duration, required this.currentPosition, required this.palette});
+  const _ProgressBar(
+      {required this.duration,
+      required this.currentPosition,
+      required this.palette});
   final int duration, currentPosition;
   final _NPPalette palette;
 
@@ -523,7 +596,9 @@ class _ProgressBar extends StatelessWidget {
             overlayColor: palette.textPrimary.withOpacity(0.15),
           ),
           child: Slider(
-            value: duration > 0 ? currentPosition.clamp(0, duration).toDouble() : 0,
+            value: duration > 0
+                ? currentPosition.clamp(0, duration).toDouble()
+                : 0,
             min: 0,
             max: duration > 0 ? duration.toDouble() : 1,
             onChanged: (_) {},
@@ -534,9 +609,15 @@ class _ProgressBar extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(_fmt(currentPosition), style: GoogleFonts.inter(color: palette.textMuted, fontSize: 12)),
-              Text(duration > 0 ? '-${_fmt(duration - currentPosition)}' : '--:--',
-                  style: GoogleFonts.inter(color: palette.textMuted, fontSize: 12)),
+              Text(_fmt(currentPosition),
+                  style: GoogleFonts.inter(
+                      color: palette.textMuted, fontSize: 12)),
+              Text(
+                  duration > 0
+                      ? '-${_fmt(duration - currentPosition)}'
+                      : '--:--',
+                  style: GoogleFonts.inter(
+                      color: palette.textMuted, fontSize: 12)),
             ],
           ),
         ),
@@ -548,10 +629,14 @@ class _ProgressBar extends StatelessWidget {
 // ── Controls Row ─────────────────────────────────────────────────────────────
 class _ControlsRow extends StatelessWidget {
   const _ControlsRow({
-    required this.isPlaying, required this.isShuffleOn,
-    required this.volume, required this.palette,
-    required this.onShuffle, required this.onPlayPause,
-    required this.onSkip, required this.onVolumeChanged,
+    required this.isPlaying,
+    required this.isShuffleOn,
+    required this.volume,
+    required this.palette,
+    required this.onShuffle,
+    required this.onPlayPause,
+    required this.onSkip,
+    required this.onVolumeChanged,
   });
   final bool isPlaying, isShuffleOn;
   final double volume;
@@ -579,7 +664,8 @@ class _ControlsRow extends StatelessWidget {
             GestureDetector(
               onTap: onPlayPause,
               child: Container(
-                width: 68, height: 68,
+                width: 68,
+                height: 68,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: palette.textPrimary,
@@ -593,14 +679,16 @@ class _ControlsRow extends StatelessWidget {
             ),
             // Skip
             IconButton(
-              icon: Icon(LucideIcons.skipForward, color: palette.textPrimary, size: 28),
+              icon: Icon(LucideIcons.skipForward,
+                  color: palette.textPrimary, size: 28),
               onPressed: onSkip,
             ),
             // Volume
             IconButton(
               icon: Icon(
                 volume > 0 ? LucideIcons.volume2 : LucideIcons.volumeX,
-                color: palette.textMuted, size: 22,
+                color: palette.textMuted,
+                size: 22,
               ),
               onPressed: () {
                 // Toggle mute
@@ -617,8 +705,10 @@ class _ControlsRow extends StatelessWidget {
 // ── Bottom Bar ───────────────────────────────────────────────────────────────
 class _BottomBar extends StatelessWidget {
   const _BottomBar({
-    required this.deviceLabel, required this.isPlayback,
-    required this.palette, required this.onQueue,
+    required this.deviceLabel,
+    required this.isPlayback,
+    required this.palette,
+    required this.onQueue,
   });
   final String deviceLabel;
   final bool isPlayback;
@@ -636,7 +726,8 @@ class _BottomBar extends StatelessWidget {
         children: [
           Icon(
             isPlayback ? LucideIcons.speaker : LucideIcons.smartphone,
-            color: palette.accent, size: 18,
+            color: palette.accent,
+            size: 18,
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -647,15 +738,18 @@ class _BottomBar extends StatelessWidget {
                 Text(
                   'Playing from',
                   style: GoogleFonts.inter(
-                    color: palette.textMuted, fontSize: 10,
+                    color: palette.textMuted,
+                    fontSize: 10,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
                   deviceLabel,
-                  maxLines: 1, overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.poppins(
-                    color: palette.textPrimary, fontSize: 13,
+                    color: palette.textPrimary,
+                    fontSize: 13,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -663,7 +757,8 @@ class _BottomBar extends StatelessWidget {
             ),
           ),
           IconButton(
-            icon: Icon(LucideIcons.listMusic, color: palette.textPrimary, size: 22),
+            icon: Icon(LucideIcons.listMusic,
+                color: palette.textPrimary, size: 22),
             onPressed: onQueue,
           ),
         ],
@@ -674,7 +769,11 @@ class _BottomBar extends StatelessWidget {
 
 // ── Sheet Option ─────────────────────────────────────────────────────────────
 class _SheetOption extends StatelessWidget {
-  const _SheetOption({required this.icon, required this.label, required this.palette, required this.onTap});
+  const _SheetOption(
+      {required this.icon,
+      required this.label,
+      required this.palette,
+      required this.onTap});
   final IconData icon;
   final String label;
   final _NPPalette palette;
@@ -690,9 +789,12 @@ class _SheetOption extends StatelessWidget {
           children: [
             Icon(icon, color: palette.textPrimary, size: 20),
             const SizedBox(width: 16),
-            Text(label, style: GoogleFonts.inter(
-              color: palette.textPrimary, fontSize: 15, fontWeight: FontWeight.w500,
-            )),
+            Text(label,
+                style: GoogleFonts.inter(
+                  color: palette.textPrimary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                )),
           ],
         ),
       ),
@@ -703,8 +805,11 @@ class _SheetOption extends StatelessWidget {
 // ── Queue Track Tile ─────────────────────────────────────────────────────────
 class _QueueTrackTile extends StatelessWidget {
   const _QueueTrackTile({
-    required this.title, required this.artist,
-    this.artUrl, required this.isPlaying, required this.palette,
+    required this.title,
+    required this.artist,
+    this.artUrl,
+    required this.isPlaying,
+    required this.palette,
   });
   final String title, artist;
   final String? artUrl;
@@ -720,12 +825,14 @@ class _QueueTrackTile extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: SizedBox(
-              width: 48, height: 48,
+              width: 48,
+              height: 48,
               child: artUrl != null
                   ? Image.network(artUrl!, fit: BoxFit.cover)
                   : Container(
                       color: palette.overlay,
-                      child: Icon(Icons.music_note, color: palette.textMuted, size: 22),
+                      child: Icon(Icons.music_note,
+                          color: palette.textMuted, size: 22),
                     ),
             ),
           ),
@@ -734,14 +841,22 @@ class _QueueTrackTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, maxLines: 1, overflow: TextOverflow.ellipsis,
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.poppins(
                     color: isPlaying ? palette.accent : palette.textPrimary,
-                    fontSize: 14, fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                Text(artist, maxLines: 1, overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(color: palette.textMuted, fontSize: 12),
+                Text(
+                  artist,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style:
+                      GoogleFonts.inter(color: palette.textMuted, fontSize: 12),
                 ),
               ],
             ),
@@ -763,19 +878,40 @@ class _SensorDashboard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cards = [
-      _SensorCard(icon: LucideIcons.thermometer, label: 'Temperature',
-          value: sensorData != null ? '${sensorData!.temperature.toStringAsFixed(1)}C' : '--',
-          badge: 'Stable', palette: palette, isAlert: false),
-      _SensorCard(icon: LucideIcons.volume2, label: 'Noise',
-          value: sensorData != null ? '${sensorData!.noiseLevel.toStringAsFixed(0)} dB' : '--',
-          badge: _noiseBadge(sensorData?.noiseLevel), palette: palette,
+      _SensorCard(
+          icon: LucideIcons.thermometer,
+          label: 'Temperature',
+          value: sensorData != null
+              ? '${sensorData!.temperature.toStringAsFixed(1)}C'
+              : '--',
+          badge: 'Stable',
+          palette: palette,
+          isAlert: false),
+      _SensorCard(
+          icon: LucideIcons.volume2,
+          label: 'Noise',
+          value: sensorData != null
+              ? '${sensorData!.noiseLevel.toStringAsFixed(0)} dB'
+              : '--',
+          badge: _noiseBadge(sensorData?.noiseLevel),
+          palette: palette,
           isAlert: _noiseBadge(sensorData?.noiseLevel) == 'Loud'),
-      _SensorCard(icon: LucideIcons.users, label: 'Crowd',
+      _SensorCard(
+          icon: LucideIcons.users,
+          label: 'Crowd',
           value: sensorData != null ? _crowdEstimate(sensorData!) : 'N/A',
-          badge: 'Live', palette: palette, isAlert: false),
-      _SensorCard(icon: LucideIcons.cloudRain, label: 'Humidity',
-          value: sensorData != null ? '${sensorData!.humidity.toStringAsFixed(0)}%' : '--',
-          badge: _humidityBadge(sensorData?.humidity), palette: palette, isAlert: false),
+          badge: 'Live',
+          palette: palette,
+          isAlert: false),
+      _SensorCard(
+          icon: LucideIcons.cloudRain,
+          label: 'Humidity',
+          value: sensorData != null
+              ? '${sensorData!.humidity.toStringAsFixed(0)}%'
+              : '--',
+          badge: _humidityBadge(sensorData?.humidity),
+          palette: palette,
+          isAlert: false),
     ];
     return SizedBox(
       height: 140,
@@ -788,35 +924,84 @@ class _SensorDashboard extends StatelessWidget {
     );
   }
 
-  String _noiseBadge(double? n) { if (n == null) return 'N/A'; if (n < 50) return 'Quiet'; if (n < 70) return 'Moderate'; return 'Loud'; }
-  String _crowdEstimate(SensorData d) { if (d.noiseLevel < 45) return 'Low'; if (d.noiseLevel < 65) return 'Medium'; return 'High'; }
-  String _humidityBadge(double? h) { if (h == null) return 'N/A'; if (h < 30) return 'Dry'; if (h < 60) return 'Optimal'; return 'Humid'; }
+  String _noiseBadge(double? n) {
+    if (n == null) return 'N/A';
+    if (n < 50) return 'Quiet';
+    if (n < 70) return 'Moderate';
+    return 'Loud';
+  }
+
+  String _crowdEstimate(SensorData d) {
+    if (d.noiseLevel < 45) return 'Low';
+    if (d.noiseLevel < 65) return 'Medium';
+    return 'High';
+  }
+
+  String _humidityBadge(double? h) {
+    if (h == null) return 'N/A';
+    if (h < 30) return 'Dry';
+    if (h < 60) return 'Optimal';
+    return 'Humid';
+  }
 }
 
 class _SensorCard extends StatelessWidget {
-  const _SensorCard({required this.icon, required this.label, required this.value,
-    required this.badge, required this.palette, required this.isAlert});
-  final IconData icon; final String label, value, badge;
-  final _NPPalette palette; final bool isAlert;
+  const _SensorCard(
+      {required this.icon,
+      required this.label,
+      required this.value,
+      required this.badge,
+      required this.palette,
+      required this.isAlert});
+  final IconData icon;
+  final String label, value, badge;
+  final _NPPalette palette;
+  final bool isAlert;
 
   @override
   Widget build(BuildContext context) {
-    final accentColor = isAlert ? Theme.of(context).colorScheme.error : palette.accent;
+    final accentColor =
+        isAlert ? Theme.of(context).colorScheme.error : palette.accent;
     return Container(
-      width: 160, padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: palette.card, borderRadius: BorderRadius.circular(16), border: Border.all(color: palette.border)),
+      width: 160,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+          color: palette.card,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: palette.border)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: accentColor.withOpacity(0.10), borderRadius: BorderRadius.circular(10)),
-            child: Icon(icon, color: accentColor, size: 18)),
+          Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                  color: accentColor.withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(10)),
+              child: Icon(icon, color: accentColor, size: 18)),
           const Spacer(),
-          Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: palette.overlay, borderRadius: BorderRadius.circular(12), border: Border.all(color: palette.border)),
-            child: Text(badge, style: GoogleFonts.inter(color: palette.textMuted, fontSize: 11, fontWeight: FontWeight.w600))),
+          Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                  color: palette.overlay,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: palette.border)),
+              child: Text(badge,
+                  style: GoogleFonts.inter(
+                      color: palette.textMuted,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600))),
         ]),
         const Spacer(),
-        Text(value, style: GoogleFonts.poppins(color: palette.textPrimary, fontSize: 22, fontWeight: FontWeight.w700)),
+        Text(value,
+            style: GoogleFonts.poppins(
+                color: palette.textPrimary,
+                fontSize: 22,
+                fontWeight: FontWeight.w700)),
         const SizedBox(height: 4),
-        Text(label, style: GoogleFonts.inter(color: palette.textMuted, fontSize: 12, fontWeight: FontWeight.w500)),
+        Text(label,
+            style: GoogleFonts.inter(
+                color: palette.textMuted,
+                fontSize: 12,
+                fontWeight: FontWeight.w500)),
       ]),
     );
   }
@@ -826,8 +1011,13 @@ class _SensorCard extends StatelessWidget {
 // Override Mood CTA (kept from original)
 // ═════════════════════════════════════════════════════════════════════════════
 class _OverrideMoodCTA extends StatelessWidget {
-  const _OverrideMoodCTA({required this.spaceId, required this.currentMood, required this.palette});
-  final String spaceId; final String? currentMood; final _NPPalette palette;
+  const _OverrideMoodCTA(
+      {required this.spaceId,
+      required this.currentMood,
+      required this.palette});
+  final String spaceId;
+  final String? currentMood;
+  final _NPPalette palette;
 
   @override
   Widget build(BuildContext context) {
@@ -839,10 +1029,16 @@ class _OverrideMoodCTA extends StatelessWidget {
       onPressed: () => _openOverrideDialog(context),
       child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Override Mood', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700)),
+          Text('Override Mood',
+              style: GoogleFonts.poppins(
+                  fontSize: 16, fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
-          Text(currentMood != null ? 'Current: ${currentMood!.toUpperCase()}' : 'Set a new atmosphere',
-              style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600)),
+          Text(
+              currentMood != null
+                  ? 'Current: ${currentMood!.toUpperCase()}'
+                  : 'Set a new atmosphere',
+              style:
+                  GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600)),
         ]),
         const Icon(LucideIcons.slidersHorizontal),
       ]),
@@ -851,8 +1047,10 @@ class _OverrideMoodCTA extends StatelessWidget {
 
   void _openOverrideDialog(BuildContext context) {
     showModalBottomSheet(
-      context: context, backgroundColor: palette.card,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      context: context,
+      backgroundColor: palette.card,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (sheetCtx) {
         String mood = currentMood ?? 'happy';
         int durationMin = 30;
@@ -860,39 +1058,93 @@ class _OverrideMoodCTA extends StatelessWidget {
         return StatefulBuilder(
           builder: (ctx, setModalState) => Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
-            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: palette.border, borderRadius: BorderRadius.circular(20)))),
-              const SizedBox(height: 16),
-              Text('Override Mood', style: GoogleFonts.poppins(color: palette.textPrimary, fontSize: 18, fontWeight: FontWeight.w700)),
-              const SizedBox(height: 14),
-              Wrap(spacing: 10, runSpacing: 10, children: moods.map((m) => ChoiceChip(
-                label: Text(m.toUpperCase(), style: GoogleFonts.inter(color: mood == m ? palette.textOnAccent : palette.textPrimary, fontWeight: FontWeight.w700)),
-                selected: mood == m, onSelected: (_) => setModalState(() => mood = m),
-                backgroundColor: palette.overlay, selectedColor: palette.accent,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: palette.border)),
-              )).toList()),
-              const SizedBox(height: 20),
-              Text('Duration (minutes)', style: GoogleFonts.inter(color: palette.textMuted, fontSize: 12)),
-              Slider(value: durationMin.toDouble(), min: 10, max: 120, divisions: 11,
-                activeColor: palette.accent, inactiveColor: palette.textMuted.withOpacity(0.2),
-                label: '$durationMin', onChanged: (v) => setModalState(() => durationMin = v.round())),
-              const SizedBox(height: 8),
-              Row(children: [
-                Expanded(child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(foregroundColor: palette.textMuted, side: BorderSide(color: palette.border),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
-                  onPressed: () => Navigator.pop(sheetCtx), child: const Text('Cancel'))),
-                const SizedBox(width: 12),
-                Expanded(child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: palette.accent, foregroundColor: palette.textOnAccent,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)), padding: const EdgeInsets.symmetric(vertical: 14)),
-                  onPressed: () {
-                    context.read<MusicControlBloc>().add(OverrideMoodRequested(spaceId: spaceId, moodId: mood, duration: durationMin));
-                    Navigator.pop(sheetCtx);
-                  },
-                  child: const Text('Apply', style: TextStyle(fontWeight: FontWeight.w700)))),
-              ]),
-            ]),
+            child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                      child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                              color: palette.border,
+                              borderRadius: BorderRadius.circular(20)))),
+                  const SizedBox(height: 16),
+                  Text('Override Mood',
+                      style: GoogleFonts.poppins(
+                          color: palette.textPrimary,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 14),
+                  Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: moods
+                          .map((m) => ChoiceChip(
+                                label: Text(m.toUpperCase(),
+                                    style: GoogleFonts.inter(
+                                        color: mood == m
+                                            ? palette.textOnAccent
+                                            : palette.textPrimary,
+                                        fontWeight: FontWeight.w700)),
+                                selected: mood == m,
+                                onSelected: (_) =>
+                                    setModalState(() => mood = m),
+                                backgroundColor: palette.overlay,
+                                selectedColor: palette.accent,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                    side: BorderSide(color: palette.border)),
+                              ))
+                          .toList()),
+                  const SizedBox(height: 20),
+                  Text('Duration (minutes)',
+                      style: GoogleFonts.inter(
+                          color: palette.textMuted, fontSize: 12)),
+                  Slider(
+                      value: durationMin.toDouble(),
+                      min: 10,
+                      max: 120,
+                      divisions: 11,
+                      activeColor: palette.accent,
+                      inactiveColor: palette.textMuted.withOpacity(0.2),
+                      label: '$durationMin',
+                      onChanged: (v) =>
+                          setModalState(() => durationMin = v.round())),
+                  const SizedBox(height: 8),
+                  Row(children: [
+                    Expanded(
+                        child: OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                                foregroundColor: palette.textMuted,
+                                side: BorderSide(color: palette.border),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14))),
+                            onPressed: () => Navigator.pop(sheetCtx),
+                            child: const Text('Cancel'))),
+                    const SizedBox(width: 12),
+                    Expanded(
+                        child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                                backgroundColor: palette.accent,
+                                foregroundColor: palette.textOnAccent,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14)),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14)),
+                            onPressed: () {
+                              context.read<MusicControlBloc>().add(
+                                  OverrideMoodRequested(
+                                      spaceId: spaceId,
+                                      moodId: mood,
+                                      duration: durationMin));
+                              Navigator.pop(sheetCtx);
+                            },
+                            child: const Text('Apply',
+                                style:
+                                    TextStyle(fontWeight: FontWeight.w700)))),
+                  ]),
+                ]),
           ),
         );
       },
@@ -905,15 +1157,22 @@ class _OverrideMoodCTA extends StatelessWidget {
 // ═════════════════════════════════════════════════════════════════════════════
 class _SpaceSwapSheet extends StatelessWidget {
   const _SpaceSwapSheet({required this.playerState, required this.palette});
-  final ps.PlayerState playerState; final _NPPalette palette;
+  final ps.PlayerState playerState;
+  final _NPPalette palette;
 
   void _switchSpace(BuildContext context, SpaceInfo space) {
-    context.read<SpaceMonitoringBloc>().add(StartMonitoring(storeId: space.storeId, spaceId: space.id));
-    context.read<MusicControlBloc>().add(StartMusicMonitoring(storeId: space.storeId, spaceId: space.id));
+    context
+        .read<SpaceMonitoringBloc>()
+        .add(StartMonitoring(storeId: space.storeId, spaceId: space.id));
+    context
+        .read<MusicControlBloc>()
+        .add(StartMusicMonitoring(storeId: space.storeId, spaceId: space.id));
     context.read<PlayerBloc>().add(PlayerContextUpdated(
-      storeId: space.storeId, spaceId: space.id, spaceName: space.name,
-      availableSpaces: playerState.availableSpaces,
-    ));
+          storeId: space.storeId,
+          spaceId: space.id,
+          spaceName: space.name,
+          availableSpaces: playerState.availableSpaces,
+        ));
     Navigator.pop(context);
   }
 
@@ -921,53 +1180,104 @@ class _SpaceSwapSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final spaces = playerState.availableSpaces;
     return Container(
-      decoration: BoxDecoration(color: palette.card, borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
-      padding: EdgeInsets.fromLTRB(20, 12, 20, 32 + MediaQuery.of(context).viewInsets.bottom),
-      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: palette.border, borderRadius: BorderRadius.circular(20)))),
-        const SizedBox(height: 20),
-        Row(children: [
-          Icon(Icons.spatial_audio_outlined, color: palette.accent, size: 22),
-          const SizedBox(width: 10),
-          Text('Chọn không gian', style: GoogleFonts.poppins(color: palette.textPrimary, fontSize: 17, fontWeight: FontWeight.w700)),
-        ]),
-        const SizedBox(height: 4),
-        Text('Đổi space sẽ cập nhật cảm biến, nhạc và trạng thái Hub.', style: GoogleFonts.inter(color: palette.textMuted, fontSize: 12)),
-        const SizedBox(height: 16),
-        Divider(color: palette.border, height: 1),
-        if (spaces.isEmpty)
-          Padding(padding: const EdgeInsets.symmetric(vertical: 24), child: Center(child: Text('Không có không gian nào.', style: GoogleFonts.inter(color: palette.textMuted))))
-        else
-          ListView.separated(
-            shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
-            itemCount: spaces.length,
-            separatorBuilder: (_, __) => Divider(color: palette.border, height: 1),
-            itemBuilder: (context, i) {
-              final space = spaces[i];
-              final isActive = space.id == playerState.activeSpaceId;
-              return ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200), width: 42, height: 42,
-                  decoration: BoxDecoration(
-                    color: isActive ? palette.accent.withOpacity(0.15) : palette.overlay,
-                    borderRadius: BorderRadius.circular(12),
-                    border: isActive ? Border.all(color: palette.accent, width: 1.5) : null,
-                  ),
-                  child: Icon(Icons.spatial_audio_outlined, color: isActive ? palette.accent : palette.textMuted, size: 20),
-                ),
-                title: Text(space.name, style: GoogleFonts.inter(color: palette.textPrimary, fontSize: 14, fontWeight: isActive ? FontWeight.w700 : FontWeight.w500)),
-                subtitle: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Container(width: 8, height: 8, decoration: BoxDecoration(shape: BoxShape.circle, color: space.isOnline ? Colors.green : Colors.orange)),
-                  const SizedBox(width: 4),
-                  Text(space.isOnline ? 'Online' : 'Offline', style: GoogleFonts.inter(color: palette.textMuted, fontSize: 11)),
-                ]),
-                trailing: isActive ? Icon(Icons.check_circle_rounded, color: palette.accent, size: 22) : Icon(Icons.chevron_right, color: palette.textMuted, size: 22),
-                onTap: isActive ? null : () => _switchSpace(context, space),
-              );
-            },
-          ),
-      ]),
+      decoration: BoxDecoration(
+          color: palette.card,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
+      padding: EdgeInsets.fromLTRB(
+          20, 12, 20, 32 + MediaQuery.of(context).viewInsets.bottom),
+      child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+                child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                        color: palette.border,
+                        borderRadius: BorderRadius.circular(20)))),
+            const SizedBox(height: 20),
+            Row(children: [
+              Icon(Icons.spatial_audio_outlined,
+                  color: palette.accent, size: 22),
+              const SizedBox(width: 10),
+              Text('Chọn không gian',
+                  style: GoogleFonts.poppins(
+                      color: palette.textPrimary,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700)),
+            ]),
+            const SizedBox(height: 4),
+            Text('Đổi space sẽ cập nhật cảm biến, nhạc và trạng thái Hub.',
+                style:
+                    GoogleFonts.inter(color: palette.textMuted, fontSize: 12)),
+            const SizedBox(height: 16),
+            Divider(color: palette.border, height: 1),
+            if (spaces.isEmpty)
+              Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: Center(
+                      child: Text('Không có không gian nào.',
+                          style: GoogleFonts.inter(color: palette.textMuted))))
+            else
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: spaces.length,
+                separatorBuilder: (_, __) =>
+                    Divider(color: palette.border, height: 1),
+                itemBuilder: (context, i) {
+                  final space = spaces[i];
+                  final isActive = space.id == playerState.activeSpaceId;
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: isActive
+                            ? palette.accent.withOpacity(0.15)
+                            : palette.overlay,
+                        borderRadius: BorderRadius.circular(12),
+                        border: isActive
+                            ? Border.all(color: palette.accent, width: 1.5)
+                            : null,
+                      ),
+                      child: Icon(Icons.spatial_audio_outlined,
+                          color: isActive ? palette.accent : palette.textMuted,
+                          size: 20),
+                    ),
+                    title: Text(space.name,
+                        style: GoogleFonts.inter(
+                            color: palette.textPrimary,
+                            fontSize: 14,
+                            fontWeight:
+                                isActive ? FontWeight.w700 : FontWeight.w500)),
+                    subtitle: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: space.isOnline
+                                  ? Colors.green
+                                  : Colors.orange)),
+                      const SizedBox(width: 4),
+                      Text(space.isOnline ? 'Online' : 'Offline',
+                          style: GoogleFonts.inter(
+                              color: palette.textMuted, fontSize: 11)),
+                    ]),
+                    trailing: isActive
+                        ? Icon(Icons.check_circle_rounded,
+                            color: palette.accent, size: 22)
+                        : Icon(Icons.chevron_right,
+                            color: palette.textMuted, size: 22),
+                    onTap: isActive ? null : () => _switchSpace(context, space),
+                  );
+                },
+              ),
+          ]),
     );
   }
 }
@@ -977,28 +1287,47 @@ class _SpaceSwapSheet extends StatelessWidget {
 // ═════════════════════════════════════════════════════════════════════════════
 class _NPPalette {
   const _NPPalette({
-    required this.isDark, required this.bg, required this.card,
-    required this.overlay, required this.border, required this.textPrimary,
-    required this.textMuted, required this.accent, required this.accentAlt,
-    required this.textOnAccent, required this.shadow,
+    required this.isDark,
+    required this.bg,
+    required this.card,
+    required this.overlay,
+    required this.border,
+    required this.textPrimary,
+    required this.textMuted,
+    required this.accent,
+    required this.accentAlt,
+    required this.textOnAccent,
+    required this.shadow,
   });
 
   factory _NPPalette.fromBrightness(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
     if (isDark) {
-      return _NPPalette(isDark: true, bg: AppColors.backgroundDarkPrimary,
-        card: AppColors.surfaceDark, overlay: Colors.white.withOpacity(0.06),
-        border: AppColors.borderDarkMedium, textPrimary: AppColors.textDarkPrimary,
-        textMuted: AppColors.textDarkSecondary, accent: AppColors.primaryCyan,
-        accentAlt: AppColors.secondaryLime, textOnAccent: AppColors.textDarkPrimary,
-        shadow: AppColors.shadowDark);
+      return _NPPalette(
+          isDark: true,
+          bg: AppColors.backgroundDarkPrimary,
+          card: AppColors.surfaceDark,
+          overlay: Colors.white.withOpacity(0.06),
+          border: AppColors.borderDarkMedium,
+          textPrimary: AppColors.textDarkPrimary,
+          textMuted: AppColors.textDarkSecondary,
+          accent: AppColors.primaryCyan,
+          accentAlt: AppColors.secondaryLime,
+          textOnAccent: AppColors.textDarkPrimary,
+          shadow: AppColors.shadowDark);
     }
-    return _NPPalette(isDark: false, bg: AppColors.backgroundPrimary,
-      card: AppColors.surface, overlay: AppColors.backgroundSecondary,
-      border: AppColors.borderLight, textPrimary: AppColors.textPrimary,
-      textMuted: AppColors.textTertiary, accent: AppColors.primaryOrange,
-      accentAlt: AppColors.secondaryTeal, textOnAccent: AppColors.textInverse,
-      shadow: AppColors.shadow);
+    return const _NPPalette(
+        isDark: false,
+        bg: AppColors.backgroundPrimary,
+        card: AppColors.surface,
+        overlay: AppColors.backgroundSecondary,
+        border: AppColors.borderLight,
+        textPrimary: AppColors.textPrimary,
+        textMuted: AppColors.textTertiary,
+        accent: AppColors.primaryOrange,
+        accentAlt: AppColors.secondaryTeal,
+        textOnAccent: AppColors.textInverse,
+        shadow: AppColors.shadow);
   }
 
   final bool isDark;

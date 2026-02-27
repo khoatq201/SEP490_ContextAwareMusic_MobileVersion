@@ -384,7 +384,7 @@ class _FSPalette {
         shadow: AppColors.shadowDark,
       );
     }
-    return _FSPalette(
+    return const _FSPalette(
       isDark: false,
       bg: AppColors.backgroundPrimary,
       card: AppColors.surface,

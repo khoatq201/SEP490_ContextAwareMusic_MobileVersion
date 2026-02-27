@@ -15,7 +15,7 @@ class MusicControlMockDataSource implements MusicControlRemoteDataSource {
   bool _isPlaying = true;
   int _currentTrackIndex = 0;
   final List<TrackModel> _mockPlaylist = [
-    TrackModel(
+    const TrackModel(
       id: 'track-001',
       title: 'Upbeat Retail Mix Vol.3',
       artist: 'Retail Music Co.',
@@ -23,7 +23,7 @@ class MusicControlMockDataSource implements MusicControlRemoteDataSource {
       moodTags: ['energetic', 'upbeat'],
       duration: 245,
     ),
-    TrackModel(
+    const TrackModel(
       id: 'track-002',
       title: 'Smooth Shopping Vibes',
       artist: 'Ambient Retail',
@@ -31,7 +31,7 @@ class MusicControlMockDataSource implements MusicControlRemoteDataSource {
       moodTags: ['calm', 'ambient'],
       duration: 198,
     ),
-    TrackModel(
+    const TrackModel(
       id: 'track-003',
       title: 'Happy Store Atmosphere',
       artist: 'Retail Sounds',

@@ -58,7 +58,7 @@ class AppTheme {
         foregroundColor: AppColors.textPrimary,
         elevation: AppDimensions.appBarElevation,
         centerTitle: true,
-        iconTheme: IconThemeData(
+        iconTheme: const IconThemeData(
           color: AppColors.primaryOrange,
           size: AppDimensions.iconMd,
         ),
@@ -178,14 +178,14 @@ class AppTheme {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusTextField),
-          borderSide: BorderSide(
+          borderSide: const BorderSide(
             color: AppColors.error,
             width: AppDimensions.borderWidthNormal,
           ),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusTextField),
-          borderSide: BorderSide(
+          borderSide: const BorderSide(
             color: AppColors.error,
             width: AppDimensions.borderWidthThick,
           ),
@@ -295,14 +295,14 @@ class AppTheme {
       // Switch Theme
       // ========================================
       switchTheme: SwitchThemeData(
-        thumbColor: MaterialStateProperty.resolveWith((states) {
-          if (states.contains(MaterialState.selected)) {
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
             return AppColors.primaryOrange;
           }
           return Colors.grey.shade400;
         }),
-        trackColor: MaterialStateProperty.resolveWith((states) {
-          if (states.contains(MaterialState.selected)) {
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
             return AppColors.lightOrange;
           }
           return Colors.grey.shade300;
@@ -312,7 +312,7 @@ class AppTheme {
       // ========================================
       // Text Theme
       // ========================================
-      textTheme: TextTheme(
+      textTheme: const TextTheme(
         displayLarge: AppTypography.displayLarge,
         displayMedium: AppTypography.displayMedium,
         displaySmall: AppTypography.displaySmall,
@@ -388,7 +388,7 @@ class AppTheme {
         foregroundColor: AppColors.textDarkPrimary,
         elevation: AppDimensions.appBarElevation,
         centerTitle: true,
-        iconTheme: IconThemeData(
+        iconTheme: const IconThemeData(
           color: AppColors.primaryCyan,
           size: AppDimensions.iconMd,
         ),
@@ -559,11 +559,11 @@ class AppTheme {
         backgroundColor: AppColors.surfaceDark,
         selectedItemColor: AppColors.primaryCyan,
         unselectedItemColor: AppColors.textDarkTertiary,
-        selectedIconTheme: IconThemeData(
+        selectedIconTheme: const IconThemeData(
           size: AppDimensions.iconMd,
           color: AppColors.primaryCyan,
         ),
-        unselectedIconTheme: IconThemeData(
+        unselectedIconTheme: const IconThemeData(
           size: AppDimensions.iconMd,
           color: AppColors.textDarkTertiary,
         ),
@@ -621,14 +621,14 @@ class AppTheme {
       // Switch Theme - Neon
       // ========================================
       switchTheme: SwitchThemeData(
-        thumbColor: MaterialStateProperty.resolveWith((states) {
-          if (states.contains(MaterialState.selected)) {
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
             return AppColors.primaryCyan;
           }
           return Colors.grey.shade700;
         }),
-        trackColor: MaterialStateProperty.resolveWith((states) {
-          if (states.contains(MaterialState.selected)) {
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
             return AppColors.primaryCyanMuted;
           }
           return Colors.grey.shade800;
@@ -639,21 +639,36 @@ class AppTheme {
       // Text Theme
       // ========================================
       textTheme: TextTheme(
-        displayLarge: AppTypography.displayLarge.copyWith(color: AppColors.textDarkPrimary),
-        displayMedium: AppTypography.displayMedium.copyWith(color: AppColors.textDarkPrimary),
-        displaySmall: AppTypography.displaySmall.copyWith(color: AppColors.textDarkPrimary),
-        headlineLarge: AppTypography.headlineLarge.copyWith(color: AppColors.textDarkPrimary),
-        headlineMedium: AppTypography.headlineMedium.copyWith(color: AppColors.textDarkPrimary),
-        headlineSmall: AppTypography.headlineSmall.copyWith(color: AppColors.textDarkPrimary),
-        titleLarge: AppTypography.titleLarge.copyWith(color: AppColors.textDarkPrimary),
-        titleMedium: AppTypography.titleMedium.copyWith(color: AppColors.textDarkPrimary),
-        titleSmall: AppTypography.titleSmall.copyWith(color: AppColors.textDarkPrimary),
-        bodyLarge: AppTypography.bodyLarge.copyWith(color: AppColors.textDarkPrimary),
-        bodyMedium: AppTypography.bodyMedium.copyWith(color: AppColors.textDarkSecondary),
-        bodySmall: AppTypography.bodySmall.copyWith(color: AppColors.textDarkSecondary),
-        labelLarge: AppTypography.labelLarge.copyWith(color: AppColors.textDarkPrimary),
-        labelMedium: AppTypography.labelMedium.copyWith(color: AppColors.textDarkSecondary),
-        labelSmall: AppTypography.labelSmall.copyWith(color: AppColors.textDarkTertiary),
+        displayLarge: AppTypography.displayLarge
+            .copyWith(color: AppColors.textDarkPrimary),
+        displayMedium: AppTypography.displayMedium
+            .copyWith(color: AppColors.textDarkPrimary),
+        displaySmall: AppTypography.displaySmall
+            .copyWith(color: AppColors.textDarkPrimary),
+        headlineLarge: AppTypography.headlineLarge
+            .copyWith(color: AppColors.textDarkPrimary),
+        headlineMedium: AppTypography.headlineMedium
+            .copyWith(color: AppColors.textDarkPrimary),
+        headlineSmall: AppTypography.headlineSmall
+            .copyWith(color: AppColors.textDarkPrimary),
+        titleLarge:
+            AppTypography.titleLarge.copyWith(color: AppColors.textDarkPrimary),
+        titleMedium: AppTypography.titleMedium
+            .copyWith(color: AppColors.textDarkPrimary),
+        titleSmall:
+            AppTypography.titleSmall.copyWith(color: AppColors.textDarkPrimary),
+        bodyLarge:
+            AppTypography.bodyLarge.copyWith(color: AppColors.textDarkPrimary),
+        bodyMedium: AppTypography.bodyMedium
+            .copyWith(color: AppColors.textDarkSecondary),
+        bodySmall: AppTypography.bodySmall
+            .copyWith(color: AppColors.textDarkSecondary),
+        labelLarge:
+            AppTypography.labelLarge.copyWith(color: AppColors.textDarkPrimary),
+        labelMedium: AppTypography.labelMedium
+            .copyWith(color: AppColors.textDarkSecondary),
+        labelSmall: AppTypography.labelSmall
+            .copyWith(color: AppColors.textDarkTertiary),
       ),
 
       // ========================================

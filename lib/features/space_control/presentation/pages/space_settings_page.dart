@@ -11,11 +11,11 @@ class SpaceSettingsPage extends StatefulWidget {
   final String spaceName;
 
   const SpaceSettingsPage({
-    Key? key,
+    super.key,
     required this.storeId,
     required this.spaceId,
     required this.spaceName,
-  }) : super(key: key);
+  });
 
   @override
   State<SpaceSettingsPage> createState() => _SpaceSettingsPageState();
@@ -24,9 +24,9 @@ class SpaceSettingsPage extends StatefulWidget {
 class _SpaceSettingsPageState extends State<SpaceSettingsPage> {
   // Mock state
   bool _isHubLinked = true;
-  String _hubDeviceName = 'ESP32-X821';
-  String _hubIpAddress = '192.168.1.145';
-  int _connectionStrength = 85; // 0-100
+  final String _hubDeviceName = 'ESP32-X821';
+  final String _hubIpAddress = '192.168.1.145';
+  final int _connectionStrength = 85; // 0-100
 
   AudioOutputMode _audioMode = AudioOutputMode.bluetooth;
   String? _pairedSpeaker = 'JBL Flip 5';

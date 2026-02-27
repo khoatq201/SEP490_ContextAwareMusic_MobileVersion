@@ -442,7 +442,7 @@ class _OfflinePlaylistCard extends StatelessWidget {
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            Icon(
+                            const Icon(
                               LucideIcons.checkCircle2,
                               size: 14,
                               color: Colors.green,

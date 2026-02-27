@@ -11,11 +11,9 @@ class StoreSelectionRepositoryImpl implements StoreSelectionRepository {
   StoreSelectionRepositoryImpl({required this.remoteDataSource});
 
   @override
-  Future<Either<Failure, List<StoreSummary>>> getStoresByIds(
-    List<String> storeIds,
-  ) async {
+  Future<Either<Failure, List<StoreSummary>>> getUserStores() async {
     try {
-      final stores = await remoteDataSource.getStoresByIds(storeIds);
+      final stores = await remoteDataSource.getUserStores();
       return Right(stores);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));

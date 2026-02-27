@@ -5,7 +5,7 @@ import '../bloc/music_control_event.dart';
 import '../bloc/music_control_state.dart';
 
 class MusicPlayerWidget extends StatelessWidget {
-  const MusicPlayerWidget({Key? key}) : super(key: key);
+  const MusicPlayerWidget({super.key});
 
   String _formatDuration(int seconds) {
     final minutes = seconds ~/ 60;

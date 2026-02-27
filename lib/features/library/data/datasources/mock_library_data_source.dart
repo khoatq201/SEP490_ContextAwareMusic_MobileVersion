@@ -6,7 +6,7 @@ import '../../../home/domain/entities/song_entity.dart';
 class MockLibraryDataSource {
   // ── Saved (liked) playlists ────────────────────────────────────────────────
   static List<PlaylistEntity> getSavedPlaylists() => [
-        PlaylistEntity(
+        const PlaylistEntity(
           id: 'lib-1',
           title: 'Chill Retail Vibes',
           description: 'Âm nhạc thư giãn cho giờ thấp điểm',
@@ -14,7 +14,7 @@ class MockLibraryDataSource {
           isDownloaded: true,
           songs: _chillSongs,
         ),
-        PlaylistEntity(
+        const PlaylistEntity(
           id: 'lib-2',
           title: 'Energy Rush',
           description: 'Bật lên khi cửa hàng đông khách',
@@ -22,7 +22,7 @@ class MockLibraryDataSource {
           isDownloaded: true,
           songs: _energySongs,
         ),
-        PlaylistEntity(
+        const PlaylistEntity(
           id: 'lib-3',
           title: 'Deep Work Focus',
           description: 'Nhạc tập trung cho ca tối',
@@ -30,7 +30,7 @@ class MockLibraryDataSource {
           isDownloaded: false,
           songs: _focusSongs,
         ),
-        PlaylistEntity(
+        const PlaylistEntity(
           id: 'lib-4',
           title: 'Weekend Brunch',
           description: 'Nhạc nhẹ cho buổi sáng cuối tuần',
@@ -38,7 +38,7 @@ class MockLibraryDataSource {
           isDownloaded: false,
           songs: _brunchSongs,
         ),
-        PlaylistEntity(
+        const PlaylistEntity(
           id: 'lib-5',
           title: 'Late Night Jazz',
           description: 'Jazz tinh tế cho giờ đóng cửa',

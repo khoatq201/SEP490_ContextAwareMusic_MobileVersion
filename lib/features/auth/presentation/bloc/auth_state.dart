@@ -6,9 +6,9 @@ enum AuthStatus {
   loading,
   authenticated,
   unauthenticated,
-  paired, // New: for Playback Device mode
+  paired, // For Playback Device mode
   error,
-  forgotPasswordSuccess
+  changePasswordSuccess,
 }
 
 class AuthState extends Equatable {

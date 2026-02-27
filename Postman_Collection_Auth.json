@@ -1,0 +1,109 @@
+{
+  "info": {
+    "name": "Log.AI-CAMS - CMS Auth API",
+    "description": "Auth endpoints for CMS (Login, Logout, Get Profile, Refresh Token, Change Password). Base path: /api/auth",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://localhost:7001" },
+    { "key": "accessToken", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth - Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"Admin@123\",\n  \"rememberMe\": false\n}"
+        },
+        "url": "{{baseUrl}}/api/auth/login",
+        "description": "Login to CMS. Returns Result<AuthResponse> with accessToken, expiresAt, roles. On success, accessToken is saved to collection variable for other requests."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "  const json = pm.response.json();",
+              "  if (json.isSuccess && json.data && json.data.accessToken) {",
+              "    pm.collectionVariables.set('accessToken', json.data.accessToken);",
+              "  }",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth - Logout",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+        ],
+        "url": "{{baseUrl}}/api/auth/logout",
+        "description": "Logout from CMS. Clears refresh token in DB and cookie. Requires valid access token. Returns Result (no data)."
+      }
+    },
+    {
+      "name": "Auth - Get Profile",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+        ],
+        "url": "{{baseUrl}}/api/auth/profile",
+        "description": "Get current user profile. Returns Result<ProfileResponse> (email, userId, firstName, lastName, phoneNumber, avatarPath, roles)."
+      }
+    },
+    {
+      "name": "Auth - Refresh Token",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+        ],
+        "url": "{{baseUrl}}/api/auth/refresh-token",
+        "description": "Refresh access token. Uses refresh token from HttpOnly cookie. Expired access token in header is allowed. Returns Result<AuthResponse>. Save new accessToken from response if needed."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "  const json = pm.response.json();",
+              "  if (json.isSuccess && json.data && json.data.accessToken) {",
+              "    pm.collectionVariables.set('accessToken', json.data.accessToken);",
+              "  }",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth - Change Password",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"currentPassword\": \"Admin@123\",\n  \"newPassword\": \"NewPass@123\",\n  \"confirmPassword\": \"NewPass@123\"\n}"
+        },
+        "url": "{{baseUrl}}/api/auth/change-password",
+        "description": "Change password for logged-in user. Requires valid access token. Body: currentPassword, newPassword, confirmPassword. Returns Result (no data)."
+      }
+    }
+  ]
+}

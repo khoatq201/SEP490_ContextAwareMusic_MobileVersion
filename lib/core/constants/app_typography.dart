@@ -186,7 +186,7 @@ class AppTypography {
   );
 
   /// Sensor value display (large numbers)
-  static TextStyle sensorValue = TextStyle(
+  static TextStyle sensorValue = const TextStyle(
     fontFamily: displayFont,
     fontSize: 48,
     fontWeight: FontWeight.w700,
@@ -206,7 +206,7 @@ class AppTypography {
   );
 
   /// Emphasized text for important info
-  static TextStyle emphasized = TextStyle(
+  static TextStyle emphasized = const TextStyle(
     fontFamily: primaryFont,
     fontSize: 16,
     fontWeight: FontWeight.w700,

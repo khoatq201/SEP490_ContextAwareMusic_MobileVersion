@@ -9,10 +9,10 @@ class ManualOverrideWidget extends StatelessWidget {
   final String? currentMood;
 
   const ManualOverrideWidget({
-    Key? key,
+    super.key,
     required this.spaceId,
     this.currentMood,
-  }) : super(key: key);
+  });
 
   void _showOverrideDialog(BuildContext context) {
     String selectedMood = currentMood ?? AppConstants.availableMoods.first;
@@ -32,7 +32,7 @@ class ManualOverrideWidget extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: selectedMood,
+                initialValue: selectedMood,
                 decoration: const InputDecoration(
                   labelText: 'Mood',
                   border: OutlineInputBorder(),

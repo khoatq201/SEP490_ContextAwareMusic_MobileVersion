@@ -53,6 +53,33 @@ class LocalStorageService {
 
   Future<void> clearAuthToken() async {
     await removeToken();
+    await _authBox.delete('token_expiry');
+  }
+
+  /// Save access token expiry time.
+  Future<void> saveAccessTokenExpiry(DateTime expiresAt) async {
+    try {
+      await _authBox.put('token_expiry', expiresAt.toIso8601String());
+    } catch (e) {
+      throw CacheException('Failed to save token expiry');
+    }
+  }
+
+  /// Get access token expiry time.
+  DateTime? getAccessTokenExpiry() {
+    try {
+      final expiry = _authBox.get('token_expiry') as String?;
+      return expiry != null ? DateTime.parse(expiry) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Check if the access token is expired.
+  bool isTokenExpired() {
+    final expiry = getAccessTokenExpiry();
+    if (expiry == null) return true;
+    return DateTime.now().toUtc().isAfter(expiry);
   }
 
   Future<void> saveUser(Map<String, dynamic> user) async {

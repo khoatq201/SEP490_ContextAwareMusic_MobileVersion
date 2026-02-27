@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:ui' as ui;
-import 'dart:typed_data';
 
 // Script to generate placeholder logo PNG
 // Run: dart run assets/generate_logo.dart

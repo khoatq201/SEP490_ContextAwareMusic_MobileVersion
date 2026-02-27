@@ -742,7 +742,7 @@ class _Palette {
         shadow: AppColors.shadowDark,
       );
     }
-    return _Palette(
+    return const _Palette(
       isDark: false,
       bg: AppColors.backgroundPrimary,
       card: AppColors.surface,

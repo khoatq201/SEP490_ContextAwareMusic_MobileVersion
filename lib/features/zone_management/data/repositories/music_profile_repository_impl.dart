@@ -5,7 +5,6 @@ import '../../domain/entities/music_profile.dart';
 import '../../domain/entities/playlist.dart';
 import '../../domain/repositories/music_profile_repository.dart';
 import '../datasources/zone_mock_datasource.dart';
-import '../models/music_profile_model.dart';
 
 class MusicProfileRepositoryImpl implements MusicProfileRepository {
   final ZoneMockDataSource mockDataSource;

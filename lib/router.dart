@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -40,22 +42,46 @@ import 'features/context_rules/presentation/pages/create_rule_page.dart';
 import 'core/session/session_cubit.dart';
 import 'injection_container.dart';
 
+/// Converts a [Stream] into a [Listenable] so GoRouter re-evaluates
+/// its redirect whenever the stream emits a new value.
+class GoRouterRefreshStream extends ChangeNotifier {
+  GoRouterRefreshStream(Stream<dynamic> stream) {
+    notifyListeners(); // initial evaluation
+    _subscription = stream.asBroadcastStream().listen((_) => notifyListeners());
+  }
+
+  late final StreamSubscription<dynamic> _subscription;
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
+  }
+}
+
 class AppRouter {
   static GoRouter router = GoRouter(
     initialLocation: '/welcome',
+    refreshListenable: GoRouterRefreshStream(sl<AuthBloc>().stream),
     redirect: (BuildContext context, GoRouterState state) {
       final authBloc = sl<AuthBloc>();
       final sessionCubit = sl<SessionCubit>();
-      
+
       final isAuthenticated = authBloc.state.status == AuthStatus.authenticated;
       final isPaired = sessionCubit.state.isPlaybackDevice;
       final location = state.matchedLocation;
-      final isPublic = location == '/welcome' || location == '/login' || location == '/forgot-password' || location == '/pair-device';
+      final isPublic = location == '/welcome' ||
+          location == '/login' ||
+          location == '/forgot-password' ||
+          location == '/pair-device';
 
       // 1. If operating as a paired playback device, force them into the shell (home)
       // unless they are already on a valid tab. Do not let them go to login.
       if (isPaired) {
-        if (location == '/welcome' || location == '/login' || location == '/pair-device' || location == '/store-selection') {
+        if (location == '/welcome' ||
+            location == '/login' ||
+            location == '/pair-device' ||
+            location == '/store-selection') {
           return '/home';
         }
         return null;
@@ -73,13 +99,22 @@ class AppRouter {
           sessionCubit.setRoleFromString(user.role);
         }
 
-        // If on welcome/login/pair page, redirect to appropriate start.
-        if (location == '/welcome' || location == '/login' || location == '/pair-device') {
-          final user = authBloc.state.user;
-          if (user != null && user.storeIds.isNotEmpty) {
-            if (user.storeIds.length > 1) return '/store-selection';
-            return '/store/${user.storeIds.first}';
-          }
+        // If on welcome/login/pair page, redirect based on role.
+        if (location == '/welcome' ||
+            location == '/login' ||
+            location == '/pair-device') {
+          return '/store-selection';
+        }
+
+        // Prevent StoreManager from staying on /store-selection.
+        // They should be redirected automatically via the page's BLoC listener,
+        // but if they somehow navigate here after already selecting a store,
+        // send them to their store dashboard.
+        if (location == '/store-selection' &&
+            user != null &&
+            user.isStoreManager &&
+            sessionCubit.state.currentStore != null) {
+          return '/store/${sessionCubit.state.currentStore!.id}';
         }
       }
 

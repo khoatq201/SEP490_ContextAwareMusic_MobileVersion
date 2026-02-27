@@ -12,10 +12,10 @@ class ThemeToggleSwitch extends StatelessWidget {
   final bool glowEffect;
 
   const ThemeToggleSwitch({
-    Key? key,
+    super.key,
     this.showLabel = true,
     this.glowEffect = true,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -28,13 +28,13 @@ class ThemeToggleSwitch extends StatelessWidget {
         vertical: AppDimensions.spacing8,
       ),
       decoration: BoxDecoration(
-        color: isDark 
-            ? AppColors.surfaceDarkElevated 
+        color: isDark
+            ? AppColors.surfaceDarkElevated
             : AppColors.backgroundSecondary,
         borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
         border: Border.all(
-          color: isDark 
-              ? AppColors.primaryCyan.withOpacity(0.3) 
+          color: isDark
+              ? AppColors.primaryCyan.withOpacity(0.3)
               : AppColors.borderLight,
           width: AppDimensions.borderWidthNormal,
         ),
@@ -44,14 +44,15 @@ class ThemeToggleSwitch extends StatelessWidget {
         children: [
           Icon(
             Icons.wb_sunny,
-            color: isDark ? AppColors.textDarkTertiary : AppColors.primaryOrange,
+            color:
+                isDark ? AppColors.textDarkTertiary : AppColors.primaryOrange,
             size: AppDimensions.iconSm,
           ),
           const SizedBox(width: AppDimensions.spacing8),
           Switch(
             value: isDark,
             onChanged: (_) => themeProvider.toggleTheme(),
-            activeColor: AppColors.primaryCyan,
+            activeThumbColor: AppColors.primaryCyan,
             activeTrackColor: AppColors.primaryCyanMuted,
           ),
           const SizedBox(width: AppDimensions.spacing8),
@@ -65,7 +66,8 @@ class ThemeToggleSwitch extends StatelessWidget {
             Text(
               isDark ? 'Dark Mode' : 'Light Mode',
               style: AppTypography.labelMedium.copyWith(
-                color: isDark ? AppColors.textDarkPrimary : AppColors.textPrimary,
+                color:
+                    isDark ? AppColors.textDarkPrimary : AppColors.textPrimary,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -90,7 +92,7 @@ class ThemeToggleSwitch extends StatelessWidget {
 
 /// Floating Action Button for theme toggle
 class ThemeToggleFAB extends StatelessWidget {
-  const ThemeToggleFAB({Key? key}) : super(key: key);
+  const ThemeToggleFAB({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -134,7 +136,7 @@ class ThemeToggleFAB extends StatelessWidget {
 
 /// Theme selector card
 class ThemeSelectorCard extends StatelessWidget {
-  const ThemeSelectorCard({Key? key}) : super(key: key);
+  const ThemeSelectorCard({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -150,7 +152,7 @@ class ThemeSelectorCard extends StatelessWidget {
           color: isDark ? AppColors.borderDarkLight : AppColors.borderLight,
           width: AppDimensions.borderWidthNormal,
         ),
-        boxShadow: isDark 
+        boxShadow: isDark
             ? [
                 BoxShadow(
                   color: AppColors.primaryCyan.withOpacity(0.1),
@@ -180,7 +182,9 @@ class ThemeSelectorCard extends StatelessWidget {
               Text(
                 'Theme Settings',
                 style: AppTypography.titleMedium.copyWith(
-                  color: isDark ? AppColors.textDarkPrimary : AppColors.textPrimary,
+                  color: isDark
+                      ? AppColors.textDarkPrimary
+                      : AppColors.textPrimary,
                 ),
               ),
             ],
@@ -189,11 +193,13 @@ class ThemeSelectorCard extends StatelessWidget {
           const ThemeToggleSwitch(showLabel: true, glowEffect: true),
           const SizedBox(height: AppDimensions.spacingMd),
           Text(
-            isDark 
+            isDark
                 ? 'Minimalist Digital Pulse - Dark mode with cyan & lime neon accents'
                 : 'Adaptive Retail Hub - Light mode with orange & teal theme',
             style: AppTypography.bodySmall.copyWith(
-              color: isDark ? AppColors.textDarkSecondary : AppColors.textSecondary,
+              color: isDark
+                  ? AppColors.textDarkSecondary
+                  : AppColors.textSecondary,
             ),
           ),
         ],

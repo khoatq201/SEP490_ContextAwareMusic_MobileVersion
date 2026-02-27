@@ -17,11 +17,13 @@ class StoreSpacesList extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.location_off_outlined, size: 48, color: AppColors.textTertiary),
+            const Icon(Icons.location_off_outlined,
+                size: 48, color: AppColors.textTertiary),
             const SizedBox(height: 12),
             Text(
               'No spaces found in this store.',
-              style: GoogleFonts.inter(color: AppColors.textTertiary, fontSize: 14),
+              style: GoogleFonts.inter(
+                  color: AppColors.textTertiary, fontSize: 14),
             ),
           ],
         ),
@@ -31,7 +33,8 @@ class StoreSpacesList extends StatelessWidget {
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
       itemCount: spaces.length,
-      itemBuilder: (context, index) => SpaceManagementTile(space: spaces[index]),
+      itemBuilder: (context, index) =>
+          SpaceManagementTile(space: spaces[index]),
     );
   }
 }

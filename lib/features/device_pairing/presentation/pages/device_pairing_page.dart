@@ -7,7 +7,6 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/session/session_cubit.dart';
 import '../../../../features/store_dashboard/domain/entities/store.dart';
 import '../../../../features/space_control/domain/entities/space.dart';
-import '../../../../core/theme/theme_provider.dart';
 import '../bloc/device_pairing_bloc.dart';
 import '../bloc/device_pairing_event.dart';
 import '../bloc/device_pairing_state.dart';
@@ -49,11 +48,15 @@ class _DevicePairingPageState extends State<DevicePairingPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final backgroundColor = isDark ? AppColors.backgroundDarkPrimary : AppColors.backgroundPrimary;
-    final textColorPrimary = isDark ? AppColors.textDarkPrimary : AppColors.textPrimary;
-    final textColorSecondary = isDark ? AppColors.textDarkSecondary : AppColors.textSecondary;
+    final backgroundColor =
+        isDark ? AppColors.backgroundDarkPrimary : AppColors.backgroundPrimary;
+    final textColorPrimary =
+        isDark ? AppColors.textDarkPrimary : AppColors.textPrimary;
+    final textColorSecondary =
+        isDark ? AppColors.textDarkSecondary : AppColors.textSecondary;
     final surfaceColor = isDark ? AppColors.surfaceDark : AppColors.surface;
-    final primaryColor = isDark ? AppColors.primaryCyan : AppColors.primaryOrange;
+    final primaryColor =
+        isDark ? AppColors.primaryCyan : AppColors.primaryOrange;
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -80,13 +83,14 @@ class _DevicePairingPageState extends State<DevicePairingPage> {
                 backgroundColor: AppColors.error,
               ),
             );
-          } else if (state.status == DevicePairingStatus.success && state.pairingResult != null) {
+          } else if (state.status == DevicePairingStatus.success &&
+              state.pairingResult != null) {
             setState(() => _isPairing = false);
-            
+
             // Success! Set up session for playback device
             final result = state.pairingResult!;
             final sessionCubit = context.read<SessionCubit>();
-            
+
             sessionCubit.setPlaybackMode(
               store: Store(
                 id: result.storeId,
@@ -116,7 +120,7 @@ class _DevicePairingPageState extends State<DevicePairingPage> {
                 backgroundColor: AppColors.success,
               ),
             );
-            
+
             context.go('/home');
           }
         },
@@ -161,7 +165,7 @@ class _DevicePairingPageState extends State<DevicePairingPage> {
                     counterText: '',
                     hintText: '000000',
                     hintStyle: GoogleFonts.outfit(
-                       color: textColorSecondary.withAlpha(76),
+                      color: textColorSecondary.withAlpha(76),
                     ),
                     filled: true,
                     fillColor: surfaceColor,

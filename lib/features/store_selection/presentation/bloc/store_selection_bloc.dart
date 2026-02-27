@@ -21,7 +21,7 @@ class StoreSelectionBloc
   ) async {
     emit(StoreSelectionLoading());
 
-    final result = await getUserStores(event.storeIds);
+    final result = await getUserStores();
 
     result.fold(
       (failure) => emit(StoreSelectionError(failure.message)),

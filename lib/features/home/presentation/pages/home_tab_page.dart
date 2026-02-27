@@ -159,7 +159,9 @@ class _HomeSliverAppBar extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    isPlayback ? (session.currentSpace?.name ?? 'Unknown Space') : 'Sảnh Chính',
+                    isPlayback
+                        ? (session.currentSpace?.name ?? 'Unknown Space')
+                        : 'Sảnh Chính',
                     style: GoogleFonts.poppins(
                       color: palette.textPrimary,
                       fontSize: 18,
@@ -191,7 +193,7 @@ class _HomeSliverAppBar extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.all(8),
               child: Icon(LucideIcons.settings,
-                   color: palette.textPrimary, size: 18),
+                  color: palette.textPrimary, size: 18),
             ),
           ),
         ),
@@ -867,7 +869,7 @@ class _Palette {
         shadow: AppColors.shadowDark,
       );
     }
-    return _Palette(
+    return const _Palette(
       isDark: false,
       bg: AppColors.backgroundPrimary,
       card: AppColors.surface,

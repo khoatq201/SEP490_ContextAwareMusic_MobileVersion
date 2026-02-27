@@ -8,8 +8,7 @@ class GetUserStores {
 
   GetUserStores(this.repository);
 
-  Future<Either<Failure, List<StoreSummary>>> call(
-      List<String> storeIds) async {
-    return await repository.getStoresByIds(storeIds);
+  Future<Either<Failure, List<StoreSummary>>> call() async {
+    return await repository.getUserStores();
   }
 }

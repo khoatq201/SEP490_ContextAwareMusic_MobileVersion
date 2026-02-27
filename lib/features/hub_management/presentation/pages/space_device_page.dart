@@ -1214,7 +1214,7 @@ class _Palette {
   factory _Palette.fromBrightness(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
     if (isDark) {
-      return _Palette(
+      return const _Palette(
         isDark: true,
         bg: AppColors.backgroundDarkPrimary,
         card: AppColors.surfaceDark,
@@ -1225,7 +1225,7 @@ class _Palette {
         textOnAccent: AppColors.textDarkPrimary,
       );
     }
-    return _Palette(
+    return const _Palette(
       isDark: false,
       bg: AppColors.backgroundPrimary,
       card: AppColors.surface,

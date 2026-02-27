@@ -6,10 +6,10 @@ class SensorDataWidget extends StatelessWidget {
   final bool isOffline;
 
   const SensorDataWidget({
-    Key? key,
+    super.key,
     this.sensorData,
     required this.isOffline,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -92,12 +92,12 @@ class _SensorCard extends StatelessWidget {
   final Color color;
 
   const _SensorCard({
-    Key? key,
+    super.key,
     required this.icon,
     required this.label,
     required this.value,
     required this.color,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

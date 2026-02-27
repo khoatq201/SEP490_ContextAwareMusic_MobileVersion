@@ -7,7 +7,7 @@ import '../widgets/cams_card.dart';
 
 /// Demo page to showcase all CAMS signature components
 class ComponentShowcasePage extends StatelessWidget {
-  const ComponentShowcasePage({Key? key}) : super(key: key);
+  const ComponentShowcasePage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -38,13 +38,15 @@ class ComponentShowcasePage extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Display Large', style: AppTypography.displayLarge),
+                    const Text('Display Large',
+                        style: AppTypography.displayLarge),
                     const SizedBox(height: 8),
-                    Text('Headline Large', style: AppTypography.headlineLarge),
+                    const Text('Headline Large',
+                        style: AppTypography.headlineLarge),
                     const SizedBox(height: 8),
-                    Text('Title Large', style: AppTypography.titleLarge),
+                    const Text('Title Large', style: AppTypography.titleLarge),
                     const SizedBox(height: 8),
-                    Text('Body Large', style: AppTypography.bodyLarge),
+                    const Text('Body Large', style: AppTypography.bodyLarge),
                     const SizedBox(height: 8),
                     Text(
                       'CAMS Brand',
@@ -143,7 +145,7 @@ class ComponentShowcasePage extends StatelessWidget {
               // Cards Section
               _buildSection(
                 'Cards',
-                Column(
+                const Column(
                   children: [
                     CAMSCard(
                       variant: CAMSCardVariant.solid,
@@ -154,7 +156,7 @@ class ComponentShowcasePage extends StatelessWidget {
                             'Solid Card',
                             style: AppTypography.titleMedium,
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           Text(
                             'This card has a solid background with minimal shadow.',
                             style: AppTypography.bodySmall,
@@ -162,7 +164,7 @@ class ComponentShowcasePage extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(height: AppDimensions.spacingMd),
+                    SizedBox(height: AppDimensions.spacingMd),
                     CAMSCard(
                       variant: CAMSCardVariant.outlined,
                       child: Column(
@@ -172,7 +174,7 @@ class ComponentShowcasePage extends StatelessWidget {
                             'Outlined Card',
                             style: AppTypography.titleMedium,
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           Text(
                             'Card with border outline.',
                             style: AppTypography.bodySmall,
@@ -180,7 +182,7 @@ class ComponentShowcasePage extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(height: AppDimensions.spacingMd),
+                    SizedBox(height: AppDimensions.spacingMd),
                     CAMSCard(
                       variant: CAMSCardVariant.outlined,
                       child: Column(
@@ -190,7 +192,7 @@ class ComponentShowcasePage extends StatelessWidget {
                             'Outlined Card',
                             style: AppTypography.titleMedium,
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           Text(
                             'Card with orange border only.',
                             style: AppTypography.bodySmall,
@@ -207,7 +209,7 @@ class ComponentShowcasePage extends StatelessWidget {
               // Sensor Cards
               _buildSection(
                 'Sensor Cards',
-                Wrap(
+                const Wrap(
                   spacing: AppDimensions.spacingMd,
                   runSpacing: AppDimensions.spacingMd,
                   children: [
@@ -254,20 +256,20 @@ class ComponentShowcasePage extends StatelessWidget {
                 'Info Cards',
                 Column(
                   children: [
-                    CAMSInfoCard(
+                    const CAMSInfoCard(
                       title: 'Space Status',
                       subtitle: 'Currently active',
                       icon: Icons.check_circle,
                       iconColor: AppColors.success,
-                      trailing: const Icon(Icons.chevron_right),
+                      trailing: Icon(Icons.chevron_right),
                     ),
                     const SizedBox(height: AppDimensions.spacingMd),
-                    CAMSInfoCard(
+                    const CAMSInfoCard(
                       title: 'Music Player',
                       subtitle: 'Playing Energetic mood',
                       icon: Icons.music_note,
                       iconColor: AppColors.moodEnergetic,
-                      trailing: const Icon(Icons.pause_circle),
+                      trailing: Icon(Icons.pause_circle),
                     ),
                     const SizedBox(height: AppDimensions.spacingMd),
                     CAMSInfoCard(

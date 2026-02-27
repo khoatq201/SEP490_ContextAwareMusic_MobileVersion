@@ -7,7 +7,7 @@ import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({Key? key}) : super(key: key);
+  const LoginPage({super.key});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -15,13 +15,13 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
 
   @override
   void dispose() {
-    _usernameController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -30,7 +30,7 @@ class _LoginPageState extends State<LoginPage> {
     if (_formKey.currentState!.validate()) {
       context.read<AuthBloc>().add(
             LoginRequested(
-              username: _usernameController.text.trim(),
+              email: _emailController.text.trim(),
               password: _passwordController.text,
             ),
           );
@@ -43,8 +43,8 @@ class _LoginPageState extends State<LoginPage> {
       body: BlocConsumer<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state.status == AuthStatus.authenticated) {
-            // Navigate to home/space detail
-            context.go('/space');
+            // Role-based navigation after login
+            context.go('/store-selection');
           } else if (state.status == AuthStatus.error) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -133,13 +133,15 @@ class _LoginPageState extends State<LoginPage> {
                                 ),
                                 const SizedBox(height: 32),
 
-                                // Username Field
+                                // Email Field
                                 TextFormField(
-                                  controller: _usernameController,
+                                  controller: _emailController,
                                   enabled: !isLoading,
+                                  keyboardType: TextInputType.emailAddress,
                                   decoration: InputDecoration(
-                                    labelText: 'Username',
-                                    prefixIcon: const Icon(Icons.person),
+                                    labelText: 'Email',
+                                    prefixIcon:
+                                        const Icon(Icons.email_outlined),
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
@@ -148,7 +150,7 @@ class _LoginPageState extends State<LoginPage> {
                                   ),
                                   validator: (value) {
                                     if (value == null || value.isEmpty) {
-                                      return 'Please enter your username';
+                                      return 'Please enter your email';
                                     }
                                     return null;
                                   },
@@ -237,7 +239,7 @@ class _LoginPageState extends State<LoginPage> {
                                     onPressed: () {
                                       context.go('/forgot-password');
                                     },
-                                    child: Text(
+                                    child: const Text(
                                       'Forgot Password?',
                                       style: TextStyle(
                                         color: AppColors.primaryOrange,
@@ -259,7 +261,7 @@ class _LoginPageState extends State<LoginPage> {
                                     children: [
                                       Row(
                                         children: [
-                                          Icon(
+                                          const Icon(
                                             Icons.info_outline,
                                             size: 16,
                                             color: AppColors.primaryOrange,

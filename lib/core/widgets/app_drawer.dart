@@ -94,7 +94,7 @@ class AppDrawer extends StatelessWidget {
         AppDimensions.spacingLg,
         AppDimensions.spacingLg,
       ),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         gradient: LinearGradient(
           colors: [
             AppColors.primaryOrange,

@@ -26,7 +26,7 @@ class _CreateRulePageState extends State<CreateRulePage> {
   int _crowdLevelIndex = 1; // 0=Vắng, 1=Bình thường, 2=Đông
 
   // Action state
-  String _selectedPlaylist = 'Chưa chọn';
+  final String _selectedPlaylist = 'Chưa chọn';
 
   static const _crowdLabels = ['Vắng', 'Bình thường', 'Đông'];
 
@@ -141,7 +141,7 @@ class _CreateRulePageState extends State<CreateRulePage> {
                     ),
                     const SizedBox(height: 6),
                     DropdownButtonFormField<String>(
-                      value: _selectedSensorType,
+                      initialValue: _selectedSensorType,
                       hint: Text(
                         'Chọn loại cảm biến…',
                         style: GoogleFonts.inter(
@@ -614,7 +614,7 @@ class _Palette {
         shadow: AppColors.shadowDark,
       );
     }
-    return _Palette(
+    return const _Palette(
       isDark: false,
       bg: AppColors.backgroundPrimary,
       card: AppColors.surface,

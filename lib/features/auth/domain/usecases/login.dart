@@ -9,12 +9,14 @@ class Login {
   Login(this.repository);
 
   Future<Either<Failure, User>> call({
-    required String username,
+    required String email,
     required String password,
+    bool rememberMe = false,
   }) async {
     return await repository.login(
-      username: username,
+      email: email,
       password: password,
+      rememberMe: rememberMe,
     );
   }
 }

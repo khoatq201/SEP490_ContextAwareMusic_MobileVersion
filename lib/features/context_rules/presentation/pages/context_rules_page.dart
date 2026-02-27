@@ -135,10 +135,10 @@ class _ContextRulesPageState extends State<ContextRulesPage> {
           return Padding(
             padding: EdgeInsets.only(bottom: bottomPad),
             child: FloatingActionButton(
-                onPressed: () {
-                  debugPrint('Navigate to Create Rule Page');
-                  context.push(widget.createRulePath);
-                },
+              onPressed: () {
+                debugPrint('Navigate to Create Rule Page');
+                context.push(widget.createRulePath);
+              },
               backgroundColor: palette.accent,
               foregroundColor: palette.textOnAccent,
               elevation: 6,
@@ -384,7 +384,7 @@ class _RuleTile extends StatelessWidget {
                     Switch(
                       value: isEnabled,
                       onChanged: (_) => onToggle(),
-                      activeColor: palette.accent,
+                      activeThumbColor: palette.accent,
                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     const SizedBox(height: 4),
@@ -530,7 +530,7 @@ class _Palette {
         shadow: AppColors.shadowDark,
       );
     }
-    return _Palette(
+    return const _Palette(
       isDark: false,
       bg: AppColors.backgroundPrimary,
       card: AppColors.surface,

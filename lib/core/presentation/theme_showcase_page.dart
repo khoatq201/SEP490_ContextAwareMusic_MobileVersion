@@ -7,7 +7,7 @@ import '../widgets/cams_card.dart';
 
 /// CAMS Theme Showcase - Demo all signature components
 class CAMSThemeShowcase extends StatelessWidget {
-  const CAMSThemeShowcase({Key? key}) : super(key: key);
+  const CAMSThemeShowcase({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -106,24 +106,24 @@ class CAMSThemeShowcase extends StatelessWidget {
             _buildSection(
               title: 'CAMS Cards',
               subtitle: 'Minimal solid & outlined styles',
-              child: Column(
+              child: const Column(
                 children: [
                   // Standard Solid Card
                   CAMSCard(
                     child: Padding(
-                      padding: const EdgeInsets.all(AppDimensions.spacingMd),
+                      padding: EdgeInsets.all(AppDimensions.spacingMd),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             children: [
                               Icon(Icons.store, color: AppColors.primaryOrange),
-                              const SizedBox(width: AppDimensions.spacing8),
+                              SizedBox(width: AppDimensions.spacing8),
                               Text('Store Status',
                                   style: AppTypography.titleMedium),
                             ],
                           ),
-                          const SizedBox(height: AppDimensions.spacing8),
+                          SizedBox(height: AppDimensions.spacing8),
                           Text(
                             'Solid card with standard style',
                             style: AppTypography.bodyMedium,
@@ -133,13 +133,13 @@ class CAMSThemeShowcase extends StatelessWidget {
                     ),
                   ),
 
-                  const SizedBox(height: AppDimensions.spacingMd),
+                  SizedBox(height: AppDimensions.spacingMd),
 
                   // Outlined Card
                   CAMSCard(
                     variant: CAMSCardVariant.outlined,
                     child: Padding(
-                      padding: const EdgeInsets.all(AppDimensions.spacingMd),
+                      padding: EdgeInsets.all(AppDimensions.spacingMd),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -147,12 +147,12 @@ class CAMSThemeShowcase extends StatelessWidget {
                             children: [
                               Icon(Icons.shopping_cart,
                                   color: AppColors.primaryOrange),
-                              const SizedBox(width: AppDimensions.spacing8),
+                              SizedBox(width: AppDimensions.spacing8),
                               Text('Retail Activity',
                                   style: AppTypography.titleMedium),
                             ],
                           ),
-                          const SizedBox(height: AppDimensions.spacing8),
+                          SizedBox(height: AppDimensions.spacing8),
                           Text(
                             'Card with border outline',
                             style: AppTypography.bodyMedium,

@@ -18,7 +18,7 @@ class CAMSCard extends StatelessWidget {
   final Gradient? borderGradient;
 
   const CAMSCard({
-    Key? key,
+    super.key,
     required this.child,
     this.padding,
     this.width,
@@ -30,7 +30,7 @@ class CAMSCard extends StatelessWidget {
     this.gradient,
     this.hasGradientBorder = false,
     this.borderGradient,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -143,7 +143,7 @@ class CAMSSensorCard extends StatelessWidget {
   final VoidCallback? onTap;
 
   const CAMSSensorCard({
-    Key? key,
+    super.key,
     required this.label,
     required this.value,
     required this.unit,
@@ -151,7 +151,7 @@ class CAMSSensorCard extends StatelessWidget {
     this.iconColor,
     this.valueColor,
     this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -235,14 +235,14 @@ class CAMSInfoCard extends StatelessWidget {
   final Widget? trailing;
 
   const CAMSInfoCard({
-    Key? key,
+    super.key,
     required this.title,
     required this.subtitle,
     required this.icon,
     this.iconColor,
     this.onTap,
     this.trailing,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

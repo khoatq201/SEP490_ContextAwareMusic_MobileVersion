@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'injection_container.dart';
 import 'router.dart';
+import 'core/network/dio_client.dart';
 import 'core/services/local_storage_service.dart';
 import 'core/services/mqtt_service.dart';
 import 'core/presentation/splash_screen.dart';
@@ -51,6 +52,10 @@ class _MyAppState extends State<MyApp> {
     // Initialize local storage
     final localStorage = sl<LocalStorageService>();
     await localStorage.init();
+
+    // Initialize cookie jar for HttpOnly refresh token cookies
+    final dioClient = sl<DioClient>();
+    await dioClient.initCookieJar();
 
     // Initialize MQTT connection
     final mqttService = sl<MqttService>();

@@ -20,8 +20,10 @@ class LocationsTabPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final session = context.watch<SessionCubit>().state;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? AppColors.backgroundDarkPrimary : AppColors.backgroundPrimary;
-    final textColor = isDark ? AppColors.textDarkPrimary : AppColors.textPrimary;
+    final bgColor =
+        isDark ? AppColors.backgroundDarkPrimary : AppColors.backgroundPrimary;
+    final textColor =
+        isDark ? AppColors.textDarkPrimary : AppColors.textPrimary;
 
     // Derive role from AuthBloc (source of truth) instead of SessionCubit
     final userRole = sl<AuthBloc>().state.user?.role.toLowerCase() ?? '';
@@ -44,7 +46,8 @@ class LocationsTabPage extends StatelessWidget {
     }
 
     return BlocProvider(
-      create: (context) => sl<LocationBloc>()..add(const LoadLocationsRequested()),
+      create: (context) =>
+          sl<LocationBloc>()..add(const LoadLocationsRequested()),
       child: Scaffold(
         backgroundColor: bgColor,
         appBar: AppBar(
@@ -65,7 +68,9 @@ class LocationsTabPage extends StatelessWidget {
                 Text(
                   subtitle,
                   style: GoogleFonts.inter(
-                    color: isDark ? AppColors.textDarkSecondary : AppColors.textTertiary,
+                    color: isDark
+                        ? AppColors.textDarkSecondary
+                        : AppColors.textTertiary,
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                   ),
@@ -76,10 +81,12 @@ class LocationsTabPage extends StatelessWidget {
         ),
         body: BlocBuilder<LocationBloc, LocationState>(
           builder: (context, state) {
-            if (state.status == LocationStatus.loading || state.status == LocationStatus.initial) {
+            if (state.status == LocationStatus.loading ||
+                state.status == LocationStatus.initial) {
               return Center(
                 child: CircularProgressIndicator(
-                  color: isDark ? AppColors.primaryCyan : AppColors.primaryOrange,
+                  color:
+                      isDark ? AppColors.primaryCyan : AppColors.primaryOrange,
                 ),
               );
             }
@@ -89,16 +96,22 @@ class LocationsTabPage extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.error_outline_rounded, size: 40, color: AppColors.error),
+                    const Icon(Icons.error_outline_rounded,
+                        size: 40, color: AppColors.error),
                     const SizedBox(height: 12),
                     Text(
                       state.errorMessage ?? 'Cannot load locations.',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(color: isDark ? AppColors.textDarkSecondary : AppColors.textSecondary),
+                      style: GoogleFonts.inter(
+                          color: isDark
+                              ? AppColors.textDarkSecondary
+                              : AppColors.textSecondary),
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton(
-                      onPressed: () => context.read<LocationBloc>().add(const LoadLocationsRequested()),
+                      onPressed: () => context
+                          .read<LocationBloc>()
+                          .add(const LoadLocationsRequested()),
                       child: const Text('Retry'),
                     ),
                   ],

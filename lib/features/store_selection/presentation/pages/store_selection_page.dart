@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_typography.dart';
-import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../bloc/store_selection_bloc.dart';
@@ -22,16 +21,17 @@ class StoreSelectionPage extends StatefulWidget {
 class _StoreSelectionPageState extends State<StoreSelectionPage> {
   final _searchController = TextEditingController();
 
+  /// Whether the current user is a StoreManager (should skip store selection).
+  bool get _isStoreManager {
+    final user = context.read<AuthBloc>().state.user;
+    return user != null && user.isStoreManager;
+  }
+
   @override
   void initState() {
     super.initState();
-    final authState = context.read<AuthBloc>().state;
-    if (authState.status == AuthStatus.authenticated &&
-        authState.user != null) {
-      context.read<StoreSelectionBloc>().add(
-            LoadUserStores(authState.user!.storeIds),
-          );
-    }
+    // Load stores — backend filters by JWT token (no storeIds needed)
+    context.read<StoreSelectionBloc>().add(const LoadUserStores());
   }
 
   @override
@@ -54,24 +54,42 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
         backgroundColor: isDark
             ? AppColors.backgroundDarkPrimary
             : AppColors.backgroundPrimary,
-        appBar: AppBar(
-          title: const Text('Select Store'),
-          automaticallyImplyLeading: false,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.logout),
-              onPressed: () => _showLogoutDialog(context),
-              tooltip: 'Logout',
-            ),
-          ],
-        ),
+        appBar: _isStoreManager
+            ? null // StoreManager sees a loading screen, no app bar
+            : AppBar(
+                title: const Text('Select Store'),
+                automaticallyImplyLeading: false,
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.logout),
+                    onPressed: () => _showLogoutDialog(context),
+                    tooltip: 'Logout',
+                  ),
+                ],
+              ),
         body: BlocConsumer<StoreSelectionBloc, StoreSelectionState>(
           listener: (context, state) {
             if (state is StoreSelected) {
               context.go('/store/${state.storeId}');
             }
+            // Auto-navigate StoreManager to their store
+            if (state is StoreSelectionLoaded && _isStoreManager) {
+              if (state.stores.isNotEmpty) {
+                // StoreManager always manages exactly one store
+                context.go('/store/${state.stores.first.id}');
+              }
+            }
           },
           builder: (context, state) {
+            // ── StoreManager: always show a loading/redirecting screen ──
+            if (_isStoreManager) {
+              if (state is StoreSelectionError) {
+                return _buildStoreManagerError(state.message);
+              }
+              return _buildStoreManagerLoading();
+            }
+
+            // ── BrandManager / SystemAdmin: full store selection UI ──
             if (state is StoreSelectionLoading) {
               return const Center(child: CircularProgressIndicator());
             }
@@ -87,7 +105,7 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                       color: Colors.red,
                     ),
                     const SizedBox(height: 16),
-                    Text(
+                    const Text(
                       'Error loading stores',
                       style: AppTypography.titleLarge,
                     ),
@@ -100,13 +118,9 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                     const SizedBox(height: 24),
                     ElevatedButton.icon(
                       onPressed: () {
-                        final authState = context.read<AuthBloc>().state;
-                        if (authState.status == AuthStatus.authenticated &&
-                            authState.user != null) {
-                          context.read<StoreSelectionBloc>().add(
-                                LoadUserStores(authState.user!.storeIds),
-                              );
-                        }
+                        context.read<StoreSelectionBloc>().add(
+                              const LoadUserStores(),
+                            );
                       },
                       icon: const Icon(Icons.refresh),
                       label: const Text('Retry'),
@@ -133,6 +147,57 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
             return const SizedBox.shrink();
           },
         ),
+      ),
+    );
+  }
+
+  /// Loading screen shown to StoreManager while fetching their store.
+  Widget _buildStoreManagerLoading() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const CircularProgressIndicator(),
+          const SizedBox(height: 24),
+          Text(
+            'Loading your store...',
+            style: AppTypography.titleMedium.copyWith(
+              color: isDark ? AppColors.textDarkSecondary : Colors.grey[600],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Error screen for StoreManager when store fetch fails.
+  Widget _buildStoreManagerError(String message) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, size: 64, color: Colors.red),
+          const SizedBox(height: 16),
+          const Text('Could not load your store',
+              style: AppTypography.titleLarge),
+          const SizedBox(height: 8),
+          Text(message,
+              style: AppTypography.bodyMedium, textAlign: TextAlign.center),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () {
+              context.read<StoreSelectionBloc>().add(const LoadUserStores());
+            },
+            icon: const Icon(Icons.refresh),
+            label: const Text('Retry'),
+          ),
+          const SizedBox(height: 12),
+          TextButton(
+            onPressed: () => _showLogoutDialog(context),
+            child: const Text('Logout'),
+          ),
+        ],
       ),
     );
   }
@@ -244,7 +309,7 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                   color: AppColors.primaryOrange.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Center(
+                child: const Center(
                   child: Icon(
                     Icons.store,
                     size: 36,
@@ -298,7 +363,7 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.space_dashboard,
                       size: 14,
                       color: AppColors.secondaryTeal,
@@ -335,7 +400,7 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
           TextButton(
             onPressed: () {
               Navigator.of(dialogContext).pop();
-              context.read<AuthBloc>().add(LogoutRequested());
+              context.read<AuthBloc>().add(const LogoutRequested());
             },
             child: const Text('Logout'),
           ),

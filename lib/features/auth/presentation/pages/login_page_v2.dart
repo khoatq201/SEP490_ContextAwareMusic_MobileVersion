@@ -12,7 +12,7 @@ import '../bloc/auth_state.dart';
 
 /// Enhanced Login Page with CAMS Signature Components
 class LoginPageV2 extends StatefulWidget {
-  const LoginPageV2({Key? key}) : super(key: key);
+  const LoginPageV2({super.key});
 
   @override
   State<LoginPageV2> createState() => _LoginPageV2State();
@@ -21,9 +21,10 @@ class LoginPageV2 extends StatefulWidget {
 class _LoginPageV2State extends State<LoginPageV2>
     with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
+  bool _rememberMe = false;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
@@ -43,7 +44,7 @@ class _LoginPageV2State extends State<LoginPageV2>
 
   @override
   void dispose() {
-    _usernameController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     _animationController.dispose();
     super.dispose();
@@ -53,19 +54,21 @@ class _LoginPageV2State extends State<LoginPageV2>
     if (_formKey.currentState!.validate()) {
       context.read<AuthBloc>().add(
             LoginRequested(
-              username: _usernameController.text.trim(),
+              email: _emailController.text.trim(),
               password: _passwordController.text,
+              rememberMe: _rememberMe,
             ),
           );
     }
   }
 
-  String? _validateUsername(String? value) {
+  String? _validateEmail(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Please enter your username';
+      return 'Please enter your email';
     }
-    if (value.length < 3) {
-      return 'Username must be at least 3 characters';
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegex.hasMatch(value)) {
+      return 'Please enter a valid email address';
     }
     return null;
   }
@@ -86,15 +89,8 @@ class _LoginPageV2State extends State<LoginPageV2>
       body: BlocConsumer<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state.status == AuthStatus.authenticated) {
-            // Let router handle the redirect based on store count
-            final user = state.user;
-            if (user != null && user.storeIds.isNotEmpty) {
-              if (user.storeIds.length > 1) {
-                context.go('/store-selection');
-              } else {
-                context.go('/store/${user.storeIds.first}');
-              }
-            }
+            // Role-based navigation after login
+            context.go('/store-selection');
           } else if (state.status == AuthStatus.error) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -179,12 +175,13 @@ class _LoginPageV2State extends State<LoginPageV2>
                                 ),
                                 const SizedBox(height: AppDimensions.spacingLg),
                                 TextFormField(
-                                  controller: _usernameController,
-                                  validator: _validateUsername,
+                                  controller: _emailController,
+                                  validator: _validateEmail,
+                                  keyboardType: TextInputType.emailAddress,
                                   decoration: const InputDecoration(
-                                    labelText: 'Username',
-                                    hintText: 'Enter your username',
-                                    prefixIcon: Icon(Icons.person_outline),
+                                    labelText: 'Email',
+                                    hintText: 'Enter your email',
+                                    prefixIcon: Icon(Icons.email_outlined),
                                   ),
                                   textInputAction: TextInputAction.next,
                                 ),
@@ -215,23 +212,47 @@ class _LoginPageV2State extends State<LoginPageV2>
                                   onFieldSubmitted: (_) => _handleLogin(),
                                 ),
                                 const SizedBox(height: AppDimensions.spacingMd),
-                                Align(
-                                  alignment: Alignment.centerRight,
-                                  child: TextButton(
-                                    onPressed: () =>
-                                        context.go('/forgot-password'),
-                                    child: Text(
-                                      'Forgot Password?',
-                                      style: AppTypography.labelMedium.copyWith(
-                                        color: isDark
-                                            ? AppColors.primaryCyan
-                                            : AppColors.primaryOrange,
+                                Row(
+                                  children: [
+                                    SizedBox(
+                                      height: 24,
+                                      width: 24,
+                                      child: Checkbox(
+                                        value: _rememberMe,
+                                        onChanged: (value) {
+                                          setState(() {
+                                            _rememberMe = value ?? false;
+                                          });
+                                        },
                                       ),
                                     ),
-                                  ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Remember me',
+                                      style: AppTypography.bodySmall.copyWith(
+                                        color: isDark
+                                            ? AppColors.textDarkSecondary
+                                            : AppColors.textSecondary,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    TextButton(
+                                      onPressed: () =>
+                                          context.go('/forgot-password'),
+                                      child: Text(
+                                        'Forgot Password?',
+                                        style:
+                                            AppTypography.labelMedium.copyWith(
+                                          color: isDark
+                                              ? AppColors.primaryCyan
+                                              : AppColors.primaryOrange,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                                 const SizedBox(height: AppDimensions.spacingMd),
-                                 SizedBox(
+                                SizedBox(
                                   height: AppDimensions.buttonHeightLg,
                                   width: double.infinity,
                                   child: ElevatedButton.icon(
@@ -256,14 +277,26 @@ class _LoginPageV2State extends State<LoginPageV2>
                                 const SizedBox(height: AppDimensions.spacingMd),
                                 // ── Divider OR ──
                                 Row(children: [
-                                  Expanded(child: Divider(color: isDark ? AppColors.borderDarkMedium : AppColors.borderLight)),
+                                  Expanded(
+                                      child: Divider(
+                                          color: isDark
+                                              ? AppColors.borderDarkMedium
+                                              : AppColors.borderLight)),
                                   Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                                    child: Text('or', style: AppTypography.bodySmall.copyWith(
-                                      color: isDark ? AppColors.textDarkTertiary : AppColors.textTertiary,
-                                    )),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12),
+                                    child: Text('or',
+                                        style: AppTypography.bodySmall.copyWith(
+                                          color: isDark
+                                              ? AppColors.textDarkTertiary
+                                              : AppColors.textTertiary,
+                                        )),
                                   ),
-                                  Expanded(child: Divider(color: isDark ? AppColors.borderDarkMedium : AppColors.borderLight)),
+                                  Expanded(
+                                      child: Divider(
+                                          color: isDark
+                                              ? AppColors.borderDarkMedium
+                                              : AppColors.borderLight)),
                                 ]),
                                 const SizedBox(height: AppDimensions.spacingMd),
                                 // ── Google Sign In ──
@@ -272,27 +305,37 @@ class _LoginPageV2State extends State<LoginPageV2>
                                   width: double.infinity,
                                   child: OutlinedButton.icon(
                                     style: OutlinedButton.styleFrom(
-                                      foregroundColor: isDark ? AppColors.textDarkPrimary : AppColors.textPrimary,
+                                      foregroundColor: isDark
+                                          ? AppColors.textDarkPrimary
+                                          : AppColors.textPrimary,
                                       side: BorderSide(
-                                        color: isDark ? AppColors.borderDarkMedium : AppColors.borderMedium,
+                                        color: isDark
+                                            ? AppColors.borderDarkMedium
+                                            : AppColors.borderMedium,
                                       ),
                                       shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+                                        borderRadius: BorderRadius.circular(
+                                            AppDimensions.radiusMd),
                                       ),
                                     ),
                                     onPressed: () {
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
                                         SnackBar(
-                                          content: const Text('Google sign-in coming soon!'),
-                                          backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
+                                          content: const Text(
+                                              'Google sign-in coming soon!'),
+                                          backgroundColor: isDark
+                                              ? AppColors.surfaceDark
+                                              : Colors.white,
                                           behavior: SnackBarBehavior.floating,
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+                                            borderRadius: BorderRadius.circular(
+                                                AppDimensions.radiusMd),
                                           ),
                                         ),
                                       );
                                     },
-                                    icon: _GoogleIcon(),
+                                    icon: const _GoogleIcon(),
                                     label: const Text('Continue with Google'),
                                   ),
                                 ),

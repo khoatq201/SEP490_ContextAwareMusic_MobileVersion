@@ -29,10 +29,10 @@ class SpaceDetailPage extends StatefulWidget {
   final String spaceId;
 
   const SpaceDetailPage({
-    Key? key,
+    super.key,
     required this.storeId,
     required this.spaceId,
-  }) : super(key: key);
+  });
 
   @override
   State<SpaceDetailPage> createState() => _SpaceDetailPageState();
@@ -1149,7 +1149,7 @@ class _MoodBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(LucideIcons.flame, color: Colors.white, size: 16),
+          const Icon(LucideIcons.flame, color: Colors.white, size: 16),
           const SizedBox(width: 6),
           Text(
             mood!,
@@ -1567,7 +1567,7 @@ class _Palette {
       );
     }
 
-    return _Palette(
+    return const _Palette(
       isDark: false,
       bg: AppColors.backgroundPrimary,
       card: AppColors.surface,

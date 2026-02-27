@@ -1,8 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../domain/usecases/change_password.dart';
 import '../../domain/usecases/get_current_user.dart';
 import '../../domain/usecases/login.dart';
 import '../../domain/usecases/logout.dart';
-import '../../domain/usecases/request_password_reset.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 
@@ -10,19 +10,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final Login login;
   final Logout logout;
   final GetCurrentUser getCurrentUser;
-  final RequestPasswordReset requestPasswordReset;
+  final ChangePassword changePassword;
 
   AuthBloc({
     required this.login,
     required this.logout,
     required this.getCurrentUser,
-    required this.requestPasswordReset,
+    required this.changePassword,
   }) : super(const AuthState()) {
     on<LoginRequested>(_onLoginRequested);
     on<LogoutRequested>(_onLogoutRequested);
     on<CheckAuthStatus>(_onCheckAuthStatus);
     on<AuthUserLoaded>(_onAuthUserLoaded);
-    on<ForgotPasswordRequested>(_onForgotPasswordRequested);
+    on<ChangePasswordRequested>(_onChangePasswordRequested);
   }
 
   Future<void> _onLoginRequested(
@@ -32,8 +32,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(state.copyWith(status: AuthStatus.loading));
 
     final result = await login(
-      username: event.username,
+      email: event.email,
       password: event.password,
+      rememberMe: event.rememberMe,
     );
 
     result.fold(
@@ -108,13 +109,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     );
   }
 
-  Future<void> _onForgotPasswordRequested(
-    ForgotPasswordRequested event,
+  Future<void> _onChangePasswordRequested(
+    ChangePasswordRequested event,
     Emitter<AuthState> emit,
   ) async {
     emit(state.copyWith(status: AuthStatus.loading));
 
-    final result = await requestPasswordReset(event.email);
+    final result = await changePassword(
+      currentPassword: event.currentPassword,
+      newPassword: event.newPassword,
+      confirmPassword: event.confirmPassword,
+    );
 
     result.fold(
       (failure) {
@@ -123,10 +128,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           errorMessage: failure.message,
         ));
       },
-      (message) {
+      (_) {
         emit(state.copyWith(
-          status: AuthStatus.forgotPasswordSuccess,
-          successMessage: message,
+          status: AuthStatus.changePasswordSuccess,
+          successMessage: 'Password changed successfully',
         ));
       },
     );

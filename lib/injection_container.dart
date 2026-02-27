@@ -14,8 +14,9 @@ import 'features/auth/domain/repositories/auth_repository.dart';
 import 'features/auth/domain/usecases/login.dart';
 import 'features/auth/domain/usecases/logout.dart';
 import 'features/auth/domain/usecases/get_current_user.dart';
-import 'features/auth/domain/usecases/request_password_reset.dart';
+import 'features/auth/domain/usecases/change_password.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
+import 'core/constants/api_constants.dart';
 
 // Device Pairing Feature
 import 'features/device_pairing/data/datasources/device_pairing_remote_datasource.dart';
@@ -102,15 +103,15 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(() => Connectivity());
 
   // Services
-  sl.registerLazySingleton(() => DioClient());
-  sl.registerLazySingleton(() => MqttService());
   sl.registerLazySingleton(() => LocalStorageService());
+  sl.registerLazySingleton(() => DioClient(localStorage: sl()));
+  sl.registerLazySingleton(() => MqttService());
 
   // Network
   sl.registerLazySingleton<NetworkInfo>(
     () => NetworkInfoImpl(sl()),
   );
-  
+
   // Session
   sl.registerLazySingleton(() => SessionCubit());
 
@@ -118,9 +119,11 @@ Future<void> initializeDependencies() async {
   // Auth Feature
   // =============================================
 
-  // Data sources
+  // Data sources — toggle between real API and mock via ApiConstants.useMockData
   sl.registerLazySingleton<AuthRemoteDataSource>(
-    () => AuthMockDataSource(),
+    () => ApiConstants.useMockData
+        ? AuthMockDataSource()
+        : AuthRemoteDataSourceImpl(dioClient: sl()),
   );
 
   // Repositories
@@ -129,6 +132,7 @@ Future<void> initializeDependencies() async {
       remoteDataSource: sl(),
       localStorage: sl(),
       networkInfo: sl(),
+      dioClient: sl(),
     ),
   );
 
@@ -136,7 +140,7 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(() => Login(sl()));
   sl.registerLazySingleton(() => Logout(sl()));
   sl.registerLazySingleton(() => GetCurrentUser(sl()));
-  sl.registerLazySingleton(() => RequestPasswordReset(sl()));
+  sl.registerLazySingleton(() => ChangePassword(sl()));
 
   // BLoCs
   sl.registerLazySingleton(
@@ -144,7 +148,7 @@ Future<void> initializeDependencies() async {
       login: sl(),
       logout: sl(),
       getCurrentUser: sl(),
-      requestPasswordReset: sl(),
+      changePassword: sl(),
     ),
   );
 
@@ -335,7 +339,7 @@ Future<void> initializeDependencies() async {
 
   // Data sources
   sl.registerLazySingleton<StoreSelectionRemoteDataSource>(
-    () => StoreSelectionRemoteDataSourceImpl(),
+    () => StoreSelectionRemoteDataSourceImpl(dioClient: sl()),
   );
 
   // Repositories
