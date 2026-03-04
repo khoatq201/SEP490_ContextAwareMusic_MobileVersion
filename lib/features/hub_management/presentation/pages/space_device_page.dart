@@ -45,7 +45,7 @@ class _SpaceDevicePageState extends State<SpaceDevicePage> {
         backgroundColor: palette.card,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
-          'Xóa Hub khỏi không gian?',
+          'Remove Hub from space?',
           style: GoogleFonts.poppins(
             color: palette.textPrimary,
             fontWeight: FontWeight.w700,
@@ -53,7 +53,7 @@ class _SpaceDevicePageState extends State<SpaceDevicePage> {
           ),
         ),
         content: Text(
-          'Bạn có chắc chắn muốn xóa Hub này khỏi ${_space.name} không?\nCác tự động hóa sẽ ngừng hoạt động.',
+          'Are you sure you want to remove this Hub from ${_space.name}?\nAutomations will stop working.',
           style: GoogleFonts.inter(
             color: palette.textMuted,
             fontSize: 14,
@@ -64,7 +64,7 @@ class _SpaceDevicePageState extends State<SpaceDevicePage> {
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
             child: Text(
-              'Hủy',
+              'Cancel',
               style: GoogleFonts.inter(
                 color: palette.textMuted,
                 fontWeight: FontWeight.w600,
@@ -80,7 +80,7 @@ class _SpaceDevicePageState extends State<SpaceDevicePage> {
             ),
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(
-              'Xóa',
+              'Delete',
               style: GoogleFonts.inter(fontWeight: FontWeight.w700),
             ),
           ),
@@ -140,7 +140,7 @@ class _SpaceDevicePageState extends State<SpaceDevicePage> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Thiết bị & Phần cứng',
+                    'Devices & Hardware',
                     style: GoogleFonts.poppins(
                       color: palette.textPrimary,
                       fontSize: 18,
@@ -148,7 +148,7 @@ class _SpaceDevicePageState extends State<SpaceDevicePage> {
                     ),
                   ),
                   Text(
-                    'Đang quản lý: $displayName',
+                    'Managing: $displayName',
                     style: GoogleFonts.inter(
                       color: palette.textMuted,
                       fontSize: 11,
@@ -198,7 +198,7 @@ class _NoHubState extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             Text(
-              'Chưa có thiết bị điều khiển',
+              'No control devices yet',
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
                 color: palette.textPrimary,
@@ -208,7 +208,7 @@ class _NoHubState extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Không gian này chưa được lắp đặt thiết bị điều khiển.',
+              'This space has no control devices installed.',
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
                 color: palette.textMuted,
@@ -218,7 +218,7 @@ class _NoHubState extends StatelessWidget {
             ),
             const SizedBox(height: 28),
             FilledButton.icon(
-              onPressed: () => debugPrint('Bắt đầu luồng kết nối Bluetooth'),
+              onPressed: () => debugPrint('Start Bluetooth connection flow'),
               style: FilledButton.styleFrom(
                 backgroundColor: palette.accent,
                 foregroundColor: palette.textOnAccent,
@@ -230,7 +230,7 @@ class _NoHubState extends StatelessWidget {
                     fontSize: 15, fontWeight: FontWeight.w700),
               ),
               icon: const Icon(Icons.bluetooth, size: 20),
-              label: const Text('Bắt đầu ghép nối Hub'),
+              label: const Text('Start Hub Pairing'),
             ),
           ],
         ),
@@ -326,7 +326,7 @@ class _HubOverviewCard extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Tổng quan Hub',
+                  'Hub Overview',
                   style: GoogleFonts.poppins(
                     color: palette.textPrimary,
                     fontSize: 14,
@@ -395,7 +395,7 @@ class _HubOverviewCard extends StatelessWidget {
           // ── Wi-Fi signal ─────────────────────────────────────────────
           _InfoRow(
             icon: LucideIcons.wifi,
-            label: 'Cường độ Wi-Fi',
+            label: 'Wi-Fi Signal Strength',
             value: hub.wifiSignalStrength,
             palette: palette,
             valueColor: _wifiColor(hub.wifiSignalStrength),
@@ -407,9 +407,9 @@ class _HubOverviewCard extends StatelessWidget {
 
   Color _wifiColor(String strength) {
     switch (strength) {
-      case 'Mạnh':
+      case 'Strong':
         return Colors.green;
-      case 'Yếu':
+      case 'Weak':
         return Colors.orange;
       default:
         return Colors.orange.shade300;
@@ -439,7 +439,7 @@ class _SensorsCard extends StatelessWidget {
               Icon(LucideIcons.activity, size: 16, color: palette.accent),
               const SizedBox(width: 8),
               Text(
-                'Trạng thái Cảm biến',
+                'Sensor Status',
                 style: GoogleFonts.poppins(
                   color: palette.textPrimary,
                   fontSize: 14,
@@ -495,7 +495,7 @@ class _AudioCard extends StatelessWidget {
               Icon(LucideIcons.volume, size: 16, color: palette.accent),
               const SizedBox(width: 8),
               Text(
-                'Âm thanh',
+                'Audio',
                 style: GoogleFonts.poppins(
                   color: palette.textPrimary,
                   fontSize: 14,
@@ -529,7 +529,7 @@ class _AudioCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Loa đang kết nối',
+                          'Connected Speaker',
                           style: GoogleFonts.inter(
                             color: palette.textMuted,
                             fontSize: 11,
@@ -620,7 +620,7 @@ class _SettingsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'Cài đặt thiết bị',
+          'Device Settings',
           style: GoogleFonts.poppins(
             color: palette.textMuted,
             fontSize: 12,
@@ -631,21 +631,21 @@ class _SettingsSection extends StatelessWidget {
         const SizedBox(height: 10),
         _SettingsButton(
           icon: Icons.wifi_outlined,
-          label: 'Đổi mạng Wi-Fi',
+          label: 'Change Wi-Fi Network',
           palette: palette,
           onTap: onChangeWifi,
         ),
         const SizedBox(height: 8),
         _SettingsButton(
           icon: Icons.restart_alt,
-          label: 'Khởi động lại Hub',
+          label: 'Restart Hub',
           palette: palette,
-          onTap: () => debugPrint('Khởi động lại Hub'),
+          onTap: () => debugPrint('Restart Hub'),
         ),
         const SizedBox(height: 8),
         _SettingsButton(
           icon: Icons.delete_outline,
-          label: 'Hủy ghép nối thiết bị',
+          label: 'Unpair Device',
           palette: palette,
           isDestructive: true,
           onTap: onUnpair,
@@ -880,7 +880,7 @@ class _WifiConfigBottomSheetState extends State<WifiConfigBottomSheet> {
     Navigator.pop(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('Đổi Wi-Fi thành công'),
+        content: const Text('Wi-Fi changed successfully'),
         backgroundColor: Colors.green.shade600,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -920,7 +920,7 @@ class _WifiConfigBottomSheetState extends State<WifiConfigBottomSheet> {
               Icon(Icons.wifi_outlined, color: _p.accent, size: 22),
               const SizedBox(width: 10),
               Text(
-                'Đổi mạng Wi-Fi cho Hub',
+                'Change Wi-Fi Network for Hub',
                 style: GoogleFonts.poppins(
                   color: _p.textPrimary,
                   fontSize: 17,
@@ -931,13 +931,13 @@ class _WifiConfigBottomSheetState extends State<WifiConfigBottomSheet> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Cấu hình sẽ được gửi đến Hub qua kết nối Bluetooth.',
+            'Configuration will be sent to Hub via Bluetooth.',
             style: GoogleFonts.inter(color: _p.textMuted, fontSize: 12),
           ),
           const SizedBox(height: 20),
           // ── SSID field ───────────────────────────────────────────────
           Text(
-            'Tên Wi-Fi (SSID)',
+            'Wi-Fi Name (SSID)',
             style: GoogleFonts.inter(
               color: _p.textMuted,
               fontSize: 12,
@@ -974,7 +974,7 @@ class _WifiConfigBottomSheetState extends State<WifiConfigBottomSheet> {
           const SizedBox(height: 14),
           // ── Password field ───────────────────────────────────────────
           Text(
-            'Mật khẩu',
+            'Password',
             style: GoogleFonts.inter(
               color: _p.textMuted,
               fontSize: 12,
@@ -987,7 +987,7 @@ class _WifiConfigBottomSheetState extends State<WifiConfigBottomSheet> {
             obscureText: _obscurePassword,
             style: GoogleFonts.inter(color: _p.textPrimary, fontSize: 14),
             decoration: InputDecoration(
-              hintText: 'Nhập mật khẩu Wi-Fi',
+              hintText: 'Enter Wi-Fi password',
               hintStyle: GoogleFonts.inter(color: _p.textMuted, fontSize: 14),
               prefixIcon:
                   Icon(Icons.lock_outline, color: _p.textMuted, size: 20),
@@ -1046,8 +1046,8 @@ class _WifiConfigBottomSheetState extends State<WifiConfigBottomSheet> {
                   : const Icon(Icons.bluetooth, size: 18),
               label: Text(
                 _isLoading
-                    ? 'Đang gửi cấu hình...'
-                    : 'Gửi cấu hình qua Bluetooth',
+                    ? 'Sending configuration...'
+                    : 'Send configuration via Bluetooth',
                 style: GoogleFonts.inter(
                   fontWeight: FontWeight.w700,
                   fontSize: 14,
@@ -1103,7 +1103,7 @@ class BluetoothSpeakerSelectionSheet extends StatelessWidget {
           const SizedBox(height: 20),
           // ── Title ─────────────────────────────────────────────────────
           Text(
-            'Chọn loa Bluetooth',
+            'Select Bluetooth Speaker',
             style: GoogleFonts.poppins(
               color: palette.textPrimary,
               fontSize: 17,
@@ -1124,7 +1124,7 @@ class BluetoothSpeakerSelectionSheet extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               Text(
-                'Đang quét loa Bluetooth gần Hub...',
+                'Scanning for Bluetooth speakers near Hub...',
                 style: GoogleFonts.inter(
                   color: palette.textMuted,
                   fontSize: 13,
@@ -1176,7 +1176,8 @@ class BluetoothSpeakerSelectionSheet extends StatelessWidget {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: const Text('Đã gửi lệnh kết nối loa đến Hub'),
+                      content:
+                          const Text('Speaker connection command sent to Hub'),
                       backgroundColor: palette.accent,
                       behavior: SnackBarBehavior.floating,
                       shape: RoundedRectangleBorder(

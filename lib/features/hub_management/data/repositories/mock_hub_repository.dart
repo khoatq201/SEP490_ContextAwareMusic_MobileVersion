@@ -18,16 +18,16 @@ class MockHubRepository {
   static const _sensors = [
     HubSensorEntity(
       id: 'sensor-001',
-      name: 'Nhiệt độ',
+      name: 'Temperature',
       type: 'temperature',
       unit: '°C',
       currentValue: 24.5,
     ),
     HubSensorEntity(
       id: 'sensor-002',
-      name: 'Lượng khách',
+      name: 'Crowd Count',
       type: 'crowd',
-      unit: ' người',
+      unit: ' people',
       currentValue: 12,
     ),
   ];
@@ -38,7 +38,7 @@ class MockHubRepository {
     id: 'hub-001',
     macAddress: 'AA:BB:CC:DD:EE:01',
     isOnline: true,
-    wifiSignalStrength: 'Mạnh',
+    wifiSignalStrength: 'Strong',
     connectedSpeakerName: 'Marshall Stanmore',
     currentVolume: 65,
     sensors: _sensors,
@@ -48,21 +48,21 @@ class MockHubRepository {
 
   static const _spaceWithHub = Space(
     id: 'space-001',
-    name: 'Sảnh Chính',
+    name: 'Main Hall',
     status: 'Online',
-    currentMood: 'Sáng tạo',
+    currentMood: 'Creative',
     assignedHubId: 'hub-001',
     storeId: 'store-001',
     currentHub: _hub,
   );
 
-  // ── Space fixture (no hub) ────────────────────────────────────────────────
+  // ── Space fixture (no hub) ────────────────────────────────────────
 
   static const _spaceWithoutHub = Space(
     id: 'space-001',
-    name: 'Sảnh Chính',
+    name: 'Main Hall',
     status: 'Online',
-    currentMood: 'Sáng tạo',
+    currentMood: 'Creative',
     assignedHubId: '',
     storeId: 'store-001',
     currentHub: null,

@@ -15,17 +15,17 @@ class DevicePairingMockDataSource implements DevicePairingRemoteDataSource {
         storeId: 'store-1',
         spaceId: 'space-1',
         storeName: 'Highlands Coffee',
-        spaceName: 'Tầng 1',
+        spaceName: 'Floor 1',
       );
     }
-    
+
     if (pairCode == '000000') {
       return const PairingResultModel(
         deviceId: 'dev-999',
         storeId: 'store-2',
         spaceId: 'space-2',
         storeName: 'The Coffee House',
-        spaceName: 'Phòng Họp',
+        spaceName: 'Meeting Room',
       );
     }
 

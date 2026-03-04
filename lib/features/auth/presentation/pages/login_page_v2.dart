@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/constants/api_constants.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/constants/app_typography.dart';
@@ -342,6 +343,76 @@ class _LoginPageV2State extends State<LoginPageV2>
                               ],
                             ),
                           ),
+                          // ── Demo credentials (only in demo mode) ──
+                          if (ApiConstants.useMockData) ...[
+                            const SizedBox(height: AppDimensions.spacingMd),
+                            Container(
+                              padding: const EdgeInsets.all(
+                                  AppDimensions.cardPaddingMd),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? AppColors.primaryCyan.withOpacity(0.1)
+                                    : AppColors.primaryOrange.withOpacity(0.08),
+                                borderRadius: BorderRadius.circular(
+                                    AppDimensions.radiusMd),
+                                border: Border.all(
+                                  color: isDark
+                                      ? AppColors.primaryCyan.withOpacity(0.3)
+                                      : AppColors.primaryOrange
+                                          .withOpacity(0.3),
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(Icons.science_outlined,
+                                          size: 16,
+                                          color: isDark
+                                              ? AppColors.primaryCyan
+                                              : AppColors.primaryOrange),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        'Demo Mode',
+                                        style:
+                                            AppTypography.labelMedium.copyWith(
+                                          color: isDark
+                                              ? AppColors.primaryCyan
+                                              : AppColors.primaryOrange,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  _buildDemoAccount(
+                                    context,
+                                    'Admin',
+                                    'admin@example.com',
+                                    'Admin@123',
+                                    isDark,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  _buildDemoAccount(
+                                    context,
+                                    'Store Manager',
+                                    'store@example.com',
+                                    'Store@123',
+                                    isDark,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  _buildDemoAccount(
+                                    context,
+                                    'Brand Director',
+                                    'brand@example.com',
+                                    'Brand@123',
+                                    isDark,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                           const SizedBox(height: AppDimensions.spacingLg),
                           Text(
                             '© 2026 CAMS Store Manager',
@@ -360,6 +431,55 @@ class _LoginPageV2State extends State<LoginPageV2>
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildDemoAccount(
+    BuildContext context,
+    String role,
+    String email,
+    String password,
+    bool isDark,
+  ) {
+    return GestureDetector(
+      onTap: () {
+        _emailController.text = email;
+        _passwordController.text = password;
+      },
+      child: Row(
+        children: [
+          Icon(Icons.person_outline,
+              size: 14,
+              color:
+                  isDark ? AppColors.textDarkTertiary : AppColors.textTertiary),
+          const SizedBox(width: 6),
+          Text(
+            '$role: ',
+            style: AppTypography.bodySmall.copyWith(
+              color: isDark
+                  ? AppColors.textDarkSecondary
+                  : AppColors.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              '$email / $password',
+              style: AppTypography.bodySmall.copyWith(
+                color: isDark
+                    ? AppColors.textDarkTertiary
+                    : AppColors.textTertiary,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Icon(Icons.touch_app_outlined,
+              size: 14,
+              color: isDark
+                  ? AppColors.primaryCyan.withOpacity(0.5)
+                  : AppColors.primaryOrange.withOpacity(0.5)),
+        ],
       ),
     );
   }

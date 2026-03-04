@@ -59,7 +59,7 @@ class _SelectPlaylistBottomSheetState extends State<SelectPlaylistBottomSheet> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'Đã thêm vào ${playlist.title}',
+          'Added to ${playlist.title}',
           style: GoogleFonts.inter(fontWeight: FontWeight.w600),
         ),
         behavior: SnackBarBehavior.floating,
@@ -111,7 +111,7 @@ class _SelectPlaylistBottomSheetState extends State<SelectPlaylistBottomSheet> {
               child: Row(
                 children: [
                   Text(
-                    'Thêm vào Playlist',
+                    'Add to Playlist',
                     style: GoogleFonts.poppins(
                       color: textPrimary,
                       fontSize: 17,
@@ -174,7 +174,7 @@ class _SelectPlaylistBottomSheetState extends State<SelectPlaylistBottomSheet> {
                               size: 40, color: textMuted.withOpacity(0.35)),
                           const SizedBox(height: 12),
                           Text(
-                            'Chưa có playlist nào',
+                            'No playlists yet',
                             style: GoogleFonts.inter(
                                 color: textMuted, fontSize: 13),
                           ),
@@ -218,7 +218,7 @@ class _SelectPlaylistBottomSheetState extends State<SelectPlaylistBottomSheet> {
                             ),
                           ),
                           subtitle: Text(
-                            '${playlist.totalTracks} bài',
+                            '${playlist.totalTracks} tracks',
                             style: GoogleFonts.inter(
                               color: textMuted,
                               fontSize: 11,

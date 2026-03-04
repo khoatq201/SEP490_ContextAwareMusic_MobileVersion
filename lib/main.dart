@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'injection_container.dart';
 import 'router.dart';
+import 'core/constants/api_constants.dart';
 import 'core/network/dio_client.dart';
 import 'core/services/local_storage_service.dart';
 import 'core/services/mqtt_service.dart';
@@ -11,10 +12,13 @@ import 'core/session/session_cubit.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_provider.dart';
 import 'core/player/player_bloc.dart';
+import 'core/audio/audio_player_service.dart';
 import 'features/space_control/presentation/bloc/music_control_bloc.dart';
 import 'features/space_control/presentation/bloc/space_monitoring_bloc.dart';
 
 void main() {
+  final audioPlayerService = AudioPlayerService();
+
   runApp(
     MultiProvider(
       providers: [
@@ -22,7 +26,9 @@ void main() {
         // SessionCubit — global session state (role, store, space, permissions)
         BlocProvider(create: (_) => sl<SessionCubit>()),
         // PlayerBloc lives above the router so MiniPlayer persists across tabs
-        BlocProvider(create: (_) => PlayerBloc()),
+        BlocProvider(
+          create: (_) => PlayerBloc(audioPlayerService: audioPlayerService),
+        ),
         // MusicControlBloc & SpaceMonitoringBloc are global so NowPlayingTab
         // can always read live space/sensor/music state from any tab.
         BlocProvider(create: (_) => sl<MusicControlBloc>()),
@@ -57,14 +63,18 @@ class _MyAppState extends State<MyApp> {
     final dioClient = sl<DioClient>();
     await dioClient.initCookieJar();
 
-    // Initialize MQTT connection
-    final mqttService = sl<MqttService>();
-    try {
-      await mqttService.connect(
-        clientId: 'cams_manager_${DateTime.now().millisecondsSinceEpoch}',
-      );
-    } catch (e) {
-      debugPrint('MQTT connection failed: $e');
+    // Skip MQTT in demo mode — no backend required
+    if (!ApiConstants.useMockData) {
+      final mqttService = sl<MqttService>();
+      try {
+        await mqttService.connect(
+          clientId: 'cams_manager_${DateTime.now().millisecondsSinceEpoch}',
+        );
+      } catch (e) {
+        debugPrint('MQTT connection failed: $e');
+      }
+    } else {
+      debugPrint('🎨 Demo mode enabled — MQTT connection skipped');
     }
 
     setState(() {

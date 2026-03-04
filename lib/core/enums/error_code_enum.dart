@@ -1,7 +1,7 @@
 /// Maps 1:1 with the backend `ErrorCodeEnum`.
 ///
-/// Backend trả `errorCode` dạng **string PascalCase** (e.g. `"InvalidCredentials"`).
-/// Dùng [ErrorCodeEnum.fromString] để parse.
+/// The backend returns `errorCode` as a **PascalCase string** (e.g. `"InvalidCredentials"`).
+/// Use [ErrorCodeEnum.fromString] to parse.
 enum ErrorCodeEnum {
   success,
   unauthorized,
@@ -23,8 +23,8 @@ enum ErrorCodeEnum {
   externalServiceError,
   unknown;
 
-  /// Parse từ string PascalCase trả về từ backend.
-  /// Trả về [ErrorCodeEnum.unknown] nếu không nhận ra.
+  /// Parses a PascalCase string returned by the backend.
+  /// Returns [ErrorCodeEnum.unknown] if the value is not recognized.
   static ErrorCodeEnum fromString(String? value) {
     if (value == null) return ErrorCodeEnum.unknown;
     switch (value) {

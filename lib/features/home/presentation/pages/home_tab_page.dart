@@ -161,7 +161,7 @@ class _HomeSliverAppBar extends StatelessWidget {
                   Text(
                     isPlayback
                         ? (session.currentSpace?.name ?? 'Unknown Space')
-                        : 'Sảnh Chính',
+                        : 'Main Hall',
                     style: GoogleFonts.poppins(
                       color: palette.textPrimary,
                       fontSize: 18,
@@ -239,7 +239,7 @@ class _SwitchSpaceSheet extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           Text(
-            'Không gian hiện tại',
+            'Current Space',
             style: GoogleFonts.poppins(
               color: palette.textPrimary,
               fontSize: 18,
@@ -248,7 +248,7 @@ class _SwitchSpaceSheet extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Sảnh Chính',
+            'Main Hall',
             style: GoogleFonts.inter(
               color: palette.textMuted,
               fontSize: 14,
@@ -308,7 +308,7 @@ class _SensorsRow extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
           child: Text(
-            'Môi trường',
+            'Environment',
             style: GoogleFonts.inter(
               color: palette.textMuted,
               fontSize: 12,
@@ -470,7 +470,7 @@ class _MasterControlCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        autoModeEnabled ? 'Auto Mode' : 'Thủ công',
+                        autoModeEnabled ? 'Auto Mode' : 'Manual',
                         style: GoogleFonts.poppins(
                           color: Colors.white,
                           fontSize: 17,
@@ -480,8 +480,8 @@ class _MasterControlCard extends StatelessWidget {
                       const SizedBox(height: 3),
                       Text(
                         autoModeEnabled
-                            ? 'Hệ thống đang tự điều chỉnh nhạc'
-                            : 'Chờ điều khiển từ người dùng',
+                            ? 'System is auto-adjusting music'
+                            : 'Waiting for user control',
                         style: GoogleFonts.inter(
                           color: Colors.white.withOpacity(0.80),
                           fontSize: 12,
@@ -508,7 +508,7 @@ class _MasterControlCard extends StatelessWidget {
                       Row(
                         children: [
                           Text(
-                            'Xem & quản lý luật',
+                            'View & manage rules',
                             style: GoogleFonts.inter(
                               color: Colors.white.withOpacity(0.65),
                               fontSize: 11,
@@ -807,7 +807,7 @@ class _ErrorView extends StatelessWidget {
           const Icon(LucideIcons.alertTriangle, color: Colors.amber, size: 52),
           const SizedBox(height: 12),
           Text(
-            message ?? 'Đã xảy ra lỗi',
+            message ?? 'An error occurred',
             style: GoogleFonts.inter(color: palette.textMuted, fontSize: 15),
             textAlign: TextAlign.center,
           ),
@@ -823,7 +823,7 @@ class _ErrorView extends StatelessWidget {
             ),
             icon: const Icon(LucideIcons.refreshCw, size: 16),
             label: Text(
-              'Thử lại',
+              'Retry',
               style: GoogleFonts.inter(fontWeight: FontWeight.w700),
             ),
             onPressed: onRetry,

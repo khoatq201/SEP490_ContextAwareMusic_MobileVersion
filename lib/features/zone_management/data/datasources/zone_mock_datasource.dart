@@ -3,13 +3,16 @@ import '../models/music_profile_model.dart';
 import '../models/playlist_model.dart';
 import '../models/speaker_model.dart';
 import '../../../space_control/data/models/track_model.dart';
+import 'zone_remote_datasource.dart';
 
-/// Mock data source for zone management
-/// Provides realistic demo data for zones, music profiles, playlists, and speakers
-class ZoneMockDataSource {
+/// Mock data source for zone management.
+/// Provides realistic demo data for zones, music profiles, playlists, and speakers.
+/// Implements [ZoneRemoteDataSource] so it can be swapped with the real API impl.
+class ZoneMockDataSource implements ZoneRemoteDataSource {
   // ==================== ZONES ====================
 
   /// Get all zones for a specific space
+  @override
   Future<List<ZoneModel>> getZonesBySpace(String spaceId) async {
     await Future.delayed(const Duration(milliseconds: 400));
 
@@ -102,6 +105,7 @@ class ZoneMockDataSource {
   // ==================== MUSIC PROFILES ====================
 
   /// Get music profile by zone ID
+  @override
   Future<MusicProfileModel> getMusicProfileByZone(String zoneId) async {
     await Future.delayed(const Duration(milliseconds: 300));
 
@@ -301,12 +305,14 @@ class ZoneMockDataSource {
   // ==================== PLAYLISTS ====================
 
   /// Get all available playlists
+  @override
   Future<List<PlaylistModel>> getAllPlaylists() async {
     await Future.delayed(const Duration(milliseconds: 500));
     return _mockPlaylists;
   }
 
   /// Get playlist by ID
+  @override
   Future<PlaylistModel> getPlaylistById(String playlistId) async {
     await Future.delayed(const Duration(milliseconds: 300));
     return _mockPlaylists.firstWhere(
@@ -686,6 +692,7 @@ class ZoneMockDataSource {
   // ==================== SPEAKERS ====================
 
   /// Get speakers by zone ID
+  @override
   Future<List<SpeakerModel>> getSpeakersByZone(String zoneId) async {
     await Future.delayed(const Duration(milliseconds: 250));
 
@@ -818,5 +825,95 @@ class ZoneMockDataSource {
     };
 
     return speakerMap[zoneId] ?? [];
+  }
+
+  // ==================== WRITE OPERATIONS (mock stubs) ====================
+
+  @override
+  Future<ZoneModel> createZone(ZoneModel zone) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    return zone;
+  }
+
+  @override
+  Future<ZoneModel> updateZone(ZoneModel zone) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    return zone;
+  }
+
+  @override
+  Future<void> deleteZone(String zoneId) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+  }
+
+  @override
+  Future<void> updateSpeakerVolume({
+    required String speakerId,
+    required int volume,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+  }
+
+  @override
+  Future<void> syncZonesMusic(List<String> zoneIds) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+  }
+
+  @override
+  Future<void> unsyncZones(List<String> zoneIds) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+  }
+
+  @override
+  Future<void> updateMusicProfile(MusicProfileModel profile) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+  }
+
+  @override
+  Future<void> assignPlaylistToZone({
+    required String zoneId,
+    required String playlistId,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+  }
+
+  @override
+  Future<void> removePlaylistFromZone({
+    required String zoneId,
+    required String playlistId,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+  }
+
+  @override
+  Future<void> updateMoodMapping({
+    required String zoneId,
+    required Map<String, String> moodToPlaylistMap,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+  }
+
+  @override
+  Future<void> updateVolumeSettings({
+    required String zoneId,
+    required Map<String, dynamic> volumeSettingsJson,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+  }
+
+  @override
+  Future<void> updateScheduleConfig({
+    required String zoneId,
+    required Map<String, dynamic>? scheduleConfigJson,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+  }
+
+  @override
+  Future<void> toggleAutoMoodDetection({
+    required String zoneId,
+    required bool enabled,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 300));
   }
 }

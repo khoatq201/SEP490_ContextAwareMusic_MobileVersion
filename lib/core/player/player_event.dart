@@ -36,6 +36,32 @@ class PlayerSkipRequested extends PlayerEvent {
   const PlayerSkipRequested();
 }
 
+/// Fired when the user taps the skip-back button.
+class PlayerSkipBackRequested extends PlayerEvent {
+  const PlayerSkipBackRequested();
+}
+
+/// Fired when starting playback from a playlist (sets the queue).
+class PlayerPlaylistStarted extends PlayerEvent {
+  final List<Track> tracks;
+  final int startIndex;
+  final String? playlistName;
+
+  const PlayerPlaylistStarted({
+    required this.tracks,
+    this.startIndex = 0,
+    this.playlistName,
+  });
+
+  @override
+  List<Object?> get props => [tracks, startIndex, playlistName];
+}
+
+/// Internal: fired when the audio engine reports playback completed.
+class PlayerTrackCompleted extends PlayerEvent {
+  const PlayerTrackCompleted();
+}
+
 /// Fired when the active space context changes (store / space ids).
 class PlayerContextUpdated extends PlayerEvent {
   final String storeId;
@@ -60,4 +86,31 @@ class PlayerContextUpdated extends PlayerEvent {
 /// Fired when leaving the space (no active space).
 class PlayerContextCleared extends PlayerEvent {
   const PlayerContextCleared();
+}
+
+/// Fired periodically by the audio engine to update playback position.
+class PlayerPositionUpdated extends PlayerEvent {
+  final int positionSeconds;
+  const PlayerPositionUpdated({required this.positionSeconds});
+
+  @override
+  List<Object?> get props => [positionSeconds];
+}
+
+/// Fired when the user seeks to a specific position via the progress bar.
+class PlayerSeekRequested extends PlayerEvent {
+  final int positionSeconds;
+  const PlayerSeekRequested({required this.positionSeconds});
+
+  @override
+  List<Object?> get props => [positionSeconds];
+}
+
+/// Internal: fired when the audio engine reports a new total duration.
+class PlayerDurationUpdated extends PlayerEvent {
+  final int durationSeconds;
+  const PlayerDurationUpdated({required this.durationSeconds});
+
+  @override
+  List<Object?> get props => [durationSeconds];
 }

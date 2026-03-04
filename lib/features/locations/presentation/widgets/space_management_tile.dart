@@ -44,7 +44,9 @@ class SpaceManagementTile extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
-                    space.isOnline ? LucideIcons.radio : LucideIcons.radioReceiver,
+                    space.isOnline
+                        ? LucideIcons.radio
+                        : LucideIcons.radioReceiver,
                     color: palette.accent,
                     size: 20,
                   ),
@@ -77,7 +79,7 @@ class SpaceManagementTile extends StatelessWidget {
                 _InfoRow(
                   icon: LucideIcons.music4,
                   label: 'PLAYLIST',
-                  value: space.currentTrackName ?? 'Không có',
+                  value: space.currentTrackName ?? 'None',
                   palette: palette,
                 ),
                 const SizedBox(height: 6),
@@ -213,7 +215,8 @@ class _ActionRow extends StatelessWidget {
                 context.go('/now-playing');
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Device pairing will be available soon.')),
+                  const SnackBar(
+                      content: Text('Device pairing will be available soon.')),
                 );
               }
             },
@@ -228,7 +231,8 @@ class _ActionRow extends StatelessWidget {
             palette: palette,
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Scheduling will be available soon.')),
+                const SnackBar(
+                    content: Text('Scheduling will be available soon.')),
               );
             },
           ),

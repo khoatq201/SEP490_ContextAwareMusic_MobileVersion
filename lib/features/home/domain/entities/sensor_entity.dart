@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 class SensorEntity extends Equatable {
   final String id;
 
-  /// Human-readable label, e.g. "Nhiệt độ", "Độ ẩm", "Lượng khách"
+  /// Human-readable label, e.g. "Temperature", "Humidity", "Crowd Level"
   final String name;
 
   /// Pre-formatted display value, e.g. "32°C", "65%", "Medium"

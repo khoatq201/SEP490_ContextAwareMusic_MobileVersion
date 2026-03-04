@@ -60,7 +60,11 @@ class GoRouterRefreshStream extends ChangeNotifier {
 }
 
 class AppRouter {
+  static final GlobalKey<NavigatorState> _rootNavigatorKey =
+      GlobalKey<NavigatorState>(debugLabel: 'root');
+
   static GoRouter router = GoRouter(
+    navigatorKey: _rootNavigatorKey,
     initialLocation: '/welcome',
     refreshListenable: GoRouterRefreshStream(sl<AuthBloc>().stream),
     redirect: (BuildContext context, GoRouterState state) {
@@ -315,6 +319,17 @@ class AppRouter {
       // ---------------------------------------------------------------
       // Standalone pages (outside the shell)
       // ---------------------------------------------------------------
+
+      // Full-screen Now Playing — pushed over any screen, pop returns to origin
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/now-playing-full',
+        name: 'now-playing-full',
+        pageBuilder: (context, state) => const MaterialPage(
+          fullscreenDialog: true,
+          child: NowPlayingTabPage(),
+        ),
+      ),
       GoRoute(
         path: '/profile',
         name: 'profile',

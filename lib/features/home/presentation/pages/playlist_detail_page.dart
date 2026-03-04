@@ -45,20 +45,24 @@ class PlaylistDetailPage extends StatelessWidget {
                 return SongListTile(
                   song: song,
                   onTap: () {
-                    final track = Track(
-                      id: song.id,
-                      title: song.title,
-                      artist: song.artist,
-                      fileUrl: '',
-                      moodTags: const [],
-                      duration: song.duration,
-                      albumArt: song.coverUrl,
-                    );
-                    context.read<PlayerBloc>().add(PlayerTrackChanged(
-                          track: track,
-                          isPlaying: true,
-                          currentPosition: 0,
-                          duration: song.duration,
+                    // Build the full track list from the playlist
+                    final tracks = playlist.songs
+                        .map((s) => Track(
+                              id: s.id,
+                              title: s.title,
+                              artist: s.artist,
+                              fileUrl: s.streamUrl ?? '',
+                              moodTags: const [],
+                              duration: s.duration,
+                              albumArt: s.coverUrl,
+                            ))
+                        .toList();
+
+                    // Start the playlist queue at the tapped index
+                    context.read<PlayerBloc>().add(PlayerPlaylistStarted(
+                          tracks: tracks,
+                          startIndex: index,
+                          playlistName: playlist.title,
                         ));
                   },
                   onOptionSelected: (option) {
@@ -74,8 +78,8 @@ class PlaylistDetailPage extends StatelessWidget {
             ),
           ),
 
-          // Bottom padding
-          const SliverToBoxAdapter(child: SizedBox(height: 80)),
+          // Bottom padding — enough for MiniPlayer (64+8) + TabBar (64) + safety
+          const SliverToBoxAdapter(child: SizedBox(height: 160)),
         ],
       ),
     );
@@ -181,7 +185,7 @@ class _PlaylistHeader extends StatelessWidget {
     final h = seconds ~/ 3600;
     final m = (seconds % 3600) ~/ 60;
     if (h > 0) return '${h}h ${m}m';
-    return '$m phút';
+    return '$m min';
   }
 
   @override
@@ -223,7 +227,7 @@ class _PlaylistHeader extends StatelessWidget {
               Icon(LucideIcons.music4, color: palette.textMuted, size: 14),
               const SizedBox(width: 5),
               Text(
-                '${playlist.totalTracks} bài',
+                '${playlist.totalTracks} tracks',
                 style: GoogleFonts.inter(
                   color: palette.textMuted,
                   fontSize: 12,
@@ -266,7 +270,7 @@ class _PlaylistHeader extends StatelessWidget {
               ),
               icon: const Icon(LucideIcons.play, size: 18),
               label: Text(
-                'Phát tất cả',
+                'Play All',
                 style: GoogleFonts.inter(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
@@ -278,7 +282,7 @@ class _PlaylistHeader extends StatelessWidget {
             ),
           ),
 
-          // ── "Thêm bài hát" — only shown when playlist is empty ─────────
+          // ── "Add Songs" — only shown when playlist is empty ─────────
           if (playlist.songs.isEmpty) ...[
             const SizedBox(height: 10),
             SizedBox(
@@ -294,7 +298,7 @@ class _PlaylistHeader extends StatelessWidget {
                 ),
                 icon: const Icon(Icons.add, size: 18),
                 label: Text(
-                  'Thêm bài hát',
+                  'Add Songs',
                   style: GoogleFonts.inter(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,

@@ -18,7 +18,7 @@ class RulesTabPage extends StatelessWidget {
             ),
             SizedBox(height: 8),
             Text(
-              'Quản lý quy tắc phát nhạc - Coming soon',
+              'Manage music playback rules - Coming soon',
               style: TextStyle(color: Colors.grey),
             ),
           ],

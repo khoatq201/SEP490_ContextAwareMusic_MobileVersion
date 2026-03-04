@@ -46,6 +46,9 @@ dependencies:
   # Logging
   logger: ^2.0.2+1
 
+  # Audio
+  just_audio: ^0.9.39
+
   # UI
   cupertino_icons: ^1.0.6
 

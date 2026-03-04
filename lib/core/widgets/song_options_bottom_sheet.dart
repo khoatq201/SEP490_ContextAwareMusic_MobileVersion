@@ -148,23 +148,23 @@ class SongOptionsBottomSheet extends StatelessWidget {
             Divider(color: dividerColor, height: 1, indent: 16, endIndent: 16),
 
             if (!isPlayback)
-              // ── Thêm vào Playlist ────────────────────────────────────────
+              // ── Add to Playlist ─────────────────────────────────────────
               ListTile(
-              leading: Icon(
-                Icons.playlist_add,
-                color: isDark ? Colors.white70 : Colors.black54,
-                size: 24,
-              ),
-              title: Text(
-                'Thêm vào Playlist',
-                style: GoogleFonts.inter(
-                  color: textPrimary,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
+                leading: Icon(
+                  Icons.playlist_add,
+                  color: isDark ? Colors.white70 : Colors.black54,
+                  size: 24,
                 ),
+                title: Text(
+                  'Add to Playlist',
+                  style: GoogleFonts.inter(
+                    color: textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                onTap: () => Navigator.pop(context, SongOption.addToPlaylist),
               ),
-              onTap: () => Navigator.pop(context, SongOption.addToPlaylist),
-            ),
 
             // ── Phát ngay ────────────────────────────────────────────────
             ListTile(

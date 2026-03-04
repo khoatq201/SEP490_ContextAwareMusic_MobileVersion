@@ -46,7 +46,6 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                 return Scaffold(
                   backgroundColor: palette.bg,
                   body: SafeArea(
-                    bottom: false,
                     child: _buildBody(
                       context,
                       playerState,
@@ -80,9 +79,11 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
         : spaceState.space?.currentMood;
     final duration = playerState.duration;
     final currentPosition = playerState.currentPosition;
-    final isPlaying = musicState.status == MusicControlStatus.playing ||
-        (musicState.status == MusicControlStatus.initial &&
-            playerState.isPlaying);
+    // Use playerState.isPlaying as the single source of truth.
+    // It is toggled optimistically in PlayerBloc and updated by the
+    // audio engine, so it always reflects the current playback state
+    // regardless of whether MusicControlBloc is connected.
+    final isPlaying = playerState.isPlaying;
 
     final spaceName =
         spaceState.space?.name ?? playerState.activeSpaceName ?? 'No Space';
@@ -105,8 +106,12 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
           palette: palette,
           canSwap: !isPlayback && playerState.availableSpaces.length > 1,
           onMinimize: () {
-            // Navigate back to previous tab (go to home)
-            context.go('/home');
+            // Pop back to previous screen if possible, otherwise go home
+            if (GoRouter.of(context).canPop()) {
+              context.pop();
+            } else {
+              context.go('/home');
+            }
           },
           onMenu: () => _showSongOptionsSheet(context, playerState, palette),
           onTitleTap: (!isPlayback && playerState.availableSpaces.length > 1)
@@ -189,6 +194,20 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
+                if (playerState.playlistName != null &&
+                    playerState.playlistName!.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Playing from: ${playerState.playlistName}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      color: palette.accent,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
 
                 const SizedBox(height: 24),
 
@@ -207,10 +226,15 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                   isShuffleOn: _isShuffleOn,
                   volume: _volume,
                   palette: palette,
+                  hasNext: playerState.hasNext,
+                  hasPrevious: playerState.hasPrevious || currentPosition > 3,
                   onShuffle: () => setState(() => _isShuffleOn = !_isShuffleOn),
                   onPlayPause: () => context
                       .read<PlayerBloc>()
                       .add(const PlayerPlayPauseToggled()),
+                  onSkipBack: () => context
+                      .read<PlayerBloc>()
+                      .add(const PlayerSkipBackRequested()),
                   onSkip: () => context
                       .read<PlayerBloc>()
                       .add(const PlayerSkipRequested()),
@@ -503,13 +527,20 @@ class _TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+      padding: const EdgeInsets.fromLTRB(4, 12, 4, 4),
       child: Row(
         children: [
-          IconButton(
-            icon: Icon(LucideIcons.chevronDown,
-                color: palette.textMuted, size: 26),
-            onPressed: onMinimize,
+          // Minimize button — compact to give more room to title
+          SizedBox(
+            width: 40,
+            height: 40,
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              icon: Icon(LucideIcons.chevronDown,
+                  color: palette.textMuted, size: 26),
+              onPressed: onMinimize,
+            ),
           ),
           Expanded(
             child: GestureDetector(
@@ -519,13 +550,14 @@ class _TopBar extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Row(
-                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Flexible(
                         child: Text(
                           spaceName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
                           style: GoogleFonts.poppins(
                             color: palette.textPrimary,
                             fontSize: 14,
@@ -544,6 +576,7 @@ class _TopBar extends StatelessWidget {
                     playlistName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
                     style: GoogleFonts.inter(
                       color: palette.textMuted,
                       fontSize: 11,
@@ -555,10 +588,17 @@ class _TopBar extends StatelessWidget {
               ),
             ),
           ),
-          IconButton(
-            icon: Icon(LucideIcons.moreVertical,
-                color: palette.textMuted, size: 22),
-            onPressed: onMenu,
+          // Menu button — compact
+          SizedBox(
+            width: 40,
+            height: 40,
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              icon: Icon(LucideIcons.moreVertical,
+                  color: palette.textMuted, size: 22),
+              onPressed: onMenu,
+            ),
           ),
         ],
       ),
@@ -601,7 +641,11 @@ class _ProgressBar extends StatelessWidget {
                 : 0,
             min: 0,
             max: duration > 0 ? duration.toDouble() : 1,
-            onChanged: (_) {},
+            onChanged: (value) {
+              context.read<PlayerBloc>().add(
+                    PlayerSeekRequested(positionSeconds: value.toInt()),
+                  );
+            },
           ),
         ),
         Padding(
@@ -633,71 +677,109 @@ class _ControlsRow extends StatelessWidget {
     required this.isShuffleOn,
     required this.volume,
     required this.palette,
+    required this.hasNext,
+    required this.hasPrevious,
     required this.onShuffle,
     required this.onPlayPause,
+    required this.onSkipBack,
     required this.onSkip,
     required this.onVolumeChanged,
   });
   final bool isPlaying, isShuffleOn;
+  final bool hasNext, hasPrevious;
   final double volume;
   final _NPPalette palette;
-  final VoidCallback onShuffle, onPlayPause, onSkip;
+  final VoidCallback onShuffle, onPlayPause, onSkipBack, onSkip;
   final ValueChanged<double> onVolumeChanged;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            // Shuffle
-            IconButton(
-              icon: Icon(
-                LucideIcons.shuffle,
-                color: isShuffleOn ? palette.accent : palette.textMuted,
-                size: 22,
-              ),
-              onPressed: onShuffle,
+        // Shuffle
+        _ControlButton(
+          icon: LucideIcons.shuffle,
+          color: isShuffleOn ? palette.accent : palette.textMuted,
+          size: 22,
+          onTap: onShuffle,
+        ),
+        const SizedBox(width: 20),
+        // Skip Previous
+        _ControlButton(
+          icon: LucideIcons.skipBack,
+          color: hasPrevious
+              ? palette.textPrimary
+              : palette.textMuted.withOpacity(0.4),
+          size: 26,
+          onTap: onSkipBack,
+        ),
+        const SizedBox(width: 16),
+        // Play/Pause (large center button)
+        GestureDetector(
+          onTap: onPlayPause,
+          child: Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: palette.textPrimary,
             ),
-            // Play/Pause (large)
-            GestureDetector(
-              onTap: onPlayPause,
-              child: Container(
-                width: 68,
-                height: 68,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: palette.textPrimary,
-                ),
-                child: Icon(
-                  isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                  color: palette.bg,
-                  size: 38,
-                ),
-              ),
+            child: Icon(
+              isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+              color: palette.bg,
+              size: 36,
             ),
-            // Skip
-            IconButton(
-              icon: Icon(LucideIcons.skipForward,
-                  color: palette.textPrimary, size: 28),
-              onPressed: onSkip,
-            ),
-            // Volume
-            IconButton(
-              icon: Icon(
-                volume > 0 ? LucideIcons.volume2 : LucideIcons.volumeX,
-                color: palette.textMuted,
-                size: 22,
-              ),
-              onPressed: () {
-                // Toggle mute
-                onVolumeChanged(volume > 0 ? 0 : 0.6);
-              },
-            ),
-          ],
+          ),
+        ),
+        const SizedBox(width: 16),
+        // Skip Next
+        _ControlButton(
+          icon: LucideIcons.skipForward,
+          color: hasNext
+              ? palette.textPrimary
+              : palette.textMuted.withOpacity(0.4),
+          size: 26,
+          onTap: onSkip,
+        ),
+        const SizedBox(width: 20),
+        // Volume
+        _ControlButton(
+          icon: volume > 0 ? LucideIcons.volume2 : LucideIcons.volumeX,
+          color: palette.textMuted,
+          size: 22,
+          onTap: () => onVolumeChanged(volume > 0 ? 0 : 0.6),
         ),
       ],
+    );
+  }
+}
+
+/// Uniform-sized control button to keep the row balanced.
+class _ControlButton extends StatelessWidget {
+  const _ControlButton({
+    required this.icon,
+    required this.color,
+    required this.size,
+    required this.onTap,
+  });
+  final IconData icon;
+  final Color color;
+  final double size;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 44,
+      height: 44,
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints(),
+        icon: Icon(icon, color: color, size: size),
+        onPressed: onTap,
+      ),
     );
   }
 }
@@ -1201,14 +1283,14 @@ class _SpaceSwapSheet extends StatelessWidget {
               Icon(Icons.spatial_audio_outlined,
                   color: palette.accent, size: 22),
               const SizedBox(width: 10),
-              Text('Chọn không gian',
+              Text('Select Space',
                   style: GoogleFonts.poppins(
                       color: palette.textPrimary,
                       fontSize: 17,
                       fontWeight: FontWeight.w700)),
             ]),
             const SizedBox(height: 4),
-            Text('Đổi space sẽ cập nhật cảm biến, nhạc và trạng thái Hub.',
+            Text('Switching space will update sensors, music and Hub status.',
                 style:
                     GoogleFonts.inter(color: palette.textMuted, fontSize: 12)),
             const SizedBox(height: 16),
@@ -1217,7 +1299,7 @@ class _SpaceSwapSheet extends StatelessWidget {
               Padding(
                   padding: const EdgeInsets.symmetric(vertical: 24),
                   child: Center(
-                      child: Text('Không có không gian nào.',
+                      child: Text('No spaces available.',
                           style: GoogleFonts.inter(color: palette.textMuted))))
             else
               ListView.separated(

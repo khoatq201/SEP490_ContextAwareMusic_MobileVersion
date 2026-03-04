@@ -4,17 +4,17 @@ import '../../../../core/error/failures.dart';
 import '../../domain/entities/music_profile.dart';
 import '../../domain/entities/playlist.dart';
 import '../../domain/repositories/music_profile_repository.dart';
-import '../datasources/zone_mock_datasource.dart';
+import '../datasources/zone_remote_datasource.dart';
 
 class MusicProfileRepositoryImpl implements MusicProfileRepository {
-  final ZoneMockDataSource mockDataSource;
+  final ZoneRemoteDataSource remoteDataSource;
 
-  MusicProfileRepositoryImpl({required this.mockDataSource});
+  MusicProfileRepositoryImpl({required this.remoteDataSource});
 
   @override
   Future<Either<Failure, MusicProfile>> getProfileByZone(String zoneId) async {
     try {
-      final profile = await mockDataSource.getMusicProfileByZone(zoneId);
+      final profile = await remoteDataSource.getMusicProfileByZone(zoneId);
       return Right(profile);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
@@ -28,7 +28,7 @@ class MusicProfileRepositoryImpl implements MusicProfileRepository {
   Future<Either<Failure, MusicProfile>> getProfileById(String profileId) async {
     try {
       // For MVP, use zone ID as profile lookup
-      final profile = await mockDataSource.getMusicProfileByZone(profileId);
+      final profile = await remoteDataSource.getMusicProfileByZone(profileId);
       return Right(profile);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
@@ -156,7 +156,7 @@ class MusicProfileRepositoryImpl implements MusicProfileRepository {
   @override
   Future<Either<Failure, List<Playlist>>> getAllPlaylists() async {
     try {
-      final playlists = await mockDataSource.getAllPlaylists();
+      final playlists = await remoteDataSource.getAllPlaylists();
       return Right(playlists);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
@@ -168,7 +168,7 @@ class MusicProfileRepositoryImpl implements MusicProfileRepository {
   @override
   Future<Either<Failure, Playlist>> getPlaylistById(String playlistId) async {
     try {
-      final playlist = await mockDataSource.getPlaylistById(playlistId);
+      final playlist = await remoteDataSource.getPlaylistById(playlistId);
       return Right(playlist);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
@@ -181,7 +181,7 @@ class MusicProfileRepositoryImpl implements MusicProfileRepository {
   Future<Either<Failure, List<Playlist>>> getPlaylistsByMood(
       String mood) async {
     try {
-      final allPlaylists = await mockDataSource.getAllPlaylists();
+      final allPlaylists = await remoteDataSource.getAllPlaylists();
       final filtered = allPlaylists
           .where((p) => p.moodTags.contains(mood.toLowerCase()))
           .toList();
@@ -197,7 +197,7 @@ class MusicProfileRepositoryImpl implements MusicProfileRepository {
   Future<Either<Failure, List<Playlist>>> getPlaylistsByGenre(
       String genre) async {
     try {
-      final allPlaylists = await mockDataSource.getAllPlaylists();
+      final allPlaylists = await remoteDataSource.getAllPlaylists();
       final filtered = allPlaylists
           .where((p) => p.genre.toLowerCase() == genre.toLowerCase())
           .toList();

@@ -64,7 +64,7 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
         backgroundColor: palette.card,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
-          'Tạo Playlist mới',
+          'Create New Playlist',
           style: GoogleFonts.poppins(
             color: palette.textPrimary,
             fontWeight: FontWeight.w700,
@@ -77,7 +77,7 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
           style: GoogleFonts.inter(color: palette.textPrimary, fontSize: 14),
           cursorColor: palette.accent,
           decoration: InputDecoration(
-            hintText: 'VD: Nhạc buổi trưa...',
+            hintText: 'E.g.: Lunch music...',
             hintStyle: GoogleFonts.inter(
                 color: palette.textMuted.withOpacity(0.55), fontSize: 14),
             filled: true,
@@ -101,8 +101,8 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child:
-                Text('Huỷ', style: GoogleFonts.inter(color: palette.textMuted)),
+            child: Text('Cancel',
+                style: GoogleFonts.inter(color: palette.textMuted)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -113,7 +113,7 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
               elevation: 0,
             ),
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text('Tạo',
+            child: Text('Create',
                 style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
           ),
         ],
@@ -126,7 +126,7 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
       final newPlaylist = PlaylistEntity(
         id: 'new-${DateTime.now().millisecondsSinceEpoch}',
         title: name,
-        description: 'Playlist mới',
+        description: 'New Playlist',
         songs: const [],
       );
       setState(() => _savedPlaylists.insert(0, newPlaylist));
@@ -177,7 +177,7 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
               titlePadding:
                   const EdgeInsets.only(left: 20, bottom: 14, right: 60),
               title: Text(
-                'Thư viện nhạc',
+                'Music Library',
                 style: GoogleFonts.poppins(
                   color: palette.textPrimary,
                   fontSize: 22,
@@ -313,7 +313,7 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
       case _LibraryFilter.stations:
         return '0 station';
       case _LibraryFilter.blocked:
-        return '${_blockedSongs.length} bài';
+        return '${_blockedSongs.length} tracks';
     }
   }
 
@@ -351,8 +351,8 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
     return SliverFillRemaining(
       child: _EmptyState(
         icon: LucideIcons.bookMarked,
-        title: 'Chưa có playlist nào',
-        subtitle: 'Lưu playlist yêu thích để xem tại đây',
+        title: 'No playlists yet',
+        subtitle: 'Save favorite playlists to view here',
         actionLabel: 'Browse Playlists',
         onAction: () => context.go('/search'),
         palette: palette,
@@ -364,8 +364,8 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
     return SliverFillRemaining(
       child: _EmptyState(
         icon: LucideIcons.shield,
-        title: 'Danh sách trống',
-        subtitle: 'Bạn chưa chặn bài hát nào',
+        title: 'Empty List',
+        subtitle: 'You haven\'t blocked any songs',
         palette: palette,
       ),
     );
@@ -375,8 +375,8 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
     return SliverFillRemaining(
       child: _EmptyState(
         icon: LucideIcons.radio,
-        title: 'Chưa có station nào',
-        subtitle: 'Các radio station bạn lưu sẽ hiện ở đây',
+        title: 'No stations yet',
+        subtitle: 'Saved radio stations will appear here',
         palette: palette,
       ),
     );
@@ -442,8 +442,7 @@ class _PlaylistTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      playlist.description ??
-                          '${playlist.totalTracks} bài nhạc',
+                      playlist.description ?? '${playlist.totalTracks} songs',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
@@ -466,7 +465,7 @@ class _PlaylistTile extends StatelessWidget {
                     const SizedBox(width: 6),
                   ],
                   Text(
-                    '${playlist.totalTracks} bài',
+                    '${playlist.totalTracks} tracks',
                     style: GoogleFonts.inter(
                         color: palette.textMuted, fontSize: 11),
                   ),
@@ -517,7 +516,7 @@ class _BlockedSongTile extends StatelessWidget {
             const Icon(Icons.lock_open_rounded, color: Colors.green, size: 18),
             const SizedBox(width: 6),
             Text(
-              'Bỏ chặn',
+              'Unblock',
               style: GoogleFonts.inter(
                   color: Colors.green,
                   fontSize: 12,

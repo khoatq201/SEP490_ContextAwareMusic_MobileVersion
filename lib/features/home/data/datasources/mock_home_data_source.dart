@@ -19,35 +19,35 @@ class MockHomeDataSource {
     return const [
       SensorEntity(
         id: 'sensor-temp',
-        name: 'Nhiệt độ',
+        name: 'Temperature',
         value: '32°C',
         icon: Icons.thermostat_outlined,
         accentColor: Color(0xFFF97316), // orange
-        badge: 'Ổn định',
+        badge: 'Stable',
       ),
       SensorEntity(
         id: 'sensor-humidity',
-        name: 'Độ ẩm',
+        name: 'Humidity',
         value: '65%',
         icon: Icons.water_drop_outlined,
         accentColor: Color(0xFF38BDF8), // sky
-        badge: 'Tối ưu',
+        badge: 'Optimal',
       ),
       SensorEntity(
         id: 'sensor-crowd',
-        name: 'Lượng khách',
-        value: 'Trung bình',
+        name: 'Crowd Level',
+        value: 'Moderate',
         icon: Icons.people_outline,
         accentColor: Color(0xFFA78BFA), // violet
         badge: 'Live',
       ),
       SensorEntity(
         id: 'sensor-noise',
-        name: 'Tiếng ồn',
+        name: 'Noise Level',
         value: '58 dB',
         icon: Icons.volume_up_outlined,
         accentColor: Color(0xFF34D399), // emerald
-        badge: 'Vừa',
+        badge: 'Moderate',
       ),
     ];
   }
@@ -122,28 +122,28 @@ class MockHomeDataSource {
         PlaylistEntity(
           id: 'pl-chill',
           title: 'Chill Retail',
-          description: 'Âm nhạc nhẹ nhàng cho không gian mua sắm',
+          description: 'Soft music for retail spaces',
           coverUrl: _img('chill', seed: 10),
           songs: [chill1, chill2, focus1],
         ),
         PlaylistEntity(
           id: 'pl-energy',
           title: 'Energy Boost',
-          description: 'Nhịp nhanh, tăng năng lượng cho khách hàng',
+          description: 'Fast-paced beats to energize customers',
           coverUrl: _img('energy', seed: 11),
           songs: [energy1, energy2, pop1],
         ),
         PlaylistEntity(
           id: 'pl-focus',
           title: 'Deep Focus',
-          description: 'Âm nhạc giúp tập trung, phù hợp khu vực làm việc',
+          description: 'Focus music, ideal for work areas',
           coverUrl: _img('focus', seed: 12),
           songs: [focus1, focus2, chill1],
         ),
         PlaylistEntity(
           id: 'pl-pop',
           title: 'Pop Hits',
-          description: 'Những bài nhạc pop thịnh hành',
+          description: 'Trending pop hits',
           coverUrl: _img('pop', seed: 13),
           songs: [pop1, pop2, energy1],
         ),
@@ -158,21 +158,21 @@ class MockHomeDataSource {
         PlaylistEntity(
           id: 'pl-trending',
           title: 'Trending Sounds',
-          description: 'Được phát nhiều nhất hôm nay',
+          description: 'Most played today',
           coverUrl: _img('trending', seed: 20),
           songs: [pop2, energy2, chill2],
         ),
         PlaylistEntity(
           id: 'pl-morning',
           title: 'Morning Opener',
-          description: 'Bắt đầu ngày mới sôi động',
+          description: 'Start your day with energy',
           coverUrl: _img('morning', seed: 21),
           songs: [chill1, energy1, focus2],
         ),
         PlaylistEntity(
           id: 'pl-evening',
           title: 'Evening Wind Down',
-          description: 'Kết thúc ngày nhẹ nhàng',
+          description: 'Wind down the day gently',
           coverUrl: _img('sunset', seed: 22),
           songs: [focus1, chill2, pop1],
         ),

@@ -14,12 +14,16 @@ class SongEntity extends Equatable {
   /// Remote image URL for the album / track artwork
   final String? coverUrl;
 
+  /// Stream URL for audio playback (HLS .m3u8, progressive MP3, etc.)
+  final String? streamUrl;
+
   const SongEntity({
     required this.id,
     required this.title,
     required this.artist,
     required this.duration,
     this.coverUrl,
+    this.streamUrl,
   });
 
   /// Returns a formatted mm:ss string, e.g. "03:25"
@@ -30,5 +34,5 @@ class SongEntity extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, title, artist, duration, coverUrl];
+  List<Object?> get props => [id, title, artist, duration, coverUrl, streamUrl];
 }

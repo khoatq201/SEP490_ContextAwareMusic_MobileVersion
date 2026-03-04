@@ -130,16 +130,16 @@ class MainShellPage extends StatelessWidget {
         final shouldExit = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Thoát ứng dụng'),
-            content: const Text('Bạn có muốn thoát ứng dụng không?'),
+            title: const Text('Exit Application'),
+            content: const Text('Do you want to exit the application?'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Không'),
+                child: const Text('No'),
               ),
               TextButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Thoát'),
+                child: const Text('Exit'),
               ),
             ],
           ),
@@ -160,8 +160,11 @@ class MainShellPage extends StatelessWidget {
         bottomNavigationBar: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // MiniPlayer sits directly above the BottomNavigationBar
-            const MiniPlayerWidget(),
+            // Hide MiniPlayer when on the Now Playing tab (redundant)
+            if (!GoRouterState.of(context)
+                .matchedLocation
+                .startsWith('/now-playing'))
+              const MiniPlayerWidget(),
             bottomNav,
           ],
         ),

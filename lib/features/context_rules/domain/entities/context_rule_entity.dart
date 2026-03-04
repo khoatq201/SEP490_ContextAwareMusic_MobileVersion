@@ -14,7 +14,7 @@ class ContextRuleEntity extends Equatable {
   final ConditionOperator operator_;
   final double conditionValue;
 
-  /// Human-readable action label, e.g. "Phát Chill Playlist"
+  /// Human-readable action label, e.g. "Play Chill Playlist"
   final String actionLabel;
 
   /// Optional playlist id to trigger
@@ -41,13 +41,13 @@ class ContextRuleEntity extends Equatable {
   String get conditionTypeLabel {
     switch (conditionType) {
       case ConditionType.temperature:
-        return 'Nhiệt độ';
+        return 'Temperature';
       case ConditionType.humidity:
-        return 'Độ ẩm';
+        return 'Humidity';
       case ConditionType.crowd:
-        return 'Lượng khách';
+        return 'Crowd Level';
       case ConditionType.noiseLevel:
-        return 'Tiếng ồn';
+        return 'Noise Level';
     }
   }
 
@@ -75,8 +75,8 @@ class ContextRuleEntity extends Equatable {
     }
   }
 
-  /// Full human-readable description, e.g. "Nếu Nhiệt độ > 30°C → Phát Chill Playlist"
-  String get summary => 'Nếu $conditionTypeLabel $operatorLabel '
+  /// Full human-readable description, e.g. "If Temperature > 30°C → Play Chill Playlist"
+  String get summary => 'If $conditionTypeLabel $operatorLabel '
       '${conditionValue.toStringAsFixed(conditionValue == conditionValue.roundToDouble() ? 0 : 1)}$conditionUnit '
       '→ $actionLabel';
 

@@ -7,9 +7,18 @@ class MockLibraryDataSource {
   // ── Saved (liked) playlists ────────────────────────────────────────────────
   static List<PlaylistEntity> getSavedPlaylists() => [
         const PlaylistEntity(
+          id: 'lib-hls',
+          title: 'HLS Stream Demo',
+          description:
+              'Demo playlist with real HLS audio streaming from CloudFront CDN',
+          coverUrl: 'https://picsum.photos/seed/hls_demo/400/400',
+          isDownloaded: false,
+          songs: _hlsDemoSongs,
+        ),
+        const PlaylistEntity(
           id: 'lib-1',
           title: 'Chill Retail Vibes',
-          description: 'Âm nhạc thư giãn cho giờ thấp điểm',
+          description: 'Relaxing music for off-peak hours',
           coverUrl: 'https://picsum.photos/seed/chill_lib/400/400',
           isDownloaded: true,
           songs: _chillSongs,
@@ -17,7 +26,7 @@ class MockLibraryDataSource {
         const PlaylistEntity(
           id: 'lib-2',
           title: 'Energy Rush',
-          description: 'Bật lên khi cửa hàng đông khách',
+          description: 'Turn on when the store is crowded',
           coverUrl: 'https://picsum.photos/seed/energy_lib/400/400',
           isDownloaded: true,
           songs: _energySongs,
@@ -25,7 +34,7 @@ class MockLibraryDataSource {
         const PlaylistEntity(
           id: 'lib-3',
           title: 'Deep Work Focus',
-          description: 'Nhạc tập trung cho ca tối',
+          description: 'Focus music for evening shifts',
           coverUrl: 'https://picsum.photos/seed/focus_lib/400/400',
           isDownloaded: false,
           songs: _focusSongs,
@@ -33,7 +42,7 @@ class MockLibraryDataSource {
         const PlaylistEntity(
           id: 'lib-4',
           title: 'Weekend Brunch',
-          description: 'Nhạc nhẹ cho buổi sáng cuối tuần',
+          description: 'Light music for weekend mornings',
           coverUrl: 'https://picsum.photos/seed/brunch_lib/400/400',
           isDownloaded: false,
           songs: _brunchSongs,
@@ -41,7 +50,7 @@ class MockLibraryDataSource {
         const PlaylistEntity(
           id: 'lib-5',
           title: 'Late Night Jazz',
-          description: 'Jazz tinh tế cho giờ đóng cửa',
+          description: 'Sophisticated jazz for closing hours',
           coverUrl: 'https://picsum.photos/seed/jazz_lib/400/400',
           isDownloaded: false,
           songs: [],
@@ -120,5 +129,39 @@ class MockLibraryDataSource {
         title: 'Bossa Light',
         artist: 'Café Ensemble',
         duration: 212),
+  ];
+
+  // ── HLS stream demo — each entry is a full track (single .m3u8 URL) ─────
+  //
+  // In production, each song has its own .m3u8 URL pointing to a distinct
+  // audio stream. For this demo we reuse the same CloudFront test URL.
+  static const _hlsUrl =
+      'https://ddbdgg08nzlz.cloudfront.net/test_file/test_file_audio.m3u8';
+
+  static const _hlsDemoSongs = [
+    SongEntity(
+      id: 'hls-1',
+      title: 'CloudFront Test Track',
+      artist: 'HLS Demo Artist',
+      duration: 180,
+      streamUrl: _hlsUrl,
+      coverUrl: 'https://picsum.photos/seed/hls_1/400/400',
+    ),
+    SongEntity(
+      id: 'hls-2',
+      title: 'Morning Breeze',
+      artist: 'Demo Band',
+      duration: 180,
+      streamUrl: _hlsUrl,
+      coverUrl: 'https://picsum.photos/seed/hls_2/400/400',
+    ),
+    SongEntity(
+      id: 'hls-3',
+      title: 'Sunset Glow',
+      artist: 'Ambient Studio',
+      duration: 180,
+      streamUrl: _hlsUrl,
+      coverUrl: 'https://picsum.photos/seed/hls_3/400/400',
+    ),
   ];
 }

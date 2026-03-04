@@ -1,7 +1,9 @@
 import '../../domain/entities/offline_playlist.dart';
+import 'offline_playlist_datasource.dart';
 
-class OfflinePlaylistMockDatasource {
+class OfflinePlaylistMockDatasource implements OfflinePlaylistDataSource {
   /// Mock server response with available playlists
+  @override
   Future<List<OfflinePlaylist>> getAvailablePlaylists() async {
     await Future.delayed(const Duration(milliseconds: 800));
     return [
@@ -49,6 +51,7 @@ class OfflinePlaylistMockDatasource {
   }
 
   /// Mock download progress stream
+  @override
   Stream<double> downloadPlaylist(String playlistId) async* {
     for (int i = 0; i <= 100; i += 10) {
       await Future.delayed(const Duration(milliseconds: 500));
@@ -57,6 +60,7 @@ class OfflinePlaylistMockDatasource {
   }
 
   /// Mock delete operation
+  @override
   Future<void> deletePlaylist(String playlistId) async {
     await Future.delayed(const Duration(milliseconds: 300));
   }

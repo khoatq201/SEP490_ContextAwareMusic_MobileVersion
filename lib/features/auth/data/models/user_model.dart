@@ -16,9 +16,9 @@ class UserModel extends User {
     super.lastLogin,
   });
 
-  /// Backend trả role là integer:
+  /// The backend returns roles as integers:
   ///   0 → SystemAdmin, 1 → BrandManager, 2 → StoreManager
-  /// Nếu backend trả string thì giữ nguyên.
+  /// If the backend returns a string, it is kept as-is.
   static String _mapRole(dynamic raw) {
     if (raw is int) {
       switch (raw) {

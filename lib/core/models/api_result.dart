@@ -1,10 +1,10 @@
-/// Generic wrapper cho mọi API response từ backend.
+/// Generic wrapper for all API responses from the backend.
 ///
-/// Backend luôn bọc response trong:
-/// - `Result<T>` (có data) – dùng `ApiResult<T>`
-/// - `Result` (không data) – dùng `ApiResult<void>`
+/// The backend always wraps responses in:
+/// - `Result<T>` (with data) – use `ApiResult<T>`
+/// - `Result` (no data) – use `ApiResult<void>`
 ///
-/// Parse với [ApiResult.fromJson], truyền vào [fromData] để parse phần `data`.
+/// Parse with [ApiResult.fromJson], passing [fromData] to parse the `data` field.
 class ApiResult<T> {
   final bool isSuccess;
   final String? message;
@@ -30,16 +30,15 @@ class ApiResult<T> {
       data: (json['data'] != null && fromData != null)
           ? fromData(json['data'])
           : null,
-      errors: (json['errors'] as List<dynamic>?)
-          ?.map((e) => e.toString())
-          .toList(),
+      errors:
+          (json['errors'] as List<dynamic>?)?.map((e) => e.toString()).toList(),
       errorCode: json['errorCode'] as String?,
     );
   }
 
-  /// Lấy thông báo lỗi thân thiện cho người dùng.
+  /// Returns a user-friendly error message.
   String get userFriendlyError {
     if (errors != null && errors!.isNotEmpty) return errors!.first;
-    return message ?? 'Đã có lỗi xảy ra.';
+    return message ?? 'An error occurred.';
   }
 }

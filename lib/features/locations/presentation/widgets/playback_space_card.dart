@@ -42,7 +42,9 @@ class PlaybackSpaceCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
-                      space.isOnline ? LucideIcons.radio : LucideIcons.radioReceiver,
+                      space.isOnline
+                          ? LucideIcons.radio
+                          : LucideIcons.radioReceiver,
                       color: palette.accent,
                       size: 20,
                     ),
@@ -85,7 +87,7 @@ class PlaybackSpaceCard extends StatelessWidget {
                   _InfoRow(
                     icon: LucideIcons.music4,
                     label: 'PLAYLIST',
-                    value: space.currentTrackName ?? 'Không có',
+                    value: space.currentTrackName ?? 'None',
                     palette: palette,
                   ),
                   const SizedBox(height: 6),
@@ -106,7 +108,8 @@ class PlaybackSpaceCard extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
-                border: Border(top: BorderSide(color: palette.border, width: 1)),
+                border:
+                    Border(top: BorderSide(color: palette.border, width: 1)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -152,15 +155,18 @@ class _StatusBadge extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 7, height: 7,
+            width: 7,
+            height: 7,
             decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
           const SizedBox(width: 5),
           Text(
             label,
             style: GoogleFonts.inter(
-              color: color, fontSize: 10,
-              fontWeight: FontWeight.w800, letterSpacing: 0.5,
+              color: color,
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.5,
             ),
           ),
         ],
@@ -171,8 +177,10 @@ class _StatusBadge extends StatelessWidget {
 
 class _InfoRow extends StatelessWidget {
   const _InfoRow({
-    required this.icon, required this.label,
-    required this.value, required this.palette,
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.palette,
   });
   final IconData icon;
   final String label;
@@ -188,8 +196,10 @@ class _InfoRow extends StatelessWidget {
         Text(
           label,
           style: GoogleFonts.inter(
-            color: palette.textMuted, fontSize: 10,
-            fontWeight: FontWeight.w700, letterSpacing: 0.8,
+            color: palette.textMuted,
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.8,
           ),
         ),
         const SizedBox(width: 8),
@@ -197,10 +207,12 @@ class _InfoRow extends StatelessWidget {
           child: Text(
             value,
             style: GoogleFonts.inter(
-              color: palette.accent, fontSize: 12,
+              color: palette.accent,
+              fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
-            maxLines: 1, overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
@@ -213,22 +225,29 @@ class _Palette {
   final Color card, border, textPrimary, textMuted, accent;
 
   const _Palette({
-    required this.card, required this.border,
-    required this.textPrimary, required this.textMuted, required this.accent,
+    required this.card,
+    required this.border,
+    required this.textPrimary,
+    required this.textMuted,
+    required this.accent,
   });
 
   factory _Palette.of(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     if (isDark) {
       return const _Palette(
-        card: AppColors.surfaceDark, border: AppColors.borderDarkLight,
-        textPrimary: AppColors.textDarkPrimary, textMuted: AppColors.textDarkSecondary,
+        card: AppColors.surfaceDark,
+        border: AppColors.borderDarkLight,
+        textPrimary: AppColors.textDarkPrimary,
+        textMuted: AppColors.textDarkSecondary,
         accent: AppColors.primaryCyan,
       );
     }
     return const _Palette(
-      card: AppColors.surface, border: AppColors.borderLight,
-      textPrimary: AppColors.textPrimary, textMuted: AppColors.textTertiary,
+      card: AppColors.surface,
+      border: AppColors.borderLight,
+      textPrimary: AppColors.textPrimary,
+      textMuted: AppColors.textTertiary,
       accent: AppColors.primaryOrange,
     );
   }

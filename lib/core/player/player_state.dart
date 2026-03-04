@@ -19,6 +19,15 @@ class PlayerState extends Equatable {
   /// in the Now Playing tab.
   final List<SpaceInfo> availableSpaces;
 
+  /// Queue of tracks for playlist playback.
+  final List<Track> queue;
+
+  /// Current index within [queue]. -1 means no queue active.
+  final int currentIndex;
+
+  /// Name of the playlist/album currently playing from.
+  final String? playlistName;
+
   const PlayerState({
     this.currentTrack,
     this.isPlaying = false,
@@ -28,10 +37,19 @@ class PlayerState extends Equatable {
     this.activeSpaceId,
     this.activeSpaceName,
     this.availableSpaces = const [],
+    this.queue = const [],
+    this.currentIndex = -1,
+    this.playlistName,
   });
 
   /// Whether we have enough data to render the MiniPlayer.
   bool get hasTrack => currentTrack != null;
+
+  /// Whether there is a next track in the queue.
+  bool get hasNext => queue.isNotEmpty && currentIndex < queue.length - 1;
+
+  /// Whether there is a previous track in the queue.
+  bool get hasPrevious => queue.isNotEmpty && currentIndex > 0;
 
   double get progress =>
       (duration > 0) ? (currentPosition / duration).clamp(0.0, 1.0) : 0.0;
@@ -45,7 +63,11 @@ class PlayerState extends Equatable {
     String? activeSpaceId,
     String? activeSpaceName,
     List<SpaceInfo>? availableSpaces,
+    List<Track>? queue,
+    int? currentIndex,
+    String? playlistName,
     bool clearTrack = false,
+    bool clearPlaylistName = false,
   }) {
     return PlayerState(
       currentTrack: clearTrack ? null : (currentTrack ?? this.currentTrack),
@@ -56,6 +78,10 @@ class PlayerState extends Equatable {
       activeSpaceId: activeSpaceId ?? this.activeSpaceId,
       activeSpaceName: activeSpaceName ?? this.activeSpaceName,
       availableSpaces: availableSpaces ?? this.availableSpaces,
+      queue: queue ?? this.queue,
+      currentIndex: currentIndex ?? this.currentIndex,
+      playlistName:
+          clearPlaylistName ? null : (playlistName ?? this.playlistName),
     );
   }
 
@@ -69,5 +95,8 @@ class PlayerState extends Equatable {
         activeSpaceId,
         activeSpaceName,
         availableSpaces,
+        queue,
+        currentIndex,
+        playlistName,
       ];
 }

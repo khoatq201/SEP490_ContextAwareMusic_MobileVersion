@@ -24,7 +24,7 @@ class MiniPlayerWidget extends StatelessWidget {
         final colorScheme = Theme.of(context).colorScheme;
 
         return GestureDetector(
-          onTap: () => context.go('/now-playing'),
+          onTap: () => context.push('/now-playing-full'),
           child: Container(
             height: 64,
             margin: const EdgeInsets.symmetric(

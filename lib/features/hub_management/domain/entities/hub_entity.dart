@@ -11,7 +11,7 @@ class HubEntity extends Equatable {
   /// Whether the hub is currently reachable over the network.
   final bool isOnline;
 
-  /// Human-readable Wi-Fi signal quality: "Mạnh" | "Trung bình" | "Yếu"
+  /// Human-readable Wi-Fi signal quality: "Strong" | "Medium" | "Weak"
   final String wifiSignalStrength;
 
   /// Name of the Bluetooth speaker currently paired with the hub.

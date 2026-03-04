@@ -21,6 +21,7 @@ import 'core/constants/api_constants.dart';
 // Device Pairing Feature
 import 'features/device_pairing/data/datasources/device_pairing_remote_datasource.dart';
 import 'features/device_pairing/data/datasources/device_pairing_mock_datasource.dart';
+import 'features/device_pairing/data/datasources/device_pairing_remote_datasource_impl.dart';
 import 'features/device_pairing/data/repositories/device_pairing_repository_impl.dart';
 import 'features/device_pairing/domain/repositories/device_pairing_repository.dart';
 import 'features/device_pairing/domain/usecases/pair_device.dart';
@@ -29,6 +30,7 @@ import 'features/device_pairing/presentation/bloc/device_pairing_bloc.dart';
 // Location Feature
 import 'features/locations/data/datasources/location_remote_datasource.dart';
 import 'features/locations/data/datasources/location_mock_datasource.dart';
+import 'features/locations/data/datasources/location_remote_datasource_impl.dart';
 import 'features/locations/data/repositories/location_repository_impl.dart';
 import 'features/locations/domain/repositories/location_repository.dart';
 import 'features/locations/domain/usecases/location_usecases.dart';
@@ -43,7 +45,9 @@ import 'features/settings/presentation/bloc/settings_cubit.dart';
 // Space Control Feature
 import 'features/space_control/data/datasources/space_remote_datasource.dart';
 import 'features/space_control/data/datasources/music_control_remote_datasource.dart';
+import 'features/space_control/data/datasources/offline_playlist_datasource.dart';
 import 'features/space_control/data/datasources/offline_playlist_mock_datasource.dart';
+import 'features/space_control/data/datasources/offline_playlist_remote_datasource_impl.dart';
 import 'features/space_control/data/repositories/space_repository_impl.dart';
 import 'features/space_control/data/repositories/music_control_repository_impl.dart';
 import 'features/space_control/data/repositories/offline_playlist_repository_impl.dart';
@@ -76,6 +80,8 @@ import 'features/store_selection/domain/usecases/get_user_stores.dart';
 import 'features/store_selection/presentation/bloc/store_selection_bloc.dart';
 
 // Zone Management Feature
+import 'features/zone_management/data/datasources/zone_remote_datasource.dart';
+import 'features/zone_management/data/datasources/zone_remote_datasource_impl.dart';
 import 'features/zone_management/data/datasources/zone_mock_datasource.dart';
 import 'features/zone_management/data/repositories/zone_repository_impl.dart';
 import 'features/zone_management/data/repositories/music_profile_repository_impl.dart';
@@ -91,6 +97,7 @@ import 'features/zone_management/domain/usecases/get_all_playlists.dart';
 // Mock Data Sources
 import 'features/space_control/data/datasources/space_mock_datasource.dart';
 import 'features/space_control/data/datasources/music_control_mock_datasource.dart';
+import 'features/store_dashboard/data/datasources/store_mock_datasource.dart';
 
 final sl = GetIt.instance;
 
@@ -156,9 +163,11 @@ Future<void> initializeDependencies() async {
   // Device Pairing Feature
   // =============================================
 
-  // Data sources
+  // Data sources — toggle via ApiConstants.useMockData
   sl.registerLazySingleton<DevicePairingRemoteDataSource>(
-    () => DevicePairingMockDataSource(),
+    () => ApiConstants.useMockData
+        ? DevicePairingMockDataSource()
+        : DevicePairingRemoteDataSourceImpl(dioClient: sl()),
   );
 
   // Repositories
@@ -183,9 +192,11 @@ Future<void> initializeDependencies() async {
   // Location Feature
   // =============================================
 
-  // Data sources
+  // Data sources — toggle via ApiConstants.useMockData
   sl.registerLazySingleton<LocationRemoteDataSource>(
-    () => LocationMockDataSource(),
+    () => ApiConstants.useMockData
+        ? LocationMockDataSource()
+        : LocationRemoteDataSourceImpl(dioClient: sl()),
   );
 
   // Repositories
@@ -216,9 +227,11 @@ Future<void> initializeDependencies() async {
   // Settings Feature
   // =============================================
 
-  // Data sources
+  // Data sources — toggle via ApiConstants.useMockData
   sl.registerLazySingleton<SettingsDataSource>(
-    () => SettingsMockDataSource(),
+    () => ApiConstants.useMockData
+        ? SettingsMockDataSource()
+        : SettingsMockDataSource(), // TODO: Replace with SettingsRemoteDataSource when backend ready
   );
 
   // Repositories
@@ -240,17 +253,23 @@ Future<void> initializeDependencies() async {
   // Space Control Feature
   // =============================================
 
-  // Data sources - Using mock for development
+  // Data sources — toggle via ApiConstants.useMockData
   sl.registerLazySingleton<SpaceRemoteDataSource>(
-    () => SpaceMockDataSource(),
+    () => ApiConstants.useMockData
+        ? SpaceMockDataSource()
+        : SpaceRemoteDataSourceImpl(dioClient: sl(), mqttService: sl()),
   );
 
   sl.registerLazySingleton<MusicControlRemoteDataSource>(
-    () => MusicControlMockDataSource(),
+    () => ApiConstants.useMockData
+        ? MusicControlMockDataSource()
+        : MusicControlRemoteDataSourceImpl(dioClient: sl(), mqttService: sl()),
   );
 
-  sl.registerLazySingleton<OfflinePlaylistMockDatasource>(
-    () => OfflinePlaylistMockDatasource(),
+  sl.registerLazySingleton<OfflinePlaylistDataSource>(
+    () => ApiConstants.useMockData
+        ? OfflinePlaylistMockDatasource()
+        : OfflinePlaylistRemoteDataSourceImpl(dioClient: sl()),
   );
 
   // Repositories
@@ -270,7 +289,7 @@ Future<void> initializeDependencies() async {
 
   sl.registerLazySingleton<OfflinePlaylistRepository>(
     () => OfflinePlaylistRepositoryImpl(
-      mockDatasource: sl(),
+      dataSource: sl(),
     ),
   );
 
@@ -309,9 +328,11 @@ Future<void> initializeDependencies() async {
   // Store Dashboard Feature
   // =============================================
 
-  // Data sources
+  // Data sources — toggle via ApiConstants.useMockData
   sl.registerLazySingleton<StoreRemoteDataSource>(
-    () => StoreRemoteDataSourceImpl(),
+    () => ApiConstants.useMockData
+        ? StoreMockDataSource()
+        : StoreRemoteDataSourceImpl(dioClient: sl()),
   );
 
   // Repositories
@@ -363,21 +384,23 @@ Future<void> initializeDependencies() async {
   // Zone Management Feature
   // =============================================
 
-  // Data sources
-  sl.registerLazySingleton<ZoneMockDataSource>(
-    () => ZoneMockDataSource(),
+  // Data sources — toggle via ApiConstants.useMockData
+  sl.registerLazySingleton<ZoneRemoteDataSource>(
+    () => ApiConstants.useMockData
+        ? ZoneMockDataSource()
+        : ZoneRemoteDataSourceImpl(dioClient: sl()),
   );
 
   // Repositories
   sl.registerLazySingleton<ZoneRepository>(
     () => ZoneRepositoryImpl(
-      mockDataSource: sl(),
+      remoteDataSource: sl(),
     ),
   );
 
   sl.registerLazySingleton<MusicProfileRepository>(
     () => MusicProfileRepositoryImpl(
-      mockDataSource: sl(),
+      remoteDataSource: sl(),
     ),
   );
 

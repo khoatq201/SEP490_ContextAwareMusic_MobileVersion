@@ -1,6 +1,6 @@
 import '../../domain/entities/user.dart';
 
-/// Maps `ProfileResponse` từ backend (GET /api/auth/profile).
+/// Maps `ProfileResponse` from backend (GET /api/auth/profile).
 ///
 /// ```json
 /// { "email": "...", "userId": "...", "firstName": "...", "lastName": "...",
@@ -37,7 +37,7 @@ class ProfileResponseModel {
     );
   }
 
-  /// Backend trả role là integer:
+  /// Backend returns role as integer:
   ///   0 → SystemAdmin, 1 → BrandManager, 2 → StoreManager
   static String _mapRole(dynamic raw) {
     if (raw is int) {
@@ -55,16 +55,16 @@ class ProfileResponseModel {
     return raw.toString();
   }
 
-  /// Convert sang `User` entity để dùng trong domain layer.
+  /// Convert to `User` entity for use in domain layer.
   /// - `userId` → `id`
   /// - `firstName + lastName` → `fullName`
-  /// - `roles[0]` → `role` (PascalCase, giữ nguyên để SessionCubit xử lý)
+  /// - `roles[0]` → `role` (PascalCase, kept as-is for SessionCubit to handle)
   /// - `roles` → `roles` (full list)
   User toUser() {
     return User(
       id: userId,
       username:
-          email, // dùng email làm username vì backend không có field username riêng
+          email, // use email as username since backend has no separate username field
       email: email,
       fullName: '$firstName $lastName'.trim(),
       firstName: firstName,

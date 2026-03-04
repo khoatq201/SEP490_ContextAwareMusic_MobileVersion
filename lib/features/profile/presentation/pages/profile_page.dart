@@ -18,7 +18,7 @@ class ProfilePage extends StatelessWidget {
           : AppColors.backgroundPrimary,
       appBar: AppBar(
         leading: const BackButton(),
-        title: const Text('Hồ sơ'),
+        title: const Text('Profile'),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),

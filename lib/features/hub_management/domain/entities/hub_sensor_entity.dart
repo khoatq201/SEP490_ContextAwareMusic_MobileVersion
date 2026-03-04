@@ -4,13 +4,13 @@ import 'package:equatable/equatable.dart';
 class HubSensorEntity extends Equatable {
   final String id;
 
-  /// Display name, e.g. "Nhiệt độ", "Lượng khách"
+  /// Display name, e.g. "Temperature", "Crowd Level"
   final String name;
 
   /// Machine-readable type: "temperature" | "crowd" | "humidity" | "noise"
   final String type;
 
-  /// Unit suffix, e.g. "°C", " người", "%", " dB"
+  /// Unit suffix, e.g. "°C", " people", "%", " dB"
   final String unit;
 
   /// Current reading; null when the hub is offline or sensor is unavailable.

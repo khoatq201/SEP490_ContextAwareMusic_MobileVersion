@@ -28,32 +28,32 @@ class _ContextRulesPageState extends State<ContextRulesPage> {
   final List<ContextRuleEntity> _rules = [
     const ContextRuleEntity(
       id: 'rule-1',
-      name: 'Nhiệt cao → Chill',
+      name: 'High Temp → Chill',
       conditionType: ConditionType.temperature,
       operator_: ConditionOperator.greaterThan,
       conditionValue: 30,
-      actionLabel: 'Phát Chill Retail Playlist',
+      actionLabel: 'Play Chill Retail Playlist',
       targetPlaylistId: 'pl-chill',
       isEnabled: true,
       isTriggered: true, // Demo: sensor is currently above threshold
     ),
     const ContextRuleEntity(
       id: 'rule-2',
-      name: 'Đông khách → Energy',
+      name: 'Crowded → Energy',
       conditionType: ConditionType.crowd,
       operator_: ConditionOperator.greaterThan,
       conditionValue: 50,
-      actionLabel: 'Phát Energy Boost Playlist',
+      actionLabel: 'Play Energy Boost Playlist',
       targetPlaylistId: 'pl-energy',
       isEnabled: true,
     ),
     const ContextRuleEntity(
       id: 'rule-3',
-      name: 'Ồn → Focus',
+      name: 'Noisy → Focus',
       conditionType: ConditionType.noiseLevel,
       operator_: ConditionOperator.greaterThan,
       conditionValue: 65,
-      actionLabel: 'Phát Deep Focus Playlist',
+      actionLabel: 'Play Deep Focus Playlist',
       targetPlaylistId: 'pl-focus',
       isEnabled: false,
     ),
@@ -110,7 +110,7 @@ class _ContextRulesPageState extends State<ContextRulesPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Quản lý tự động hóa',
+              'Manage Automations',
               style: GoogleFonts.poppins(
                 color: palette.textPrimary,
                 fontSize: 18,
@@ -118,7 +118,7 @@ class _ContextRulesPageState extends State<ContextRulesPage> {
               ),
             ),
             Text(
-              '${_rules.length} luật đang cấu hình',
+              '${_rules.length} rules configured',
               style: GoogleFonts.inter(
                 color: palette.textMuted,
                 fontSize: 11,
@@ -183,21 +183,21 @@ class _ContextRulesPageState extends State<ContextRulesPage> {
         backgroundColor: palette.card,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
-          'Xoá luật',
+          'Delete Rule',
           style: GoogleFonts.poppins(
             color: palette.textPrimary,
             fontWeight: FontWeight.w700,
           ),
         ),
         content: Text(
-          'Bạn có muốn xoá luật "${_rules[index].name}" không?',
+          'Do you want to delete rule "${_rules[index].name}"?',
           style: GoogleFonts.inter(color: palette.textMuted, fontSize: 14),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child:
-                Text('Huỷ', style: GoogleFonts.inter(color: palette.textMuted)),
+            child: Text('Cancel',
+                style: GoogleFonts.inter(color: palette.textMuted)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -210,7 +210,7 @@ class _ContextRulesPageState extends State<ContextRulesPage> {
               Navigator.pop(context);
               _deleteRule(index);
             },
-            child: Text('Xoá',
+            child: Text('Delete',
                 style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
           ),
         ],
@@ -321,7 +321,7 @@ class _RuleTile extends StatelessWidget {
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      // "Đang thực thi" badge when triggered
+                      // "Executing" badge when triggered
                       if (isTriggered) ...[
                         const SizedBox(height: 2),
                         Row(
@@ -337,7 +337,7 @@ class _RuleTile extends StatelessWidget {
                             ),
                             const SizedBox(width: 5),
                             Text(
-                              'Đang thực thi',
+                              'Executing',
                               style: GoogleFonts.inter(
                                 color: Colors.green,
                                 fontSize: 10,
@@ -474,7 +474,7 @@ class _EmptyState extends StatelessWidget {
               size: 64, color: palette.textMuted.withOpacity(0.4)),
           const SizedBox(height: 16),
           Text(
-            'Chưa có luật nào',
+            'No rules yet',
             style: GoogleFonts.poppins(
               color: palette.textPrimary,
               fontSize: 18,
@@ -483,7 +483,7 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Bấm + để tạo luật ngữ cảnh đầu tiên',
+            'Tap + to create your first context rule',
             style: GoogleFonts.inter(
               color: palette.textMuted,
               fontSize: 13,

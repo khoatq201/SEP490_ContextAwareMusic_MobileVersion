@@ -4,17 +4,17 @@ import '../../../../core/error/failures.dart';
 import '../../domain/entities/zone.dart';
 import '../../domain/entities/speaker.dart';
 import '../../domain/repositories/zone_repository.dart';
-import '../datasources/zone_mock_datasource.dart';
+import '../datasources/zone_remote_datasource.dart';
 
 class ZoneRepositoryImpl implements ZoneRepository {
-  final ZoneMockDataSource mockDataSource;
+  final ZoneRemoteDataSource remoteDataSource;
 
-  ZoneRepositoryImpl({required this.mockDataSource});
+  ZoneRepositoryImpl({required this.remoteDataSource});
 
   @override
   Future<Either<Failure, List<Zone>>> getZonesBySpace(String spaceId) async {
     try {
-      final zones = await mockDataSource.getZonesBySpace(spaceId);
+      final zones = await remoteDataSource.getZonesBySpace(spaceId);
       return Right(zones);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
@@ -28,7 +28,7 @@ class ZoneRepositoryImpl implements ZoneRepository {
     try {
       // For MVP, get all zones and filter
       // In production, this would be a dedicated API call
-      final allZones = await mockDataSource.getZonesBySpace('space-1');
+      final allZones = await remoteDataSource.getZonesBySpace('space-1');
       final zone = allZones.firstWhere(
         (z) => z.id == zoneId,
         orElse: () => throw ServerException('Zone not found'),
@@ -84,7 +84,7 @@ class ZoneRepositoryImpl implements ZoneRepository {
   Future<Either<Failure, List<Speaker>>> getSpeakersByZone(
       String zoneId) async {
     try {
-      final speakers = await mockDataSource.getSpeakersByZone(zoneId);
+      final speakers = await remoteDataSource.getSpeakersByZone(zoneId);
       return Right(speakers);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
