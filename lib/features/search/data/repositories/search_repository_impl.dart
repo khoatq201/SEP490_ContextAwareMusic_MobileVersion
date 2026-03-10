@@ -1,107 +1,445 @@
 import 'package:flutter/material.dart';
+import '../../../home/domain/entities/playlist_entity.dart';
+import '../../../home/domain/entities/song_entity.dart';
+import '../../domain/entities/album_entity.dart';
+import '../../domain/entities/artist_entity.dart';
 import '../../domain/entities/search_category.dart';
 import '../../domain/entities/search_result.dart';
 import '../../domain/repositories/search_repository.dart';
 
-/// Stub implementation – swap out `_mockCategories` / `search()` body
-/// once the real API endpoint is ready.
+/// Stub implementation – swap out mock bodies once the real API endpoint is ready.
 class SearchRepositoryImpl implements SearchRepository {
-  // Hard-coded categories to match Soundtrack-style "Browse all" grid.
+  // ─────────────────────────────────────────────────────────────────────────
+  // Mock song pool
+  // ─────────────────────────────────────────────────────────────────────────
+  static const _mockSongs = [
+    SongEntity(
+        id: 's1',
+        title: 'Attention',
+        artist: 'Charlie Puth',
+        duration: 211,
+        coverUrl: 'https://picsum.photos/seed/attention/200'),
+    SongEntity(
+        id: 's2',
+        title: 'We Don\'t Talk Anymore',
+        artist: 'Charlie Puth, Selena Gomez',
+        duration: 217,
+        coverUrl: 'https://picsum.photos/seed/wdta/200'),
+    SongEntity(
+        id: 's3',
+        title: 'See You Again',
+        artist: 'Wiz Khalifa ft. Charlie Puth',
+        duration: 237,
+        coverUrl: 'https://picsum.photos/seed/sya/200'),
+    SongEntity(
+        id: 's4',
+        title: 'Cha Cha Cha',
+        artist: 'Käärijä',
+        duration: 178,
+        coverUrl: 'https://picsum.photos/seed/chacha/200'),
+    SongEntity(
+        id: 's5',
+        title: 'CHA CHA',
+        artist: 'Francis, Sobel',
+        duration: 195,
+        coverUrl: 'https://picsum.photos/seed/chacha2/200'),
+    SongEntity(
+        id: 's6',
+        title: 'Cha Cha',
+        artist: 'Freddie Dredd',
+        duration: 143,
+        coverUrl: 'https://picsum.photos/seed/chacha3/200'),
+    SongEntity(
+        id: 's7',
+        title: 'Bongo Cha Cha Cha',
+        artist: 'Goodboys',
+        duration: 162,
+        coverUrl: 'https://picsum.photos/seed/bongo/200'),
+    SongEntity(
+        id: 's8',
+        title: 'Transcendental Cha Cha Cha',
+        artist: 'Tom Cardy',
+        duration: 198,
+        coverUrl: 'https://picsum.photos/seed/trans/200'),
+    SongEntity(
+        id: 's9',
+        title: 'Non, je ne regrette rien',
+        artist: 'Édith Piaf',
+        duration: 142,
+        coverUrl: 'https://picsum.photos/seed/piaf/200'),
+    SongEntity(
+        id: 's10',
+        title: 'Place des grands hommes',
+        artist: 'Patrick Bruel',
+        duration: 268,
+        coverUrl: 'https://picsum.photos/seed/bruel/200'),
+    SongEntity(
+        id: 's11',
+        title: 'Et si tu n\'existais pas',
+        artist: 'Joe Dassin',
+        duration: 206,
+        coverUrl: 'https://picsum.photos/seed/dassin/200'),
+    SongEntity(
+        id: 's12',
+        title: 'Light Switch',
+        artist: 'Charlie Puth',
+        duration: 189,
+        coverUrl: 'https://picsum.photos/seed/lightswitch/200'),
+  ];
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Mock categories
+  // ─────────────────────────────────────────────────────────────────────────
   static final List<SearchCategory> _mockCategories = [
     const SearchCategory(
-      id: 'pop',
-      name: 'Pop',
-      color: Color(0xFFE91E63),
-      icon: Icons.music_note,
-    ),
+        id: 'charts',
+        name: 'Charts',
+        color: Color(0xFF1A1A2E),
+        icon: Icons.bar_chart,
+        imageUrl: 'https://picsum.photos/seed/charts/200'),
     const SearchCategory(
-      id: 'chill',
-      name: 'Chill',
-      color: Color(0xFF2196F3),
-      icon: Icons.waves,
-    ),
+        id: 'classical',
+        name: 'Classical',
+        color: Color(0xFF795548),
+        icon: Icons.queue_music,
+        imageUrl: 'https://picsum.photos/seed/classical/200'),
     const SearchCategory(
-      id: 'workout',
-      name: 'Workout',
-      color: Color(0xFFFF5722),
-      icon: Icons.fitness_center,
-    ),
+        id: 'mainstream',
+        name: 'Mainstream',
+        color: Color(0xFF2196F3),
+        icon: Icons.trending_up,
+        imageUrl: 'https://picsum.photos/seed/mainstream/200'),
     const SearchCategory(
-      id: 'focus',
-      name: 'Focus',
-      color: Color(0xFF4CAF50),
-      icon: Icons.psychology,
-    ),
+        id: 'jazz',
+        name: 'Jazz',
+        color: Color(0xFF9C27B0),
+        icon: Icons.piano,
+        imageUrl: 'https://picsum.photos/seed/jazz/200'),
     const SearchCategory(
-      id: 'jazz',
-      name: 'Jazz',
-      color: Color(0xFF9C27B0),
-      icon: Icons.piano,
-    ),
+        id: 'pop',
+        name: 'Pop',
+        color: Color(0xFFE91E63),
+        icon: Icons.music_note,
+        imageUrl: 'https://picsum.photos/seed/pop/200'),
     const SearchCategory(
-      id: 'rock',
-      name: 'Rock',
-      color: Color(0xFF607D8B),
-      icon: Icons.electric_bolt,
-    ),
+        id: 'chill',
+        name: 'Chill',
+        color: Color(0xFF2196F3),
+        icon: Icons.waves,
+        imageUrl: 'https://picsum.photos/seed/chill/200'),
     const SearchCategory(
-      id: 'rnb',
-      name: 'R&B / Soul',
-      color: Color(0xFFFF9800),
-      icon: Icons.mic,
-    ),
+        id: 'workout',
+        name: 'Workout',
+        color: Color(0xFFFF5722),
+        icon: Icons.fitness_center,
+        imageUrl: 'https://picsum.photos/seed/workout/200'),
     const SearchCategory(
-      id: 'classical',
-      name: 'Classical',
-      color: Color(0xFF795548),
-      icon: Icons.queue_music,
-    ),
+        id: 'focus',
+        name: 'Focus',
+        color: Color(0xFF4CAF50),
+        icon: Icons.psychology,
+        imageUrl: 'https://picsum.photos/seed/focus/200'),
     const SearchCategory(
-      id: 'electronic',
-      name: 'Electronic',
-      color: Color(0xFF00BCD4),
-      icon: Icons.graphic_eq,
-    ),
+        id: 'rock',
+        name: 'Rock',
+        color: Color(0xFF607D8B),
+        icon: Icons.electric_bolt,
+        imageUrl: 'https://picsum.photos/seed/rock/200'),
     const SearchCategory(
-      id: 'ambient',
-      name: 'Ambient',
-      color: Color(0xFF8BC34A),
-      icon: Icons.blur_on,
+        id: 'electronic',
+        name: 'Electronic',
+        color: Color(0xFF00BCD4),
+        icon: Icons.graphic_eq,
+        imageUrl: 'https://picsum.photos/seed/electronic/200'),
+  ];
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Mock artists
+  // ─────────────────────────────────────────────────────────────────────────
+  static final _mockArtists = <String, ArtistEntity>{
+    'artist-charlie': ArtistEntity(
+      id: 'artist-charlie',
+      name: 'Charlie Puth',
+      imageUrl: 'https://picsum.photos/seed/charlie/400',
+      bio:
+          'Charles Otto Puth Jr. is an American singer, songwriter, and record producer.',
+      popularSongs: [
+        _mockSongs[0],
+        _mockSongs[1],
+        _mockSongs[2],
+        _mockSongs[11]
+      ],
+      albums: [
+        AlbumEntity(
+          id: 'album-voicenotes',
+          name: 'Voicenotes',
+          artistName: 'Charlie Puth',
+          coverUrl: 'https://picsum.photos/seed/voicenotes/300',
+          releaseYear: 2018,
+          songs: [_mockSongs[0], _mockSongs[1]],
+        ),
+        AlbumEntity(
+          id: 'album-charlie',
+          name: 'Charlie',
+          artistName: 'Charlie Puth',
+          coverUrl: 'https://picsum.photos/seed/charliealbum/300',
+          releaseYear: 2022,
+          songs: [_mockSongs[11]],
+        ),
+      ],
+    ),
+    'artist-calvin': ArtistEntity(
+      id: 'artist-calvin',
+      name: 'Calvin Harris',
+      imageUrl: 'https://picsum.photos/seed/calvin/400',
+      popularSongs: const [],
+      albums: const [],
+    ),
+    'artist-charli': ArtistEntity(
+      id: 'artist-charli',
+      name: 'Charli XCX',
+      imageUrl: 'https://picsum.photos/seed/charli/400',
+      popularSongs: const [],
+      albums: const [],
+    ),
+    'artist-chase': ArtistEntity(
+      id: 'artist-chase',
+      name: 'Chase Atlantic',
+      imageUrl: 'https://picsum.photos/seed/chase/400',
+      popularSongs: const [],
+      albums: const [],
+    ),
+    'artist-chance': ArtistEntity(
+      id: 'artist-chance',
+      name: 'Chance Peña',
+      imageUrl: 'https://picsum.photos/seed/chance/400',
+      popularSongs: const [],
+      albums: const [],
+    ),
+    'artist-tate': ArtistEntity(
+      id: 'artist-tate',
+      name: 'Tate McRae',
+      imageUrl: 'https://picsum.photos/seed/tate/400',
+      popularSongs: const [],
+      albums: const [],
+    ),
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Mock albums
+  // ─────────────────────────────────────────────────────────────────────────
+  static final _mockAlbums = <AlbumEntity>[
+    AlbumEntity(
+      id: 'album-chacha',
+      name: 'Cha Cha Cha',
+      artistName: 'Käärijä',
+      coverUrl: 'https://picsum.photos/seed/chachaalbum/300',
+      releaseYear: 2023,
+      songs: [_mockSongs[3]],
+    ),
+    AlbumEntity(
+      id: 'album-chacha2',
+      name: 'Cha Cha',
+      artistName: 'Freddie Dredd',
+      coverUrl: 'https://picsum.photos/seed/chachaalbum2/300',
+      releaseYear: 2019,
+      songs: [_mockSongs[5]],
+    ),
+    AlbumEntity(
+      id: 'album-voicenotes',
+      name: 'Voicenotes',
+      artistName: 'Charlie Puth',
+      coverUrl: 'https://picsum.photos/seed/voicenotes/300',
+      releaseYear: 2018,
+      songs: [_mockSongs[0], _mockSongs[1]],
+    ),
+    AlbumEntity(
+      id: 'album-bongo',
+      name: 'Bongo Cha Cha Cha',
+      artistName: 'Goodboys',
+      coverUrl: 'https://picsum.photos/seed/bongoalbum/300',
+      releaseYear: 2021,
+      songs: [_mockSongs[6]],
     ),
   ];
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // Mock playlists
+  // ─────────────────────────────────────────────────────────────────────────
+  static final _mockPlaylists = <PlaylistEntity>[
+    PlaylistEntity(
+      id: 'pl-chansons',
+      title: 'Chansons à la Carte',
+      description:
+          'Let these chansons serenade your senses – timeless French tunes that pair perfectly with candlelight and good food.',
+      coverUrl: 'https://picsum.photos/seed/chansons/300',
+      songs: [_mockSongs[8], _mockSongs[9], _mockSongs[10]],
+    ),
+    PlaylistEntity(
+      id: 'pl-chanson-fr',
+      title: 'Chanson Française',
+      description: 'Les plus grandes mélodies de la chanson française.',
+      coverUrl: 'https://picsum.photos/seed/chansonf/300',
+      songs: [_mockSongs[9], _mockSongs[10]],
+    ),
+    PlaylistEntity(
+      id: 'pl-chanson-acoustic',
+      title: 'Chanson acoustique joyeuse',
+      description: 'Chanson pop française acoustique pour une ambiance légère.',
+      coverUrl: 'https://picsum.photos/seed/acoustic/300',
+      songs: [_mockSongs[8]],
+    ),
+    PlaylistEntity(
+      id: 'pl-charleston',
+      title: 'Charleston Dance Studio',
+      description: 'Upbeat swing from the 20s.',
+      coverUrl: 'https://picsum.photos/seed/charleston/300',
+      songs: const [],
+    ),
+    PlaylistEntity(
+      id: 'pl-best-charlie',
+      title: 'Best of Charlie Puth',
+      description: 'All the biggest hits from Charlie Puth.',
+      coverUrl: 'https://picsum.photos/seed/bestcharlie/300',
+      songs: [_mockSongs[0], _mockSongs[1], _mockSongs[2], _mockSongs[11]],
+    ),
+  ];
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Repository implementation
+  // ═══════════════════════════════════════════════════════════════════════════
+
   @override
   Future<List<SearchCategory>> getCategories() async {
-    // TODO: replace with real API call.
     await Future.delayed(const Duration(milliseconds: 300));
     return _mockCategories;
   }
 
   @override
   Future<List<SearchResult>> search(String query) async {
-    // TODO: replace with real API call.
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 400));
     if (query.isEmpty) return [];
-    // Return mock results that contain the query string.
+    final q = query.toLowerCase();
+
+    final results = <SearchResult>[];
+
+    // Match artists
+    for (final artist in _mockArtists.values) {
+      if (artist.name.toLowerCase().contains(q)) {
+        results.add(SearchResult(
+          id: artist.id,
+          title: artist.name,
+          subtitle: 'ARTIST',
+          imageUrl: artist.imageUrl,
+          type: SearchResultType.artist,
+        ));
+      }
+    }
+
+    // Match playlists
+    for (final pl in _mockPlaylists) {
+      if (pl.title.toLowerCase().contains(q)) {
+        results.add(SearchResult(
+          id: pl.id,
+          title: pl.title,
+          subtitle: 'PLAYLIST • ${pl.description ?? ''}',
+          imageUrl: pl.coverUrl,
+          type: SearchResultType.playlist,
+        ));
+      }
+    }
+
+    // Match songs
+    for (final song in _mockSongs) {
+      if (song.title.toLowerCase().contains(q) ||
+          song.artist.toLowerCase().contains(q)) {
+        results.add(SearchResult(
+          id: song.id,
+          title: song.title,
+          subtitle: song.artist,
+          imageUrl: song.coverUrl,
+          type: SearchResultType.song,
+          duration: song.formattedDuration,
+        ));
+      }
+    }
+
+    // Match albums
+    for (final album in _mockAlbums) {
+      if (album.name.toLowerCase().contains(q) ||
+          album.artistName.toLowerCase().contains(q)) {
+        results.add(SearchResult(
+          id: album.id,
+          title: album.name,
+          subtitle: '${album.artistName} • ${album.releaseYear ?? ''}',
+          imageUrl: album.coverUrl,
+          type: SearchResultType.album,
+        ));
+      }
+    }
+
+    // Match categories
+    for (final cat in _mockCategories) {
+      if (cat.name.toLowerCase().contains(q)) {
+        results.add(SearchResult(
+          id: cat.id,
+          title: cat.name,
+          subtitle: 'CATEGORY',
+          imageUrl: cat.imageUrl,
+          type: SearchResultType.category,
+        ));
+      }
+    }
+
+    return results;
+  }
+
+  @override
+  Future<List<SearchResult>> searchByType(
+      String query, SearchResultType type) async {
+    final all = await search(query);
+    return all.where((r) => r.type == type).toList();
+  }
+
+  @override
+  Future<ArtistEntity> getArtistDetail(String artistId) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    return _mockArtists[artistId] ??
+        const ArtistEntity(id: 'unknown', name: 'Unknown Artist');
+  }
+
+  @override
+  Future<AlbumEntity> getAlbumDetail(String albumId) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    return _mockAlbums.firstWhere(
+      (a) => a.id == albumId,
+      orElse: () =>
+          const AlbumEntity(id: 'unknown', name: 'Unknown', artistName: ''),
+    );
+  }
+
+  @override
+  Future<PlaylistEntity> getPlaylistDetail(String playlistId) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    return _mockPlaylists.firstWhere(
+      (p) => p.id == playlistId,
+      orElse: () => const PlaylistEntity(id: 'unknown', title: 'Unknown'),
+    );
+  }
+
+  @override
+  Future<List<PlaylistEntity>> getCategoryPlaylists(String categoryId) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    // Return a subset of playlists for any category
+    return _mockPlaylists.take(3).toList();
+  }
+
+  @override
+  Future<List<PlaylistEntity>> getFeaturedPlaylists() async {
+    await Future.delayed(const Duration(milliseconds: 300));
     return [
-      SearchResult(
-        id: '1',
-        title: '$query - Popular Mix',
-        subtitle: 'Playlist',
-        type: SearchResultType.playlist,
-      ),
-      SearchResult(
-        id: '2',
-        title: 'Best of $query',
-        subtitle: 'Auto Station',
-        type: SearchResultType.playlist,
-      ),
-      SearchResult(
-        id: '3',
-        title: 'Artist: $query',
-        subtitle: 'Artist',
-        type: SearchResultType.artist,
-      ),
-    ];
+      _mockPlaylists[4],
+      _mockPlaylists[0]
+    ]; // "Best of Charlie Puth", "Chansons à la Carte"
   }
 }

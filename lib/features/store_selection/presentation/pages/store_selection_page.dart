@@ -340,7 +340,7 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
-                      store.address,
+                      store.fullAddress,
                       style: AppTypography.labelSmall.copyWith(
                         color: isDark ? Colors.grey[400] : Colors.grey[600],
                       ),
@@ -357,22 +357,30 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.secondaryTeal.withOpacity(0.1),
+                  color: store.status.isActive
+                      ? AppColors.secondaryTeal.withOpacity(0.1)
+                      : Colors.orange.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
-                      Icons.space_dashboard,
+                    Icon(
+                      store.status.isActive
+                          ? Icons.check_circle_outline
+                          : Icons.pending_outlined,
                       size: 14,
-                      color: AppColors.secondaryTeal,
+                      color: store.status.isActive
+                          ? AppColors.secondaryTeal
+                          : Colors.orange,
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      '${store.spacesCount} spaces',
+                      store.status.displayName,
                       style: AppTypography.labelSmall.copyWith(
-                        color: AppColors.secondaryTeal,
+                        color: store.status.isActive
+                            ? AppColors.secondaryTeal
+                            : Colors.orange,
                         fontWeight: FontWeight.w600,
                       ),
                     ),

@@ -34,6 +34,11 @@ import 'features/home/presentation/pages/home_tab_page.dart';
 import 'features/home/presentation/pages/playlist_detail_page.dart';
 import 'features/home/domain/entities/playlist_entity.dart';
 import 'features/search/presentation/pages/search_tab_page.dart';
+import 'features/search/presentation/pages/artist_detail_page.dart';
+import 'features/search/presentation/pages/album_detail_page.dart';
+import 'features/search/presentation/pages/search_playlist_detail_page.dart';
+import 'features/search/presentation/pages/category_detail_page.dart';
+import 'features/search/domain/usecases/get_playlist_detail_usecase.dart';
 import 'features/now_playing/presentation/pages/now_playing_tab_page.dart';
 import 'features/library/presentation/pages/library_tab_page.dart';
 import 'features/locations/presentation/pages/locations_tab_page.dart';
@@ -274,6 +279,61 @@ class AppRouter {
             pageBuilder: (context, state) => const NoTransitionPage(
               child: SearchTabPage(),
             ),
+            routes: [
+              GoRoute(
+                path: 'artist/:artistId',
+                name: 'search-artist-detail',
+                builder: (context, state) {
+                  final artistId = state.pathParameters['artistId']!;
+                  return ArtistDetailPage(artistId: artistId);
+                },
+              ),
+              GoRoute(
+                path: 'album/:albumId',
+                name: 'search-album-detail',
+                builder: (context, state) {
+                  final albumId = state.pathParameters['albumId']!;
+                  return AlbumDetailPage(albumId: albumId);
+                },
+              ),
+              GoRoute(
+                path: 'playlist/:playlistId',
+                name: 'search-playlist-detail',
+                builder: (context, state) {
+                  final playlistId = state.pathParameters['playlistId']!;
+                  return FutureBuilder(
+                    future: sl<GetPlaylistDetailUseCase>().call(playlistId),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState != ConnectionState.done) {
+                        return const Scaffold(
+                          body: Center(child: CircularProgressIndicator()),
+                        );
+                      }
+                      if (snapshot.hasError || !snapshot.hasData) {
+                        return Scaffold(
+                          body: Center(
+                            child: Text('Playlist not found'),
+                          ),
+                        );
+                      }
+                      return SearchPlaylistDetailPage(playlist: snapshot.data!);
+                    },
+                  );
+                },
+              ),
+              GoRoute(
+                path: 'category/:categoryId',
+                name: 'search-category-detail',
+                builder: (context, state) {
+                  final categoryId = state.pathParameters['categoryId']!;
+                  final categoryName = state.extra as String?;
+                  return CategoryDetailPage(
+                    categoryId: categoryId,
+                    categoryName: categoryName,
+                  );
+                },
+              ),
+            ],
           ),
           GoRoute(
             path: '/create',

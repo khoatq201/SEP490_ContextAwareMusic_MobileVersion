@@ -1,3 +1,4 @@
+import '../../../../core/enums/entity_status_enum.dart';
 import '../models/store_model.dart';
 import '../models/space_summary_model.dart';
 import 'store_remote_datasource.dart';
@@ -12,12 +13,17 @@ class StoreMockDataSource implements StoreRemoteDataSource {
       id: storeId,
       name: 'CAMS Store Central',
       brandId: 'brand-001',
-      address: '123 Nguyen Hue, District 1, HCMC',
-      phone: '028 1234 5678',
-      email: 'central@camsstore.com',
-      totalSpaces: 4,
-      activeSpaces: 3,
-      isActive: true,
+      address: '123 Nguyen Hue, Phường Bến Nghé',
+      city: 'Hồ Chí Minh',
+      district: 'Quận 1',
+      contactNumber: '028 1234 5678',
+      latitude: 10.7769,
+      longitude: 106.7009,
+      mapUrl: 'https://maps.google.com/?q=10.7769,106.7009',
+      timeZone: 'Asia/Ho_Chi_Minh',
+      areaSquareMeters: 120.5,
+      maxCapacity: 80,
+      status: EntityStatusEnum.active,
       createdAt: DateTime.now().subtract(const Duration(days: 180)),
       updatedAt: DateTime.now(),
     );

@@ -65,7 +65,7 @@ class StoreInfoCard extends StatelessWidget {
                           ),
                           const SizedBox(width: AppDimensions.spacingXs),
                           Text(
-                            store.isActive ? 'Active' : 'Inactive',
+                            store.status.displayName,
                             style: AppTypography.labelSmall.copyWith(
                               color: store.isActive
                                   ? AppColors.success
@@ -87,28 +87,28 @@ class StoreInfoCard extends StatelessWidget {
             _InfoRow(
               icon: Icons.location_on_outlined,
               label: 'Address',
-              value: store.address,
+              value: store.fullAddress,
             ),
             const SizedBox(height: AppDimensions.spacingSm),
 
             // Phone
-            if (store.phone != null)
+            if (store.contactNumber != null)
               _InfoRow(
                 icon: Icons.phone_outlined,
                 label: 'Phone',
-                value: store.phone!,
+                value: store.contactNumber!,
               ),
-            if (store.phone != null)
+            if (store.contactNumber != null)
               const SizedBox(height: AppDimensions.spacingSm),
 
-            // Email
-            if (store.email != null)
+            // Timezone
+            if (store.timeZone != null)
               _InfoRow(
-                icon: Icons.email_outlined,
-                label: 'Email',
-                value: store.email!,
+                icon: Icons.access_time_outlined,
+                label: 'Timezone',
+                value: store.timeZone!,
               ),
-            if (store.email != null)
+            if (store.timeZone != null)
               const SizedBox(height: AppDimensions.spacingMd),
 
             const Divider(),
@@ -118,21 +118,24 @@ class StoreInfoCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _StatItem(
-                  label: 'Total Spaces',
-                  value: store.totalSpaces.toString(),
-                  color: AppColors.primaryOrange,
-                ),
-                Container(
-                  width: 1,
-                  height: 40,
-                  color: AppColors.borderLight,
-                ),
-                _StatItem(
-                  label: 'Active Spaces',
-                  value: store.activeSpaces.toString(),
-                  color: AppColors.success,
-                ),
+                if (store.areaSquareMeters != null)
+                  _StatItem(
+                    label: 'Area (m²)',
+                    value: store.areaSquareMeters!.toStringAsFixed(0),
+                    color: AppColors.primaryOrange,
+                  ),
+                if (store.areaSquareMeters != null && store.maxCapacity != null)
+                  Container(
+                    width: 1,
+                    height: 40,
+                    color: AppColors.borderLight,
+                  ),
+                if (store.maxCapacity != null)
+                  _StatItem(
+                    label: 'Max Capacity',
+                    value: store.maxCapacity.toString(),
+                    color: AppColors.success,
+                  ),
               ],
             ),
           ],

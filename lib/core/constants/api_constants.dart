@@ -6,7 +6,7 @@ class ApiConstants {
   /// Toggle between mock and real API datasources.
   /// Set to `true` for demo mode (mock data, no backend required).
   /// Set to `false` to use real backend API.
-  static const bool useMockData = true;
+  static const bool useMockData = false;
 
   // Base URLs
   // Use 10.0.2.2 for Android emulator (maps to host machine's localhost)

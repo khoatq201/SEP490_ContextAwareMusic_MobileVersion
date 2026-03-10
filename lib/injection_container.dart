@@ -94,6 +94,22 @@ import 'features/zone_management/domain/usecases/sync_zones_music.dart';
 import 'features/zone_management/domain/usecases/assign_playlist_to_zone.dart';
 import 'features/zone_management/domain/usecases/get_all_playlists.dart';
 
+// Search Feature
+import 'features/search/data/repositories/search_repository_impl.dart';
+import 'features/search/domain/repositories/search_repository.dart';
+import 'features/search/domain/usecases/get_categories_usecase.dart';
+import 'features/search/domain/usecases/search_music_usecase.dart';
+import 'features/search/domain/usecases/search_by_type_usecase.dart';
+import 'features/search/domain/usecases/get_artist_detail_usecase.dart';
+import 'features/search/domain/usecases/get_album_detail_usecase.dart';
+import 'features/search/domain/usecases/get_playlist_detail_usecase.dart';
+import 'features/search/domain/usecases/get_category_playlists_usecase.dart';
+import 'features/search/domain/usecases/get_featured_playlists_usecase.dart';
+import 'features/search/presentation/bloc/search_bloc.dart';
+import 'features/search/presentation/bloc/artist_detail_cubit.dart';
+import 'features/search/presentation/bloc/album_detail_cubit.dart';
+import 'features/search/presentation/bloc/category_detail_cubit.dart';
+
 // Mock Data Sources
 import 'features/space_control/data/datasources/space_mock_datasource.dart';
 import 'features/space_control/data/datasources/music_control_mock_datasource.dart';
@@ -413,4 +429,45 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(() => GetAllPlaylists(sl()));
 
   // Note: BLoC will be added when UI is implemented
+
+  // =============================================
+  // Search Feature
+  // =============================================
+
+  // Repository
+  sl.registerLazySingleton<SearchRepository>(
+    () => SearchRepositoryImpl(),
+  );
+
+  // Use cases
+  sl.registerLazySingleton(() => GetCategoriesUseCase(sl()));
+  sl.registerLazySingleton(() => SearchMusicUseCase(sl()));
+  sl.registerLazySingleton(() => SearchByTypeUseCase(sl()));
+  sl.registerLazySingleton(() => GetArtistDetailUseCase(sl()));
+  sl.registerLazySingleton(() => GetAlbumDetailUseCase(sl()));
+  sl.registerLazySingleton(() => GetPlaylistDetailUseCase(sl()));
+  sl.registerLazySingleton(() => GetCategoryPlaylistsUseCase(sl()));
+  sl.registerLazySingleton(() => GetFeaturedPlaylistsUseCase(sl()));
+
+  // BLoCs / Cubits
+  sl.registerFactory(
+    () => SearchBloc(
+      getCategories: sl(),
+      searchMusic: sl(),
+      searchByType: sl(),
+      getFeaturedPlaylists: sl(),
+    ),
+  );
+
+  sl.registerFactory(
+    () => ArtistDetailCubit(getArtistDetail: sl()),
+  );
+
+  sl.registerFactory(
+    () => AlbumDetailCubit(getAlbumDetail: sl()),
+  );
+
+  sl.registerFactory(
+    () => CategoryDetailCubit(getCategoryPlaylists: sl()),
+  );
 }

@@ -55,7 +55,7 @@ class StoreSelectionBloc
       } else {
         final filtered = currentState.stores.where((store) {
           return store.name.toLowerCase().contains(query) ||
-              store.address.toLowerCase().contains(query);
+              store.fullAddress.toLowerCase().contains(query);
         }).toList();
 
         emit(currentState.copyWith(
