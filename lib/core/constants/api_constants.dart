@@ -9,8 +9,8 @@ class ApiConstants {
   static const bool useMockData = false;
 
   // Base URLs
-  // Use 10.0.2.2 for Android emulator (maps to host machine's localhost)
-  static const String baseUrl = 'http://10.0.2.2:7001';
+  // Android emulator can use 10.0.2.2 (host localhost); real devices should use LAN IP.
+  static const String baseUrl = 'http://192.168.1.6:7001';
   static const String mqttBrokerUrl = 'mqtt.cams.example.com';
   static const int mqttPort = 1883;
 
@@ -23,8 +23,9 @@ class ApiConstants {
 
   // Stores & Spaces
   static const String getStoresEndpoint = '/api/stores';
-  static const String getSpacesEndpoint = '/api/stores/{storeId}/spaces';
+  static const String getSpacesEndpoint = '/api/spaces';
   static const String getSpaceDetailEndpoint = '/api/spaces/{spaceId}';
+  static const String toggleSpaceStatusEndpoint = '/api/spaces/{spaceId}/toggle-status';
   static const String overrideMoodEndpoint =
       '/api/spaces/{spaceId}/override-mood';
   static const String musicControlEndpoint =

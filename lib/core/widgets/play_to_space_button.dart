@@ -6,6 +6,8 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../../features/space_control/domain/entities/space.dart';
 import '../../features/space_control/domain/entities/track.dart';
 import '../constants/app_colors.dart';
+import '../enums/entity_status_enum.dart';
+import '../enums/space_type_enum.dart';
 import '../enums/user_role.dart';
 import '../player/player_bloc.dart';
 import '../player/player_event.dart';
@@ -106,28 +108,32 @@ class PlayToSpaceButton extends StatelessWidget {
       Space(
         id: 'space-1',
         name: 'Main Floor',
-        status: 'Online',
+        status: EntityStatusEnum.active,
+        type: SpaceTypeEnum.hall,
         assignedHubId: 'hub-1',
         storeId: 'store-1',
       ),
       Space(
         id: 'space-2',
         name: 'VIP Lounge',
-        status: 'Online',
+        status: EntityStatusEnum.active,
+        type: SpaceTypeEnum.hall,
         assignedHubId: 'hub-2',
         storeId: 'store-1',
       ),
       Space(
         id: 'space-3',
         name: 'Outdoor Patio',
-        status: 'Offline',
+        status: EntityStatusEnum.inactive,
+        type: SpaceTypeEnum.hall,
         assignedHubId: 'hub-3',
         storeId: 'store-1',
       ),
       Space(
         id: 'space-4',
         name: 'Bar Area',
-        status: 'Online',
+        status: EntityStatusEnum.active,
+        type: SpaceTypeEnum.hall,
         assignedHubId: 'hub-4',
         storeId: 'store-1',
       ),

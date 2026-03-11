@@ -44,7 +44,7 @@ class SpaceManagementTile extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
-                    space.isOnline
+                    space.status.isActive
                         ? LucideIcons.radio
                         : LucideIcons.radioReceiver,
                     color: palette.accent,
@@ -64,7 +64,7 @@ class SpaceManagementTile extends StatelessWidget {
                   ),
                 ),
                 // Status badge
-                _StatusBadge(isOnline: space.isOnline, palette: palette),
+                _StatusBadge(isOnline: space.status.isActive, palette: palette),
               ],
             ),
           ),
@@ -77,16 +77,16 @@ class SpaceManagementTile extends StatelessWidget {
             child: Column(
               children: [
                 _InfoRow(
-                  icon: LucideIcons.music4,
-                  label: 'PLAYLIST',
-                  value: space.currentTrackName ?? 'None',
+                  icon: LucideIcons.info,
+                  label: 'DESCRIPTION',
+                  value: space.description ?? 'No description',
                   palette: palette,
                 ),
                 const SizedBox(height: 6),
                 _InfoRow(
-                  icon: LucideIcons.volume2,
-                  label: 'VOLUME',
-                  value: '${space.volume.toInt()}%',
+                  icon: LucideIcons.layoutTemplate,
+                  label: 'TYPE',
+                  value: space.type.displayName,
                   palette: palette,
                 ),
               ],

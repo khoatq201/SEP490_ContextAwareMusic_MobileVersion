@@ -34,12 +34,15 @@ class StoreRemoteDataSourceImpl implements StoreRemoteDataSource {
   @override
   Future<List<SpaceSummaryModel>> getSpaceSummaries(String storeId) async {
     try {
-      final endpoint =
-          ApiConstants.getSpacesEndpoint.replaceFirst('{storeId}', storeId);
-      final response = await dioClient.get(endpoint);
+      final response = await dioClient.get(
+        ApiConstants.getSpacesEndpoint,
+        queryParameters: {'storeId': storeId},
+      );
       final data = response.data;
-      if (data is Map<String, dynamic> && data['data'] != null) {
-        return (data['data'] as List)
+      // API returns paginated response: {currentPage, items: [...], ...}
+      if (data is Map<String, dynamic>) {
+        final List<dynamic> items = data['items'] as List<dynamic>? ?? [];
+        return items
             .map((e) => SpaceSummaryModel.fromJson(e as Map<String, dynamic>))
             .toList();
       }

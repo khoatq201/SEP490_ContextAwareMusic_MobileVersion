@@ -27,12 +27,15 @@ class SpaceRemoteDataSourceImpl implements SpaceRemoteDataSource {
   Future<List<SpaceModel>> getSpaces(String storeId) async {
     try {
       final response = await dioClient.get(
-        ApiConstants.getSpacesEndpoint.replaceAll('{storeId}', storeId),
+        ApiConstants.getSpacesEndpoint,
+        queryParameters: {'storeId': storeId},
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = response.data['spaces'] as List<dynamic>;
-        return data.map((json) => SpaceModel.fromJson(json)).toList();
+        final data = response.data;
+        // Handle PaginationResult wrapping
+        final List<dynamic> items = data['items'] as List<dynamic>? ?? [];
+        return items.map((json) => SpaceModel.fromJson(json)).toList();
       } else {
         throw ServerException('Failed to load spaces');
       }
@@ -49,7 +52,10 @@ class SpaceRemoteDataSourceImpl implements SpaceRemoteDataSource {
       );
 
       if (response.statusCode == 200) {
-        return SpaceModel.fromJson(response.data);
+        final data = response.data;
+        // Handle Result wrapper
+        final spaceData = data['data'] != null ? data['data'] as Map<String, dynamic> : data as Map<String, dynamic>;
+        return SpaceModel.fromJson(spaceData);
       } else {
         throw ServerException('Failed to load space details');
       }

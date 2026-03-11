@@ -63,7 +63,7 @@ class PlaybackSpaceCard extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          space.storeName,
+                          space.storeName ?? '',
                           style: GoogleFonts.inter(
                             color: palette.textMuted,
                             fontSize: 12,

@@ -2,17 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/models/pagination_result.dart';
 import '../../domain/entities/location_space.dart';
 import 'space_management_tile.dart';
 
 class StoreSpacesList extends StatelessWidget {
-  final List<LocationSpace> spaces;
+  final PaginationResult<LocationSpace> spaces;
 
   const StoreSpacesList({super.key, required this.spaces});
 
   @override
   Widget build(BuildContext context) {
-    if (spaces.isEmpty) {
+    if (spaces.items.isEmpty) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -32,9 +33,9 @@ class StoreSpacesList extends StatelessWidget {
 
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
-      itemCount: spaces.length,
+      itemCount: spaces.items.length,
       itemBuilder: (context, index) =>
-          SpaceManagementTile(space: spaces[index]),
+          SpaceManagementTile(space: spaces.items[index]),
     );
   }
 }

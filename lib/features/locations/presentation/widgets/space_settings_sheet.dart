@@ -75,7 +75,8 @@ class SpaceSettingsSheet extends StatelessWidget {
               palette: palette,
               children: [
                 _InfoRow(label: 'Name', value: space.name, palette: palette),
-                _InfoRow(label: 'Location', value: space.storeName, palette: palette),
+                _InfoRow(label: 'Type', value: space.type.displayName, palette: palette),
+                _InfoRow(label: 'Status', value: space.status.displayName, palette: palette),
               ],
             ),
 

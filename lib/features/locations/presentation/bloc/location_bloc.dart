@@ -61,10 +61,10 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
         emit(state.copyWith(status: LocationStatus.failure, errorMessage: 'No stores assigned'));
         return;
       }
-      final result = await getSpacesForBrand(storeIds);
+      final result = await getSpacesForBrand(storeIds, page: 1, pageSize: 50); // Get first 50 per store
       result.fold(
         (failure) => emit(state.copyWith(status: LocationStatus.failure, errorMessage: failure.message)),
-        (brandSpaces) => emit(state.copyWith(status: LocationStatus.success, brandSpaces: brandSpaces)),
+        (brandSpacesMap) => emit(state.copyWith(status: LocationStatus.success, brandSpaces: brandSpacesMap)),
       );
       return;
     }
@@ -74,10 +74,11 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
       emit(state.copyWith(status: LocationStatus.failure, errorMessage: 'No store selected'));
       return;
     }
-    final result = await getSpacesForStore(session.currentStore!.id);
+    final result = await getSpacesForStore(session.currentStore!.id, page: 1, pageSize: 50); // Get first 50
     result.fold(
       (failure) => emit(state.copyWith(status: LocationStatus.failure, errorMessage: failure.message)),
-      (spaces) => emit(state.copyWith(status: LocationStatus.success, storeSpaces: spaces)),
+      (spacesPagination) => emit(state.copyWith(status: LocationStatus.success, storeSpaces: spacesPagination)),
     );
   }
 }
+

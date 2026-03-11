@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import '../../../../core/error/failures.dart';
+import '../../../../core/models/pagination_result.dart';
 import '../entities/location_space.dart';
 
 abstract class LocationRepository {
@@ -7,8 +8,9 @@ abstract class LocationRepository {
   Future<Either<Failure, LocationSpace>> getPairedSpace(String spaceId, String storeId);
 
   /// Fetches all spaces within a specific store (used for Store Manager)
-  Future<Either<Failure, List<LocationSpace>>> getSpacesForStore(String storeId);
+  Future<Either<Failure, PaginationResult<LocationSpace>>> getSpacesForStore(String storeId, {int page = 1, int pageSize = 10});
 
   /// Fetches all spaces across multiple stores (used for Brand Manager)
-  Future<Either<Failure, Map<String, List<LocationSpace>>>> getSpacesForBrand(List<String> storeIds);
+  Future<Either<Failure, Map<String, PaginationResult<LocationSpace>>>> getSpacesForBrand(List<String> storeIds, {int page = 1, int pageSize = 10});
 }
+

@@ -3,13 +3,14 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/models/pagination_result.dart';
 import '../../domain/entities/location_space.dart';
 import 'space_management_tile.dart';
 
 /// Accordion-style view showing multiple stores, each expandable to reveal
 /// its child spaces as [SpaceManagementTile] cards.
 class BrandLocationsView extends StatelessWidget {
-  final Map<String, List<LocationSpace>> brandSpaces;
+  final Map<String, PaginationResult<LocationSpace>> brandSpaces;
 
   const BrandLocationsView({super.key, required this.brandSpaces});
 
@@ -41,9 +42,10 @@ class BrandLocationsView extends StatelessWidget {
       itemCount: storeIds.length,
       itemBuilder: (context, index) {
         final storeId = storeIds[index];
-        final spaces = brandSpaces[storeId]!;
+        final spacesPagination = brandSpaces[storeId]!;
+        final spaces = spacesPagination.items;
         final storeName =
-            spaces.isNotEmpty ? spaces.first.storeName : 'Unknown Store';
+            spaces.isNotEmpty ? spaces.first.storeName ?? 'Unknown Store' : 'Unknown Store';
 
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
@@ -82,7 +84,7 @@ class BrandLocationsView extends StatelessWidget {
                 ),
               ),
               subtitle: Text(
-                '${spaces.length} space${spaces.length > 1 ? 's' : ''}',
+                '${spaces.length} space${spaces.length > 1 || spaces.isEmpty ? 's' : ''}',
                 style: GoogleFonts.inter(
                   color: palette.textMuted,
                   fontSize: 12,

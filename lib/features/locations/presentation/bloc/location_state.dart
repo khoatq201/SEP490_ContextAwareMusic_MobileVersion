@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../../../core/models/pagination_result.dart';
 import '../../domain/entities/location_space.dart';
 
 enum LocationStatus { initial, loading, success, failure }
@@ -9,8 +10,8 @@ class LocationState extends Equatable {
   
   // Depending on role, one of these will be populated
   final LocationSpace? pairedSpace; // For Playback Device
-  final List<LocationSpace>? storeSpaces; // For Store Manager
-  final Map<String, List<LocationSpace>>? brandSpaces; // For Brand Manager
+  final PaginationResult<LocationSpace>? storeSpaces; // For Store Manager
+  final Map<String, PaginationResult<LocationSpace>>? brandSpaces; // For Brand Manager
 
   const LocationState({
     this.status = LocationStatus.initial,
@@ -24,8 +25,8 @@ class LocationState extends Equatable {
     LocationStatus? status,
     String? errorMessage,
     LocationSpace? pairedSpace,
-    List<LocationSpace>? storeSpaces,
-    Map<String, List<LocationSpace>>? brandSpaces,
+    PaginationResult<LocationSpace>? storeSpaces,
+    Map<String, PaginationResult<LocationSpace>>? brandSpaces,
   }) {
     return LocationState(
       status: status ?? this.status,
@@ -45,3 +46,4 @@ class LocationState extends Equatable {
         brandSpaces,
       ];
 }
+

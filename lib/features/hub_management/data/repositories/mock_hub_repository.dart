@@ -1,3 +1,5 @@
+import 'package:cams_store_manager/core/enums/entity_status_enum.dart';
+import 'package:cams_store_manager/core/enums/space_type_enum.dart';
 import 'package:cams_store_manager/features/hub_management/domain/entities/hub_entity.dart';
 import 'package:cams_store_manager/features/hub_management/domain/entities/hub_sensor_entity.dart';
 import 'package:cams_store_manager/features/space_control/domain/entities/space.dart';
@@ -49,7 +51,8 @@ class MockHubRepository {
   static const _spaceWithHub = Space(
     id: 'space-001',
     name: 'Main Hall',
-    status: 'Online',
+    status: EntityStatusEnum.active,
+    type: SpaceTypeEnum.backgroundMusic,
     currentMood: 'Creative',
     assignedHubId: 'hub-001',
     storeId: 'store-001',
@@ -61,7 +64,8 @@ class MockHubRepository {
   static const _spaceWithoutHub = Space(
     id: 'space-001',
     name: 'Main Hall',
-    status: 'Online',
+    status: EntityStatusEnum.active,
+    type: SpaceTypeEnum.backgroundMusic,
     currentMood: 'Creative',
     assignedHubId: '',
     storeId: 'store-001',

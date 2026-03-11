@@ -1,3 +1,4 @@
+import 'dart:developer' as developer;
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
@@ -10,7 +11,7 @@ import '../services/local_storage_service.dart';
 class DioClient {
   late final Dio _dio;
   final LocalStorageService _localStorage;
-  late final PersistCookieJar _cookieJar;
+  PersistCookieJar? _cookieJar;
   bool _isRefreshing = false;
 
   DioClient({required LocalStorageService localStorage})
@@ -34,13 +35,34 @@ class DioClient {
       error: true,
     ));
 
-    // Auth token interceptor
+    // NOTE: CookieManager is added in initCookieJar() and MUST be called
+    // before the auth interceptor below so cookies are attached first.
+    // The auth token interceptor is added after initCookieJar() completes.
+  }
+
+  /// Initialize persistent cookie jar for HttpOnly refresh token cookies.
+  /// Must be called after app starts (needs path_provider).
+  /// Adds CookieManager BEFORE the auth interceptor so cookies are
+  /// properly attached on every request (including refresh-token).
+  Future<void> initCookieJar() async {
+    final dir = await getApplicationDocumentsDirectory();
+    _cookieJar = PersistCookieJar(
+      storage: FileStorage('${dir.path}/.cookies/'),
+    );
+
+    // 1. Add CookieManager FIRST — so cookies (incl. HttpOnly refresh token)
+    //    are attached to every outgoing request.
+    _dio.interceptors.add(CookieManager(_cookieJar!));
+
+    // 2. THEN add the auth token interceptor — so it can read/write the
+    //    Authorization header after cookies are already attached.
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
           // Skip token injection for login and refresh-token endpoints
           final path = options.path;
-          if (path == ApiConstants.login) {
+          if (path == ApiConstants.login ||
+              path == ApiConstants.refreshToken) {
             return handler.next(options);
           }
 
@@ -82,25 +104,33 @@ class DioClient {
     );
   }
 
-  /// Initialize persistent cookie jar for HttpOnly refresh token cookies.
-  /// Must be called after app starts (needs path_provider).
-  Future<void> initCookieJar() async {
-    final dir = await getApplicationDocumentsDirectory();
-    _cookieJar = PersistCookieJar(
-      storage: FileStorage('${dir.path}/.cookies/'),
-    );
-    _dio.interceptors.add(CookieManager(_cookieJar));
-  }
-
   /// Clear all cookies (used on logout).
   Future<void> clearCookies() async {
-    await _cookieJar.deleteAll();
+    await _cookieJar?.deleteAll();
   }
 
   /// Attempt to refresh the access token using the HttpOnly cookie.
   Future<String?> _refreshToken() async {
     try {
-      // Include expired access token in header (backend allows it for refresh)
+      // Log cookies for debugging
+      if (_cookieJar != null) {
+        final uri = Uri.parse('${ApiConstants.baseUrl}${ApiConstants.refreshToken}');
+        final cookies = await _cookieJar!.loadForRequest(uri);
+        developer.log(
+          'Refresh token - cookies for $uri: ${cookies.map((c) => '${c.name}=${c.value.substring(0, (c.value.length > 10 ? 10 : c.value.length))}...').toList()}',
+          name: 'DioClient',
+        );
+        if (cookies.isEmpty) {
+          developer.log(
+            'WARNING: No cookies found for refresh-token request. '
+            'The server may not have set the refresh token cookie during login, '
+            'or the cookie domain/path does not match.',
+            name: 'DioClient',
+          );
+        }
+      }
+
+      // Include expired access token in header (backend requires it for refresh)
       final expiredToken = await _localStorage.getAuthToken();
       final response = await _dio.post(
         ApiConstants.refreshToken,
@@ -121,11 +151,16 @@ class DioClient {
         await _localStorage.saveAuthToken(newToken);
         await _localStorage.saveAccessTokenExpiry(expiresAt);
 
+        developer.log('Token refreshed successfully', name: 'DioClient');
         return newToken;
       }
 
       throw AuthenticationException('Refresh token failed');
-    } on DioException {
+    } on DioException catch (e) {
+      developer.log(
+        'Refresh token DioException: ${e.response?.statusCode} - ${e.response?.data}',
+        name: 'DioClient',
+      );
       throw AuthenticationException(
         'Session expired. Please login again.',
       );

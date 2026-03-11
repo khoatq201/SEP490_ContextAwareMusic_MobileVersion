@@ -34,12 +34,17 @@ class SpaceSummaryModel {
   });
 
   factory SpaceSummaryModel.fromJson(Map<String, dynamic> json) {
+    // Derive isOnline from API status field (1 = Active = online)
+    final status = json['status'];
+    final derivedIsOnline = json['isOnline'] as bool? ??
+        (status is int ? status == 1 : false);
+
     return SpaceSummaryModel(
       id: json['id'] as String,
       name: json['name'] as String,
-      storeId: json['storeId'] as String,
+      storeId: json['storeId'] as String? ?? '',
       currentMood: json['currentMood'] as String? ?? 'neutral',
-      isOnline: json['isOnline'] as bool? ?? false,
+      isOnline: derivedIsOnline,
       customerCount: json['customerCount'] as int? ?? 0,
       temperature: (json['temperature'] as num?)?.toDouble() ?? 0.0,
       humidity: (json['humidity'] as num?)?.toDouble() ?? 0.0,

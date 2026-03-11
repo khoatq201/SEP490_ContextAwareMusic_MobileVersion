@@ -15,6 +15,9 @@ import 'core/player/player_bloc.dart';
 import 'core/audio/audio_player_service.dart';
 import 'features/space_control/presentation/bloc/music_control_bloc.dart';
 import 'features/space_control/presentation/bloc/space_monitoring_bloc.dart';
+import 'features/auth/presentation/bloc/auth_bloc.dart';
+import 'features/auth/presentation/bloc/auth_event.dart';
+import 'features/auth/presentation/bloc/auth_state.dart';
 
 void main() {
   final audioPlayerService = AudioPlayerService();
@@ -52,6 +55,9 @@ class _MyAppState extends State<MyApp> {
   Future<void> _initializeApp() async {
     WidgetsFlutterBinding.ensureInitialized();
 
+    debugPrint('API base URL: ${ApiConstants.baseUrl}');
+    debugPrint('useMockData: ${ApiConstants.useMockData}');
+
     // Initialize dependency injection
     await initializeDependencies();
 
@@ -62,6 +68,24 @@ class _MyAppState extends State<MyApp> {
     // Initialize cookie jar for HttpOnly refresh token cookies
     final dioClient = sl<DioClient>();
     await dioClient.initCookieJar();
+
+    // ── Restore auth session from persisted token ──
+    // Reads the saved JWT from Hive and, if valid, restores
+    // AuthState.authenticated so the user is NOT forced to re-login.
+    // We MUST await this before marking _isInitialized = true,
+    // otherwise GoRouter evaluates its redirect while AuthBloc is
+    // still in initial/loading state and sends the user to /login.
+    final authBloc = sl<AuthBloc>();
+    authBloc.add(const CheckAuthStatus());
+    // Wait until the auth check resolves (authenticated or unauthenticated)
+    await authBloc.stream
+        .firstWhere((s) =>
+            s.status == AuthStatus.authenticated ||
+            s.status == AuthStatus.unauthenticated)
+        .timeout(
+          const Duration(seconds: 5),
+          onTimeout: () => const AuthState(status: AuthStatus.unauthenticated),
+        );
 
     // Skip MQTT in demo mode — no backend required
     if (!ApiConstants.useMockData) {

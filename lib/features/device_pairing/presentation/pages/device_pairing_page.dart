@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/enums/entity_status_enum.dart';
+import '../../../../core/enums/space_type_enum.dart';
 import '../../../../core/session/session_cubit.dart';
 import '../../../../features/store_dashboard/domain/entities/store.dart';
 import '../../../../features/space_control/domain/entities/space.dart';
@@ -101,7 +103,8 @@ class _DevicePairingPageState extends State<DevicePairingPage> {
               space: Space(
                 id: result.spaceId,
                 name: result.spaceName,
-                status: 'Online',
+                type: SpaceTypeEnum.hall,
+                status: EntityStatusEnum.active,
                 assignedHubId: 'hub-123',
                 storeId: result.storeId,
               ),

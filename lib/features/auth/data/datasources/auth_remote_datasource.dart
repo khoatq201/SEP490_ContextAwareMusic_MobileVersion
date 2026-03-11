@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/models/api_result.dart';
 import '../../../../core/network/dio_client.dart';
@@ -42,26 +44,33 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     required String password,
     bool rememberMe = false,
   }) async {
-    final response = await dioClient.post(
-      ApiConstants.login,
-      data: {
-        'email': email,
-        'password': password,
-        'rememberMe': rememberMe,
-      },
-    );
+    try {
+      final response = await dioClient.post(
+        ApiConstants.login,
+        data: {
+          'email': email,
+          'password': password,
+          'rememberMe': rememberMe,
+        },
+      );
 
-    final apiResult = ApiResult<AuthResponseModel>.fromJson(
-      response.data as Map<String, dynamic>,
-      fromData: (data) =>
-          AuthResponseModel.fromJson(data as Map<String, dynamic>),
-    );
+      final apiResult = ApiResult<AuthResponseModel>.fromJson(
+        response.data as Map<String, dynamic>,
+        fromData: (data) =>
+            AuthResponseModel.fromJson(data as Map<String, dynamic>),
+      );
 
-    if (!apiResult.isSuccess || apiResult.data == null) {
-      throw ServerException(apiResult.userFriendlyError);
+      if (!apiResult.isSuccess || apiResult.data == null) {
+        throw ServerException(apiResult.userFriendlyError);
+      }
+
+      return apiResult.data!;
+    } on DioException catch (e) {
+      _throwApiError(
+        e,
+        fallbackMessage: 'Login failed. Please check your credentials.',
+      );
     }
-
-    return apiResult.data!;
   }
 
   @override
@@ -133,5 +142,18 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     if (!apiResult.isSuccess) {
       throw ServerException(apiResult.userFriendlyError);
     }
+  }
+
+  Never _throwApiError(
+    DioException e, {
+    required String fallbackMessage,
+  }) {
+    final responseData = e.response?.data;
+    if (responseData is Map) {
+      final json = Map<String, dynamic>.from(responseData);
+      final apiResult = ApiResult<void>.fromJson(json);
+      throw ServerException(apiResult.userFriendlyError);
+    }
+    throw ServerException(fallbackMessage);
   }
 }
