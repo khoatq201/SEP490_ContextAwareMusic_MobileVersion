@@ -69,8 +69,7 @@ class ZoneRemoteDataSourceImpl implements ZoneRemoteDataSource {
   @override
   Future<PlaylistModel> getPlaylistById(String playlistId) async {
     try {
-      final endpoint = ApiConstants.getPlaylistEndpoint
-          .replaceFirst('{playlistId}', playlistId);
+      final endpoint = ApiConstants.getPlaylistDetail(playlistId);
       final response = await dioClient.get(endpoint);
       final data = response.data;
       if (data is Map<String, dynamic> && data['data'] != null) {

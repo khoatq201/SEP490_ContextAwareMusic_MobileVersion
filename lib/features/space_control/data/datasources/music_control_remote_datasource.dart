@@ -35,7 +35,7 @@ class MusicControlRemoteDataSourceImpl implements MusicControlRemoteDataSource {
   }) async {
     try {
       final response = await dioClient.post(
-        ApiConstants.overrideMoodEndpoint.replaceAll('{spaceId}', spaceId),
+        ApiConstants.camsOverride(spaceId),
         data: {
           'moodId': moodId,
           'duration': duration,
@@ -54,7 +54,7 @@ class MusicControlRemoteDataSourceImpl implements MusicControlRemoteDataSource {
   Future<void> sendMusicControl(String spaceId, String action) async {
     try {
       final response = await dioClient.post(
-        ApiConstants.musicControlEndpoint.replaceAll('{spaceId}', spaceId),
+        ApiConstants.camsPlayback(spaceId),
         data: {
           'action': action,
         },

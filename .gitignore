@@ -47,3 +47,4 @@ app.*.map.json
 # User specified ignores
 *.md
 docs/
+analyze*.txt

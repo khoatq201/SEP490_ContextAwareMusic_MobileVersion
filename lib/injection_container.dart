@@ -110,6 +110,23 @@ import 'features/search/presentation/bloc/artist_detail_cubit.dart';
 import 'features/search/presentation/bloc/album_detail_cubit.dart';
 import 'features/search/presentation/bloc/category_detail_cubit.dart';
 
+// Moods Feature
+import 'features/moods/data/datasources/mood_remote_datasource.dart';
+import 'features/moods/data/repositories/mood_repository_impl.dart';
+
+// Tracks Feature
+import 'features/tracks/data/datasources/track_remote_datasource.dart';
+import 'features/tracks/data/repositories/track_repository_impl.dart';
+
+// Playlists Feature
+import 'features/playlists/data/datasources/playlist_remote_datasource.dart';
+import 'features/playlists/data/repositories/playlist_repository_impl.dart';
+
+// CAMS Feature
+import 'features/cams/data/datasources/cams_remote_datasource.dart';
+import 'features/cams/data/repositories/cams_repository_impl.dart';
+import 'features/cams/data/services/store_hub_service.dart';
+
 // Mock Data Sources
 import 'features/space_control/data/datasources/space_mock_datasource.dart';
 import 'features/space_control/data/datasources/music_control_mock_datasource.dart';
@@ -429,6 +446,64 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(() => GetAllPlaylists(sl()));
 
   // Note: BLoC will be added when UI is implemented
+
+  // =============================================
+  // Moods Feature
+  // =============================================
+
+  sl.registerLazySingleton<MoodRemoteDataSource>(
+    () => MoodRemoteDataSourceImpl(dioClient: sl()),
+  );
+
+  sl.registerLazySingleton<MoodRepository>(
+    () => MoodRepositoryImpl(remoteDataSource: sl()),
+  );
+
+  // =============================================
+  // Tracks Feature
+  // =============================================
+
+  sl.registerLazySingleton<TrackRemoteDataSource>(
+    () => TrackRemoteDataSourceImpl(dioClient: sl()),
+  );
+
+  sl.registerLazySingleton<TrackRepository>(
+    () => TrackRepositoryImpl(remoteDataSource: sl()),
+  );
+
+  // =============================================
+  // Playlists Feature
+  // =============================================
+
+  sl.registerLazySingleton<PlaylistRemoteDataSource>(
+    () => PlaylistRemoteDataSourceImpl(dioClient: sl()),
+  );
+
+  sl.registerLazySingleton<PlaylistRepository>(
+    () => PlaylistRepositoryImpl(remoteDataSource: sl()),
+  );
+
+  // =============================================
+  // CAMS Feature (Context-Aware Music System)
+  // =============================================
+
+  sl.registerLazySingleton<CamsRemoteDataSource>(
+    () => CamsRemoteDataSourceImpl(dioClient: sl()),
+  );
+
+  sl.registerLazySingleton<CamsRepository>(
+    () => CamsRepositoryImpl(remoteDataSource: sl()),
+  );
+
+  // SignalR StoreHub — requires access token factory
+  sl.registerLazySingleton<StoreHubService>(
+    () => StoreHubService(
+      accessTokenFactory: () {
+        final localStorage = sl<LocalStorageService>();
+        return localStorage.getToken() ?? '';
+      },
+    ),
+  );
 
   // =============================================
   // Search Feature

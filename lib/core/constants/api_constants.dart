@@ -25,12 +25,32 @@ class ApiConstants {
   static const String getStoresEndpoint = '/api/stores';
   static const String getSpacesEndpoint = '/api/spaces';
   static const String getSpaceDetailEndpoint = '/api/spaces/{spaceId}';
-  static const String toggleSpaceStatusEndpoint = '/api/spaces/{spaceId}/toggle-status';
-  static const String overrideMoodEndpoint =
-      '/api/spaces/{spaceId}/override-mood';
-  static const String musicControlEndpoint =
-      '/api/spaces/{spaceId}/music/control';
-  static const String getPlaylistEndpoint = '/api/playlists/{playlistId}';
+  static const String toggleSpaceStatusEndpoint =
+      '/api/spaces/{spaceId}/toggle-status';
+
+  // Moods
+  static const String getMoods = '/api/moods';
+
+  // Tracks
+  static const String getTracks = '/api/tracks';
+  static String getTrackDetail(String id) => '/api/tracks/$id';
+
+  // Playlists
+  static const String getPlaylists = '/api/playlists';
+  static String getPlaylistDetail(String id) => '/api/playlists/$id';
+
+  // CAMS — Context-Aware Music System
+  static String camsOverride(String spaceId) =>
+      '/api/cams/spaces/$spaceId/override';
+  static String camsCancelOverride(String spaceId) =>
+      '/api/cams/spaces/$spaceId/override';
+  static String camsPlayback(String spaceId) =>
+      '/api/cams/spaces/$spaceId/playback';
+  static String camsState(String spaceId) =>
+      '/api/cams/spaces/$spaceId/state';
+
+  // SignalR
+  static String get storeHubUrl => '$baseUrl/hubs/store';
 
   // MQTT Topics - Space Level
   static String spaceStatusTopic(String storeId, String spaceId) =>
