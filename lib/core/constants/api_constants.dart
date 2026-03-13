@@ -46,8 +46,7 @@ class ApiConstants {
       '/api/cams/spaces/$spaceId/override';
   static String camsPlayback(String spaceId) =>
       '/api/cams/spaces/$spaceId/playback';
-  static String camsState(String spaceId) =>
-      '/api/cams/spaces/$spaceId/state';
+  static String camsState(String spaceId) => '/api/cams/spaces/$spaceId/state';
 
   // SignalR
   static String get storeHubUrl => '$baseUrl/hubs/store';

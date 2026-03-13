@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
-import '../../../core/enums/entity_status_enum.dart';
-import '../../../core/enums/music_provider_enum.dart';
+import '../../../../core/enums/entity_status_enum.dart';
+import '../../../../core/enums/music_provider_enum.dart';
 
 /// Track entity matching backend TrackListItem DTO.
 /// This is separate from the old space_control Track entity

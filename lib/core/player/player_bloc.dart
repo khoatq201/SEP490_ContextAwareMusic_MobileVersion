@@ -47,6 +47,8 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     on<PlayerPositionUpdated>(_onPositionUpdated);
     on<PlayerSeekRequested>(_onSeekRequested);
     on<PlayerDurationUpdated>(_onDurationUpdated);
+    on<PlayerHlsStarted>(_onHlsStarted);
+    on<PlayerHlsStopped>(_onHlsStopped);
 
     _listenToAudioStreams();
   }
@@ -241,6 +243,38 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
   void _onDurationUpdated(
       PlayerDurationUpdated event, Emitter<PlayerState> emit) {
     emit(state.copyWith(duration: event.durationSeconds));
+  }
+
+  // ── HLS streaming from CAMS ────────────────────────────────────────────
+  void _onHlsStarted(PlayerHlsStarted event, Emitter<PlayerState> emit) async {
+    emit(state.copyWith(
+      isHlsMode: true,
+      hlsUrl: event.hlsUrl,
+      playlistName: event.playlistName,
+      isPlaying: true,
+      currentPosition: event.seekOffsetSeconds.toInt(),
+    ));
+
+    try {
+      await _audioService.loadUrl(event.hlsUrl);
+      if (event.seekOffsetSeconds > 0) {
+        await _audioService
+            .seek(Duration(seconds: event.seekOffsetSeconds.toInt()));
+      }
+      _audioService.play();
+    } catch (_) {
+      // Silently handle audio errors
+    }
+  }
+
+  void _onHlsStopped(PlayerHlsStopped event, Emitter<PlayerState> emit) async {
+    _audioService.stop();
+    emit(state.copyWith(
+      isPlaying: false,
+      isHlsMode: false,
+      clearHlsUrl: true,
+      currentPosition: 0,
+    ));
   }
 
   // -------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
-import '../../../core/enums/entity_status_enum.dart';
-import '../../../core/enums/mood_type_enum.dart';
+import '../../../../core/enums/entity_status_enum.dart';
+import '../../../../core/enums/mood_type_enum.dart';
 
 /// Mood entity matching backend MoodListItem DTO.
 class Mood extends Equatable {

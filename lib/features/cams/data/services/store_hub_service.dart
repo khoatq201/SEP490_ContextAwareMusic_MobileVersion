@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'package:signalr_netcore/signalr_client.dart';
-import '../../../core/constants/api_constants.dart';
-import '../../../core/enums/playback_command_enum.dart';
-import '../../../core/enums/transition_type_enum.dart';
-import '../../cams/data/models/space_playback_state_model.dart';
+import '../../../../core/constants/api_constants.dart';
+import '../../../../core/enums/playback_command_enum.dart';
+import '../../../../core/enums/transition_type_enum.dart';
+import '../models/space_playback_state_model.dart';
 
 /// Service for real-time communication with CAMS StoreHub via SignalR.
 ///
@@ -34,8 +34,7 @@ class StoreHubService {
   final _statesSyncController =
       StreamController<SpacePlaybackStateModel>.broadcast();
   final _stopPlaybackController = StreamController<void>.broadcast();
-  final _connectionController =
-      StreamController<ConnectionStatus>.broadcast();
+  final _connectionController = StreamController<ConnectionStatus>.broadcast();
 
   /// Stream of PlayStream events (playlist changes).
   Stream<PlayStreamEvent> get onPlayStream => _playStreamController.stream;
@@ -56,8 +55,7 @@ class StoreHubService {
       _connectionController.stream;
 
   /// Current connection state.
-  bool get isConnected =>
-      _connection?.state == HubConnectionState.Connected;
+  bool get isConnected => _connection?.state == HubConnectionState.Connected;
 
   // ─── Lifecycle ───────────────────────────────────────────────────────────
 
@@ -70,17 +68,16 @@ class StoreHubService {
 
     _connection = HubConnectionBuilder()
         .withUrl(
-          ApiConstants.storeHubUrl,
-          options: HttpConnectionOptions(
-            accessTokenFactory: () async => _accessTokenFactory(),
-            transport: HttpTransportType.WebSockets,
-            skipNegotiation: true,
-          ),
-        )
+      ApiConstants.storeHubUrl,
+      options: HttpConnectionOptions(
+        accessTokenFactory: () async => _accessTokenFactory(),
+        transport: HttpTransportType.WebSockets,
+        skipNegotiation: true,
+      ),
+    )
         .withAutomaticReconnect(
-          retryDelays: [0, 2000, 5000, 10000, 30000],
-        )
-        .build();
+      retryDelays: [0, 2000, 5000, 10000, 30000],
+    ).build();
 
     _registerListeners();
     await _connection!.start();
@@ -174,8 +171,7 @@ class StoreHubService {
 
       _playbackCommandController.add(PlaybackCommandEvent(
         spaceId: payload['spaceId'] as String? ?? '',
-        command: PlaybackCommandEnum.fromValue(
-            payload['command'] as int? ?? 1),
+        command: PlaybackCommandEnum.fromValue(payload['command'] as int? ?? 1),
         seekPositionSeconds:
             (payload['seekPositionSeconds'] as num?)?.toDouble(),
         targetTrackId: payload['targetTrackId'] as String?,

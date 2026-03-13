@@ -2,6 +2,7 @@ import 'dart:developer' as developer;
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../constants/api_constants.dart';
@@ -13,6 +14,11 @@ class DioClient {
   final LocalStorageService _localStorage;
   PersistCookieJar? _cookieJar;
   bool _isRefreshing = false;
+
+  void _log(String message) {
+    developer.log(message, name: 'DioClient');
+    debugPrint('[DioClient] $message');
+  }
 
   DioClient({required LocalStorageService localStorage})
       : _localStorage = localStorage {
@@ -47,6 +53,7 @@ class DioClient {
   Future<void> initCookieJar() async {
     final dir = await getApplicationDocumentsDirectory();
     _cookieJar = PersistCookieJar(
+      ignoreExpires: true, // Always send cookies — let the server validate
       storage: FileStorage('${dir.path}/.cookies/'),
     );
 
@@ -54,7 +61,22 @@ class DioClient {
     //    are attached to every outgoing request.
     _dio.interceptors.add(CookieManager(_cookieJar!));
 
-    // 2. THEN add the auth token interceptor — so it can read/write the
+    // 2. Log Set-Cookie headers from login/refresh responses for debugging.
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onResponse: (response, handler) {
+          final path = response.requestOptions.path;
+          if (path == ApiConstants.login ||
+              path == ApiConstants.refreshToken) {
+            final setCookie = response.headers['set-cookie'];
+            _log('Set-Cookie from $path: ${setCookie ?? '(none)'}');
+          }
+          return handler.next(response);
+        },
+      ),
+    );
+
+    // 3. THEN add the auth token interceptor — so it can read/write the
     //    Authorization header after cookies are already attached.
     _dio.interceptors.add(
       InterceptorsWrapper(
@@ -109,35 +131,84 @@ class DioClient {
     await _cookieJar?.deleteAll();
   }
 
+  /// Debug helper: print all cookies currently matched for [path].
+  /// Use this after login to verify refresh-token cookie is actually stored.
+  Future<void> debugDumpCookiesForPath({
+    required String path,
+    String label = 'cookie-dump',
+  }) async {
+    if (_cookieJar == null) {
+      _log('[$label] Cookie jar is null (initCookieJar may not be called)');
+      return;
+    }
+
+    final uri = path.startsWith('http')
+        ? Uri.parse(path)
+        : Uri.parse('${ApiConstants.baseUrl}$path');
+    final cookies = await _cookieJar!.loadForRequest(uri);
+    final cookieLines = cookies
+        .map(
+          (c) =>
+              '${c.name}: len=${c.value.length}, secure=${c.secure}, httpOnly=${c.httpOnly}, domain=${c.domain}, path=${c.path}, expires=${c.expires}',
+        )
+        .toList();
+
+    _log('[$label] uri=$uri -> count=${cookies.length}');
+    for (final line in cookieLines) {
+      _log('[$label] $line');
+    }
+
+    final baseUri = Uri.parse(ApiConstants.baseUrl);
+    final baseCookies = await _cookieJar!.loadForRequest(baseUri);
+    _log('[$label] baseUri=$baseUri -> count=${baseCookies.length}');
+    for (final c in baseCookies) {
+      _log(
+        '[$label] base ${c.name}: len=${c.value.length}, secure=${c.secure}, httpOnly=${c.httpOnly}, domain=${c.domain}, path=${c.path}, expires=${c.expires}',
+      );
+    }
+  }
+
   /// Attempt to refresh the access token using the HttpOnly cookie.
   Future<String?> _refreshToken() async {
     try {
       // Log cookies for debugging
       if (_cookieJar != null) {
-        final uri = Uri.parse('${ApiConstants.baseUrl}${ApiConstants.refreshToken}');
+        final uri = Uri.parse(
+            '${ApiConstants.baseUrl}${ApiConstants.refreshToken}');
         final cookies = await _cookieJar!.loadForRequest(uri);
-        developer.log(
-          'Refresh token - cookies for $uri: ${cookies.map((c) => '${c.name}=${c.value.substring(0, (c.value.length > 10 ? 10 : c.value.length))}...').toList()}',
-          name: 'DioClient',
+        _log(
+          'Refresh token - cookies for $uri: '
+          '${cookies.map((c) => '${c.name}=${c.value.length > 10 ? c.value.substring(0, 10) : c.value}...').toList()}',
         );
         if (cookies.isEmpty) {
-          developer.log(
-            'WARNING: No cookies found for refresh-token request. '
+          // Also check the base URL (different path may yield different results)
+          final baseUri = Uri.parse(ApiConstants.baseUrl);
+          final baseCookies = await _cookieJar!.loadForRequest(baseUri);
+          _log(
+            'WARNING: No cookies for refresh URI. '
+            'Base URL cookies ($baseUri): '
+            '${baseCookies.map((c) => c.name).toList()}. '
             'The server may not have set the refresh token cookie during login, '
-            'or the cookie domain/path does not match.',
-            name: 'DioClient',
+            'or the cookie domain/path does not match the request URL.',
           );
         }
       }
 
       // Include expired access token in header (backend requires it for refresh)
       final expiredToken = await _localStorage.getAuthToken();
+      _log(
+        'Refresh token - sending with Authorization: '
+        '${expiredToken != null ? "Bearer ${expiredToken.substring(0, 20)}..." : "null"}',
+      );
+
       final response = await _dio.post(
         ApiConstants.refreshToken,
         options: Options(
           headers: {
             if (expiredToken != null) 'Authorization': 'Bearer $expiredToken',
           },
+          // Ensure cookies are sent even for cross-origin requests
+          extra: {'withCredentials': true},
         ),
       );
 
@@ -151,15 +222,14 @@ class DioClient {
         await _localStorage.saveAuthToken(newToken);
         await _localStorage.saveAccessTokenExpiry(expiresAt);
 
-        developer.log('Token refreshed successfully', name: 'DioClient');
+        _log('Token refreshed successfully');
         return newToken;
       }
 
       throw AuthenticationException('Refresh token failed');
     } on DioException catch (e) {
-      developer.log(
+      _log(
         'Refresh token DioException: ${e.response?.statusCode} - ${e.response?.data}',
-        name: 'DioClient',
       );
       throw AuthenticationException(
         'Session expired. Please login again.',

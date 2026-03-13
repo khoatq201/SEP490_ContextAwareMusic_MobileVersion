@@ -9,8 +9,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/player/player_bloc.dart';
-import '../../data/datasources/mock_home_data_source.dart';
-import '../../data/repositories/mock_home_repository_impl.dart';
+import '../../../../injection_container.dart';
 import '../../domain/entities/category_entity.dart';
 import '../../domain/entities/playlist_entity.dart';
 import '../../domain/entities/sensor_entity.dart';
@@ -19,7 +18,7 @@ import '../bloc/home_state.dart';
 import '../../../../core/session/session_cubit.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Entry point — wraps the page with its own HomeCubit (self-contained)
+// Entry point — wraps the page with its own HomeCubit (DI-resolved)
 // ─────────────────────────────────────────────────────────────────────────────
 class HomeTabPage extends StatelessWidget {
   const HomeTabPage({super.key});
@@ -27,9 +26,15 @@ class HomeTabPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => HomeCubit(
-        MockHomeRepositoryImpl(dataSource: MockHomeDataSource()),
-      )..load(),
+      create: (_) {
+        final cubit = sl<HomeCubit>()..load();
+        // Fetch CAMS playback state if a space is selected
+        final spaceId = context.read<SessionCubit>().state.currentSpace?.id;
+        if (spaceId != null) {
+          cubit.loadSpacePlaybackState(spaceId);
+        }
+        return cubit;
+      },
       child: const _HomeDashboardView(),
     );
   }
@@ -70,7 +75,18 @@ class _HomeDashboardView extends StatelessWidget {
               // ── 1. SliverAppBar ─────────────────────────────────────────
               _HomeSliverAppBar(palette: palette),
 
-              // ── 2. Sensors Row ───────────────────────────────────────────
+              // ── 2. Current Mood Chip ──────────────────────────────────────
+              if (state.currentMoodName != null)
+                SliverToBoxAdapter(
+                  child: _CurrentMoodChip(
+                    moodName: state.currentMoodName!,
+                    playlistName: state.currentPlaylistName,
+                    isStreaming: state.isStreaming,
+                    palette: palette,
+                  ).animate().fadeIn(duration: 320.ms).slideY(begin: 0.04),
+                ),
+
+              // ── 3. Sensors Row ───────────────────────────────────────────
               SliverToBoxAdapter(
                 child: _SensorsRow(sensors: state.sensors, palette: palette)
                     .animate()
@@ -78,19 +94,20 @@ class _HomeDashboardView extends StatelessWidget {
                     .slideY(begin: 0.06),
               ),
 
-              // ── 3. Master Control Card ───────────────────────────────────
+              // ── 4. Master Control Card ───────────────────────────────────
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                   child: _MasterControlCard(
                     autoModeEnabled: state.autoModeEnabled,
+                    currentPlaylistName: state.currentPlaylistName,
                     palette: palette,
                     onToggle: () => context.read<HomeCubit>().toggleAutoMode(),
                   ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.08),
                 ),
               ),
 
-              // ── 4. Dynamic Category Sections ─────────────────────────────
+              // ── 5. Dynamic Category Sections ─────────────────────────────
               SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
@@ -159,9 +176,7 @@ class _HomeSliverAppBar extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    isPlayback
-                        ? (session.currentSpace?.name ?? 'Unknown Space')
-                        : 'Main Hall',
+                    session.currentSpace?.name ?? 'No Space Selected',
                     style: GoogleFonts.poppins(
                       color: palette.textPrimary,
                       fontSize: 18,
@@ -247,14 +262,19 @@ class _SwitchSpaceSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          Text(
-            'Main Hall',
-            style: GoogleFonts.inter(
-              color: palette.textMuted,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
+          Builder(builder: (context) {
+            final spaceName =
+                context.read<SessionCubit>().state.currentSpace?.name ??
+                    'No Space Selected';
+            return Text(
+              spaceName,
+              style: GoogleFonts.inter(
+                color: palette.textMuted,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            );
+          }),
           const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
@@ -402,6 +422,109 @@ class _SensorChip extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Current Mood Chip — shows the active mood of the selected space
+// ─────────────────────────────────────────────────────────────────────────────
+class _CurrentMoodChip extends StatelessWidget {
+  const _CurrentMoodChip({
+    required this.moodName,
+    required this.palette,
+    this.playlistName,
+    this.isStreaming = false,
+  });
+  final String moodName;
+  final String? playlistName;
+  final bool isStreaming;
+  final _Palette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: palette.accent.withOpacity(palette.isDark ? 0.12 : 0.08),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: palette.accent.withOpacity(0.25),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: palette.accent.withOpacity(0.18),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                LucideIcons.sparkles,
+                color: palette.accent,
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'Current Mood',
+                        style: GoogleFonts.inter(
+                          color: palette.textMuted,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.6,
+                        ),
+                      ),
+                      if (isStreaming) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade400,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    moodName,
+                    style: GoogleFonts.poppins(
+                      color: palette.textPrimary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (playlistName != null) ...[
+                    const SizedBox(height: 1),
+                    Text(
+                      playlistName!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        color: palette.textMuted,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // 3. Master Control Card
 // ─────────────────────────────────────────────────────────────────────────────
 class _MasterControlCard extends StatelessWidget {
@@ -409,10 +532,12 @@ class _MasterControlCard extends StatelessWidget {
     required this.autoModeEnabled,
     required this.palette,
     required this.onToggle,
+    this.currentPlaylistName,
   });
   final bool autoModeEnabled;
   final _Palette palette;
   final VoidCallback onToggle;
+  final String? currentPlaylistName;
 
   @override
   Widget build(BuildContext context) {
@@ -495,7 +620,7 @@ class _MasterControlCard extends StatelessWidget {
                               color: Colors.white.withOpacity(0.70), size: 13),
                           const SizedBox(width: 5),
                           Text(
-                            'Chill Morning — Lo-Fi Beats',
+                            currentPlaylistName ?? 'No playlist active',
                             style: GoogleFonts.inter(
                               color: Colors.white.withOpacity(0.65),
                               fontSize: 11,
@@ -658,7 +783,7 @@ class _PlaylistCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        context.push('/home/playlist-detail', extra: playlist);
+        context.push('/home/playlist-detail', extra: playlist.id);
       },
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),

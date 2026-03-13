@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../../../core/enums/entity_status_enum.dart';
+import '../../../../core/enums/entity_status_enum.dart';
 import 'playlist_track_item.dart';
 
 /// Playlist entity matching backend PlaylistListItem DTO.

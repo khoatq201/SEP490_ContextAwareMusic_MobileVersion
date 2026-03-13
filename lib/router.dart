@@ -31,15 +31,13 @@ import 'core/presentation/theme_showcase_page.dart';
 import 'core/presentation/theme_demo_page.dart';
 import 'core/presentation/main_shell_page.dart';
 import 'features/home/presentation/pages/home_tab_page.dart';
-import 'features/home/presentation/pages/playlist_detail_page.dart';
-import 'features/home/domain/entities/playlist_entity.dart';
+import 'features/playlists/presentation/pages/playlist_detail_loader.dart';
 import 'features/search/presentation/pages/search_tab_page.dart';
 import 'features/search/presentation/pages/artist_detail_page.dart';
 import 'features/search/presentation/pages/album_detail_page.dart';
-import 'features/search/presentation/pages/search_playlist_detail_page.dart';
 import 'features/search/presentation/pages/category_detail_page.dart';
-import 'features/search/domain/usecases/get_playlist_detail_usecase.dart';
 import 'features/now_playing/presentation/pages/now_playing_tab_page.dart';
+import 'features/cams/presentation/bloc/cams_playback_bloc.dart';
 import 'features/library/presentation/pages/library_tab_page.dart';
 import 'features/locations/presentation/pages/locations_tab_page.dart';
 import 'features/context_rules/presentation/pages/context_rules_page.dart';
@@ -231,14 +229,17 @@ class AppRouter {
                   );
                 },
               ),
-              // Sub-route: Playlist detail — stays inside the shell so
-              // BottomNav stays visible and tab switching works.
+              // Sub-route: Playlist detail — loads full detail (incl. tracks)
+              // from backend, initialises CamsPlaybackBloc, then shows the page.
               GoRoute(
                 path: 'playlist-detail',
                 name: 'playlist-detail',
                 builder: (context, state) {
-                  final playlist = state.extra as PlaylistEntity;
-                  return PlaylistDetailPage(playlist: playlist);
+                  final playlistId = state.extra as String;
+                  return BlocProvider(
+                    create: (_) => sl<CamsPlaybackBloc>(),
+                    child: PlaylistDetailLoader(playlistId: playlistId),
+                  );
                 },
               ),
             ],
@@ -301,23 +302,9 @@ class AppRouter {
                 name: 'search-playlist-detail',
                 builder: (context, state) {
                   final playlistId = state.pathParameters['playlistId']!;
-                  return FutureBuilder(
-                    future: sl<GetPlaylistDetailUseCase>().call(playlistId),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState != ConnectionState.done) {
-                        return const Scaffold(
-                          body: Center(child: CircularProgressIndicator()),
-                        );
-                      }
-                      if (snapshot.hasError || !snapshot.hasData) {
-                        return Scaffold(
-                          body: Center(
-                            child: Text('Playlist not found'),
-                          ),
-                        );
-                      }
-                      return SearchPlaylistDetailPage(playlist: snapshot.data!);
-                    },
+                  return BlocProvider(
+                    create: (_) => sl<CamsPlaybackBloc>(),
+                    child: PlaylistDetailLoader(playlistId: playlistId),
                   );
                 },
               ),
@@ -355,8 +342,11 @@ class AppRouter {
           GoRoute(
             path: '/now-playing',
             name: 'now-playing',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: NowPlayingTabPage(),
+            pageBuilder: (context, state) => NoTransitionPage(
+              child: BlocProvider(
+                create: (_) => sl<CamsPlaybackBloc>(),
+                child: const NowPlayingTabPage(),
+              ),
             ),
           ),
           GoRoute(
@@ -385,9 +375,12 @@ class AppRouter {
         parentNavigatorKey: _rootNavigatorKey,
         path: '/now-playing-full',
         name: 'now-playing-full',
-        pageBuilder: (context, state) => const MaterialPage(
+        pageBuilder: (context, state) => MaterialPage(
           fullscreenDialog: true,
-          child: NowPlayingTabPage(),
+          child: BlocProvider(
+            create: (_) => sl<CamsPlaybackBloc>(),
+            child: const NowPlayingTabPage(),
+          ),
         ),
       ),
       GoRoute(

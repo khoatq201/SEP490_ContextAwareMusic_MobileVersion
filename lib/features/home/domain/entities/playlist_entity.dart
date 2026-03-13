@@ -15,6 +15,10 @@ class PlaylistEntity extends Equatable {
   /// Whether this playlist has been downloaded for offline use
   final bool isDownloaded;
 
+  /// If set, used instead of `songs.length` for displaying track count
+  /// (e.g. when only metadata is fetched without the full songs list).
+  final int? overrideTrackCount;
+
   const PlaylistEntity({
     required this.id,
     required this.title,
@@ -22,16 +26,24 @@ class PlaylistEntity extends Equatable {
     this.coverUrl,
     this.songs = const [],
     this.isDownloaded = false,
+    this.overrideTrackCount,
   });
 
-  int get totalTracks => songs.length;
+  int get totalTracks => overrideTrackCount ?? songs.length;
 
   /// Total duration of all songs in seconds
   int get totalDuration => songs.fold(0, (sum, s) => sum + s.duration);
 
   @override
-  List<Object?> get props =>
-      [id, title, description, coverUrl, songs, isDownloaded];
+  List<Object?> get props => [
+        id,
+        title,
+        description,
+        coverUrl,
+        songs,
+        isDownloaded,
+        overrideTrackCount
+      ];
 
   PlaylistEntity copyWith({
     String? id,
@@ -40,6 +52,7 @@ class PlaylistEntity extends Equatable {
     String? coverUrl,
     List<SongEntity>? songs,
     bool? isDownloaded,
+    int? overrideTrackCount,
   }) =>
       PlaylistEntity(
         id: id ?? this.id,
@@ -48,5 +61,6 @@ class PlaylistEntity extends Equatable {
         coverUrl: coverUrl ?? this.coverUrl,
         songs: songs ?? this.songs,
         isDownloaded: isDownloaded ?? this.isDownloaded,
+        overrideTrackCount: overrideTrackCount ?? this.overrideTrackCount,
       );
 }

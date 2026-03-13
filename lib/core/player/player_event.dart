@@ -114,3 +114,25 @@ class PlayerDurationUpdated extends PlayerEvent {
   @override
   List<Object?> get props => [durationSeconds];
 }
+
+/// Fired when CAMS provides an HLS URL for streaming.
+/// The PlayerBloc should load this URL and seek to the offset.
+class PlayerHlsStarted extends PlayerEvent {
+  final String hlsUrl;
+  final String? playlistName;
+  final double seekOffsetSeconds;
+
+  const PlayerHlsStarted({
+    required this.hlsUrl,
+    this.playlistName,
+    this.seekOffsetSeconds = 0,
+  });
+
+  @override
+  List<Object?> get props => [hlsUrl, playlistName, seekOffsetSeconds];
+}
+
+/// Fired when CAMS stops playback.
+class PlayerHlsStopped extends PlayerEvent {
+  const PlayerHlsStopped();
+}

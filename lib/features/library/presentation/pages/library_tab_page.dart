@@ -7,9 +7,10 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/player/player_bloc.dart';
 import '../../../../core/player/player_state.dart' as ps;
+import '../../../../injection_container.dart';
 import '../../../home/domain/entities/playlist_entity.dart';
 import '../../../home/domain/entities/song_entity.dart';
-import '../../data/datasources/mock_library_data_source.dart';
+import '../../../playlists/data/datasources/playlist_remote_datasource.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Filter options
@@ -42,15 +43,38 @@ class LibraryTabPage extends StatefulWidget {
 class _LibraryTabPageState extends State<LibraryTabPage> {
   _LibraryFilter _filter = _LibraryFilter.playlists;
 
-  // ── Mock state — swap for Bloc when backend is ready ──────────────────────
-  late List<PlaylistEntity> _savedPlaylists;
-  late List<SongEntity> _blockedSongs;
+  List<PlaylistEntity> _savedPlaylists = [];
+  List<SongEntity> _blockedSongs = [];
+  bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    _savedPlaylists = MockLibraryDataSource.getSavedPlaylists();
-    _blockedSongs = MockLibraryDataSource.getBlockedSongs();
+    _loadPlaylists();
+  }
+
+  Future<void> _loadPlaylists() async {
+    try {
+      final playlistDs = sl<PlaylistRemoteDataSource>();
+      final resp = await playlistDs.getPlaylists(page: 1, pageSize: 50);
+      if (!mounted) return;
+      setState(() {
+        _savedPlaylists = resp.items
+            .map((p) => PlaylistEntity(
+                  id: p.id,
+                  title: p.name,
+                  description: p.description,
+                  coverUrl: null,
+                  songs: const [],
+                  overrideTrackCount: p.trackCount,
+                ))
+            .toList();
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+    }
   }
 
   // ── Create playlist dialog ─────────────────────────────────────────────────
@@ -132,7 +156,7 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
       setState(() => _savedPlaylists.insert(0, newPlaylist));
 
       if (mounted) {
-        context.push('/home/playlist-detail', extra: newPlaylist);
+        context.push('/home/playlist-detail', extra: newPlaylist.id);
       }
     }
   }
@@ -276,7 +300,11 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
           ),
 
           // ── Body ───────────────────────────────────────────────────────
-          if (_filter == _LibraryFilter.playlists)
+          if (_loading)
+            const SliverFillRemaining(
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (_filter == _LibraryFilter.playlists)
             _savedPlaylists.isEmpty
                 ? _emptyPlaylistsSliver(palette)
                 : _playlistsSliver(palette)
@@ -327,7 +355,8 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
         return _PlaylistTile(
           playlist: playlist,
           palette: palette,
-          onTap: () => context.push('/home/playlist-detail', extra: playlist),
+          onTap: () =>
+              context.push('/home/playlist-detail', extra: playlist.id),
         );
       },
     );

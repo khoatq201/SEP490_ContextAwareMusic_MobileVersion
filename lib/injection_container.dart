@@ -126,6 +126,21 @@ import 'features/playlists/data/repositories/playlist_repository_impl.dart';
 import 'features/cams/data/datasources/cams_remote_datasource.dart';
 import 'features/cams/data/repositories/cams_repository_impl.dart';
 import 'features/cams/data/services/store_hub_service.dart';
+import 'features/cams/domain/usecases/get_space_state.dart';
+import 'features/cams/domain/usecases/override_space.dart';
+import 'features/cams/domain/usecases/cancel_override.dart';
+import 'features/cams/domain/usecases/send_playback_command.dart';
+import 'features/cams/presentation/bloc/cams_playback_bloc.dart';
+
+// Moods Use Cases
+import 'features/moods/domain/usecases/get_moods.dart';
+
+// Home Feature
+import 'features/home/data/datasources/home_remote_datasource.dart';
+import 'features/home/data/repositories/home_repository_impl.dart';
+import 'features/home/data/repositories/mock_home_repository_impl.dart';
+import 'features/home/domain/repositories/home_repository.dart';
+import 'features/home/presentation/bloc/home_cubit.dart';
 
 // Mock Data Sources
 import 'features/space_control/data/datasources/space_mock_datasource.dart';
@@ -163,7 +178,7 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton<AuthRemoteDataSource>(
     () => ApiConstants.useMockData
         ? AuthMockDataSource()
-        : AuthRemoteDataSourceImpl(dioClient: sl()),
+        : AuthRemoteDataSourceImpl(dioClient: sl(), localStorage: sl()),
   );
 
   // Repositories
@@ -459,6 +474,9 @@ Future<void> initializeDependencies() async {
     () => MoodRepositoryImpl(remoteDataSource: sl()),
   );
 
+  // Use cases
+  sl.registerLazySingleton(() => GetMoods(sl()));
+
   // =============================================
   // Tracks Feature
   // =============================================
@@ -505,13 +523,59 @@ Future<void> initializeDependencies() async {
     ),
   );
 
+  // Use cases
+  sl.registerLazySingleton(() => GetSpaceState(sl()));
+  sl.registerLazySingleton(() => OverrideSpace(sl()));
+  sl.registerLazySingleton(() => CancelOverride(sl()));
+  sl.registerLazySingleton(() => SendPlaybackCommand(sl()));
+
+  // BLoCs
+  sl.registerFactory(
+    () => CamsPlaybackBloc(
+      getSpaceState: sl(),
+      overrideSpace: sl(),
+      cancelOverride: sl(),
+      sendPlaybackCommand: sl(),
+      getMoods: sl(),
+      storeHubService: sl(),
+    ),
+  );
+
+  // =============================================
+  // Home Feature
+  // =============================================
+
+  // Data sources
+  sl.registerLazySingleton<HomeRemoteDataSource>(
+    () => HomeRemoteDataSourceImpl(
+      moodDataSource: sl(),
+      playlistDataSource: sl(),
+    ),
+  );
+
+  // Repositories
+  sl.registerLazySingleton<HomeRepository>(
+    () => ApiConstants.useMockData
+        ? MockHomeRepositoryImpl()
+        : HomeRepositoryImpl(dataSource: sl()),
+  );
+
+  // Cubits
+  sl.registerFactory(
+    () => HomeCubit(sl(), getSpaceState: sl()),
+  );
+
   // =============================================
   // Search Feature
   // =============================================
 
   // Repository
   sl.registerLazySingleton<SearchRepository>(
-    () => SearchRepositoryImpl(),
+    () => SearchRepositoryImpl(
+      playlistDataSource: sl(),
+      trackDataSource: sl(),
+      moodDataSource: sl(),
+    ),
   );
 
   // Use cases

@@ -28,6 +28,12 @@ class PlayerState extends Equatable {
   /// Name of the playlist/album currently playing from.
   final String? playlistName;
 
+  /// Current HLS URL being streamed (from CAMS).
+  final String? hlsUrl;
+
+  /// Whether the player is streaming via HLS (CAMS mode).
+  final bool isHlsMode;
+
   const PlayerState({
     this.currentTrack,
     this.isPlaying = false,
@@ -40,6 +46,8 @@ class PlayerState extends Equatable {
     this.queue = const [],
     this.currentIndex = -1,
     this.playlistName,
+    this.hlsUrl,
+    this.isHlsMode = false,
   });
 
   /// Whether we have enough data to render the MiniPlayer.
@@ -66,8 +74,11 @@ class PlayerState extends Equatable {
     List<Track>? queue,
     int? currentIndex,
     String? playlistName,
+    String? hlsUrl,
+    bool? isHlsMode,
     bool clearTrack = false,
     bool clearPlaylistName = false,
+    bool clearHlsUrl = false,
   }) {
     return PlayerState(
       currentTrack: clearTrack ? null : (currentTrack ?? this.currentTrack),
@@ -82,6 +93,8 @@ class PlayerState extends Equatable {
       currentIndex: currentIndex ?? this.currentIndex,
       playlistName:
           clearPlaylistName ? null : (playlistName ?? this.playlistName),
+      hlsUrl: clearHlsUrl ? null : (hlsUrl ?? this.hlsUrl),
+      isHlsMode: isHlsMode ?? this.isHlsMode,
     );
   }
 
@@ -98,5 +111,7 @@ class PlayerState extends Equatable {
         queue,
         currentIndex,
         playlistName,
+        hlsUrl,
+        isHlsMode,
       ];
 }

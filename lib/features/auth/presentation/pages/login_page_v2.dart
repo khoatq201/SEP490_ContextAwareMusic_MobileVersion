@@ -67,7 +67,7 @@ class _LoginPageV2State extends State<LoginPageV2>
     if (value == null || value.isEmpty) {
       return 'Please enter your email';
     }
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    final emailRegex = RegExp(r'^[\w\-\.]+@([\w\-]+\.)+[\w\-]{2,}$');
     if (!emailRegex.hasMatch(value)) {
       return 'Please enter a valid email address';
     }
@@ -228,16 +228,26 @@ class _LoginPageV2State extends State<LoginPageV2>
                                       ),
                                     ),
                                     const SizedBox(width: 8),
-                                    Text(
-                                      'Remember me',
-                                      style: AppTypography.bodySmall.copyWith(
-                                        color: isDark
-                                            ? AppColors.textDarkSecondary
-                                            : AppColors.textSecondary,
+                                    Expanded(
+                                      child: Text(
+                                        'Remember me',
+                                        style: AppTypography.bodySmall.copyWith(
+                                          color: isDark
+                                              ? AppColors.textDarkSecondary
+                                              : AppColors.textSecondary,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 1,
                                       ),
                                     ),
-                                    const Spacer(),
                                     TextButton(
+                                      style: TextButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 4),
+                                        minimumSize: const Size(0, 36),
+                                        tapTargetSize:
+                                            MaterialTapTargetSize.shrinkWrap,
+                                      ),
                                       onPressed: () =>
                                           context.go('/forgot-password'),
                                       child: Text(

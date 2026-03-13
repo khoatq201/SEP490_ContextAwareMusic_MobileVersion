@@ -1,9 +1,11 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/models/api_result.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/constants/api_constants.dart';
+import '../../../../core/services/local_storage_service.dart';
 import '../models/auth_response_model.dart';
 import '../models/profile_response_model.dart';
 
@@ -35,8 +37,12 @@ abstract class AuthRemoteDataSource {
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   final DioClient dioClient;
+  final LocalStorageService localStorage;
 
-  AuthRemoteDataSourceImpl({required this.dioClient});
+  AuthRemoteDataSourceImpl({
+    required this.dioClient,
+    required this.localStorage,
+  });
 
   @override
   Future<AuthResponseModel> login({
@@ -52,6 +58,14 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           'password': password,
           'rememberMe': rememberMe,
         },
+      );
+
+      debugPrint(
+        '[AuthRemoteDataSource] login set-cookie: ${response.headers['set-cookie']}',
+      );
+      await dioClient.debugDumpCookiesForPath(
+        path: ApiConstants.refreshToken,
+        label: 'after-login',
       );
 
       final apiResult = ApiResult<AuthResponseModel>.fromJson(
@@ -105,7 +119,32 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Future<AuthResponseModel> refreshToken() async {
-    final response = await dioClient.post(ApiConstants.refreshToken);
+    // Backend requires the (possibly expired) access token in the header
+    final expiredToken = await localStorage.getAuthToken();
+    debugPrint(
+      '[AuthRemoteDataSource] refreshToken auth header present: ${expiredToken != null && expiredToken.isNotEmpty}',
+    );
+    await dioClient.debugDumpCookiesForPath(
+      path: ApiConstants.refreshToken,
+      label: 'before-refresh-request',
+    );
+
+    final response = await dioClient.post(
+      ApiConstants.refreshToken,
+      options: Options(
+        headers: {
+          if (expiredToken != null) 'Authorization': 'Bearer $expiredToken',
+        },
+      ),
+    );
+
+    debugPrint(
+      '[AuthRemoteDataSource] refresh response set-cookie: ${response.headers['set-cookie']}',
+    );
+    await dioClient.debugDumpCookiesForPath(
+      path: ApiConstants.refreshToken,
+      label: 'after-refresh-response',
+    );
 
     final apiResult = ApiResult<AuthResponseModel>.fromJson(
       response.data as Map<String, dynamic>,

@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../../../core/enums/override_mode_enum.dart';
+import '../../../../core/enums/override_mode_enum.dart';
 
 /// Represents the live playback state of a Space.
 /// Matches backend GET /api/cams/spaces/{spaceId}/state response.
