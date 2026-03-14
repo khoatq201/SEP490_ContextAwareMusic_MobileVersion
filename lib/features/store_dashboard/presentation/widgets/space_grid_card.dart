@@ -17,6 +17,7 @@ class SpaceGridCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final moodLabel = _formatMoodLabel(space.currentMood);
     return Card(
       elevation: AppDimensions.elevationMd,
       child: InkWell(
@@ -58,12 +59,14 @@ class SpaceGridCard extends StatelessWidget {
 
               // Mood Badge
               Container(
+                width: double.infinity,
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppDimensions.spacingSm,
                   vertical: AppDimensions.spacingXs,
                 ),
                 decoration: BoxDecoration(
-                  color: _getMoodColor(space.currentMood).withOpacity(0.1),
+                  color:
+                      _getMoodColor(space.currentMood).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
                   border: Border.all(
                     color: _getMoodColor(space.currentMood),
@@ -71,12 +74,15 @@ class SpaceGridCard extends StatelessWidget {
                   ),
                 ),
                 child: Text(
-                  space.currentMood.toUpperCase(),
+                  moodLabel,
                   style: AppTypography.labelSmall.copyWith(
                     color: _getMoodColor(space.currentMood),
                     fontWeight: FontWeight.bold,
                     fontSize: 10,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: false,
                 ),
               ),
 
@@ -154,6 +160,22 @@ class SpaceGridCard extends StatelessWidget {
       default:
         return AppColors.textSecondary;
     }
+  }
+
+  String _formatMoodLabel(String mood) {
+    final trimmed = mood.trim();
+    if (trimmed.isEmpty) return 'UNKNOWN';
+
+    // Convert "manualoverride", "manual_override", "manual-override",
+    // and camelCase forms into a readable single-line label.
+    final withSpaces =
+        trimmed.replaceAll(RegExp(r'[_-]+'), ' ').replaceAllMapped(
+              RegExp(r'([a-z])([A-Z])'),
+              (match) => '${match.group(1)} ${match.group(2)}',
+            );
+
+    final collapsed = withSpaces.replaceAll(RegExp(r'\s+'), ' ').trim();
+    return collapsed.toUpperCase();
   }
 }
 

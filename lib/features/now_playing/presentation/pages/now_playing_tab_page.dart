@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -6,21 +6,25 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/enums/entity_status_enum.dart';
 import '../../../../core/enums/playback_command_enum.dart';
+import '../../../../core/enums/space_type_enum.dart';
 import '../../../../core/player/player_bloc.dart';
 import '../../../../core/player/player_event.dart';
 import '../../../../core/player/player_state.dart' as ps;
 import '../../../../core/player/space_info.dart';
+import '../../../../features/cams/data/models/override_response_model.dart';
 import '../../../../features/cams/presentation/bloc/cams_playback_bloc.dart';
 import '../../../../features/cams/presentation/bloc/cams_playback_event.dart';
 import '../../../../features/cams/presentation/bloc/cams_playback_state.dart';
 import '../../../../features/moods/domain/entities/mood.dart';
+import '../../../../features/space_control/domain/entities/space.dart';
+import '../../../../features/space_control/domain/entities/sensor_data.dart';
 import '../../../../features/space_control/presentation/bloc/music_control_bloc.dart';
 import '../../../../features/space_control/presentation/bloc/music_control_event.dart';
 import '../../../../features/space_control/presentation/bloc/space_monitoring_bloc.dart';
 import '../../../../features/space_control/presentation/bloc/space_monitoring_event.dart';
 import '../../../../features/space_control/presentation/bloc/space_monitoring_state.dart';
-import '../../../../features/space_control/domain/entities/sensor_data.dart';
 import '../../../../core/session/session_cubit.dart';
 
 /// Redesigned "Now Playing" tab — Spotify-style full-screen player.
@@ -34,6 +38,37 @@ class NowPlayingTabPage extends StatefulWidget {
 class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
   double _volume = 0.6;
   bool _isShuffleOn = false;
+  String? _initializedSpaceId;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _syncCamsWithActiveSpace();
+    });
+  }
+
+  @override
+  void dispose() {
+    context.read<CamsPlaybackBloc>().add(const CamsDisposePlayback());
+    super.dispose();
+  }
+
+  void _syncCamsWithActiveSpace() {
+    if (!mounted) return;
+    final playerState = context.read<PlayerBloc>().state;
+    final session = context.read<SessionCubit>().state;
+    final targetSpaceId = playerState.activeSpaceId ?? session.currentSpace?.id;
+    if (targetSpaceId == null ||
+        targetSpaceId.isEmpty ||
+        targetSpaceId == _initializedSpaceId) {
+      return;
+    }
+    _initializedSpaceId = targetSpaceId;
+    context
+        .read<CamsPlaybackBloc>()
+        .add(CamsInitPlayback(spaceId: targetSpaceId));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,35 +76,45 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
     final session = context.watch<SessionCubit>().state;
     final isPlayback = session.isPlaybackDevice;
 
-    return BlocListener<CamsPlaybackBloc, CamsPlaybackState>(
-      listener: (context, camsState) {
-        // When CAMS starts streaming a new HLS URL, forward to PlayerBloc
-        final hlsUrl = camsState.hlsUrl;
-        if (hlsUrl != null && hlsUrl.isNotEmpty) {
-          final seekOffset = camsState.playbackState?.seekOffsetSeconds ?? 0;
-          context.read<PlayerBloc>().add(PlayerHlsStarted(
-                hlsUrl: hlsUrl,
-                playlistName: camsState.currentPlaylistName,
-                seekOffsetSeconds: seekOffset,
-              ));
-        }
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<PlayerBloc, ps.PlayerState>(
+          listenWhen: (previous, current) =>
+              previous.activeSpaceId != current.activeSpaceId,
+          listener: (context, _) => _syncCamsWithActiveSpace(),
+        ),
+        BlocListener<CamsPlaybackBloc, CamsPlaybackState>(
+          listener: (context, camsState) {
+            // When CAMS starts streaming a new HLS URL, forward to PlayerBloc
+            final hlsUrl = camsState.hlsUrl;
+            if (hlsUrl != null && hlsUrl.isNotEmpty) {
+              final seekOffset =
+                  camsState.playbackState?.seekOffsetSeconds ?? 0;
+              context.read<PlayerBloc>().add(PlayerHlsStarted(
+                    hlsUrl: hlsUrl,
+                    playlistName: camsState.currentPlaylistName,
+                    seekOffsetSeconds: seekOffset,
+                  ));
+            }
 
-        // When CAMS stops playback
-        if (camsState.status == CamsStatus.idle &&
-            camsState.playbackState?.hlsUrl == null) {
-          context.read<PlayerBloc>().add(const PlayerHlsStopped());
-        }
+            // When CAMS stops playback
+            if (camsState.status == CamsStatus.idle &&
+                camsState.playbackState?.hlsUrl == null) {
+              context.read<PlayerBloc>().add(const PlayerHlsStopped());
+            }
 
-        // Show error snackbar
-        if (camsState.errorMessage != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(camsState.errorMessage!),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
-      },
+            // Show error snackbar
+            if (camsState.errorMessage != null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(camsState.errorMessage!),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
+          },
+        ),
+      ],
       child: BlocBuilder<PlayerBloc, ps.PlayerState>(
         builder: (context, playerState) {
           return BlocBuilder<SpaceMonitoringBloc, SpaceMonitoringState>(
@@ -118,6 +163,8 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
 
     final spaceName =
         spaceState.space?.name ?? playerState.activeSpaceName ?? 'No Space';
+    final effectiveSpaceId = playerState.activeSpaceId ??
+        context.read<SessionCubit>().state.currentSpace?.id;
     // Show CAMS playlist name or mood
     final playlistName = camsState.currentPlaylistName?.toUpperCase() ??
         mood?.toUpperCase() ??
@@ -304,14 +351,15 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                 const SizedBox(height: 24),
 
                 // ── Override Mood CTA ───────────────────────────────
-                if (playerState.activeSpaceId != null)
+                if (effectiveSpaceId != null)
                   _OverrideMoodCTA(
-                    spaceId: playerState.activeSpaceId!,
+                    spaceId: effectiveSpaceId,
                     currentMood: mood,
                     palette: palette,
                     moods: camsState.moods,
                     hasActiveOverride: camsState.hasActiveOverride,
                     isOverriding: camsState.isOverriding,
+                    lastOverrideResponse: camsState.lastOverrideResponse,
                   ).animate().fadeIn(duration: 450.ms).slideY(begin: 0.12),
 
                 const SizedBox(height: 100), // breathing space
@@ -1146,10 +1194,10 @@ class _SensorCard extends StatelessWidget {
   }
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// Override Mood CTA — uses real Mood API + CAMS override
-// ═════════════════════════════════════════════════════════════════════════════
-class _OverrideMoodCTA extends StatelessWidget {
+// ============================================================================
+// Manual / Auto Override panel (same behavior as Home)
+// ============================================================================
+class _OverrideMoodCTA extends StatefulWidget {
   const _OverrideMoodCTA({
     required this.spaceId,
     required this.currentMood,
@@ -1157,200 +1205,231 @@ class _OverrideMoodCTA extends StatelessWidget {
     required this.moods,
     required this.hasActiveOverride,
     required this.isOverriding,
+    this.lastOverrideResponse,
   });
+
   final String spaceId;
   final String? currentMood;
   final _NPPalette palette;
   final List<Mood> moods;
   final bool hasActiveOverride;
   final bool isOverriding;
+  final OverrideResponse? lastOverrideResponse;
+
+  @override
+  State<_OverrideMoodCTA> createState() => _OverrideMoodCTAState();
+}
+
+class _OverrideMoodCTAState extends State<_OverrideMoodCTA> {
+  bool _manualSelectionOpen = false;
+
+  bool get _isManualMode => widget.hasActiveOverride || _manualSelectionOpen;
+
+  @override
+  void initState() {
+    super.initState();
+    _manualSelectionOpen = widget.hasActiveOverride;
+  }
+
+  @override
+  void didUpdateWidget(covariant _OverrideMoodCTA oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.hasActiveOverride && !_manualSelectionOpen) {
+      _manualSelectionOpen = true;
+    } else if (!widget.hasActiveOverride && oldWidget.hasActiveOverride) {
+      _manualSelectionOpen = false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        FilledButton(
-          style: FilledButton.styleFrom(
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
-          ),
-          onPressed: isOverriding ? null : () => _openOverrideDialog(context),
-          child:
-              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            Expanded(
-              child: Column(
+    final pendingTranscode = widget.lastOverrideResponse != null &&
+        !widget.lastOverrideResponse!.isStreamReady;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      decoration: BoxDecoration(
+        color: widget.palette.card,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: widget.palette.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                        hasActiveOverride ? 'Override Active' : 'Override Mood',
-                        style: GoogleFonts.poppins(
-                            fontSize: 16, fontWeight: FontWeight.w700)),
+                      _isManualMode ? 'Manual Mode' : 'Auto Mode',
+                      style: GoogleFonts.poppins(
+                        color: widget.palette.textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                     const SizedBox(height: 4),
                     Text(
-                        currentMood != null
-                            ? 'Current: ${currentMood!.toUpperCase()}'
-                            : 'Set a new atmosphere',
-                        style: GoogleFonts.inter(
-                            fontSize: 12, fontWeight: FontWeight.w600)),
-                  ]),
+                      _isManualMode
+                          ? 'Select mood to override CAMS playback'
+                          : 'CAMS is auto-adjusting playlist and mood',
+                      style: GoogleFonts.inter(
+                        color: widget.palette.textMuted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              GestureDetector(
+                onTap: widget.isOverriding ? null : () => _onToggle(context),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  width: 52,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    color: _isManualMode
+                        ? widget.palette.accent.withOpacity(0.30)
+                        : widget.palette.overlay,
+                    border: Border.all(color: widget.palette.border),
+                  ),
+                  child: Stack(
+                    children: [
+                      AnimatedAlign(
+                        duration: const Duration(milliseconds: 250),
+                        alignment: _isManualMode
+                            ? Alignment.centerRight
+                            : Alignment.centerLeft,
+                        child: Container(
+                          width: 22,
+                          height: 22,
+                          margin: const EdgeInsets.symmetric(horizontal: 3),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _isManualMode
+                                ? widget.palette.accent
+                                : widget.palette.textMuted.withOpacity(0.6),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (widget.currentMood != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              'Current mood: ${widget.currentMood!.toUpperCase()}',
+              style: GoogleFonts.inter(
+                color: widget.palette.textPrimary,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-            if (isOverriding)
-              const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
+          ],
+          if (widget.isOverriding || pendingTranscode) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                if (widget.isOverriding)
+                  const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                else
+                  Icon(
+                    LucideIcons.loader,
+                    size: 14,
+                    color: widget.palette.textMuted,
+                  ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    widget.isOverriding
+                        ? 'Applying override...'
+                        : 'Accepted (202). Stream starts after transcode finishes.',
+                    style: GoogleFonts.inter(
+                      color: widget.palette.textMuted,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          if (_isManualMode) ...[
+            const SizedBox(height: 12),
+            if (widget.moods.isEmpty)
+              Text(
+                'No moods available.',
+                style: GoogleFonts.inter(
+                  color: widget.palette.textMuted,
+                  fontSize: 12,
+                ),
               )
             else
-              const Icon(LucideIcons.slidersHorizontal),
-          ]),
-        ),
-        // Cancel override button (when active)
-        if (hasActiveOverride) ...[
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: palette.textMuted,
-                side: BorderSide(color: palette.border),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
-                padding: const EdgeInsets.symmetric(vertical: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: widget.moods.map((mood) {
+                  final selected = widget.currentMood != null &&
+                      widget.currentMood!.toLowerCase() ==
+                          mood.name.toLowerCase();
+                  return ChoiceChip(
+                    label: Text(
+                      mood.name.toUpperCase(),
+                      style: GoogleFonts.inter(
+                        color: selected
+                            ? widget.palette.textOnAccent
+                            : widget.palette.textPrimary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    selected: selected,
+                    selectedColor: widget.palette.accent,
+                    backgroundColor: widget.palette.overlay,
+                    side: BorderSide(
+                      color: selected
+                          ? widget.palette.accent
+                          : widget.palette.border,
+                    ),
+                    onSelected: widget.isOverriding
+                        ? null
+                        : (_) {
+                            context
+                                .read<CamsPlaybackBloc>()
+                                .add(CamsOverrideMood(moodId: mood.id));
+                          },
+                  );
+                }).toList(),
               ),
-              icon: const Icon(LucideIcons.x, size: 16),
-              label: Text('Cancel Override',
-                  style: GoogleFonts.inter(
-                      fontSize: 13, fontWeight: FontWeight.w600)),
-              onPressed: isOverriding
-                  ? null
-                  : () {
-                      context
-                          .read<CamsPlaybackBloc>()
-                          .add(const CamsCancelOverride());
-                    },
-            ),
-          ),
+          ],
         ],
-      ],
+      ),
     );
   }
 
-  void _openOverrideDialog(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: palette.card,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (sheetCtx) {
-        String? selectedMoodId;
-        // Pre-select current mood if it matches
-        if (currentMood != null && moods.isNotEmpty) {
-          final match = moods.where(
-            (m) => m.name.toLowerCase() == currentMood!.toLowerCase(),
-          );
-          if (match.isNotEmpty) {
-            selectedMoodId = match.first.id;
-          }
-        }
+  void _onToggle(BuildContext context) {
+    if (_isManualMode) {
+      if (widget.hasActiveOverride) {
+        context.read<CamsPlaybackBloc>().add(const CamsCancelOverride());
+      } else {
+        setState(() => _manualSelectionOpen = false);
+      }
+      return;
+    }
 
-        return StatefulBuilder(
-          builder: (ctx, setModalState) => Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
-            child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                      child: Container(
-                          width: 40,
-                          height: 4,
-                          decoration: BoxDecoration(
-                              color: palette.border,
-                              borderRadius: BorderRadius.circular(20)))),
-                  const SizedBox(height: 16),
-                  Text('Override Mood',
-                      style: GoogleFonts.poppins(
-                          color: palette.textPrimary,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 6),
-                  Text(
-                      'Select a mood to override the AI-driven music selection.',
-                      style: GoogleFonts.inter(
-                          color: palette.textMuted,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500)),
-                  const SizedBox(height: 14),
-                  if (moods.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      child: Center(
-                        child: Text('No moods available',
-                            style: GoogleFonts.inter(
-                                color: palette.textMuted, fontSize: 14)),
-                      ),
-                    )
-                  else
-                    Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        children: moods
-                            .map((m) => ChoiceChip(
-                                  label: Text(m.name.toUpperCase(),
-                                      style: GoogleFonts.inter(
-                                          color: selectedMoodId == m.id
-                                              ? palette.textOnAccent
-                                              : palette.textPrimary,
-                                          fontWeight: FontWeight.w700)),
-                                  selected: selectedMoodId == m.id,
-                                  onSelected: (_) => setModalState(
-                                      () => selectedMoodId = m.id),
-                                  backgroundColor: palette.overlay,
-                                  selectedColor: palette.accent,
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(14),
-                                      side: BorderSide(color: palette.border)),
-                                ))
-                            .toList()),
-                  const SizedBox(height: 20),
-                  Row(children: [
-                    Expanded(
-                        child: OutlinedButton(
-                            style: OutlinedButton.styleFrom(
-                                foregroundColor: palette.textMuted,
-                                side: BorderSide(color: palette.border),
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14))),
-                            onPressed: () => Navigator.pop(sheetCtx),
-                            child: const Text('Cancel'))),
-                    const SizedBox(width: 12),
-                    Expanded(
-                        child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                                backgroundColor: palette.accent,
-                                foregroundColor: palette.textOnAccent,
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14)),
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 14)),
-                            onPressed: selectedMoodId == null
-                                ? null
-                                : () {
-                                    context.read<CamsPlaybackBloc>().add(
-                                        CamsOverrideMood(
-                                            moodId: selectedMoodId!));
-                                    Navigator.pop(sheetCtx);
-                                  },
-                            child: const Text('Apply',
-                                style:
-                                    TextStyle(fontWeight: FontWeight.w700)))),
-                  ]),
-                ]),
-          ),
-        );
-      },
-    );
+    setState(() => _manualSelectionOpen = true);
   }
 }
 
@@ -1363,6 +1442,18 @@ class _SpaceSwapSheet extends StatelessWidget {
   final _NPPalette palette;
 
   void _switchSpace(BuildContext context, SpaceInfo space) {
+    context.read<SessionCubit>().changeSpace(
+          Space(
+            id: space.id,
+            name: space.name,
+            storeId: space.storeId,
+            type: SpaceTypeEnum.hall,
+            status: space.isOnline
+                ? EntityStatusEnum.active
+                : EntityStatusEnum.inactive,
+            currentMood: space.currentMood,
+          ),
+        );
     context
         .read<SpaceMonitoringBloc>()
         .add(StartMonitoring(storeId: space.storeId, spaceId: space.id));

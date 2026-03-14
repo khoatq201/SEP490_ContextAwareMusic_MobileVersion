@@ -36,8 +36,8 @@ class SpaceSummaryModel {
   factory SpaceSummaryModel.fromJson(Map<String, dynamic> json) {
     // Derive isOnline from API status field (1 = Active = online)
     final status = json['status'];
-    final derivedIsOnline = json['isOnline'] as bool? ??
-        (status is int ? status == 1 : false);
+    final derivedIsOnline =
+        json['isOnline'] as bool? ?? (status is int ? status == 1 : false);
 
     return SpaceSummaryModel(
       id: json['id'] as String,
@@ -73,6 +73,40 @@ class SpaceSummaryModel {
       totalZones: totalZones,
       activeZones: activeZones,
       hasMultiZoneMusic: hasMultiZoneMusic,
+    );
+  }
+
+  SpaceSummaryModel copyWith({
+    String? id,
+    String? name,
+    String? storeId,
+    String? currentMood,
+    bool? isOnline,
+    int? customerCount,
+    double? temperature,
+    double? humidity,
+    int? lightLevel,
+    bool? isMusicPlaying,
+    String? currentTrack,
+    int? totalZones,
+    int? activeZones,
+    bool? hasMultiZoneMusic,
+  }) {
+    return SpaceSummaryModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      storeId: storeId ?? this.storeId,
+      currentMood: currentMood ?? this.currentMood,
+      isOnline: isOnline ?? this.isOnline,
+      customerCount: customerCount ?? this.customerCount,
+      temperature: temperature ?? this.temperature,
+      humidity: humidity ?? this.humidity,
+      lightLevel: lightLevel ?? this.lightLevel,
+      isMusicPlaying: isMusicPlaying ?? this.isMusicPlaying,
+      currentTrack: currentTrack ?? this.currentTrack,
+      totalZones: totalZones ?? this.totalZones,
+      activeZones: activeZones ?? this.activeZones,
+      hasMultiZoneMusic: hasMultiZoneMusic ?? this.hasMultiZoneMusic,
     );
   }
 

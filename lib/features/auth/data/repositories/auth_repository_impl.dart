@@ -87,6 +87,12 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, User>> getCurrentUser() async {
     try {
+      final token = await localStorage.getAuthToken();
+      if (token == null || token.isEmpty) {
+        await localStorage.clearUser();
+        return const Left(CacheFailure('No user found'));
+      }
+
       // Cache-first: check local storage
       final userJson = await localStorage.getUser();
       if (userJson != null) {
@@ -96,13 +102,10 @@ class AuthRepositoryImpl implements AuthRepository {
 
       // Fallback: fetch from API if online
       if (await networkInfo.isConnected) {
-        final token = await localStorage.getAuthToken();
-        if (token != null && token.isNotEmpty) {
-          final profileResponse = await remoteDataSource.getProfile();
-          final user = profileResponse.toUser();
-          await localStorage.saveUser(UserModel.fromEntity(user).toJson());
-          return Right(user);
-        }
+        final profileResponse = await remoteDataSource.getProfile();
+        final user = profileResponse.toUser();
+        await localStorage.saveUser(UserModel.fromEntity(user).toJson());
+        return Right(user);
       }
 
       return const Left(CacheFailure('No user found'));

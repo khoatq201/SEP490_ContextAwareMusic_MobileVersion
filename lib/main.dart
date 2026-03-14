@@ -52,6 +52,31 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   bool _isInitialized = false;
 
+  Future<void> _resetAuthSessionIfBaseUrlChanged({
+    required LocalStorageService localStorage,
+    required DioClient dioClient,
+  }) async {
+    final storedBaseUrl =
+        localStorage.getSetting(ApiConstants.lastApiBaseUrlKey);
+    final previousBaseUrl = storedBaseUrl is String ? storedBaseUrl : null;
+    const currentBaseUrl = ApiConstants.baseUrl;
+
+    if (previousBaseUrl != null && previousBaseUrl != currentBaseUrl) {
+      debugPrint(
+        'API base URL changed: $previousBaseUrl -> $currentBaseUrl. '
+        'Clearing auth token, cached user and cookies.',
+      );
+      await localStorage.clearAuthToken();
+      await localStorage.clearUser();
+      await dioClient.clearCookies();
+    }
+
+    await localStorage.saveSetting(
+      ApiConstants.lastApiBaseUrlKey,
+      currentBaseUrl,
+    );
+  }
+
   Future<void> _initializeApp() async {
     WidgetsFlutterBinding.ensureInitialized();
 
@@ -68,6 +93,10 @@ class _MyAppState extends State<MyApp> {
     // Initialize cookie jar for HttpOnly refresh token cookies
     final dioClient = sl<DioClient>();
     await dioClient.initCookieJar();
+    await _resetAuthSessionIfBaseUrlChanged(
+      localStorage: localStorage,
+      dioClient: dioClient,
+    );
 
     // ── Restore auth session from persisted token ──
     // Reads the saved JWT from Hive and, if valid, restores
@@ -78,7 +107,7 @@ class _MyAppState extends State<MyApp> {
     final authBloc = sl<AuthBloc>();
     authBloc.add(const CheckAuthStatus());
     // Wait until the auth check resolves (authenticated or unauthenticated)
-    await authBloc.stream
+    final resolvedAuthState = await authBloc.stream
         .firstWhere((s) =>
             s.status == AuthStatus.authenticated ||
             s.status == AuthStatus.unauthenticated)
@@ -86,6 +115,13 @@ class _MyAppState extends State<MyApp> {
           const Duration(seconds: 5),
           onTimeout: () => const AuthState(status: AuthStatus.unauthenticated),
         );
+
+    final sessionCubit = sl<SessionCubit>();
+    if (resolvedAuthState.status == AuthStatus.authenticated) {
+      await sessionCubit.restoreSelectionFromStorage();
+    } else {
+      sessionCubit.reset();
+    }
 
     // Skip MQTT in demo mode — no backend required
     if (!ApiConstants.useMockData) {

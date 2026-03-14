@@ -9,13 +9,15 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/player/player_bloc.dart';
+import '../../../../core/session/session_cubit.dart';
+import '../../../../core/session/session_state.dart';
 import '../../../../injection_container.dart';
 import '../../domain/entities/category_entity.dart';
 import '../../domain/entities/playlist_entity.dart';
 import '../../domain/entities/sensor_entity.dart';
+import '../../../moods/domain/entities/mood.dart';
 import '../bloc/home_cubit.dart';
 import '../bloc/home_state.dart';
-import '../../../../core/session/session_cubit.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Entry point — wraps the page with its own HomeCubit (DI-resolved)
@@ -28,11 +30,8 @@ class HomeTabPage extends StatelessWidget {
     return BlocProvider(
       create: (_) {
         final cubit = sl<HomeCubit>()..load();
-        // Fetch CAMS playback state if a space is selected
         final spaceId = context.read<SessionCubit>().state.currentSpace?.id;
-        if (spaceId != null) {
-          cubit.loadSpacePlaybackState(spaceId);
-        }
+        cubit.syncForSpace(spaceId);
         return cubit;
       },
       child: const _HomeDashboardView(),
@@ -50,85 +49,113 @@ class _HomeDashboardView extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = _Palette.fromBrightness(Theme.of(context).brightness);
 
-    return Scaffold(
-      backgroundColor: palette.bg,
-      body: BlocBuilder<HomeCubit, HomeState>(
-        builder: (context, state) {
-          if (state.status == HomeStatus.loading ||
-              state.status == HomeStatus.initial) {
-            return Center(
-              child: CircularProgressIndicator(color: palette.accent),
-            );
-          }
+    return BlocListener<SessionCubit, SessionState>(
+      listenWhen: (previous, current) =>
+          previous.currentSpace?.id != current.currentSpace?.id,
+      listener: (context, sessionState) {
+        context.read<HomeCubit>().syncForSpace(sessionState.currentSpace?.id);
+      },
+      child: Scaffold(
+        backgroundColor: palette.bg,
+        body: BlocBuilder<HomeCubit, HomeState>(
+          builder: (context, state) {
+            if (state.status == HomeStatus.loading ||
+                state.status == HomeStatus.initial) {
+              return Center(
+                child: CircularProgressIndicator(color: palette.accent),
+              );
+            }
 
-          if (state.status == HomeStatus.error) {
-            return _ErrorView(
-              message: state.errorMessage,
-              palette: palette,
-              onRetry: () => context.read<HomeCubit>().load(),
-            );
-          }
+            if (state.status == HomeStatus.error) {
+              return _ErrorView(
+                message: state.errorMessage,
+                palette: palette,
+                onRetry: () => context.read<HomeCubit>().load(),
+              );
+            }
 
-          return CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              // ── 1. SliverAppBar ─────────────────────────────────────────
-              _HomeSliverAppBar(palette: palette),
+            return CustomScrollView(
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                // 1. SliverAppBar
+                _HomeSliverAppBar(palette: palette),
 
-              // ── 2. Current Mood Chip ──────────────────────────────────────
-              if (state.currentMoodName != null)
-                SliverToBoxAdapter(
-                  child: _CurrentMoodChip(
-                    moodName: state.currentMoodName!,
-                    playlistName: state.currentPlaylistName,
-                    isStreaming: state.isStreaming,
-                    palette: palette,
-                  ).animate().fadeIn(duration: 320.ms).slideY(begin: 0.04),
-                ),
-
-              // ── 3. Sensors Row ───────────────────────────────────────────
-              SliverToBoxAdapter(
-                child: _SensorsRow(sensors: state.sensors, palette: palette)
-                    .animate()
-                    .fadeIn(duration: 350.ms)
-                    .slideY(begin: 0.06),
-              ),
-
-              // ── 4. Master Control Card ───────────────────────────────────
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                  child: _MasterControlCard(
-                    autoModeEnabled: state.autoModeEnabled,
-                    currentPlaylistName: state.currentPlaylistName,
-                    palette: palette,
-                    onToggle: () => context.read<HomeCubit>().toggleAutoMode(),
-                  ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.08),
-                ),
-              ),
-
-              // ── 5. Dynamic Category Sections ─────────────────────────────
-              SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final category = state.categories[index];
-                    return _CategorySection(
-                      category: category,
+                // 2. Current Mood Chip
+                if (state.currentMoodName != null)
+                  SliverToBoxAdapter(
+                    child: _CurrentMoodChip(
+                      moodName: state.currentMoodName!,
+                      playlistName: state.currentPlaylistName,
+                      isStreaming: state.isStreaming,
                       palette: palette,
-                    )
-                        .animate()
-                        .fadeIn(duration: 420.ms, delay: (index * 60).ms)
-                        .slideY(begin: 0.10);
-                  },
-                  childCount: state.categories.length,
-                ),
-              ),
+                    ).animate().fadeIn(duration: 320.ms).slideY(begin: 0.04),
+                  ),
 
-              // Bottom padding
-              const SliverToBoxAdapter(child: SizedBox(height: 100)),
-            ],
-          );
-        },
+                // 3. Sensors Row
+                SliverToBoxAdapter(
+                  child: _SensorsRow(sensors: state.sensors, palette: palette)
+                      .animate()
+                      .fadeIn(duration: 350.ms)
+                      .slideY(begin: 0.06),
+                ),
+
+                // 4. Master Control Card
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: _MasterControlCard(
+                      autoModeEnabled: state.autoModeEnabled,
+                      hasSpaceSelected: state.activeSpaceId != null,
+                      isApplying: state.isApplyingOverride,
+                      isPendingTranscode: state.isPendingTranscode,
+                      currentPlaylistName: state.currentPlaylistName,
+                      modeMessage: state.modeMessage,
+                      palette: palette,
+                      onToggle: () =>
+                          context.read<HomeCubit>().toggleAutoMode(),
+                    ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.08),
+                  ),
+                ),
+
+                if (state.showMoodPicker)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      child: _MoodPickerCard(
+                        moods: state.moods,
+                        currentMoodName: state.currentMoodName,
+                        isLoading: state.isApplyingOverride,
+                        palette: palette,
+                        onSelectMood: (mood) {
+                          context.read<HomeCubit>().applyMoodOverride(mood.id);
+                        },
+                      ),
+                    ),
+                  ),
+
+                // 5. Dynamic Category Sections
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final category = state.categories[index];
+                      return _CategorySection(
+                        category: category,
+                        palette: palette,
+                      )
+                          .animate()
+                          .fadeIn(duration: 420.ms, delay: (index * 60).ms)
+                          .slideY(begin: 0.10);
+                    },
+                    childCount: state.categories.length,
+                  ),
+                ),
+
+                // Bottom padding
+                const SliverToBoxAdapter(child: SizedBox(height: 100)),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -236,77 +263,86 @@ class _SwitchSpaceSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Handle bar
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: palette.border,
-                borderRadius: BorderRadius.circular(20),
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'Current Space',
-            style: GoogleFonts.poppins(
-              color: palette.textPrimary,
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Builder(builder: (context) {
-            final spaceName =
-                context.read<SessionCubit>().state.currentSpace?.name ??
-                    'No Space Selected';
-            return Text(
-              spaceName,
-              style: GoogleFonts.inter(
-                color: palette.textMuted,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            );
-          }),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: palette.accent,
-                foregroundColor: palette.textOnAccent,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+    final safeBottom = MediaQuery.of(context).viewPadding.bottom;
+
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(20, 12, 20, 20 + safeBottom),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: palette.border,
+                  borderRadius: BorderRadius.circular(20),
                 ),
               ),
-              icon: const Icon(LucideIcons.arrowLeftRight, size: 18),
-              label: Text(
-                'Switch Space',
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Current Space',
+              style: GoogleFonts.poppins(
+                color: palette.textPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Builder(builder: (context) {
+              final spaceName =
+                  context.read<SessionCubit>().state.currentSpace?.name ??
+                      'No Space Selected';
+              return Text(
+                spaceName,
                 style: GoogleFonts.inter(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
+                  color: palette.textMuted,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
                 ),
+              );
+            }),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: palette.accent,
+                  foregroundColor: palette.textOnAccent,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                icon: const Icon(LucideIcons.arrowLeftRight, size: 18),
+                label: Text(
+                  'Switch Space',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.pop(context);
+                  final playerStoreId =
+                      context.read<PlayerBloc>().state.activeStoreId;
+                  final sessionStoreId =
+                      context.read<SessionCubit>().state.currentStore?.id;
+                  final storeId = playerStoreId ?? sessionStoreId;
+                  if (storeId != null && storeId.isNotEmpty) {
+                    context.go('/store/$storeId');
+                  } else {
+                    context.go('/store-selection');
+                  }
+                },
               ),
-              onPressed: () {
-                Navigator.pop(context);
-                final storeId = context.read<PlayerBloc>().state.activeStoreId;
-                if (storeId != null && storeId.isNotEmpty) {
-                  context.go('/store/$storeId');
-                } else {
-                  context.go('/store-selection');
-                }
-              },
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -530,13 +566,21 @@ class _CurrentMoodChip extends StatelessWidget {
 class _MasterControlCard extends StatelessWidget {
   const _MasterControlCard({
     required this.autoModeEnabled,
+    required this.hasSpaceSelected,
+    required this.isApplying,
+    required this.isPendingTranscode,
     required this.palette,
     required this.onToggle,
+    this.modeMessage,
     this.currentPlaylistName,
   });
   final bool autoModeEnabled;
+  final bool hasSpaceSelected;
+  final bool isApplying;
+  final bool isPendingTranscode;
   final _Palette palette;
   final VoidCallback onToggle;
+  final String? modeMessage;
   final String? currentPlaylistName;
 
   @override
@@ -551,7 +595,7 @@ class _MasterControlCard extends StatelessWidget {
             palette.accentAlt,
           ];
 
-    final card = Container(
+    return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         gradient: LinearGradient(
@@ -573,133 +617,252 @@ class _MasterControlCard extends StatelessWidget {
           filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Left: icon
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Icon(
-                    autoModeEnabled ? LucideIcons.cpu : LucideIcons.pauseCircle,
-                    color: Colors.white,
-                    size: 28,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                // Center: info
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        autoModeEnabled ? 'Auto Mode' : 'Manual',
-                        style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                        ),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                      const SizedBox(height: 3),
-                      Text(
+                      child: Icon(
                         autoModeEnabled
-                            ? 'System is auto-adjusting music'
-                            : 'Waiting for user control',
-                        style: GoogleFonts.inter(
-                          color: Colors.white.withOpacity(0.80),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
+                            ? LucideIcons.cpu
+                            : LucideIcons.pauseCircle,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            autoModeEnabled ? 'Auto Mode' : 'Manual Mode',
+                            style: GoogleFonts.poppins(
+                              color: Colors.white,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            hasSpaceSelected
+                                ? (autoModeEnabled
+                                    ? 'System is auto-adjusting music'
+                                    : 'Select mood to override playback')
+                                : 'Select a space to control playback',
+                            style: GoogleFonts.inter(
+                              color: Colors.white.withOpacity(0.80),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Icon(
+                                LucideIcons.music2,
+                                color: Colors.white.withOpacity(0.70),
+                                size: 13,
+                              ),
+                              const SizedBox(width: 5),
+                              Expanded(
+                                child: Text(
+                                  currentPlaylistName ?? 'No playlist active',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.inter(
+                                    color: Colors.white.withOpacity(0.65),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: hasSpaceSelected && !isApplying ? onToggle : null,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        width: 52,
+                        height: 30,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          color: autoModeEnabled
+                              ? Colors.white.withOpacity(0.90)
+                              : Colors.white.withOpacity(0.25),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.40),
+                          ),
+                        ),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            AnimatedAlign(
+                              duration: const Duration(milliseconds: 250),
+                              alignment: autoModeEnabled
+                                  ? Alignment.centerRight
+                                  : Alignment.centerLeft,
+                              child: Container(
+                                margin:
+                                    const EdgeInsets.symmetric(horizontal: 3),
+                                width: 22,
+                                height: 22,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: autoModeEnabled
+                                      ? palette.accent
+                                      : Colors.white.withOpacity(0.60),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          Icon(LucideIcons.music2,
-                              color: Colors.white.withOpacity(0.70), size: 13),
-                          const SizedBox(width: 5),
-                          Text(
-                            currentPlaylistName ?? 'No playlist active',
-                            style: GoogleFonts.inter(
-                              color: Colors.white.withOpacity(0.65),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                            ),
+                    ),
+                  ],
+                ),
+                if (isApplying ||
+                    isPendingTranscode ||
+                    modeMessage != null) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      if (isApplying)
+                        const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Text(
-                            'View & manage rules',
-                            style: GoogleFonts.inter(
-                              color: Colors.white.withOpacity(0.65),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                            ),
+                        )
+                      else
+                        Icon(
+                          isPendingTranscode
+                              ? LucideIcons.loader
+                              : LucideIcons.info,
+                          color: Colors.white.withOpacity(0.85),
+                          size: 14,
+                        ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          isApplying
+                              ? 'Applying changes...'
+                              : (modeMessage ??
+                                  (isPendingTranscode
+                                      ? 'Accepted (202). Stream starts when transcode is ready.'
+                                      : '')),
+                          style: GoogleFonts.inter(
+                            color: Colors.white.withOpacity(0.92),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
                           ),
-                          const SizedBox(width: 4),
-                          Icon(
-                            LucideIcons.chevronRight,
-                            color: Colors.white.withOpacity(0.65),
-                            size: 12,
-                          ),
-                        ],
+                        ),
                       ),
                     ],
                   ),
-                ),
-                // Right: animated toggle
-                GestureDetector(
-                  onTap: onToggle,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
-                    width: 52,
-                    height: 30,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      color: autoModeEnabled
-                          ? Colors.white.withOpacity(0.90)
-                          : Colors.white.withOpacity(0.25),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.40),
-                      ),
-                    ),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        AnimatedAlign(
-                          duration: const Duration(milliseconds: 250),
-                          alignment: autoModeEnabled
-                              ? Alignment.centerRight
-                              : Alignment.centerLeft,
-                          child: Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 3),
-                            width: 22,
-                            height: 22,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: autoModeEnabled
-                                  ? palette.accent
-                                  : Colors.white.withOpacity(0.60),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                ],
               ],
             ),
           ),
         ),
       ),
     );
-    return GestureDetector(
-      onTap: () => context.go('/create'),
-      child: card,
+  }
+}
+
+class _MoodPickerCard extends StatelessWidget {
+  const _MoodPickerCard({
+    required this.moods,
+    required this.currentMoodName,
+    required this.isLoading,
+    required this.palette,
+    required this.onSelectMood,
+  });
+
+  final List<Mood> moods;
+  final String? currentMoodName;
+  final bool isLoading;
+  final _Palette palette;
+  final ValueChanged<Mood> onSelectMood;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+      decoration: BoxDecoration(
+        color: palette.card,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: palette.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Select mood override',
+            style: GoogleFonts.poppins(
+              color: palette.textPrimary,
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Choose a mood to override auto playback for this space.',
+            style: GoogleFonts.inter(
+              color: palette.textMuted,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (moods.isEmpty)
+            Text(
+              'No moods available.',
+              style: GoogleFonts.inter(
+                color: palette.textMuted,
+                fontSize: 12,
+              ),
+            )
+          else
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: moods.map((mood) {
+                final selected = currentMoodName != null &&
+                    currentMoodName!.toLowerCase() == mood.name.toLowerCase();
+                return ChoiceChip(
+                  label: Text(
+                    mood.name.toUpperCase(),
+                    style: GoogleFonts.inter(
+                      color:
+                          selected ? palette.textOnAccent : palette.textPrimary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  selected: selected,
+                  selectedColor: palette.accent,
+                  backgroundColor: palette.overlay,
+                  side: BorderSide(
+                      color: selected ? palette.accent : palette.border),
+                  onSelected: isLoading ? null : (_) => onSelectMood(mood),
+                );
+              }).toList(),
+            ),
+        ],
+      ),
     );
   }
 }

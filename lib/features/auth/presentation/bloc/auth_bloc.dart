@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/session/session_cubit.dart';
 import '../../domain/usecases/change_password.dart';
 import '../../domain/usecases/get_current_user.dart';
 import '../../domain/usecases/login.dart';
@@ -11,12 +12,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final Logout logout;
   final GetCurrentUser getCurrentUser;
   final ChangePassword changePassword;
+  final SessionCubit sessionCubit;
 
   AuthBloc({
     required this.login,
     required this.logout,
     required this.getCurrentUser,
     required this.changePassword,
+    required this.sessionCubit,
   }) : super(const AuthState()) {
     on<LoginRequested>(_onLoginRequested);
     on<LogoutRequested>(_onLogoutRequested);
@@ -69,6 +72,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         ));
       },
       (_) {
+        sessionCubit.reset();
         emit(const AuthState(status: AuthStatus.unauthenticated));
       },
     );
@@ -84,6 +88,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     result.fold(
       (failure) {
+        sessionCubit.reset();
         emit(const AuthState(status: AuthStatus.unauthenticated));
       },
       (user) {

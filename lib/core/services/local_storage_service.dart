@@ -170,6 +170,14 @@ class LocalStorageService {
     }
   }
 
+  Future<void> removeSetting(String key) async {
+    try {
+      await _settingsBox.delete(key);
+    } catch (e) {
+      throw CacheException('Failed to remove setting');
+    }
+  }
+
   Future<void> clearAll() async {
     try {
       await _authBox.clear();

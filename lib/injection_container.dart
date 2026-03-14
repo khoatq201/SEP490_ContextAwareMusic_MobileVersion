@@ -168,7 +168,7 @@ Future<void> initializeDependencies() async {
   );
 
   // Session
-  sl.registerLazySingleton(() => SessionCubit());
+  sl.registerLazySingleton(() => SessionCubit(localStorage: sl()));
 
   // =============================================
   // Auth Feature
@@ -204,6 +204,7 @@ Future<void> initializeDependencies() async {
       logout: sl(),
       getCurrentUser: sl(),
       changePassword: sl(),
+      sessionCubit: sl(),
     ),
   );
 
@@ -562,7 +563,13 @@ Future<void> initializeDependencies() async {
 
   // Cubits
   sl.registerFactory(
-    () => HomeCubit(sl(), getSpaceState: sl()),
+    () => HomeCubit(
+      sl(),
+      getSpaceState: sl(),
+      getMoods: sl(),
+      overrideSpace: sl(),
+      cancelOverride: sl(),
+    ),
   );
 
   // =============================================

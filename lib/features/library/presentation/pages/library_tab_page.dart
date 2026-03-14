@@ -6,7 +6,6 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/player/player_bloc.dart';
-import '../../../../core/player/player_state.dart' as ps;
 import '../../../../injection_container.dart';
 import '../../../home/domain/entities/playlist_entity.dart';
 import '../../../home/domain/entities/song_entity.dart';
@@ -168,14 +167,183 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
   @override
   Widget build(BuildContext context) {
     final palette = _Palette.fromBrightness(Theme.of(context).brightness);
+    final playerState = context.watch<PlayerBloc>().state;
+    final safeBottom = MediaQuery.of(context).viewPadding.bottom;
+    // Some Android devices/reporting modes can return 0 here while the shell
+    // still renders a tall bottom bar. Keep a conservative fallback so FAB
+    // never sinks into the tab bar.
+    final effectiveSafeBottom = safeBottom > 0 ? safeBottom : 32.0;
+    final miniPlayerHeight = playerState.hasTrack ? 72.0 : 0.0;
+    final shellOverlayHeight = 64.0 + effectiveSafeBottom + miniPlayerHeight;
+    final fabBottomOffset = shellOverlayHeight + 32.0;
+    final contentBottomSpacing = shellOverlayHeight + 164.0;
 
     return Scaffold(
       backgroundColor: palette.bg,
-      floatingActionButton: BlocBuilder<PlayerBloc, ps.PlayerState>(
-        builder: (context, playerState) {
-          final bottomPad = playerState.hasTrack ? 144.0 : 80.0;
-          return Padding(
-            padding: EdgeInsets.only(bottom: bottomPad),
+      body: Stack(
+        children: [
+          CustomScrollView(
+            slivers: [
+              // ── SliverAppBar ───────────────────────────────────────────────
+              SliverAppBar(
+                pinned: true,
+                expandedHeight: 92,
+                backgroundColor: palette.bg,
+                surfaceTintColor: Colors.transparent,
+                elevation: 0,
+                automaticallyImplyLeading: false,
+                flexibleSpace: FlexibleSpaceBar(
+                  collapseMode: CollapseMode.pin,
+                  titlePadding: const EdgeInsets.only(left: 20, bottom: 14),
+                  title: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'REMOTE CONTROLLING',
+                        style: GoogleFonts.inter(
+                          color: palette.textMuted,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        'Music Library',
+                        style: GoogleFonts.poppins(
+                          color: palette.textPrimary,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                actions: [
+                  GestureDetector(
+                    onTap: () {},
+                    child: Container(
+                      margin:
+                          const EdgeInsets.only(right: 16, top: 10, bottom: 10),
+                      decoration: BoxDecoration(
+                        color: palette.overlay,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: palette.border),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Icon(
+                          LucideIcons.search,
+                          color: palette.textPrimary,
+                          size: 18,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              // ── Filter chips ───────────────────────────────────────────────
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                  child: Wrap(
+                    spacing: 8,
+                    children: _LibraryFilter.values.map((f) {
+                      final selected = _filter == f;
+                      return FilterChip(
+                        label: Text(f.label),
+                        selected: selected,
+                        onSelected: (_) => setState(() => _filter = f),
+                        selectedColor: palette.accent,
+                        checkmarkColor: palette.textOnAccent,
+                        showCheckmark: false,
+                        labelStyle: GoogleFonts.inter(
+                          color: selected
+                              ? palette.textOnAccent
+                              : palette.textMuted,
+                          fontWeight:
+                              selected ? FontWeight.w700 : FontWeight.w500,
+                          fontSize: 13,
+                        ),
+                        backgroundColor: palette.card,
+                        side: BorderSide(
+                          color: selected ? palette.accent : palette.border,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+
+              // ── Section label ──────────────────────────────────────────────
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                  child: Row(
+                    children: [
+                      Text(
+                        _sectionTitle,
+                        style: GoogleFonts.poppins(
+                          color: palette.textPrimary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        _sectionCount,
+                        style: GoogleFonts.inter(
+                          color: palette.textMuted,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // ── Divider ────────────────────────────────────────────────────
+              SliverToBoxAdapter(
+                child: Divider(
+                  color: palette.border,
+                  height: 1,
+                  indent: 20,
+                  endIndent: 20,
+                ),
+              ),
+
+              // ── Body ───────────────────────────────────────────────────────
+              if (_loading)
+                const SliverFillRemaining(
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (_filter == _LibraryFilter.playlists)
+                _savedPlaylists.isEmpty
+                    ? _emptyPlaylistsSliver(palette)
+                    : _playlistsSliver(palette)
+              else if (_filter == _LibraryFilter.blocked)
+                _blockedSongs.isEmpty
+                    ? _emptyBlockedSliver(palette)
+                    : _blockedSliver(palette)
+              else
+                _stationsSliver(palette),
+
+              SliverToBoxAdapter(child: SizedBox(height: contentBottomSpacing)),
+            ],
+          ),
+          Positioned(
+            right: 16,
+            bottom: fabBottomOffset,
             child: FloatingActionButton(
               onPressed: _showCreatePlaylistDialog,
               backgroundColor: palette.accent,
@@ -183,139 +351,7 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
               elevation: 6,
               child: const Icon(Icons.add, size: 26),
             ),
-          );
-        },
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      body: CustomScrollView(
-        slivers: [
-          // ── SliverAppBar ───────────────────────────────────────────────
-          SliverAppBar(
-            pinned: true,
-            expandedHeight: 110,
-            backgroundColor: palette.bg,
-            surfaceTintColor: Colors.transparent,
-            elevation: 0,
-            automaticallyImplyLeading: false,
-            flexibleSpace: FlexibleSpaceBar(
-              titlePadding:
-                  const EdgeInsets.only(left: 20, bottom: 14, right: 60),
-              title: Text(
-                'Music Library',
-                style: GoogleFonts.poppins(
-                  color: palette.textPrimary,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              collapseMode: CollapseMode.pin,
-            ),
-            actions: [
-              Padding(
-                padding: const EdgeInsets.only(right: 12),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: palette.overlay,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: palette.border),
-                  ),
-                  child: IconButton(
-                    icon: Icon(LucideIcons.search,
-                        color: palette.textPrimary, size: 18),
-                    splashRadius: 20,
-                    onPressed: () {},
-                  ),
-                ),
-              ),
-            ],
           ),
-
-          // ── Filter chips ───────────────────────────────────────────────
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-              child: Wrap(
-                spacing: 8,
-                children: _LibraryFilter.values.map((f) {
-                  final selected = _filter == f;
-                  return FilterChip(
-                    label: Text(f.label),
-                    selected: selected,
-                    onSelected: (_) => setState(() => _filter = f),
-                    selectedColor: palette.accent,
-                    checkmarkColor: palette.textOnAccent,
-                    showCheckmark: false,
-                    labelStyle: GoogleFonts.inter(
-                      color:
-                          selected ? palette.textOnAccent : palette.textMuted,
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                      fontSize: 13,
-                    ),
-                    backgroundColor: palette.card,
-                    side: BorderSide(
-                      color: selected ? palette.accent : palette.border,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  );
-                }).toList(),
-              ),
-            ),
-          ),
-
-          // ── Section label ──────────────────────────────────────────────
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-              child: Row(
-                children: [
-                  Text(
-                    _sectionTitle,
-                    style: GoogleFonts.poppins(
-                      color: palette.textPrimary,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    _sectionCount,
-                    style: GoogleFonts.inter(
-                      color: palette.textMuted,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // ── Divider ────────────────────────────────────────────────────
-          SliverToBoxAdapter(
-            child: Divider(
-                color: palette.border, height: 1, indent: 20, endIndent: 20),
-          ),
-
-          // ── Body ───────────────────────────────────────────────────────
-          if (_loading)
-            const SliverFillRemaining(
-              child: Center(child: CircularProgressIndicator()),
-            )
-          else if (_filter == _LibraryFilter.playlists)
-            _savedPlaylists.isEmpty
-                ? _emptyPlaylistsSliver(palette)
-                : _playlistsSliver(palette)
-          else if (_filter == _LibraryFilter.blocked)
-            _blockedSongs.isEmpty
-                ? _emptyBlockedSliver(palette)
-                : _blockedSliver(palette)
-          else
-            _stationsSliver(palette),
-
-          const SliverToBoxAdapter(child: SizedBox(height: 120)),
         ],
       ),
     );

@@ -66,8 +66,7 @@ class DioClient {
       InterceptorsWrapper(
         onResponse: (response, handler) {
           final path = response.requestOptions.path;
-          if (path == ApiConstants.login ||
-              path == ApiConstants.refreshToken) {
+          if (path == ApiConstants.login || path == ApiConstants.refreshToken) {
             final setCookie = response.headers['set-cookie'];
             _log('Set-Cookie from $path: ${setCookie ?? '(none)'}');
           }
@@ -83,8 +82,7 @@ class DioClient {
         onRequest: (options, handler) async {
           // Skip token injection for login and refresh-token endpoints
           final path = options.path;
-          if (path == ApiConstants.login ||
-              path == ApiConstants.refreshToken) {
+          if (path == ApiConstants.login || path == ApiConstants.refreshToken) {
             return handler.next(options);
           }
 
@@ -131,6 +129,17 @@ class DioClient {
     await _cookieJar?.deleteAll();
   }
 
+  Future<void> _clearLocalSessionAfterRefreshFailure(String reason) async {
+    try {
+      await _localStorage.clearAuthToken();
+      await _localStorage.clearUser();
+      await clearCookies();
+      _log('Cleared local auth session after refresh failure ($reason)');
+    } catch (e) {
+      _log('Failed to clear local auth session after refresh failure: $e');
+    }
+  }
+
   /// Debug helper: print all cookies currently matched for [path].
   /// Use this after login to verify refresh-token cookie is actually stored.
   Future<void> debugDumpCookiesForPath({
@@ -173,8 +182,8 @@ class DioClient {
     try {
       // Log cookies for debugging
       if (_cookieJar != null) {
-        final uri = Uri.parse(
-            '${ApiConstants.baseUrl}${ApiConstants.refreshToken}');
+        final uri =
+            Uri.parse('${ApiConstants.baseUrl}${ApiConstants.refreshToken}');
         final cookies = await _cookieJar!.loadForRequest(uri);
         _log(
           'Refresh token - cookies for $uri: '
@@ -227,10 +236,19 @@ class DioClient {
       }
 
       throw AuthenticationException('Refresh token failed');
+    } on AuthenticationException {
+      await _clearLocalSessionAfterRefreshFailure('invalid refresh response');
+      rethrow;
     } on DioException catch (e) {
       _log(
         'Refresh token DioException: ${e.response?.statusCode} - ${e.response?.data}',
       );
+      final statusCode = e.response?.statusCode;
+      if (statusCode == 401 || statusCode == 403) {
+        await _clearLocalSessionAfterRefreshFailure(
+          'refresh endpoint returned $statusCode',
+        );
+      }
       throw AuthenticationException(
         'Session expired. Please login again.',
       );

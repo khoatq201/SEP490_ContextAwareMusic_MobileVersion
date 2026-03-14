@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/constants/app_typography.dart';
+import '../../../../core/enums/entity_status_enum.dart';
+import '../../../../core/enums/space_type_enum.dart';
 import '../../../../core/player/player_bloc.dart';
 import '../../../../core/player/player_event.dart';
 import '../../../../core/player/space_info.dart';
@@ -12,6 +14,7 @@ import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../../core/session/session_cubit.dart';
+import '../../../space_control/domain/entities/space.dart';
 import '../../../space_control/presentation/bloc/music_control_bloc.dart';
 import '../../../space_control/presentation/bloc/music_control_event.dart';
 import '../../../space_control/presentation/bloc/space_monitoring_bloc.dart';
@@ -442,6 +445,18 @@ class StoreDashboardPage extends StatelessWidget {
                           return SpaceGridCard(
                             space: space,
                             onTap: () {
+                              context.read<SessionCubit>().changeSpace(
+                                    Space(
+                                      id: space.id,
+                                      name: space.name,
+                                      storeId: space.storeId,
+                                      type: SpaceTypeEnum.hall,
+                                      status: space.isOnline
+                                          ? EntityStatusEnum.active
+                                          : EntityStatusEnum.inactive,
+                                      currentMood: space.currentMood,
+                                    ),
+                                  );
                               // 1. Start global space monitoring
                               context.read<SpaceMonitoringBloc>().add(
                                     StartMonitoring(

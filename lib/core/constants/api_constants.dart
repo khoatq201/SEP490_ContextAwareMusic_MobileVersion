@@ -90,4 +90,5 @@ class ApiConstants {
   static const String userTokenKey = 'user_token';
   static const String userDataKey = 'user_data';
   static const String cachedPlaylistsKey = 'cached_playlists';
+  static const String lastApiBaseUrlKey = 'last_api_base_url';
 }
