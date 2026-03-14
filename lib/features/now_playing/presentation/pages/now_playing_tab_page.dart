@@ -83,6 +83,35 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
               previous.activeSpaceId != current.activeSpaceId,
           listener: (context, _) => _syncCamsWithActiveSpace(),
         ),
+        BlocListener<PlayerBloc, ps.PlayerState>(
+          listenWhen: (previous, current) {
+            if (!isPlayback) return false;
+            final hasHlsStream =
+                current.isHlsMode && (current.hlsUrl?.isNotEmpty ?? false);
+            if (!hasHlsStream) return false;
+            final bucketChanged = (previous.currentPosition ~/ 5) !=
+                (current.currentPosition ~/ 5);
+            final playingChanged = previous.isPlaying != current.isPlaying;
+            final streamChanged = previous.hlsUrl != current.hlsUrl;
+            return bucketChanged || playingChanged || streamChanged;
+          },
+          listener: (context, playerState) {
+            final camsBloc = context.read<CamsPlaybackBloc>();
+            final camsState = camsBloc.state;
+            if (!camsState.isStreaming) return;
+
+            final spaceId = camsState.spaceId ?? playerState.activeSpaceId;
+            final hlsUrl = playerState.hlsUrl ?? camsState.hlsUrl;
+            if (spaceId == null || hlsUrl == null || hlsUrl.isEmpty) return;
+
+            camsBloc.add(CamsReportPlaybackState(
+              spaceId: spaceId,
+              isPlaying: playerState.isPlaying,
+              positionSeconds: playerState.currentPosition.toDouble(),
+              currentHlsUrl: hlsUrl,
+            ));
+          },
+        ),
         BlocListener<CamsPlaybackBloc, CamsPlaybackState>(
           listener: (context, camsState) {
             // When CAMS starts streaming a new HLS URL, forward to PlayerBloc
@@ -749,6 +778,16 @@ class _ProgressBar extends StatelessWidget {
             onChanged: (value) {
               context.read<PlayerBloc>().add(
                     PlayerSeekRequested(positionSeconds: value.toInt()),
+                  );
+            },
+            onChangeEnd: (value) {
+              final camsState = context.read<CamsPlaybackBloc>().state;
+              if (!camsState.isStreaming) return;
+              context.read<CamsPlaybackBloc>().add(
+                    CamsSendCommand(
+                      command: PlaybackCommandEnum.seek,
+                      seekPositionSeconds: value.toDouble(),
+                    ),
                   );
             },
           ),

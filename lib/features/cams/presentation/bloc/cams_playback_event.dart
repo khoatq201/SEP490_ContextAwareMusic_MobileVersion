@@ -142,3 +142,23 @@ class CamsStopPlaybackReceived extends CamsPlaybackEvent {
 class CamsRefreshState extends CamsPlaybackEvent {
   const CamsRefreshState();
 }
+
+/// Report current playback telemetry from playback device to StoreHub.
+/// This is best-effort for analytics/health monitoring.
+class CamsReportPlaybackState extends CamsPlaybackEvent {
+  final String spaceId;
+  final bool isPlaying;
+  final double? positionSeconds;
+  final String? currentHlsUrl;
+
+  const CamsReportPlaybackState({
+    required this.spaceId,
+    required this.isPlaying,
+    this.positionSeconds,
+    this.currentHlsUrl,
+  });
+
+  @override
+  List<Object?> get props =>
+      [spaceId, isPlaying, positionSeconds, currentHlsUrl];
+}

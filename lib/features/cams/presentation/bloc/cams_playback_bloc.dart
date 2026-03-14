@@ -45,6 +45,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     on<CamsStateSyncReceived>(_onStateSync);
     on<CamsStopPlaybackReceived>(_onStopPlayback);
     on<CamsRefreshState>(_onRefreshState);
+    on<CamsReportPlaybackState>(_onReportPlaybackState);
   }
 
   Future<void> _onInit(
@@ -371,6 +372,26 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
         playbackState: playbackState,
       )),
     );
+  }
+
+  Future<void> _onReportPlaybackState(
+    CamsReportPlaybackState event,
+    Emitter<CamsPlaybackState> emit,
+  ) async {
+    if (!state.isHubConnected) return;
+    final activeSpaceId = state.spaceId;
+    if (activeSpaceId == null || activeSpaceId != event.spaceId) return;
+
+    try {
+      await storeHubService.reportPlaybackState(
+        spaceId: event.spaceId,
+        isPlaying: event.isPlaying,
+        positionSeconds: event.positionSeconds,
+        currentHlsUrl: event.currentHlsUrl,
+      );
+    } catch (_) {
+      // Best-effort reporting for analytics/health; ignore failures.
+    }
   }
 
   void _cancelSubscriptions() {
