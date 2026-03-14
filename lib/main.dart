@@ -14,6 +14,7 @@ import 'core/theme/app_theme.dart';
 import 'core/theme/theme_provider.dart';
 import 'core/player/player_bloc.dart';
 import 'core/audio/audio_player_service.dart';
+import 'core/audio/playback_notification_service.dart';
 import 'features/cams/presentation/bloc/cams_playback_bloc.dart';
 import 'features/space_control/presentation/bloc/music_control_bloc.dart';
 import 'features/space_control/presentation/bloc/space_monitoring_bloc.dart';
@@ -21,13 +22,22 @@ import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/bloc/auth_event.dart';
 import 'features/auth/presentation/bloc/auth_state.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
   final audioPlayerService = AudioPlayerService();
+  await audioPlayerService.configureForBackgroundPlayback();
+  final playbackNotificationService = await PlaybackNotificationService.init(
+    audioPlayerService: audioPlayerService,
+  );
 
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        Provider<PlaybackNotificationService>.value(
+          value: playbackNotificationService,
+        ),
         // SessionCubit — global session state (role, store, space, permissions)
         BlocProvider(create: (_) => sl<SessionCubit>()),
         // PlayerBloc lives above the router so MiniPlayer persists across tabs

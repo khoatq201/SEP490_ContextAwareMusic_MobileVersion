@@ -1,4 +1,6 @@
 import 'dart:async';
+
+import 'package:audio_session/audio_session.dart';
 import 'package:just_audio/just_audio.dart';
 
 /// Wraps [AudioPlayer] from `just_audio` to provide a clean interface
@@ -7,6 +9,9 @@ import 'package:just_audio/just_audio.dart';
 /// Singleton registered in DI – inject wherever audio playback is needed.
 class AudioPlayerService {
   final AudioPlayer _player = AudioPlayer();
+  AudioSession? _session;
+  StreamSubscription<AudioInterruptionEvent>? _interruptionSub;
+  StreamSubscription<void>? _becomingNoisySub;
 
   // ── Streams ──────────────────────────────────────────────────────────────
 
@@ -32,11 +37,43 @@ class AudioPlayerService {
   // ── Getters ──────────────────────────────────────────────────────────────
 
   Duration get position => _player.position;
+  Duration get bufferedPosition => _player.bufferedPosition;
   Duration? get duration => _player.duration;
   bool get playing => _player.playing;
   ProcessingState get processingState => _player.processingState;
 
   // ── Controls ─────────────────────────────────────────────────────────────
+
+  /// Configures the platform audio session for long-running music playback.
+  Future<void> configureForBackgroundPlayback() async {
+    final session = await AudioSession.instance;
+    await session.configure(const AudioSessionConfiguration.music());
+
+    _session = session;
+    _becomingNoisySub ??= session.becomingNoisyEventStream.listen((_) {
+      if (_player.playing) {
+        unawaited(_player.pause());
+      }
+    });
+    _interruptionSub ??= session.interruptionEventStream.listen((event) {
+      if (event.begin) {
+        switch (event.type) {
+          case AudioInterruptionType.duck:
+            unawaited(_player.setVolume(0.5));
+            break;
+          case AudioInterruptionType.pause:
+          case AudioInterruptionType.unknown:
+            unawaited(_player.pause());
+            break;
+        }
+        return;
+      }
+
+      if (event.type == AudioInterruptionType.duck) {
+        unawaited(_player.setVolume(1.0));
+      }
+    });
+  }
 
   /// Load an audio source from a URL (supports HLS `.m3u8`, MP3, AAC, etc.).
   ///
@@ -47,13 +84,19 @@ class AudioPlayerService {
   }
 
   /// Start / resume playback.
-  Future<void> play() => _player.play();
+  Future<void> play() async {
+    await _session?.setActive(true);
+    await _player.play();
+  }
 
   /// Pause playback.
   Future<void> pause() => _player.pause();
 
   /// Stop playback and reset position.
-  Future<void> stop() => _player.stop();
+  Future<void> stop() async {
+    await _player.stop();
+    await _session?.setActive(false);
+  }
 
   /// Seek to a specific position.
   Future<void> seek(Duration position) => _player.seek(position);
@@ -62,5 +105,10 @@ class AudioPlayerService {
   Future<void> setVolume(double volume) => _player.setVolume(volume);
 
   /// Release resources. Call when the service is no longer needed.
-  Future<void> dispose() => _player.dispose();
+  Future<void> dispose() async {
+    await _interruptionSub?.cancel();
+    await _becomingNoisySub?.cancel();
+    await _session?.setActive(false);
+    await _player.dispose();
+  }
 }
