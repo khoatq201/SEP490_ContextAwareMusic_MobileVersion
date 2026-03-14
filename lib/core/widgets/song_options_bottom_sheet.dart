@@ -12,9 +12,9 @@ import '../../core/session/session_cubit.dart';
 enum SongOption {
   addToPlaylist,
   playNow,
-  // Reserved for future use:
   addToQueue,
-  viewArtist,
+  goToAlbum,
+  goToArtist,
   block,
   share,
 }
@@ -32,9 +32,18 @@ enum SongOption {
 //   );
 // ─────────────────────────────────────────────────────────────────────────────
 class SongOptionsBottomSheet extends StatelessWidget {
-  const SongOptionsBottomSheet({super.key, required this.song});
+  const SongOptionsBottomSheet({
+    super.key,
+    required this.song,
+    this.enableAddToQueue = false,
+    this.enableGoToAlbum = false,
+    this.enableGoToArtist = false,
+  });
 
   final SongEntity song;
+  final bool enableAddToQueue;
+  final bool enableGoToAlbum;
+  final bool enableGoToArtist;
 
   @override
   Widget build(BuildContext context) {
@@ -148,40 +157,56 @@ class SongOptionsBottomSheet extends StatelessWidget {
             Divider(color: dividerColor, height: 1, indent: 16, endIndent: 16),
 
             if (!isPlayback)
-              // ── Add to Playlist ─────────────────────────────────────────
-              ListTile(
-                leading: Icon(
-                  Icons.playlist_add,
-                  color: isDark ? Colors.white70 : Colors.black54,
-                  size: 24,
-                ),
-                title: Text(
-                  'Add to Playlist',
-                  style: GoogleFonts.inter(
-                    color: textPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+              _OptionTile(
+                icon: Icons.playlist_add,
+                label: 'Add to Playlist',
+                enabled: true,
+                isDark: isDark,
+                textPrimary: textPrimary,
+                textMuted: textMuted,
                 onTap: () => Navigator.pop(context, SongOption.addToPlaylist),
               ),
-
-            // ── Phát ngay ────────────────────────────────────────────────
-            ListTile(
-              leading: Icon(
-                Icons.play_circle_outline,
-                color: isDark ? Colors.white70 : Colors.black54,
-                size: 24,
-              ),
-              title: Text(
-                'Phát ngay',
-                style: GoogleFonts.inter(
-                  color: textPrimary,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+            _OptionTile(
+              icon: Icons.play_circle_outline,
+              label: 'Play now',
+              enabled: true,
+              isDark: isDark,
+              textPrimary: textPrimary,
+              textMuted: textMuted,
               onTap: () => Navigator.pop(context, SongOption.playNow),
+            ),
+            _OptionTile(
+              icon: Icons.queue_music_outlined,
+              label: 'Add to queue',
+              enabled: enableAddToQueue,
+              isDark: isDark,
+              textPrimary: textPrimary,
+              textMuted: textMuted,
+              onTap: enableAddToQueue
+                  ? () => Navigator.pop(context, SongOption.addToQueue)
+                  : null,
+            ),
+            _OptionTile(
+              icon: Icons.album_outlined,
+              label: 'Go to album',
+              enabled: enableGoToAlbum,
+              isDark: isDark,
+              textPrimary: textPrimary,
+              textMuted: textMuted,
+              onTap: enableGoToAlbum
+                  ? () => Navigator.pop(context, SongOption.goToAlbum)
+                  : null,
+            ),
+            _OptionTile(
+              icon: Icons.person_outline,
+              label: 'Go to artist',
+              enabled: enableGoToArtist,
+              isDark: isDark,
+              textPrimary: textPrimary,
+              textMuted: textMuted,
+              onTap: enableGoToArtist
+                  ? () => Navigator.pop(context, SongOption.goToArtist)
+                  : null,
             ),
 
             const SizedBox(height: 12),
@@ -207,6 +232,48 @@ class _ArtFallback extends StatelessWidget {
         size: 22,
         color: isDark ? Colors.white30 : Colors.black26,
       ),
+    );
+  }
+}
+
+class _OptionTile extends StatelessWidget {
+  const _OptionTile({
+    required this.icon,
+    required this.label,
+    required this.enabled,
+    required this.isDark,
+    required this.textPrimary,
+    required this.textMuted,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool enabled;
+  final bool isDark;
+  final Color textPrimary;
+  final Color textMuted;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final iconColor = enabled
+        ? (isDark ? Colors.white70 : Colors.black54)
+        : (isDark ? Colors.white24 : Colors.black26);
+    final textColor = enabled ? textPrimary : textMuted;
+
+    return ListTile(
+      enabled: enabled,
+      leading: Icon(icon, color: iconColor, size: 24),
+      title: Text(
+        label,
+        style: GoogleFonts.inter(
+          color: textColor,
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      onTap: onTap,
     );
   }
 }

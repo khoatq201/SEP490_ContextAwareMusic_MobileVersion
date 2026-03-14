@@ -8,11 +8,13 @@ import 'core/network/dio_client.dart';
 import 'core/services/local_storage_service.dart';
 import 'core/services/mqtt_service.dart';
 import 'core/presentation/splash_screen.dart';
+import 'core/presentation/app_playback_coordinator.dart';
 import 'core/session/session_cubit.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_provider.dart';
 import 'core/player/player_bloc.dart';
 import 'core/audio/audio_player_service.dart';
+import 'features/cams/presentation/bloc/cams_playback_bloc.dart';
 import 'features/space_control/presentation/bloc/music_control_bloc.dart';
 import 'features/space_control/presentation/bloc/space_monitoring_bloc.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
@@ -32,6 +34,7 @@ void main() {
         BlocProvider(
           create: (_) => PlayerBloc(audioPlayerService: audioPlayerService),
         ),
+        BlocProvider(create: (_) => sl<CamsPlaybackBloc>()),
         // MusicControlBloc & SpaceMonitoringBloc are global so NowPlayingTab
         // can always read live space/sensor/music state from any tab.
         BlocProvider(create: (_) => sl<MusicControlBloc>()),
@@ -158,13 +161,15 @@ class _MyAppState extends State<MyApp> {
       );
     }
 
-    return MaterialApp.router(
-      title: 'CAMS Store Manager',
-      debugShowCheckedModeBanner: false,
-      themeMode: themeProvider.themeMode,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      routerConfig: AppRouter.router,
+    return AppPlaybackCoordinator(
+      child: MaterialApp.router(
+        title: 'CAMS Store Manager',
+        debugShowCheckedModeBanner: false,
+        themeMode: themeProvider.themeMode,
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        routerConfig: AppRouter.router,
+      ),
     );
   }
 }

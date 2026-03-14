@@ -9,6 +9,7 @@ import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/constants/app_typography.dart';
 import '../../../../core/player/player_bloc.dart';
 import '../../../../core/player/player_event.dart';
+import '../../../../core/session/session_cubit.dart';
 import '../../../../core/widgets/song_list_tile.dart';
 import '../../../../injection_container.dart';
 import '../../../space_control/domain/entities/track.dart';
@@ -176,6 +177,17 @@ class _ArtistBody extends StatelessWidget {
                 return SongListTile(
                   song: song,
                   onTap: () {
+                    final session = ctx.read<SessionCubit>().state;
+                    if (!session.isPlaybackDevice) {
+                      ScaffoldMessenger.of(ctx).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Manager devices can only control playback from CMS playlists right now.',
+                          ),
+                        ),
+                      );
+                      return;
+                    }
                     final tracks = artist.popularSongs
                         .map((s) => Track(
                               id: s.id,

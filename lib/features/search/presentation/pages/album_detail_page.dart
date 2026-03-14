@@ -9,6 +9,7 @@ import '../../../../core/widgets/play_to_space_button.dart';
 import '../../../../core/widgets/song_list_tile.dart';
 import '../../../../core/player/player_bloc.dart';
 import '../../../../core/player/player_event.dart';
+import '../../../../core/session/session_cubit.dart';
 import '../../../../injection_container.dart';
 import '../../../space_control/domain/entities/track.dart';
 import '../../domain/entities/album_entity.dart';
@@ -224,6 +225,17 @@ class _AlbumBody extends StatelessWidget {
               return SongListTile(
                 song: song,
                 onTap: () {
+                  final session = ctx.read<SessionCubit>().state;
+                  if (!session.isPlaybackDevice) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Manager devices can only control playback from CMS playlists right now.',
+                        ),
+                      ),
+                    );
+                    return;
+                  }
                   ctx.read<PlayerBloc>().add(PlayerPlaylistStarted(
                         tracks: _tracks,
                         startIndex: i,

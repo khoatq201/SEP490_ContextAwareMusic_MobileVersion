@@ -52,6 +52,15 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     CamsInitPlayback event,
     Emitter<CamsPlaybackState> emit,
   ) async {
+    final previousSpaceId = state.spaceId;
+    if (previousSpaceId != null && previousSpaceId != event.spaceId) {
+      try {
+        await storeHubService.leaveSpace(previousSpaceId);
+      } catch (_) {
+        // Best effort before switching spaces.
+      }
+    }
+
     emit(state.copyWith(
       status: CamsStatus.loading,
       spaceId: event.spaceId,
@@ -317,9 +326,12 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     CamsPlaybackCommandReceived event,
     Emitter<CamsPlaybackState> emit,
   ) {
-    // Playback commands are forwarded to PlayerBloc via the UI layer.
-    // We update local state for pause/resume tracking.
-    // The UI listens to this event and delegates to PlayerBloc.
+    emit(state.copyWith(
+      lastPlaybackCommand: event.command,
+      lastSeekPositionSeconds: event.seekPositionSeconds,
+      lastTargetTrackId: event.targetTrackId,
+      commandSequence: state.commandSequence + 1,
+    ));
   }
 
   void _onStateSync(

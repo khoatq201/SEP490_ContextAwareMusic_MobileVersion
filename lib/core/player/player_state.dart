@@ -28,6 +28,9 @@ class PlayerState extends Equatable {
   /// Name of the playlist/album currently playing from.
   final String? playlistName;
 
+  /// Backend playlist identifier when playback is tied to a CMS playlist.
+  final String? playlistId;
+
   /// Current HLS URL being streamed (from CAMS).
   final String? hlsUrl;
 
@@ -46,6 +49,7 @@ class PlayerState extends Equatable {
     this.queue = const [],
     this.currentIndex = -1,
     this.playlistName,
+    this.playlistId,
     this.hlsUrl,
     this.isHlsMode = false,
   });
@@ -74,10 +78,12 @@ class PlayerState extends Equatable {
     List<Track>? queue,
     int? currentIndex,
     String? playlistName,
+    String? playlistId,
     String? hlsUrl,
     bool? isHlsMode,
     bool clearTrack = false,
     bool clearPlaylistName = false,
+    bool clearPlaylistId = false,
     bool clearHlsUrl = false,
   }) {
     return PlayerState(
@@ -93,6 +99,7 @@ class PlayerState extends Equatable {
       currentIndex: currentIndex ?? this.currentIndex,
       playlistName:
           clearPlaylistName ? null : (playlistName ?? this.playlistName),
+      playlistId: clearPlaylistId ? null : (playlistId ?? this.playlistId),
       hlsUrl: clearHlsUrl ? null : (hlsUrl ?? this.hlsUrl),
       isHlsMode: isHlsMode ?? this.isHlsMode,
     );
@@ -111,6 +118,7 @@ class PlayerState extends Equatable {
         queue,
         currentIndex,
         playlistName,
+        playlistId,
         hlsUrl,
         isHlsMode,
       ];

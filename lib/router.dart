@@ -37,7 +37,6 @@ import 'features/search/presentation/pages/artist_detail_page.dart';
 import 'features/search/presentation/pages/album_detail_page.dart';
 import 'features/search/presentation/pages/category_detail_page.dart';
 import 'features/now_playing/presentation/pages/now_playing_tab_page.dart';
-import 'features/cams/presentation/bloc/cams_playback_bloc.dart';
 import 'features/library/presentation/pages/library_tab_page.dart';
 import 'features/locations/presentation/pages/locations_tab_page.dart';
 import 'features/context_rules/presentation/pages/context_rules_page.dart';
@@ -236,10 +235,7 @@ class AppRouter {
                 name: 'playlist-detail',
                 builder: (context, state) {
                   final playlistId = state.extra as String;
-                  return BlocProvider(
-                    create: (_) => sl<CamsPlaybackBloc>(),
-                    child: PlaylistDetailLoader(playlistId: playlistId),
-                  );
+                  return PlaylistDetailLoader(playlistId: playlistId);
                 },
               ),
             ],
@@ -302,10 +298,7 @@ class AppRouter {
                 name: 'search-playlist-detail',
                 builder: (context, state) {
                   final playlistId = state.pathParameters['playlistId']!;
-                  return BlocProvider(
-                    create: (_) => sl<CamsPlaybackBloc>(),
-                    child: PlaylistDetailLoader(playlistId: playlistId),
-                  );
+                  return PlaylistDetailLoader(playlistId: playlistId);
                 },
               ),
               GoRoute(
@@ -342,12 +335,8 @@ class AppRouter {
           GoRoute(
             path: '/now-playing',
             name: 'now-playing',
-            pageBuilder: (context, state) => NoTransitionPage(
-              child: BlocProvider(
-                create: (_) => sl<CamsPlaybackBloc>(),
-                child: const NowPlayingTabPage(),
-              ),
-            ),
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: NowPlayingTabPage()),
           ),
           GoRoute(
             path: '/library',
@@ -377,10 +366,7 @@ class AppRouter {
         name: 'now-playing-full',
         pageBuilder: (context, state) => MaterialPage(
           fullscreenDialog: true,
-          child: BlocProvider(
-            create: (_) => sl<CamsPlaybackBloc>(),
-            child: const NowPlayingTabPage(),
-          ),
+          child: const NowPlayingTabPage(),
         ),
       ),
       GoRoute(

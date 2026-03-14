@@ -7,13 +7,19 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/enums/playback_command_enum.dart';
+import '../../../../core/player/player_bloc.dart';
+import '../../../../core/player/player_event.dart';
 import '../../../../core/session/session_cubit.dart';
+import '../../../../core/widgets/select_playlist_bottom_sheet.dart';
+import '../../../../core/widgets/song_options_bottom_sheet.dart';
 import '../../../../injection_container.dart';
+import '../../../home/domain/entities/song_entity.dart';
 import '../../../cams/presentation/bloc/cams_playback_bloc.dart';
 import '../../../cams/presentation/bloc/cams_playback_event.dart';
 import '../../../cams/presentation/bloc/cams_playback_state.dart';
 import '../../../space_control/data/datasources/space_remote_datasource.dart';
 import '../../../space_control/domain/entities/space.dart';
+import '../../../space_control/domain/entities/track.dart';
 import '../../domain/entities/api_playlist.dart';
 import '../../domain/entities/playlist_track_item.dart';
 
@@ -378,30 +384,22 @@ class _TrackTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final mappedSong = SongEntity(
+      id: track.trackId,
+      title: track.title ?? 'Unknown Track',
+      artist: track.artist ?? 'Unknown Artist',
+      duration: track.effectiveDuration,
+      coverUrl: track.coverImageUrl,
+    );
+
     return InkWell(
       onTap: () {
-        final session = context.read<SessionCubit>().state;
-        if (session.isPlaybackDevice) return; // Playback devices cannot skip
-
-        final hasSpace = session.currentSpace != null;
-        final paletteLocal =
-            _Palette.fromBrightness(Theme.of(context).brightness);
-
-        if (!hasSpace) {
-          // No space selected — show picker first
-          _showSpacePickerSheet(
-            context: context,
-            playlist: playlist,
-            palette: paletteLocal,
-          );
-          return;
-        }
-
-        context.read<CamsPlaybackBloc>().add(CamsSendCommand(
-              command: PlaybackCommandEnum.skipToTrack,
-              seekPositionSeconds: track.seekOffsetSeconds.toDouble(),
-              targetTrackId: track.trackId,
-            ));
+        _playTrackToCurrentSpace(
+          context: context,
+          playlist: playlist,
+          track: track,
+          palette: _Palette.fromBrightness(Theme.of(context).brightness),
+        );
       },
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -477,6 +475,53 @@ class _TrackTile extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
+            IconButton(
+              icon: Icon(
+                Icons.more_vert,
+                color: palette.textMuted,
+                size: 20,
+              ),
+              splashRadius: 20,
+              onPressed: () async {
+                final option = await showModalBottomSheet<SongOption>(
+                  context: context,
+                  useRootNavigator: true,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (_) => SongOptionsBottomSheet(song: mappedSong),
+                );
+                if (!context.mounted || option == null) return;
+
+                switch (option) {
+                  case SongOption.addToPlaylist:
+                    await showModalBottomSheet<void>(
+                      context: context,
+                      useRootNavigator: true,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (_) =>
+                          SelectPlaylistBottomSheet(song: mappedSong),
+                    );
+                    break;
+                  case SongOption.playNow:
+                    _playTrackToCurrentSpace(
+                      context: context,
+                      playlist: playlist,
+                      track: track,
+                      palette: _Palette.fromBrightness(
+                        Theme.of(context).brightness,
+                      ),
+                    );
+                    break;
+                  case SongOption.addToQueue:
+                  case SongOption.goToAlbum:
+                  case SongOption.goToArtist:
+                  case SongOption.block:
+                  case SongOption.share:
+                    break;
+                }
+              },
+            ),
           ],
         ),
       ),
@@ -496,6 +541,58 @@ class _TrackTile extends StatelessWidget {
   }
 }
 
+void _playTrackToCurrentSpace({
+  required BuildContext context,
+  required ApiPlaylist playlist,
+  required PlaylistTrackItem track,
+  required _Palette palette,
+}) {
+  _seedPlaylistQueue(context, playlist, force: true);
+
+  final session = context.read<SessionCubit>().state;
+  final hasSpace = session.currentSpace != null;
+
+  if (!hasSpace) {
+    _showSpacePickerSheet(
+      context: context,
+      playlist: playlist,
+      palette: palette,
+    );
+    return;
+  }
+
+  context.read<CamsPlaybackBloc>().add(CamsSendCommand(
+        command: PlaybackCommandEnum.skipToTrack,
+        seekPositionSeconds: track.seekOffsetSeconds.toDouble(),
+        targetTrackId: track.trackId,
+      ));
+}
+
+void _seedPlaylistQueue(
+  BuildContext context,
+  ApiPlaylist playlist, {
+  bool force = false,
+}) {
+  final queue = (playlist.tracks ?? const [])
+      .map((playlistTrack) => Track(
+            id: playlistTrack.trackId,
+            title: playlistTrack.title ?? 'Unknown Track',
+            artist: playlistTrack.artist ?? 'Unknown Artist',
+            fileUrl: '',
+            moodTags: const [],
+            duration: playlistTrack.effectiveDuration,
+            albumArt: playlistTrack.coverImageUrl,
+          ))
+      .toList();
+
+  context.read<PlayerBloc>().add(PlayerQueueSeeded(
+        tracks: queue,
+        playlistName: playlist.name,
+        playlistId: playlist.id,
+        force: force,
+      ));
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Play action helpers — shared by header and track tile
 // ─────────────────────────────────────────────────────────────────────────────
@@ -510,6 +607,8 @@ void _handlePlayAction({
   required dynamic session,
   required _Palette palette,
 }) {
+  _seedPlaylistQueue(context, playlist, force: true);
+
   final hasSpace = session.currentSpace != null;
 
   if (session.isPlaybackDevice || hasSpace) {

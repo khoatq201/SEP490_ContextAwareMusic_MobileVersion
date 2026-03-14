@@ -20,6 +20,7 @@ import '../../../../features/cams/presentation/bloc/cams_playback_state.dart';
 import '../../../../features/moods/domain/entities/mood.dart';
 import '../../../../features/space_control/domain/entities/space.dart';
 import '../../../../features/space_control/domain/entities/sensor_data.dart';
+import '../../../../features/space_control/domain/entities/track.dart';
 import '../../../../features/space_control/presentation/bloc/music_control_bloc.dart';
 import '../../../../features/space_control/presentation/bloc/music_control_event.dart';
 import '../../../../features/space_control/presentation/bloc/space_monitoring_bloc.dart';
@@ -38,37 +39,6 @@ class NowPlayingTabPage extends StatefulWidget {
 class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
   double _volume = 0.6;
   bool _isShuffleOn = false;
-  String? _initializedSpaceId;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _syncCamsWithActiveSpace();
-    });
-  }
-
-  @override
-  void dispose() {
-    context.read<CamsPlaybackBloc>().add(const CamsDisposePlayback());
-    super.dispose();
-  }
-
-  void _syncCamsWithActiveSpace() {
-    if (!mounted) return;
-    final playerState = context.read<PlayerBloc>().state;
-    final session = context.read<SessionCubit>().state;
-    final targetSpaceId = playerState.activeSpaceId ?? session.currentSpace?.id;
-    if (targetSpaceId == null ||
-        targetSpaceId.isEmpty ||
-        targetSpaceId == _initializedSpaceId) {
-      return;
-    }
-    _initializedSpaceId = targetSpaceId;
-    context
-        .read<CamsPlaybackBloc>()
-        .add(CamsInitPlayback(spaceId: targetSpaceId));
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,11 +48,6 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
 
     return MultiBlocListener(
       listeners: [
-        BlocListener<PlayerBloc, ps.PlayerState>(
-          listenWhen: (previous, current) =>
-              previous.activeSpaceId != current.activeSpaceId,
-          listener: (context, _) => _syncCamsWithActiveSpace(),
-        ),
         BlocListener<PlayerBloc, ps.PlayerState>(
           listenWhen: (previous, current) {
             if (!isPlayback) return false;
@@ -114,24 +79,6 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
         ),
         BlocListener<CamsPlaybackBloc, CamsPlaybackState>(
           listener: (context, camsState) {
-            // When CAMS starts streaming a new HLS URL, forward to PlayerBloc
-            final hlsUrl = camsState.hlsUrl;
-            if (hlsUrl != null && hlsUrl.isNotEmpty) {
-              final seekOffset =
-                  camsState.playbackState?.seekOffsetSeconds ?? 0;
-              context.read<PlayerBloc>().add(PlayerHlsStarted(
-                    hlsUrl: hlsUrl,
-                    playlistName: camsState.currentPlaylistName,
-                    seekOffsetSeconds: seekOffset,
-                  ));
-            }
-
-            // When CAMS stops playback
-            if (camsState.status == CamsStatus.idle &&
-                camsState.playbackState?.hlsUrl == null) {
-              context.read<PlayerBloc>().add(const PlayerHlsStopped());
-            }
-
             // Show error snackbar
             if (camsState.errorMessage != null) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -535,14 +482,20 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
   // ── Queue Bottom Sheet ─────────────────────────────────────────────────────
   void _showQueueSheet(
       BuildContext ctx, ps.PlayerState state, _NPPalette palette) {
-    final track = state.currentTrack;
-    // Mock upcoming tracks for demo
-    final upNext = [
-      {'title': 'Maybe This Time', 'artist': 'Empress Of'},
-      {'title': 'One in a Million', 'artist': 'Bebe Rexha, David Guetta'},
-      {'title': 'Kings & Queens', 'artist': 'Ava Max'},
-      {'title': 'Kids Again', 'artist': 'Sam Smith'},
-    ];
+    final queue = state.queue;
+    final resolvedCurrentIndex =
+        state.currentIndex >= 0 && state.currentIndex < queue.length
+            ? state.currentIndex
+            : state.currentTrack == null
+                ? -1
+                : queue.indexWhere((item) => item.id == state.currentTrack!.id);
+    final currentTrack = resolvedCurrentIndex >= 0
+        ? queue[resolvedCurrentIndex]
+        : state.currentTrack;
+    final upNext =
+        resolvedCurrentIndex >= 0 && resolvedCurrentIndex + 1 < queue.length
+            ? queue.sublist(resolvedCurrentIndex + 1)
+            : const <Track>[];
 
     showModalBottomSheet(
       context: ctx,
@@ -585,7 +538,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                         )),
                     TextButton(
                       onPressed: () => Navigator.pop(ctx),
-                      child: Text('Clear',
+                      child: Text('Close',
                           style: GoogleFonts.inter(
                             color: palette.textMuted,
                             fontSize: 14,
@@ -599,9 +552,9 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: _QueueTrackTile(
-                  title: track?.title ?? 'No track',
-                  artist: track?.artist ?? '',
-                  artUrl: track?.albumArt,
+                  title: currentTrack?.title ?? 'No track',
+                  artist: currentTrack?.artist ?? '',
+                  artUrl: currentTrack?.albumArt,
                   isPlaying: true,
                   palette: palette,
                 ),
@@ -616,24 +569,81 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                     )),
               ),
               Expanded(
-                child: ListView.builder(
-                  controller: controller,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  itemCount: upNext.length,
-                  itemBuilder: (_, i) => _QueueTrackTile(
-                    title: upNext[i]['title']!,
-                    artist: upNext[i]['artist']!,
-                    artUrl: null,
-                    isPlaying: false,
-                    palette: palette,
-                  ),
-                ),
+                child: upNext.isEmpty
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 32),
+                          child: Text(
+                            state.queue.isEmpty
+                                ? 'No queue is available for this track yet.'
+                                : 'You have reached the end of the current queue.',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.inter(
+                              color: palette.textMuted,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      )
+                    : ListView.builder(
+                        controller: controller,
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        itemCount: upNext.length,
+                        itemBuilder: (_, i) {
+                          final queueIndex = resolvedCurrentIndex + i + 1;
+                          final queuedTrack = upNext[i];
+                          return _QueueTrackTile(
+                            title: queuedTrack.title,
+                            artist: queuedTrack.artist,
+                            artUrl: queuedTrack.albumArt,
+                            isPlaying: false,
+                            palette: palette,
+                            onTap: () => _handleQueueTrackTap(
+                              ctx,
+                              state,
+                              queuedTrack,
+                              queueIndex,
+                            ),
+                          );
+                        },
+                      ),
               ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  void _handleQueueTrackTap(
+    BuildContext context,
+    ps.PlayerState state,
+    Track track,
+    int queueIndex,
+  ) {
+    Navigator.pop(context);
+
+    final camsBloc = context.read<CamsPlaybackBloc>();
+    if (camsBloc.state.isStreaming &&
+        state.isHlsMode &&
+        state.playlistId != null &&
+        state.playlistId!.isNotEmpty) {
+      camsBloc.add(CamsSendCommand(
+        command: PlaybackCommandEnum.skipToTrack,
+        targetTrackId: track.id,
+      ));
+      return;
+    }
+
+    if (state.queue.isEmpty) return;
+
+    context.read<PlayerBloc>().add(PlayerPlaylistStarted(
+          tracks: state.queue,
+          startIndex: queueIndex,
+          playlistName: state.playlistName,
+          playlistId: state.playlistId,
+        ));
   }
 }
 
@@ -1036,15 +1046,17 @@ class _QueueTrackTile extends StatelessWidget {
     this.artUrl,
     required this.isPlaying,
     required this.palette,
+    this.onTap,
   });
   final String title, artist;
   final String? artUrl;
   final bool isPlaying;
   final _NPPalette palette;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    final child = Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
@@ -1088,6 +1100,17 @@ class _QueueTrackTile extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+
+    if (onTap == null) return child;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: child,
       ),
     );
   }

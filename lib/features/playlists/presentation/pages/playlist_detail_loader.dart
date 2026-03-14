@@ -4,10 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-import '../../../../core/session/session_cubit.dart';
+import '../../../../core/player/player_bloc.dart';
+import '../../../../core/player/player_event.dart';
 import '../../../../injection_container.dart';
-import '../../../cams/presentation/bloc/cams_playback_bloc.dart';
-import '../../../cams/presentation/bloc/cams_playback_event.dart';
+import '../../../space_control/domain/entities/track.dart';
 import '../../data/datasources/playlist_remote_datasource.dart';
 import '../../domain/entities/api_playlist.dart';
 import 'api_playlist_detail_page.dart';
@@ -25,7 +25,7 @@ class PlaylistDetailLoader extends StatefulWidget {
 
 class _PlaylistDetailLoaderState extends State<PlaylistDetailLoader> {
   late Future<ApiPlaylist> _future;
-  bool _camsInitialised = false;
+  bool _playerSeeded = false;
 
   @override
   void initState() {
@@ -33,14 +33,27 @@ class _PlaylistDetailLoaderState extends State<PlaylistDetailLoader> {
     _future = sl<PlaylistRemoteDataSource>().getPlaylistById(widget.playlistId);
   }
 
-  void _initCams(BuildContext context) {
-    if (_camsInitialised) return;
-    _camsInitialised = true;
+  void _seedPlayer(BuildContext context, ApiPlaylist playlist) {
+    if (_playerSeeded) return;
+    _playerSeeded = true;
 
-    final spaceId = context.read<SessionCubit>().state.currentSpace?.id;
-    if (spaceId != null) {
-      context.read<CamsPlaybackBloc>().add(CamsInitPlayback(spaceId: spaceId));
-    }
+    final queue = (playlist.tracks ?? const [])
+        .map((track) => Track(
+              id: track.trackId,
+              title: track.title ?? 'Unknown Track',
+              artist: track.artist ?? 'Unknown Artist',
+              fileUrl: '',
+              moodTags: const [],
+              duration: track.effectiveDuration,
+              albumArt: track.coverImageUrl,
+            ))
+        .toList();
+
+    context.read<PlayerBloc>().add(PlayerQueueSeeded(
+          tracks: queue,
+          playlistName: playlist.name,
+          playlistId: playlist.id,
+        ));
   }
 
   @override
@@ -125,9 +138,9 @@ class _PlaylistDetailLoaderState extends State<PlaylistDetailLoader> {
           );
         }
 
-        // Success — initialise CAMS and show detail page.
-        _initCams(context);
-        return ApiPlaylistDetailPage(playlist: snapshot.data!);
+        final playlist = snapshot.data!;
+        _seedPlayer(context, playlist);
+        return ApiPlaylistDetailPage(playlist: playlist);
       },
     );
   }

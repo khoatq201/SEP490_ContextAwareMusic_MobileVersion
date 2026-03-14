@@ -6,13 +6,9 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../../features/space_control/domain/entities/space.dart';
 import '../../features/space_control/domain/entities/track.dart';
 import '../constants/app_colors.dart';
-import '../enums/entity_status_enum.dart';
-import '../enums/space_type_enum.dart';
-import '../enums/user_role.dart';
 import '../player/player_bloc.dart';
 import '../player/player_event.dart';
 import '../session/session_cubit.dart';
-import 'play_to_space_bottom_sheet.dart';
 
 /// A reusable "Play to Space" button used on Search detail pages.
 ///
@@ -66,20 +62,19 @@ class PlayToSpaceButton extends StatelessWidget {
   void _handleTap(BuildContext context) {
     final session = context.read<SessionCubit>().state;
 
-    if (session.currentRole == UserRole.playbackDevice) {
+    if (session.isPlaybackDevice) {
       // Auto-play — playback device is locked to its own space
       _play(context, space: session.currentSpace);
       return;
     }
 
-    // Show space selection bottom sheet
-    final spaces = availableSpaces ?? _mockSpaces();
-
-    PlayToSpaceBottomSheet.show(context, spaces: spaces).then((selected) {
-      if (selected != null && context.mounted) {
-        _play(context, space: selected);
-      }
-    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Remote playback for album/artist track lists is not supported yet. Use a CMS playlist to control a space.',
+        ),
+      ),
+    );
   }
 
   void _play(BuildContext context, {Space? space}) {
@@ -100,43 +95,5 @@ class PlayToSpaceButton extends StatelessWidget {
         ),
       );
     }
-  }
-
-  /// Temporary mock spaces until the real store/space API is wired.
-  List<Space> _mockSpaces() {
-    return const [
-      Space(
-        id: 'space-1',
-        name: 'Main Floor',
-        status: EntityStatusEnum.active,
-        type: SpaceTypeEnum.hall,
-        assignedHubId: 'hub-1',
-        storeId: 'store-1',
-      ),
-      Space(
-        id: 'space-2',
-        name: 'VIP Lounge',
-        status: EntityStatusEnum.active,
-        type: SpaceTypeEnum.hall,
-        assignedHubId: 'hub-2',
-        storeId: 'store-1',
-      ),
-      Space(
-        id: 'space-3',
-        name: 'Outdoor Patio',
-        status: EntityStatusEnum.inactive,
-        type: SpaceTypeEnum.hall,
-        assignedHubId: 'hub-3',
-        storeId: 'store-1',
-      ),
-      Space(
-        id: 'space-4',
-        name: 'Bar Area',
-        status: EntityStatusEnum.active,
-        type: SpaceTypeEnum.hall,
-        assignedHubId: 'hub-4',
-        storeId: 'store-1',
-      ),
-    ];
   }
 }

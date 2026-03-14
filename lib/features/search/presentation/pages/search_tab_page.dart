@@ -7,13 +7,11 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/constants/app_typography.dart';
+import '../../../../core/session/session_cubit.dart';
 import '../../../../core/widgets/song_list_tile.dart';
-import '../../../../core/player/player_bloc.dart';
-import '../../../../core/player/player_event.dart';
 import '../../../../injection_container.dart';
 import '../../../home/domain/entities/playlist_entity.dart';
 import '../../../home/domain/entities/song_entity.dart';
-import '../../../space_control/domain/entities/track.dart';
 import '../../domain/entities/search_category.dart';
 import '../../domain/entities/search_filter_tag.dart';
 import '../../domain/entities/search_result.dart';
@@ -615,19 +613,13 @@ class _ResultTile extends StatelessWidget {
         context.push('/search/category/${result.id}', extra: result.title);
         break;
       case SearchResultType.song:
-        final track = Track(
-          id: result.id,
-          title: result.title,
-          artist: result.subtitle,
-          fileUrl: '',
-          moodTags: const [],
-          albumArt: result.imageUrl,
+        final session = context.read<SessionCubit>().state;
+        final message = session.isPlaybackDevice
+            ? 'This search result does not include a stream URL yet.'
+            : 'Manager devices can only control playback from CMS playlists right now.';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
         );
-        context.read<PlayerBloc>().add(PlayerPlaylistStarted(
-              tracks: [track],
-              startIndex: 0,
-              playlistName: 'Search',
-            ));
         break;
     }
   }
@@ -933,19 +925,13 @@ class _SongListSliver extends StatelessWidget {
             return SongListTile(
               song: song,
               onTap: () {
-                final track = Track(
-                  id: r.id,
-                  title: r.title,
-                  artist: r.subtitle,
-                  fileUrl: '',
-                  moodTags: const [],
-                  albumArt: r.imageUrl,
+                final session = context.read<SessionCubit>().state;
+                final message = session.isPlaybackDevice
+                    ? 'This search result does not include a stream URL yet.'
+                    : 'Manager devices can only control playback from CMS playlists right now.';
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(message)),
                 );
-                context.read<PlayerBloc>().add(PlayerPlaylistStarted(
-                      tracks: [track],
-                      startIndex: 0,
-                      playlistName: 'Search',
-                    ));
               },
             );
           }),
@@ -1226,9 +1212,7 @@ class _PlaylistCard extends StatelessWidget {
 class _SectionHeader extends StatelessWidget {
   final String title;
   final bool isDark;
-  final VoidCallback? onSeeAll;
-  const _SectionHeader(
-      {required this.title, required this.isDark, this.onSeeAll});
+  const _SectionHeader({required this.title, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -1242,32 +1226,6 @@ class _SectionHeader extends StatelessWidget {
             fontWeight: FontWeight.w700,
           ),
         ),
-        if (onSeeAll != null)
-          GestureDetector(
-            onTap: onSeeAll,
-            child: Row(
-              children: [
-                Text(
-                  'all',
-                  style: GoogleFonts.inter(
-                    color: isDark
-                        ? AppColors.textDarkSecondary
-                        : AppColors.textSecondary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(width: 2),
-                Icon(
-                  Icons.chevron_right,
-                  size: 18,
-                  color: isDark
-                      ? AppColors.textDarkSecondary
-                      : AppColors.textSecondary,
-                ),
-              ],
-            ),
-          ),
       ],
     );
   }

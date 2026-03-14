@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../../../core/enums/playback_command_enum.dart';
 import '../../../moods/domain/entities/mood.dart';
 import '../../domain/entities/space_playback_state.dart';
 import '../../data/models/override_response_model.dart';
@@ -29,6 +30,12 @@ class CamsPlaybackState extends Equatable {
   /// SignalR connection status.
   final bool isHubConnected;
 
+  /// Last playback command received from SignalR.
+  final PlaybackCommandEnum? lastPlaybackCommand;
+  final double? lastSeekPositionSeconds;
+  final String? lastTargetTrackId;
+  final int commandSequence;
+
   const CamsPlaybackState({
     this.status = CamsStatus.initial,
     this.spaceId,
@@ -38,6 +45,10 @@ class CamsPlaybackState extends Equatable {
     this.lastOverrideResponse,
     this.errorMessage,
     this.isHubConnected = false,
+    this.lastPlaybackCommand,
+    this.lastSeekPositionSeconds,
+    this.lastTargetTrackId,
+    this.commandSequence = 0,
   });
 
   /// Whether any playlist is currently streaming.
@@ -64,8 +75,13 @@ class CamsPlaybackState extends Equatable {
     OverrideResponse? lastOverrideResponse,
     String? errorMessage,
     bool? isHubConnected,
+    PlaybackCommandEnum? lastPlaybackCommand,
+    double? lastSeekPositionSeconds,
+    String? lastTargetTrackId,
+    int? commandSequence,
     bool clearError = false,
     bool clearOverrideResponse = false,
+    bool clearLastCommand = false,
   }) {
     return CamsPlaybackState(
       status: status ?? this.status,
@@ -78,6 +94,16 @@ class CamsPlaybackState extends Equatable {
           : (lastOverrideResponse ?? this.lastOverrideResponse),
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       isHubConnected: isHubConnected ?? this.isHubConnected,
+      lastPlaybackCommand: clearLastCommand
+          ? null
+          : (lastPlaybackCommand ?? this.lastPlaybackCommand),
+      lastSeekPositionSeconds: clearLastCommand
+          ? null
+          : (lastSeekPositionSeconds ?? this.lastSeekPositionSeconds),
+      lastTargetTrackId: clearLastCommand
+          ? null
+          : (lastTargetTrackId ?? this.lastTargetTrackId),
+      commandSequence: commandSequence ?? this.commandSequence,
     );
   }
 
@@ -91,5 +117,9 @@ class CamsPlaybackState extends Equatable {
         lastOverrideResponse,
         errorMessage,
         isHubConnected,
+        lastPlaybackCommand,
+        lastSeekPositionSeconds,
+        lastTargetTrackId,
+        commandSequence,
       ];
 }

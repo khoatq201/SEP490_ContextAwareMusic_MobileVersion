@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../constants/app_colors.dart';
 import '../../constants/app_dimensions.dart';
+import '../../enums/playback_command_enum.dart';
+import '../../../features/cams/presentation/bloc/cams_playback_bloc.dart';
+import '../../../features/cams/presentation/bloc/cams_playback_event.dart';
 import '../player_bloc.dart';
 import '../player_event.dart';
 import '../player_state.dart' as ps;
@@ -22,6 +25,8 @@ class MiniPlayerWidget extends StatelessWidget {
         final isDark = Theme.of(context).brightness == Brightness.dark;
         final track = state.currentTrack!;
         final colorScheme = Theme.of(context).colorScheme;
+        final useRemoteControls =
+            state.isHlsMode && (state.activeSpaceId?.isNotEmpty ?? false);
 
         return GestureDetector(
           onTap: () => context.push('/now-playing-full'),
@@ -117,9 +122,21 @@ class MiniPlayerWidget extends StatelessWidget {
                             size: 32,
                             color: colorScheme.primary,
                           ),
-                          onPressed: () => context
-                              .read<PlayerBloc>()
-                              .add(const PlayerPlayPauseToggled()),
+                          onPressed: () {
+                            if (useRemoteControls) {
+                              context.read<CamsPlaybackBloc>().add(
+                                    CamsSendCommand(
+                                      command: state.isPlaying
+                                          ? PlaybackCommandEnum.pause
+                                          : PlaybackCommandEnum.resume,
+                                    ),
+                                  );
+                              return;
+                            }
+                            context
+                                .read<PlayerBloc>()
+                                .add(const PlayerPlayPauseToggled());
+                          },
                         ),
 
                         // Skip button
@@ -131,9 +148,19 @@ class MiniPlayerWidget extends StatelessWidget {
                                 ? AppColors.textDarkSecondary
                                 : AppColors.textSecondary,
                           ),
-                          onPressed: () => context
-                              .read<PlayerBloc>()
-                              .add(const PlayerSkipRequested()),
+                          onPressed: () {
+                            if (useRemoteControls) {
+                              context.read<CamsPlaybackBloc>().add(
+                                    const CamsSendCommand(
+                                      command: PlaybackCommandEnum.skipNext,
+                                    ),
+                                  );
+                              return;
+                            }
+                            context
+                                .read<PlayerBloc>()
+                                .add(const PlayerSkipRequested());
+                          },
                         ),
                       ],
                     ),

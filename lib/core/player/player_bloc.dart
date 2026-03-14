@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:just_audio/just_audio.dart' hide PlayerState;
 
 import '../audio/audio_player_service.dart';
+import '../enums/playback_command_enum.dart';
+import '../../features/space_control/domain/entities/track.dart';
 import '../../features/space_control/presentation/bloc/music_control_bloc.dart';
 import '../../features/space_control/presentation/bloc/music_control_event.dart'
     as mc;
@@ -41,6 +43,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     on<PlayerSkipRequested>(_onSkipRequested);
     on<PlayerSkipBackRequested>(_onSkipBackRequested);
     on<PlayerPlaylistStarted>(_onPlaylistStarted);
+    on<PlayerQueueSeeded>(_onQueueSeeded);
     on<PlayerTrackCompleted>(_onTrackCompleted);
     on<PlayerContextUpdated>(_onContextUpdated);
     on<PlayerContextCleared>(_onContextCleared);
@@ -49,6 +52,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     on<PlayerDurationUpdated>(_onDurationUpdated);
     on<PlayerHlsStarted>(_onHlsStarted);
     on<PlayerHlsStopped>(_onHlsStopped);
+    on<PlayerRemoteCommandApplied>(_onRemoteCommandApplied);
 
     _listenToAudioStreams();
   }
@@ -77,7 +81,11 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
   }
 
   // ── Load & play a track from the current queue at given index ──────────
-  Future<void> _loadAndPlayTrack(int index, Emitter<PlayerState> emit) async {
+  Future<void> _loadAndPlayTrack(
+    int index,
+    Emitter<PlayerState> emit, {
+    bool playLocally = true,
+  }) async {
     if (index < 0 || index >= state.queue.length) return;
 
     final track = state.queue[index];
@@ -87,7 +95,11 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       currentPosition: 0,
       duration: track.duration ?? 0,
       currentIndex: index,
+      isHlsMode: false,
+      clearHlsUrl: true,
     ));
+
+    if (!playLocally) return;
 
     final url = track.fileUrl;
     if (url.isNotEmpty) {
@@ -107,9 +119,31 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       queue: event.tracks,
       currentIndex: event.startIndex,
       playlistName: event.playlistName,
+      playlistId: event.playlistId,
+      isHlsMode: false,
+      clearHlsUrl: true,
     ));
 
-    await _loadAndPlayTrack(event.startIndex, emit);
+    await _loadAndPlayTrack(
+      event.startIndex,
+      emit,
+      playLocally: event.playLocally,
+    );
+  }
+
+  void _onQueueSeeded(PlayerQueueSeeded event, Emitter<PlayerState> emit) {
+    if (!event.force &&
+        state.isPlaying &&
+        state.playlistId != null &&
+        state.playlistId != event.playlistId) {
+      return;
+    }
+
+    emit(state.copyWith(
+      queue: event.tracks,
+      playlistName: event.playlistName,
+      playlistId: event.playlistId,
+    ));
   }
 
   // ── Single-track changed (legacy / space-context) ─────────────────────
@@ -121,6 +155,8 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       currentPosition: event.currentPosition,
       duration: event.duration,
     ));
+
+    if (!event.playLocally) return;
 
     // If the track has a valid stream URL, start real audio playback.
     final url = event.track?.fileUrl;
@@ -245,15 +281,68 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     emit(state.copyWith(duration: event.durationSeconds));
   }
 
+  int _findIndexForTrackId(String? trackId) {
+    if (trackId == null || trackId.isEmpty) return -1;
+    return state.queue.indexWhere((track) => track.id == trackId);
+  }
+
+  int _resolveIndexForOffset(double offsetSeconds) {
+    if (state.queue.isEmpty) return -1;
+
+    var accumulated = 0.0;
+    for (var i = 0; i < state.queue.length; i++) {
+      final trackDuration = state.queue[i].duration?.toDouble() ?? 0.0;
+      final nextAccumulated = accumulated + trackDuration;
+      if (offsetSeconds < nextAccumulated || i == state.queue.length - 1) {
+        return i;
+      }
+      accumulated = nextAccumulated;
+    }
+    return state.queue.length - 1;
+  }
+
+  Track _buildSyntheticStreamTrack({
+    String? playlistName,
+    String? playlistId,
+  }) {
+    return Track(
+      id: playlistId ?? state.activeSpaceId ?? 'cams-stream',
+      title: playlistName ?? 'Streaming music',
+      artist: state.activeSpaceName ?? 'CAMS',
+      fileUrl: '',
+      moodTags: const [],
+      duration: state.duration > 0 ? state.duration : null,
+    );
+  }
+
   // ── HLS streaming from CAMS ────────────────────────────────────────────
   void _onHlsStarted(PlayerHlsStarted event, Emitter<PlayerState> emit) async {
+    final hasSeededQueue = state.queue.isNotEmpty &&
+        event.playlistId != null &&
+        event.playlistId == state.playlistId;
+    final resolvedIndex =
+        hasSeededQueue ? _resolveIndexForOffset(event.seekOffsetSeconds) : -1;
+    final resolvedTrack = resolvedIndex >= 0
+        ? state.queue[resolvedIndex]
+        : (state.currentTrack ??
+            _buildSyntheticStreamTrack(
+              playlistName: event.playlistName,
+              playlistId: event.playlistId,
+            ));
+
     emit(state.copyWith(
       isHlsMode: true,
       hlsUrl: event.hlsUrl,
       playlistName: event.playlistName,
+      playlistId: event.playlistId ?? state.playlistId,
       isPlaying: true,
       currentPosition: event.seekOffsetSeconds.toInt(),
+      currentTrack: resolvedTrack,
+      currentIndex: resolvedIndex >= 0 ? resolvedIndex : state.currentIndex,
+      duration: resolvedTrack.duration ?? state.duration,
     ));
+
+    if (!event.playLocally) return;
 
     try {
       await _audioService.loadUrl(event.hlsUrl);
@@ -273,8 +362,65 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       isPlaying: false,
       isHlsMode: false,
       clearHlsUrl: true,
+      clearTrack: true,
+      clearPlaylistName: true,
+      clearPlaylistId: true,
+      queue: const [],
+      currentIndex: -1,
       currentPosition: 0,
+      duration: 0,
     ));
+  }
+
+  void _onRemoteCommandApplied(
+    PlayerRemoteCommandApplied event,
+    Emitter<PlayerState> emit,
+  ) async {
+    final absolutePosition = event.positionSeconds?.toInt();
+    var resolvedIndex = _findIndexForTrackId(event.targetTrackId);
+    if (resolvedIndex < 0 && absolutePosition != null) {
+      resolvedIndex = _resolveIndexForOffset(absolutePosition.toDouble());
+    }
+    final resolvedTrack =
+        resolvedIndex >= 0 && resolvedIndex < state.queue.length
+            ? state.queue[resolvedIndex]
+            : state.currentTrack;
+
+    switch (event.command) {
+      case PlaybackCommandEnum.pause:
+        if (event.playLocally) {
+          _audioService.pause();
+        }
+        emit(state.copyWith(isPlaying: false));
+        return;
+      case PlaybackCommandEnum.resume:
+        if (event.playLocally) {
+          _audioService.play();
+        }
+        emit(state.copyWith(isPlaying: true));
+        return;
+      case PlaybackCommandEnum.seek:
+      case PlaybackCommandEnum.seekForward:
+      case PlaybackCommandEnum.seekBackward:
+      case PlaybackCommandEnum.skipNext:
+      case PlaybackCommandEnum.skipPrevious:
+      case PlaybackCommandEnum.skipToTrack:
+        if (absolutePosition != null && event.playLocally) {
+          await _audioService.seek(Duration(seconds: absolutePosition));
+        }
+        emit(state.copyWith(
+          currentPosition: absolutePosition ?? state.currentPosition,
+          currentIndex: resolvedIndex >= 0 ? resolvedIndex : state.currentIndex,
+          currentTrack: resolvedTrack,
+          duration: resolvedTrack?.duration ?? state.duration,
+          isPlaying: event.command == PlaybackCommandEnum.seek ||
+                  event.command == PlaybackCommandEnum.seekForward ||
+                  event.command == PlaybackCommandEnum.seekBackward
+              ? state.isPlaying
+              : true,
+        ));
+        return;
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -300,6 +446,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       isPlaying: isPlaying,
       currentPosition: position,
       duration: duration,
+      playLocally: true,
     ));
   }
 
