@@ -269,6 +269,9 @@ Future<void> initializeDependencies() async {
       getPairedSpace: sl(),
       getSpacesForStore: sl(),
       getSpacesForBrand: sl(),
+      getSpaceState: sl(),
+      playlistDataSource: sl(),
+      getUserStores: sl(),
     ),
   );
 

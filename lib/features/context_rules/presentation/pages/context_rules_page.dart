@@ -6,7 +6,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/player/player_bloc.dart';
-import '../../../../core/player/player_state.dart' as ps;
+import '../../../../core/presentation/shell_layout_metrics.dart';
 import '../../domain/entities/context_rule_entity.dart';
 
 class ContextRulesPage extends StatefulWidget {
@@ -82,6 +82,14 @@ class _ContextRulesPageState extends State<ContextRulesPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final palette = _Palette.fromBrightness(Theme.of(context).brightness);
+    final hasMiniPlayer =
+        context.select((PlayerBloc bloc) => bloc.state.hasTrack);
+    final reservedBottom = ShellLayoutMetrics.reservedBottom(
+      context,
+      hasMiniPlayer: hasMiniPlayer,
+      extra: 20,
+    );
+    final listBottomPadding = reservedBottom + 40;
 
     return Scaffold(
       backgroundColor: palette.bg,
@@ -129,28 +137,23 @@ class _ContextRulesPageState extends State<ContextRulesPage> {
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      floatingActionButton: BlocBuilder<PlayerBloc, ps.PlayerState>(
-        builder: (context, playerState) {
-          final bottomPad = playerState.hasTrack ? 144.0 : 80.0;
-          return Padding(
-            padding: EdgeInsets.only(bottom: bottomPad),
-            child: FloatingActionButton(
-              onPressed: () {
-                debugPrint('Navigate to Create Rule Page');
-                context.push(widget.createRulePath);
-              },
-              backgroundColor: palette.accent,
-              foregroundColor: palette.textOnAccent,
-              elevation: 6,
-              child: const Icon(Icons.add, size: 26),
-            ),
-          );
-        },
+      floatingActionButton: Padding(
+        padding: EdgeInsets.only(bottom: reservedBottom),
+        child: FloatingActionButton(
+          onPressed: () {
+            debugPrint('Navigate to Create Rule Page');
+            context.push(widget.createRulePath);
+          },
+          backgroundColor: palette.accent,
+          foregroundColor: palette.textOnAccent,
+          elevation: 6,
+          child: const Icon(Icons.add, size: 26),
+        ),
       ),
       body: _rules.isEmpty
           ? _EmptyState(palette: palette)
           : ReorderableListView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
+              padding: EdgeInsets.fromLTRB(16, 12, 16, listBottomPadding),
               itemCount: _rules.length,
               onReorder: _onReorder,
               proxyDecorator: (child, index, animation) => Material(

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -25,9 +25,9 @@ class LocationsTabPage extends StatelessWidget {
     final textColor =
         isDark ? AppColors.textDarkPrimary : AppColors.textPrimary;
 
-    // Derive role from AuthBloc (source of truth) instead of SessionCubit
-    final userRole = sl<AuthBloc>().state.user?.role.toLowerCase() ?? '';
-    final isBrand = userRole == 'brand_manager' || userRole == 'admin';
+    final authUser = sl<AuthBloc>().state.user;
+    final isBrand =
+        authUser?.isBrandManager == true || authUser?.isSystemAdmin == true;
     // Determine header title and optional subtitle
     final storeName = session.currentStore?.name;
     final isPlayback = session.isPlaybackDevice;
@@ -36,13 +36,17 @@ class LocationsTabPage extends StatelessWidget {
 
     if (isPlayback) {
       title = 'Paired Space';
-      subtitle = null;
+      subtitle = session.currentSpace?.name;
     } else if (isBrand) {
-      title = 'All Locations';
-      subtitle = null;
+      title = 'Brand Spaces';
+      subtitle = session.currentSpace != null
+          ? 'Targeting ${session.currentSpace!.name}'
+          : 'Track spaces across your stores';
     } else {
-      title = 'Locations';
-      subtitle = storeName;
+      title = 'Store Spaces';
+      subtitle = session.currentSpace != null
+          ? '${storeName ?? 'Current store'} · Targeting ${session.currentSpace!.name}'
+          : storeName;
     }
 
     return BlocProvider(
@@ -131,7 +135,10 @@ class LocationsTabPage extends StatelessWidget {
 
             // 2. Brand Manager — accordion with all stores
             if (isBrand && state.brandSpaces != null) {
-              return BrandLocationsView(brandSpaces: state.brandSpaces!);
+              return BrandLocationsView(
+                brandSpaces: state.brandSpaces!,
+                storeNamesById: state.storeNamesById ?? const {},
+              );
             }
 
             // 3. Store Manager — flat list of spaces

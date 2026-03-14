@@ -9,6 +9,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/player/player_bloc.dart';
+import '../../../../core/presentation/shell_layout_metrics.dart';
 import '../../../../core/session/session_cubit.dart';
 import '../../../../core/session/session_state.dart';
 import '../../../../injection_container.dart';
@@ -48,6 +49,13 @@ class _HomeDashboardView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = _Palette.fromBrightness(Theme.of(context).brightness);
+    final hasMiniPlayer =
+        context.select((PlayerBloc bloc) => bloc.state.hasTrack);
+    final bottomSpacing = ShellLayoutMetrics.reservedBottom(
+      context,
+      hasMiniPlayer: hasMiniPlayer,
+      extra: 24,
+    );
 
     return BlocListener<SessionCubit, SessionState>(
       listenWhen: (previous, current) =>
@@ -151,7 +159,7 @@ class _HomeDashboardView extends StatelessWidget {
                 ),
 
                 // Bottom padding
-                const SliverToBoxAdapter(child: SizedBox(height: 100)),
+                SliverToBoxAdapter(child: SizedBox(height: bottomSpacing)),
               ],
             );
           },

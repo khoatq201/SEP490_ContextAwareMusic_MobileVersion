@@ -13,14 +13,18 @@ class LocationSpaceModel extends LocationSpace {
     super.currentPlaylistId,
     super.storeName,
     required super.isOnline,
+    super.currentPlaylistName,
+    super.currentMoodName,
     super.currentTrackName,
+    super.currentTrackArtist,
     required super.volume,
   });
 
   factory LocationSpaceModel.fromJson(Map<String, dynamic> json) {
     // Parse the Enums
     final typeEnum = SpaceTypeEnum.fromValue(json['type'] as int?);
-    final statusEnum = EntityStatusEnum.fromJson(json['status'] ?? json['statusStr']);
+    final statusEnum =
+        EntityStatusEnum.fromJson(json['status'] ?? json['statusStr']);
 
     return LocationSpaceModel(
       id: json['id'] as String,
@@ -30,11 +34,14 @@ class LocationSpaceModel extends LocationSpace {
       description: json['description'] as String?,
       status: statusEnum,
       currentPlaylistId: json['currentPlaylistId'] as String?,
-      
+      currentPlaylistName: json['currentPlaylistName'] as String?,
+      currentMoodName: json['currentMoodName'] as String?,
+
       // Keep support for UI mocks if they are passed through
       storeName: json['storeName'] as String?,
       isOnline: json['isOnline'] as bool? ?? statusEnum.isActive,
       currentTrackName: json['currentTrackName'] as String?,
+      currentTrackArtist: json['currentTrackArtist'] as String?,
       volume: (json['volume'] as num?)?.toDouble() ?? 50.0,
     );
   }
@@ -48,11 +55,13 @@ class LocationSpaceModel extends LocationSpace {
       'description': description,
       'status': status.value,
       'currentPlaylistId': currentPlaylistId,
+      'currentPlaylistName': currentPlaylistName,
+      'currentMoodName': currentMoodName,
       'storeName': storeName,
       'isOnline': isOnline,
       'currentTrackName': currentTrackName,
+      'currentTrackArtist': currentTrackArtist,
       'volume': volume,
     };
   }
 }
-

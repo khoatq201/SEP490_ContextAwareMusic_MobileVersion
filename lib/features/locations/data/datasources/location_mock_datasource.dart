@@ -18,7 +18,10 @@ class LocationMockDataSource implements LocationRemoteDataSource {
         description: 'Main dining area',
         storeName: 'Highlands Coffee',
         isOnline: true,
+        currentPlaylistName: 'Morning Roast',
+        currentMoodName: 'Energetic',
         currentTrackName: 'Lofi Chill Beat',
+        currentTrackArtist: 'Cafe Collective',
         volume: 65,
       ),
       const LocationSpaceModel(
@@ -43,7 +46,10 @@ class LocationMockDataSource implements LocationRemoteDataSource {
         description: 'Private booking room',
         storeName: 'The Coffee House',
         isOnline: true,
+        currentPlaylistName: 'Focus Flow',
+        currentMoodName: 'Focus',
         currentTrackName: 'Acoustic Guitar',
+        currentTrackArtist: 'Studio Strings',
         volume: 40,
       ),
     ],
@@ -57,7 +63,10 @@ class LocationMockDataSource implements LocationRemoteDataSource {
         description: 'Waiting area',
         storeName: 'Airport Store',
         isOnline: true,
+        currentPlaylistName: 'Sky Lounge',
+        currentMoodName: 'Chill',
         currentTrackName: 'Jazz Lounge',
+        currentTrackArtist: 'Blue Evening Trio',
         volume: 55,
       ),
       const LocationSpaceModel(
@@ -89,8 +98,8 @@ class LocationMockDataSource implements LocationRemoteDataSource {
   }
 
   @override
-  Future<PaginationResult<LocationSpaceModel>> getSpacesForStore(
-      String storeId, {int page = 1, int pageSize = 10}) async {
+  Future<PaginationResult<LocationSpaceModel>> getSpacesForStore(String storeId,
+      {int page = 1, int pageSize = 10}) async {
     await Future.delayed(const Duration(milliseconds: 800));
     final items = _mockData[storeId] ?? [];
     return PaginationResult<LocationSpaceModel>(
@@ -106,7 +115,9 @@ class LocationMockDataSource implements LocationRemoteDataSource {
 
   @override
   Future<Map<String, PaginationResult<LocationSpaceModel>>> getSpacesForBrand(
-      List<String> storeIds, {int page = 1, int pageSize = 10}) async {
+      List<String> storeIds,
+      {int page = 1,
+      int pageSize = 10}) async {
     await Future.delayed(const Duration(seconds: 1));
     final result = <String, PaginationResult<LocationSpaceModel>>{};
     for (final storeId in storeIds) {
@@ -126,4 +137,3 @@ class LocationMockDataSource implements LocationRemoteDataSource {
     return result;
   }
 }
-

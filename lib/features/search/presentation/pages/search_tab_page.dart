@@ -7,6 +7,8 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/constants/app_typography.dart';
+import '../../../../core/player/player_bloc.dart';
+import '../../../../core/presentation/shell_layout_metrics.dart';
 import '../../../../core/session/session_cubit.dart';
 import '../../../../core/widgets/song_list_tile.dart';
 import '../../../../injection_container.dart';
@@ -65,6 +67,13 @@ class _SearchViewState extends State<_SearchView> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final hasMiniPlayer =
+        context.select((PlayerBloc bloc) => bloc.state.hasTrack);
+    final bottomSpacing = ShellLayoutMetrics.reservedBottom(
+      context,
+      hasMiniPlayer: hasMiniPlayer,
+      extra: AppDimensions.spacingLg,
+    );
     final bgColor =
         isDark ? AppColors.backgroundDarkPrimary : AppColors.backgroundPrimary;
 
@@ -124,8 +133,7 @@ class _SearchViewState extends State<_SearchView> {
               },
             ),
 
-            const SliverToBoxAdapter(
-                child: SizedBox(height: AppDimensions.spacingXxl + 80)),
+            SliverToBoxAdapter(child: SizedBox(height: bottomSpacing)),
           ],
         ),
       ),

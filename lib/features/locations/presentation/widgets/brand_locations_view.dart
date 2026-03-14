@@ -1,33 +1,52 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/models/pagination_result.dart';
+import '../../../../core/player/player_bloc.dart';
+import '../../../../core/presentation/shell_layout_metrics.dart';
+import '../../../../core/session/session_cubit.dart';
 import '../../domain/entities/location_space.dart';
 import 'space_management_tile.dart';
 
-/// Accordion-style view showing multiple stores, each expandable to reveal
-/// its child spaces as [SpaceManagementTile] cards.
-class BrandLocationsView extends StatelessWidget {
+class BrandLocationsView extends StatefulWidget {
   final Map<String, PaginationResult<LocationSpace>> brandSpaces;
+  final Map<String, String> storeNamesById;
 
-  const BrandLocationsView({super.key, required this.brandSpaces});
+  const BrandLocationsView({
+    super.key,
+    required this.brandSpaces,
+    required this.storeNamesById,
+  });
+
+  @override
+  State<BrandLocationsView> createState() => _BrandLocationsViewState();
+}
+
+class _BrandLocationsViewState extends State<BrandLocationsView> {
+  String? _selectedStoreId;
 
   @override
   Widget build(BuildContext context) {
-    if (brandSpaces.isEmpty) {
+    if (widget.brandSpaces.isEmpty) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.business_outlined,
-                size: 48, color: AppColors.textTertiary),
+            const Icon(
+              Icons.business_outlined,
+              size: 48,
+              color: AppColors.textTertiary,
+            ),
             const SizedBox(height: 12),
             Text(
               'No locations found.',
               style: GoogleFonts.inter(
-                  color: AppColors.textTertiary, fontSize: 14),
+                color: AppColors.textTertiary,
+                fontSize: 14,
+              ),
             ),
           ],
         ),
@@ -35,78 +54,227 @@ class BrandLocationsView extends StatelessWidget {
     }
 
     final palette = _AccordionPalette.of(context);
-    final storeIds = brandSpaces.keys.toList();
+    final session = context.watch<SessionCubit>().state;
+    final hasMiniPlayer =
+        context.select((PlayerBloc bloc) => bloc.state.hasTrack);
+    final bottomPadding = ShellLayoutMetrics.reservedBottom(
+      context,
+      hasMiniPlayer: hasMiniPlayer,
+      extra: 24,
+    );
+    final currentStoreId = session.currentStore?.id;
+    final currentSpaceName = session.currentSpace?.name;
+    final storeIds = widget.brandSpaces.keys.toList()
+      ..sort((a, b) {
+        if (a == currentStoreId) return -1;
+        if (b == currentStoreId) return 1;
+        final aName = widget.storeNamesById[a] ?? a;
+        final bName = widget.storeNamesById[b] ?? b;
+        return aName.compareTo(bName);
+      });
 
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
-      itemCount: storeIds.length,
-      itemBuilder: (context, index) {
-        final storeId = storeIds[index];
-        final spacesPagination = brandSpaces[storeId]!;
-        final spaces = spacesPagination.items;
-        final storeName =
-            spaces.isNotEmpty ? spaces.first.storeName ?? 'Unknown Store' : 'Unknown Store';
+    final selectedStoreId = storeIds.contains(_selectedStoreId)
+        ? _selectedStoreId!
+        : (currentStoreId != null && storeIds.contains(currentStoreId)
+            ? currentStoreId
+            : storeIds.first);
+    final spacesPagination = widget.brandSpaces[selectedStoreId]!;
+    final spaces = spacesPagination.items;
+    final storeName = widget.storeNamesById[selectedStoreId] ??
+        (spaces.isNotEmpty ? spaces.first.storeName : null) ??
+        'Store';
+    final isTargetStore = currentStoreId == selectedStoreId;
+    final activeSpaces = spaces.where((space) => space.hasLivePlayback).length;
 
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          decoration: BoxDecoration(
-            color: palette.card,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: palette.border, width: 1),
-          ),
-          child: Theme(
-            // Override the default expansion tile divider
-            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-            child: ExpansionTile(
-              initiallyExpanded: index == 0,
-              tilePadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
-              collapsedShape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
-              leading: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: palette.accent.withAlpha(25),
-                  borderRadius: BorderRadius.circular(12),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: palette.card,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: palette.border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Viewing store',
+                  style: GoogleFonts.inter(
+                    color: palette.textMuted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.4,
+                  ),
                 ),
-                child: Icon(LucideIcons.store, color: palette.accent, size: 20),
-              ),
-              title: Text(
-                storeName,
-                style: GoogleFonts.poppins(
-                  color: palette.textPrimary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  decoration: BoxDecoration(
+                    color: palette.accent.withAlpha(18),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: palette.border),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: selectedStoreId,
+                      isExpanded: true,
+                      dropdownColor: palette.card,
+                      icon: Icon(
+                        LucideIcons.chevronsUpDown,
+                        color: palette.textMuted,
+                        size: 18,
+                      ),
+                      style: GoogleFonts.poppins(
+                        color: palette.textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      items: storeIds
+                          .map(
+                            (storeId) => DropdownMenuItem<String>(
+                              value: storeId,
+                              child: Text(
+                                widget.storeNamesById[storeId] ?? 'Store',
+                              ),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setState(() => _selectedStoreId = value);
+                      },
+                    ),
+                  ),
                 ),
-              ),
-              subtitle: Text(
-                '${spaces.length} space${spaces.length > 1 || spaces.isEmpty ? 's' : ''}',
-                style: GoogleFonts.inter(
-                  color: palette.textMuted,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _SummaryChip(
+                      icon: LucideIcons.store,
+                      label:
+                          '${spaces.length} space${spaces.length == 1 ? '' : 's'}',
+                      palette: palette,
+                    ),
+                    _SummaryChip(
+                      icon: LucideIcons.radio,
+                      label: '$activeSpaces active',
+                      palette: palette,
+                    ),
+                    if (isTargetStore)
+                      _SummaryChip(
+                        icon: LucideIcons.crosshair,
+                        label: currentSpaceName != null
+                            ? 'Targeting $currentSpaceName'
+                            : 'Target store',
+                        palette: palette,
+                        highlighted: true,
+                      ),
+                  ],
                 ),
-              ),
-              trailing: Icon(LucideIcons.chevronDown,
-                  color: palette.textMuted, size: 18),
-              children: spaces
-                  .map((space) => SpaceManagementTile(space: space))
-                  .toList(),
+              ],
             ),
           ),
-        );
-      },
+        ),
+        Expanded(
+          child: spaces.isEmpty
+              ? ListView(
+                  padding: EdgeInsets.fromLTRB(16, 0, 16, bottomPadding),
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: palette.card,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: palette.border),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(
+                            LucideIcons.mapPin,
+                            size: 42,
+                            color: palette.textMuted,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'No spaces found for $storeName.',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.inter(
+                              color: palette.textMuted,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                )
+              : ListView.builder(
+                  padding: EdgeInsets.fromLTRB(16, 0, 16, bottomPadding),
+                  itemCount: spaces.length,
+                  itemBuilder: (context, index) {
+                    return SpaceManagementTile(
+                      space: spaces[index],
+                      showStoreName: false,
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Palette
-// ─────────────────────────────────────────────────────────────────────────────
+class _SummaryChip extends StatelessWidget {
+  const _SummaryChip({
+    required this.icon,
+    required this.label,
+    required this.palette,
+    this.highlighted = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final _AccordionPalette palette;
+  final bool highlighted;
+
+  @override
+  Widget build(BuildContext context) {
+    final backgroundColor = highlighted
+        ? palette.accent.withAlpha(24)
+        : palette.accent.withAlpha(14);
+    final foregroundColor = highlighted ? palette.accent : palette.textMuted;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: foregroundColor),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              color: foregroundColor,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _AccordionPalette {
   final Color card;
   final Color border;

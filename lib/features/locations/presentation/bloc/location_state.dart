@@ -7,11 +7,13 @@ enum LocationStatus { initial, loading, success, failure }
 class LocationState extends Equatable {
   final LocationStatus status;
   final String? errorMessage;
-  
+
   // Depending on role, one of these will be populated
   final LocationSpace? pairedSpace; // For Playback Device
   final PaginationResult<LocationSpace>? storeSpaces; // For Store Manager
-  final Map<String, PaginationResult<LocationSpace>>? brandSpaces; // For Brand Manager
+  final Map<String, PaginationResult<LocationSpace>>?
+      brandSpaces; // For Brand Manager
+  final Map<String, String>? storeNamesById;
 
   const LocationState({
     this.status = LocationStatus.initial,
@@ -19,6 +21,7 @@ class LocationState extends Equatable {
     this.pairedSpace,
     this.storeSpaces,
     this.brandSpaces,
+    this.storeNamesById,
   });
 
   LocationState copyWith({
@@ -27,6 +30,7 @@ class LocationState extends Equatable {
     LocationSpace? pairedSpace,
     PaginationResult<LocationSpace>? storeSpaces,
     Map<String, PaginationResult<LocationSpace>>? brandSpaces,
+    Map<String, String>? storeNamesById,
   }) {
     return LocationState(
       status: status ?? this.status,
@@ -34,6 +38,7 @@ class LocationState extends Equatable {
       pairedSpace: pairedSpace ?? this.pairedSpace,
       storeSpaces: storeSpaces ?? this.storeSpaces,
       brandSpaces: brandSpaces ?? this.brandSpaces,
+      storeNamesById: storeNamesById ?? this.storeNamesById,
     );
   }
 
@@ -44,6 +49,6 @@ class LocationState extends Equatable {
         pairedSpace,
         storeSpaces,
         brandSpaces,
+        storeNamesById,
       ];
 }
-
