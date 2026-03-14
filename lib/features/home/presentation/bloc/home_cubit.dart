@@ -96,7 +96,7 @@ class HomeCubit extends Cubit<HomeState> {
         emit(state.copyWith(
           activeSpaceId: spaceId,
           isManualOverride: pbState.isManualOverride,
-          isManualSelectionOpen: pbState.isManualOverride,
+          isManualSelectionOpen: false,
           currentMoodName: pbState.moodName,
           currentPlaylistName: pbState.currentPlaylistName,
           isStreaming: pbState.isStreaming,
@@ -108,22 +108,32 @@ class HomeCubit extends Cubit<HomeState> {
     );
   }
 
-  Future<void> toggleAutoMode() async {
+  void openManualSelection() {
+    final spaceId = state.activeSpaceId;
+    if (spaceId == null || state.isApplyingOverride) return;
+    emit(state.copyWith(
+      isManualSelectionOpen: true,
+      clearModeMessage: true,
+    ));
+  }
+
+  void closeManualSelection() {
+    if (state.isApplyingOverride || !state.isManualSelectionOpen) return;
+    emit(state.copyWith(
+      isManualSelectionOpen: false,
+      clearModeMessage: true,
+    ));
+  }
+
+  Future<void> selectAutoMode() async {
     final spaceId = state.activeSpaceId;
     if (spaceId == null || state.isApplyingOverride) return;
 
     if (state.autoModeEnabled) {
-      // Auto -> Manual: only open mood selector, no API call yet.
-      emit(state.copyWith(
-        isManualSelectionOpen: true,
-        clearModeMessage: true,
-      ));
       return;
     }
 
-    // Manual -> Auto
     if (!state.isManualOverride) {
-      // Manual selector opened but no override applied yet.
       emit(state.copyWith(
         isManualSelectionOpen: false,
         isPendingTranscode: false,
@@ -178,7 +188,7 @@ class HomeCubit extends Cubit<HomeState> {
         emit(state.copyWith(
           isApplyingOverride: false,
           isManualOverride: true,
-          isManualSelectionOpen: true,
+          isManualSelectionOpen: false,
           currentMoodName: response.moodName,
           currentPlaylistName: response.playlistName,
           isStreaming: response.isStreamReady,

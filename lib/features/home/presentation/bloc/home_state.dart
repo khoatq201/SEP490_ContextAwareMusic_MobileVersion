@@ -61,7 +61,7 @@ class HomeState extends Equatable {
 
   bool get isManualMode => isManualOverride || isManualSelectionOpen;
   bool get autoModeEnabled => !isManualMode;
-  bool get showMoodPicker => isManualMode;
+  bool get showMoodPicker => isManualSelectionOpen;
 
   HomeState copyWith({
     HomeStatus? status,

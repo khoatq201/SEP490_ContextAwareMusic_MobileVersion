@@ -113,14 +113,20 @@ class _HomeDashboardView extends StatelessWidget {
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                     child: _MasterControlCard(
                       autoModeEnabled: state.autoModeEnabled,
+                      manualModeActive: state.isManualMode,
+                      manualSelectionOpen: state.isManualSelectionOpen,
                       hasSpaceSelected: state.activeSpaceId != null,
                       isApplying: state.isApplyingOverride,
                       isPendingTranscode: state.isPendingTranscode,
                       currentPlaylistName: state.currentPlaylistName,
                       modeMessage: state.modeMessage,
                       palette: palette,
-                      onToggle: () =>
-                          context.read<HomeCubit>().toggleAutoMode(),
+                      onSelectAuto: () =>
+                          context.read<HomeCubit>().selectAutoMode(),
+                      onSelectManual: () =>
+                          context.read<HomeCubit>().openManualSelection(),
+                      onCloseManualPicker: () =>
+                          context.read<HomeCubit>().closeManualSelection(),
                     ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.08),
                   ),
                 ),
@@ -134,6 +140,8 @@ class _HomeDashboardView extends StatelessWidget {
                         currentMoodName: state.currentMoodName,
                         isLoading: state.isApplyingOverride,
                         palette: palette,
+                        onClose: () =>
+                            context.read<HomeCubit>().closeManualSelection(),
                         onSelectMood: (mood) {
                           context.read<HomeCubit>().applyMoodOverride(mood.id);
                         },
@@ -574,25 +582,47 @@ class _CurrentMoodChip extends StatelessWidget {
 class _MasterControlCard extends StatelessWidget {
   const _MasterControlCard({
     required this.autoModeEnabled,
+    required this.manualModeActive,
+    required this.manualSelectionOpen,
     required this.hasSpaceSelected,
     required this.isApplying,
     required this.isPendingTranscode,
     required this.palette,
-    required this.onToggle,
+    required this.onSelectAuto,
+    required this.onSelectManual,
+    required this.onCloseManualPicker,
     this.modeMessage,
     this.currentPlaylistName,
   });
   final bool autoModeEnabled;
+  final bool manualModeActive;
+  final bool manualSelectionOpen;
   final bool hasSpaceSelected;
   final bool isApplying;
   final bool isPendingTranscode;
   final _Palette palette;
-  final VoidCallback onToggle;
+  final VoidCallback onSelectAuto;
+  final VoidCallback onSelectManual;
+  final VoidCallback onCloseManualPicker;
   final String? modeMessage;
   final String? currentPlaylistName;
 
   @override
   Widget build(BuildContext context) {
+    final modeTitle = !hasSpaceSelected
+        ? 'No space selected'
+        : autoModeEnabled
+            ? 'AI Auto is active'
+            : manualSelectionOpen
+                ? 'Choose a manual mood'
+                : 'Manual override is active';
+    final modeDescription = !hasSpaceSelected
+        ? 'Pick a space before changing playback mode.'
+        : autoModeEnabled
+            ? 'AI analyzes context and picks mood or playlist for this space.'
+            : manualSelectionOpen
+                ? 'Select a mood below to replace AI decisions for this space.'
+                : 'A playlist, track, or mood was manually chosen. AI stays paused until you switch back.';
     final gradientColors = palette.isDark
         ? [
             palette.accent.withOpacity(0.80),
@@ -629,6 +659,7 @@ class _MasterControlCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
                       padding: const EdgeInsets.all(12),
@@ -639,7 +670,9 @@ class _MasterControlCard extends StatelessWidget {
                       child: Icon(
                         autoModeEnabled
                             ? LucideIcons.cpu
-                            : LucideIcons.pauseCircle,
+                            : manualSelectionOpen
+                                ? LucideIcons.sparkles
+                                : Icons.tune_rounded,
                         color: Colors.white,
                         size: 28,
                       ),
@@ -650,7 +683,7 @@ class _MasterControlCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            autoModeEnabled ? 'Auto Mode' : 'Manual Mode',
+                            modeTitle,
                             style: GoogleFonts.poppins(
                               color: Colors.white,
                               fontSize: 17,
@@ -659,11 +692,7 @@ class _MasterControlCard extends StatelessWidget {
                           ),
                           const SizedBox(height: 3),
                           Text(
-                            hasSpaceSelected
-                                ? (autoModeEnabled
-                                    ? 'System is auto-adjusting music'
-                                    : 'Select mood to override playback')
-                                : 'Select a space to control playback',
+                            modeDescription,
                             style: GoogleFonts.inter(
                               color: Colors.white.withOpacity(0.80),
                               fontSize: 12,
@@ -696,48 +725,99 @@ class _MasterControlCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    GestureDetector(
-                      onTap: hasSpaceSelected && !isApplying ? onToggle : null,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 250),
-                        width: 52,
-                        height: 30,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          color: autoModeEnabled
-                              ? Colors.white.withOpacity(0.90)
-                              : Colors.white.withOpacity(0.25),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.40),
-                          ),
-                        ),
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            AnimatedAlign(
-                              duration: const Duration(milliseconds: 250),
-                              alignment: autoModeEnabled
-                                  ? Alignment.centerRight
-                                  : Alignment.centerLeft,
-                              child: Container(
-                                margin:
-                                    const EdgeInsets.symmetric(horizontal: 3),
-                                width: 22,
-                                height: 22,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: autoModeEnabled
-                                      ? palette.accent
-                                      : Colors.white.withOpacity(0.60),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _ModeActionButton(
+                        label: 'AI Auto',
+                        icon: LucideIcons.cpu,
+                        selected: autoModeEnabled,
+                        enabled: hasSpaceSelected && !isApplying,
+                        onTap: onSelectAuto,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _ModeActionButton(
+                        label: 'Manual',
+                        icon: Icons.tune_rounded,
+                        selected: manualModeActive,
+                        enabled: hasSpaceSelected && !isApplying,
+                        onTap: onSelectManual,
                       ),
                     ),
                   ],
                 ),
+                if (manualModeActive && !manualSelectionOpen) ...[
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: hasSpaceSelected && !isApplying
+                          ? onSelectManual
+                          : null,
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.zero,
+                        minimumSize: const Size(0, 0),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      icon: const Icon(Icons.tune_rounded, size: 16),
+                      label: Text(
+                        'Change mood',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+                if (manualSelectionOpen) ...[
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline_rounded,
+                        color: Colors.white.withOpacity(0.88),
+                        size: 14,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Mood options below only open because you explicitly entered manual setup here.',
+                          style: GoogleFonts.inter(
+                            color: Colors.white.withOpacity(0.90),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: isApplying ? null : onCloseManualPicker,
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size(0, 0),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                        ),
+                        child: Text(
+                          'Hide',
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
                 if (isApplying ||
                     isPendingTranscode ||
                     modeMessage != null) ...[
@@ -789,12 +869,70 @@ class _MasterControlCard extends StatelessWidget {
   }
 }
 
+class _ModeActionButton extends StatelessWidget {
+  const _ModeActionButton({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: enabled ? onTap : null,
+        borderRadius: BorderRadius.circular(16),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            color: selected
+                ? Colors.white.withOpacity(0.22)
+                : Colors.white.withOpacity(0.10),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: selected
+                  ? Colors.white.withOpacity(0.78)
+                  : Colors.white.withOpacity(0.24),
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: Colors.white, size: 16),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: GoogleFonts.inter(
+                  color: Colors.white.withOpacity(enabled ? 0.96 : 0.55),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _MoodPickerCard extends StatelessWidget {
   const _MoodPickerCard({
     required this.moods,
     required this.currentMoodName,
     required this.isLoading,
     required this.palette,
+    required this.onClose,
     required this.onSelectMood,
   });
 
@@ -802,6 +940,7 @@ class _MoodPickerCard extends StatelessWidget {
   final String? currentMoodName;
   final bool isLoading;
   final _Palette palette;
+  final VoidCallback onClose;
   final ValueChanged<Mood> onSelectMood;
 
   @override
@@ -817,17 +956,42 @@ class _MoodPickerCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Select mood override',
-            style: GoogleFonts.poppins(
-              color: palette.textPrimary,
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Select mood override',
+                  style: GoogleFonts.poppins(
+                    color: palette.textPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: isLoading ? null : onClose,
+                style: TextButton.styleFrom(
+                  foregroundColor: palette.textMuted,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  minimumSize: const Size(0, 0),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  'Close',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 4),
           Text(
-            'Choose a mood to override auto playback for this space.',
+            'Choose a mood only when you want to take control away from AI for this space.',
             style: GoogleFonts.inter(
               color: palette.textMuted,
               fontSize: 12,
