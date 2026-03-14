@@ -482,21 +482,6 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
   // ── Queue Bottom Sheet ─────────────────────────────────────────────────────
   void _showQueueSheet(
       BuildContext ctx, ps.PlayerState state, _NPPalette palette) {
-    final queue = state.queue;
-    final resolvedCurrentIndex =
-        state.currentIndex >= 0 && state.currentIndex < queue.length
-            ? state.currentIndex
-            : state.currentTrack == null
-                ? -1
-                : queue.indexWhere((item) => item.id == state.currentTrack!.id);
-    final currentTrack = resolvedCurrentIndex >= 0
-        ? queue[resolvedCurrentIndex]
-        : state.currentTrack;
-    final upNext =
-        resolvedCurrentIndex >= 0 && resolvedCurrentIndex + 1 < queue.length
-            ? queue.sublist(resolvedCurrentIndex + 1)
-            : const <Track>[];
-
     showModalBottomSheet(
       context: ctx,
       useRootNavigator: true,
@@ -510,111 +495,30 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
         initialChildSize: 0.6,
         maxChildSize: 0.85,
         minChildSize: 0.4,
-        builder: (_, controller) => SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 8),
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: palette.border,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Queue',
-                        style: GoogleFonts.poppins(
-                          color: palette.textPrimary,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                        )),
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: Text('Close',
-                          style: GoogleFonts.inter(
-                            color: palette.textMuted,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          )),
-                    ),
-                  ],
-                ),
-              ),
-              // Current track
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: _QueueTrackTile(
-                  title: currentTrack?.title ?? 'No track',
-                  artist: currentTrack?.artist ?? '',
-                  artUrl: currentTrack?.albumArt,
-                  isPlaying: true,
-                  palette: palette,
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                child: Text('Up next',
-                    style: GoogleFonts.poppins(
-                      color: palette.textPrimary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    )),
-              ),
-              Expanded(
-                child: upNext.isEmpty
-                    ? Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 32),
-                          child: Text(
-                            state.queue.isEmpty
-                                ? 'No queue is available for this track yet.'
-                                : 'You have reached the end of the current queue.',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.inter(
-                              color: palette.textMuted,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      )
-                    : ListView.builder(
-                        controller: controller,
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        itemCount: upNext.length,
-                        itemBuilder: (_, i) {
-                          final queueIndex = resolvedCurrentIndex + i + 1;
-                          final queuedTrack = upNext[i];
-                          return _QueueTrackTile(
-                            title: queuedTrack.title,
-                            artist: queuedTrack.artist,
-                            artUrl: queuedTrack.albumArt,
-                            isPlaying: false,
-                            palette: palette,
-                            onTap: () => _handleQueueTrackTap(
-                              ctx,
-                              state,
-                              queuedTrack,
-                              queueIndex,
-                            ),
-                          );
-                        },
-                      ),
-              ),
-            ],
-          ),
+        builder: (_, controller) => _QueueSheet(
+          palette: palette,
+          controller: controller,
         ),
       ),
     );
   }
+}
+
+class _QueueSheet extends StatefulWidget {
+  const _QueueSheet({
+    required this.palette,
+    required this.controller,
+  });
+
+  final _NPPalette palette;
+  final ScrollController controller;
+
+  @override
+  State<_QueueSheet> createState() => _QueueSheetState();
+}
+
+class _QueueSheetState extends State<_QueueSheet> {
+  String? _pendingTrackId;
 
   void _handleQueueTrackTap(
     BuildContext context,
@@ -622,7 +526,9 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
     Track track,
     int queueIndex,
   ) {
-    Navigator.pop(context);
+    if (_pendingTrackId != null) return;
+
+    setState(() => _pendingTrackId = track.id);
 
     final camsBloc = context.read<CamsPlaybackBloc>();
     if (camsBloc.state.isStreaming &&
@@ -636,7 +542,10 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
       return;
     }
 
-    if (state.queue.isEmpty) return;
+    if (state.queue.isEmpty) {
+      setState(() => _pendingTrackId = null);
+      return;
+    }
 
     context.read<PlayerBloc>().add(PlayerPlaylistStarted(
           tracks: state.queue,
@@ -644,6 +553,169 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
           playlistName: state.playlistName,
           playlistId: state.playlistId,
         ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<PlayerBloc, ps.PlayerState>(
+          listenWhen: (previous, current) =>
+              previous.currentTrack?.id != current.currentTrack?.id ||
+              previous.currentIndex != current.currentIndex,
+          listener: (context, state) {
+            final pendingTrackId = _pendingTrackId;
+            if (pendingTrackId == null) return;
+            if (state.currentTrack?.id != pendingTrackId) return;
+            if (!mounted) return;
+            Navigator.of(context).pop();
+          },
+        ),
+        BlocListener<CamsPlaybackBloc, CamsPlaybackState>(
+          listenWhen: (previous, current) =>
+              previous.errorMessage != current.errorMessage,
+          listener: (context, state) {
+            if (_pendingTrackId == null) return;
+            if (state.errorMessage == null || state.errorMessage!.isEmpty) {
+              return;
+            }
+            setState(() => _pendingTrackId = null);
+          },
+        ),
+      ],
+      child: BlocBuilder<PlayerBloc, ps.PlayerState>(
+        builder: (context, state) {
+          final queue = state.queue;
+          final resolvedCurrentIndex =
+              state.currentIndex >= 0 && state.currentIndex < queue.length
+                  ? state.currentIndex
+                  : state.currentTrack == null
+                      ? -1
+                      : queue.indexWhere(
+                          (item) => item.id == state.currentTrack!.id,
+                        );
+          final currentTrack = resolvedCurrentIndex >= 0
+              ? queue[resolvedCurrentIndex]
+              : state.currentTrack;
+          final upNext = resolvedCurrentIndex >= 0 &&
+                  resolvedCurrentIndex + 1 < queue.length
+              ? queue.sublist(resolvedCurrentIndex + 1)
+              : const <Track>[];
+
+          return SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 8),
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: widget.palette.border,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Queue',
+                          style: GoogleFonts.poppins(
+                            color: widget.palette.textPrimary,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                          )),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text('Close',
+                            style: GoogleFonts.inter(
+                              color: widget.palette.textMuted,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            )),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                  child: Text('Now playing',
+                      style: GoogleFonts.inter(
+                        color: widget.palette.textMuted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      )),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: _QueueTrackTile(
+                    title: currentTrack?.title ?? 'No track',
+                    artist: currentTrack?.artist ?? '',
+                    artUrl: currentTrack?.albumArt,
+                    isPlaying: true,
+                    palette: widget.palette,
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                  child: Text('Up next',
+                      style: GoogleFonts.poppins(
+                        color: widget.palette.textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      )),
+                ),
+                Expanded(
+                  child: upNext.isEmpty
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 32),
+                            child: Text(
+                              state.queue.isEmpty
+                                  ? 'No queue is available for this track yet.'
+                                  : 'You have reached the end of the current queue.',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.inter(
+                                color: widget.palette.textMuted,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        )
+                      : ListView.builder(
+                          controller: widget.controller,
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          itemCount: upNext.length,
+                          itemBuilder: (_, i) {
+                            final queueIndex = resolvedCurrentIndex + i + 1;
+                            final queuedTrack = upNext[i];
+                            return _QueueTrackTile(
+                              title: queuedTrack.title,
+                              artist: queuedTrack.artist,
+                              artUrl: queuedTrack.albumArt,
+                              isPlaying: false,
+                              isPending: _pendingTrackId == queuedTrack.id,
+                              palette: widget.palette,
+                              onTap: () => _handleQueueTrackTap(
+                                context,
+                                state,
+                                queuedTrack,
+                                queueIndex,
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
   }
 }
 
@@ -1045,19 +1117,34 @@ class _QueueTrackTile extends StatelessWidget {
     required this.artist,
     this.artUrl,
     required this.isPlaying,
+    this.isPending = false,
     required this.palette,
     this.onTap,
   });
   final String title, artist;
   final String? artUrl;
   final bool isPlaying;
+  final bool isPending;
   final _NPPalette palette;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final child = Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+    final child = AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: isPlaying
+            ? palette.accent.withValues(alpha: 0.08)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isPlaying
+              ? palette.accent.withValues(alpha: 0.24)
+              : Colors.transparent,
+        ),
+      ),
       child: Row(
         children: [
           ClipRRect(
@@ -1099,6 +1186,21 @@ class _QueueTrackTile extends StatelessWidget {
               ],
             ),
           ),
+          if (isPending)
+            SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: palette.accent,
+              ),
+            )
+          else if (isPlaying)
+            Icon(
+              LucideIcons.volume2,
+              size: 18,
+              color: palette.accent,
+            ),
         ],
       ),
     );
