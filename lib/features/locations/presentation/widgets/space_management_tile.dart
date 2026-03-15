@@ -247,6 +247,7 @@ class SpaceManagementTile extends StatelessWidget {
             isTargeted: isTargeted,
             isPlaybackDevice: session.isPlaybackDevice,
             onSwap: () => _activateTarget(context, openSpace: false),
+            onSchedule: () => context.push(_buildSpaceScheduleLocation(space)),
             onOpen: () => _activateTarget(context, openSpace: true),
           ),
         ],
@@ -467,6 +468,7 @@ class _ActionRow extends StatelessWidget {
     required this.isTargeted,
     required this.isPlaybackDevice,
     required this.onSwap,
+    required this.onSchedule,
     required this.onOpen,
   });
 
@@ -475,6 +477,7 @@ class _ActionRow extends StatelessWidget {
   final bool isTargeted;
   final bool isPlaybackDevice;
   final VoidCallback onSwap;
+  final VoidCallback onSchedule;
   final VoidCallback onOpen;
 
   @override
@@ -496,6 +499,15 @@ class _ActionRow extends StatelessWidget {
             palette: palette,
             enabled: !isPlaybackDevice && !isTargeted,
             onTap: onSwap,
+          ),
+        ),
+        Container(width: 1, height: 52, color: palette.border),
+        Expanded(
+          child: _ActionButton(
+            icon: LucideIcons.calendar,
+            label: 'Schedule',
+            palette: palette,
+            onTap: onSchedule,
           ),
         ),
         Container(width: 1, height: 52, color: palette.border),
@@ -531,6 +543,17 @@ class _ActionRow extends StatelessWidget {
       ],
     );
   }
+}
+
+String _buildSpaceScheduleLocation(LocationSpace space) {
+  return Uri(
+    path: '/space-schedule',
+    queryParameters: {
+      'spaceId': space.id,
+      'storeId': space.storeId,
+      'spaceName': space.name,
+    },
+  ).toString();
 }
 
 class _ActionButton extends StatelessWidget {

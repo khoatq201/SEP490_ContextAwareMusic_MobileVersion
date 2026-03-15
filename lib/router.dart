@@ -39,6 +39,9 @@ import 'features/search/presentation/pages/category_detail_page.dart';
 import 'features/now_playing/presentation/pages/now_playing_tab_page.dart';
 import 'features/library/presentation/pages/library_tab_page.dart';
 import 'features/locations/presentation/pages/locations_tab_page.dart';
+import 'features/space_schedule/presentation/pages/space_schedule_page.dart';
+import 'features/space_schedule/presentation/bloc/space_schedule_bloc.dart';
+import 'features/space_schedule/presentation/bloc/space_schedule_event.dart';
 import 'features/context_rules/presentation/pages/context_rules_page.dart';
 import 'features/context_rules/presentation/pages/create_rule_page.dart';
 import 'core/session/session_cubit.dart';
@@ -364,10 +367,53 @@ class AppRouter {
         parentNavigatorKey: _rootNavigatorKey,
         path: '/now-playing-full',
         name: 'now-playing-full',
-        pageBuilder: (context, state) => MaterialPage(
+        pageBuilder: (context, state) => const MaterialPage(
           fullscreenDialog: true,
-          child: const NowPlayingTabPage(),
+          child: NowPlayingTabPage(),
         ),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/space-schedule',
+        name: 'space-schedule',
+        pageBuilder: (context, state) {
+          final spaceId = state.uri.queryParameters['spaceId'];
+          final storeId = state.uri.queryParameters['storeId'];
+          final spaceName = state.uri.queryParameters['spaceName'];
+
+          if (spaceId == null || storeId == null || spaceName == null) {
+            return MaterialPage(
+              fullscreenDialog: true,
+              child: Scaffold(
+                body: Center(
+                  child: Text(
+                    'Missing schedule context',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+              ),
+            );
+          }
+
+          return MaterialPage(
+            fullscreenDialog: true,
+            child: BlocProvider(
+              create: (_) => sl<SpaceScheduleBloc>()
+                ..add(
+                  SpaceScheduleStarted(
+                    spaceId: spaceId,
+                    storeId: storeId,
+                    spaceName: spaceName,
+                  ),
+                ),
+              child: SpaceSchedulePage(
+                spaceId: spaceId,
+                storeId: storeId,
+                spaceName: spaceName,
+              ),
+            ),
+          );
+        },
       ),
       GoRoute(
         path: '/profile',

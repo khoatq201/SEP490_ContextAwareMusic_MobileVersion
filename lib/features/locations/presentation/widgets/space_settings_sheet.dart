@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
@@ -20,6 +21,7 @@ class SpaceSettingsSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = _SheetPalette.of(context);
+    final router = GoRouter.of(context);
 
     return SafeArea(
       bottom: true,
@@ -94,6 +96,16 @@ class SpaceSettingsSheet extends StatelessWidget {
                   onTap: () => _comingSoon(context, 'Music settings'),
                 ),
                 _NavTile(
+                  icon: LucideIcons.calendar,
+                  iconColor: palette.accent,
+                  label: 'Space schedule',
+                  palette: palette,
+                  onTap: () {
+                    Navigator.pop(context);
+                    router.push(_buildSpaceScheduleLocation(space));
+                  },
+                ),
+                _NavTile(
                   icon: LucideIcons.clock,
                   iconColor: palette.accent,
                   label: 'Recently played songs',
@@ -160,6 +172,17 @@ class SpaceSettingsSheet extends StatelessWidget {
       SnackBar(content: Text('$feature will be available soon.')),
     );
   }
+}
+
+String _buildSpaceScheduleLocation(LocationSpace space) {
+  return Uri(
+    path: '/space-schedule',
+    queryParameters: {
+      'spaceId': space.id,
+      'storeId': space.storeId,
+      'spaceName': space.name,
+    },
+  ).toString();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

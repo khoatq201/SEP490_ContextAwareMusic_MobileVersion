@@ -35,6 +35,12 @@ import 'features/locations/data/repositories/location_repository_impl.dart';
 import 'features/locations/domain/repositories/location_repository.dart';
 import 'features/locations/domain/usecases/location_usecases.dart';
 import 'features/locations/presentation/bloc/location_bloc.dart';
+import 'features/space_schedule/data/datasources/space_schedule_local_datasource.dart';
+import 'features/space_schedule/data/datasources/space_schedule_mock_datasource.dart';
+import 'features/space_schedule/data/repositories/space_schedule_repository_impl.dart';
+import 'features/space_schedule/domain/repositories/space_schedule_repository.dart';
+import 'features/space_schedule/domain/usecases/space_schedule_usecases.dart';
+import 'features/space_schedule/presentation/bloc/space_schedule_bloc.dart';
 
 import 'features/settings/data/datasources/settings_mock_data_source.dart';
 import 'features/settings/data/repositories/settings_repository_impl.dart';
@@ -272,6 +278,41 @@ Future<void> initializeDependencies() async {
       getSpaceState: sl(),
       playlistDataSource: sl(),
       getUserStores: sl(),
+    ),
+  );
+
+  // =============================================
+  // Space Schedule Feature
+  // =============================================
+
+  sl.registerLazySingleton(
+    () => SpaceScheduleMockDataSource(),
+  );
+
+  sl.registerLazySingleton(
+    () => SpaceScheduleLocalDataSource(localStorage: sl()),
+  );
+
+  sl.registerLazySingleton<SpaceScheduleRepository>(
+    () => SpaceScheduleRepositoryImpl(
+      mockDataSource: sl(),
+      localDataSource: sl(),
+    ),
+  );
+
+  sl.registerLazySingleton(() => GetSpaceScheduleBootstrap(sl()));
+  sl.registerLazySingleton(() => ApplyScheduleSource(sl()));
+  sl.registerLazySingleton(() => SaveSpaceSchedule(sl()));
+  sl.registerLazySingleton(() => SaveScheduleToLibrary(sl()));
+  sl.registerLazySingleton(() => DeleteScheduleSlot(sl()));
+
+  sl.registerFactory(
+    () => SpaceScheduleBloc(
+      getSpaceScheduleBootstrap: sl(),
+      applyScheduleSource: sl(),
+      saveSpaceSchedule: sl(),
+      saveScheduleToLibrary: sl(),
+      deleteScheduleSlot: sl(),
     ),
   );
 
