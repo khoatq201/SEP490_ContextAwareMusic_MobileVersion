@@ -5,5 +5,12 @@ import '../../../../core/error/exceptions.dart';
 abstract class DevicePairingRemoteDataSource {
   /// Calls the pairing API endpoint.
   /// Throws a [ServerException] for all error codes.
-  Future<PairingResultModel> pairDevice(String pairCode);
+  Future<PairingResultModel> pairDevice({
+    required String code,
+    String? manufacturer,
+    String? model,
+    String? osVersion,
+    String? appVersion,
+    String? deviceId,
+  });
 }

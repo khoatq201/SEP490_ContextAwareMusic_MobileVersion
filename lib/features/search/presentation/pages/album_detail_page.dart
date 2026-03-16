@@ -9,6 +9,7 @@ import '../../../../core/widgets/play_to_space_button.dart';
 import '../../../../core/widgets/song_list_tile.dart';
 import '../../../../core/player/player_bloc.dart';
 import '../../../../core/player/player_event.dart';
+import '../../../../core/player/local_preview_feedback.dart';
 import '../../../../core/session/session_cubit.dart';
 import '../../../../injection_container.dart';
 import '../../../space_control/domain/entities/track.dart';
@@ -229,13 +230,15 @@ class _AlbumBody extends StatelessWidget {
                   if (!session.isPlaybackDevice) {
                     ScaffoldMessenger.of(ctx).showSnackBar(
                       const SnackBar(
-                        content: Text(
-                          'Manager devices can only control playback from CMS playlists right now.',
-                        ),
+                        content: Text(kManagerPlaylistOnlyMessage),
                       ),
                     );
                     return;
                   }
+                  showLocalPreviewStartedSnackBar(
+                    ctx,
+                    spaceName: session.currentSpace?.name,
+                  );
                   ctx.read<PlayerBloc>().add(PlayerPlaylistStarted(
                         tracks: _tracks,
                         startIndex: i,

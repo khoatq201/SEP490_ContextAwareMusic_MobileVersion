@@ -13,12 +13,14 @@ class OverrideSpace {
     String? playlistId,
     String? moodId,
     String? reason,
+    bool usePlaybackDeviceScope = false,
   }) {
     return repository.overrideSpace(
       spaceId: spaceId,
       playlistId: playlistId,
       moodId: moodId,
       reason: reason,
+      usePlaybackDeviceScope: usePlaybackDeviceScope,
     );
   }
 }

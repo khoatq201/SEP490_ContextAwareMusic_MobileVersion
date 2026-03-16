@@ -159,6 +159,7 @@ class PlayerHlsStarted extends PlayerEvent {
   final String? playlistName;
   final String? playlistId;
   final double seekOffsetSeconds;
+  final bool isPaused;
   final bool playLocally;
 
   const PlayerHlsStarted({
@@ -166,6 +167,7 @@ class PlayerHlsStarted extends PlayerEvent {
     this.playlistName,
     this.playlistId,
     this.seekOffsetSeconds = 0,
+    this.isPaused = false,
     this.playLocally = true,
   });
 
@@ -175,6 +177,7 @@ class PlayerHlsStarted extends PlayerEvent {
         playlistName,
         playlistId,
         seekOffsetSeconds,
+        isPaused,
         playLocally,
       ];
 }

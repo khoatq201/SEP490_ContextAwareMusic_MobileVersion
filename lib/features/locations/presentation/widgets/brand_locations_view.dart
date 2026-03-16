@@ -9,9 +9,12 @@ import '../../../../core/player/player_bloc.dart';
 import '../../../../core/presentation/shell_layout_metrics.dart';
 import '../../../../core/session/session_cubit.dart';
 import '../../domain/entities/location_space.dart';
+import '../bloc/location_bloc.dart';
+import '../bloc/location_event.dart';
+import '../bloc/location_state.dart';
 import 'space_management_tile.dart';
 
-class BrandLocationsView extends StatefulWidget {
+class BrandLocationsView extends StatelessWidget {
   final Map<String, PaginationResult<LocationSpace>> brandSpaces;
   final Map<String, String> storeNamesById;
 
@@ -22,15 +25,8 @@ class BrandLocationsView extends StatefulWidget {
   });
 
   @override
-  State<BrandLocationsView> createState() => _BrandLocationsViewState();
-}
-
-class _BrandLocationsViewState extends State<BrandLocationsView> {
-  String? _selectedStoreId;
-
-  @override
   Widget build(BuildContext context) {
-    if (widget.brandSpaces.isEmpty) {
+    if (brandSpaces.isEmpty) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -62,25 +58,26 @@ class _BrandLocationsViewState extends State<BrandLocationsView> {
       hasMiniPlayer: hasMiniPlayer,
       extra: 24,
     );
+    final locationState = context.watch<LocationBloc>().state;
     final currentStoreId = session.currentStore?.id;
     final currentSpaceName = session.currentSpace?.name;
-    final storeIds = widget.brandSpaces.keys.toList()
+    final storeIds = brandSpaces.keys.toList()
       ..sort((a, b) {
         if (a == currentStoreId) return -1;
         if (b == currentStoreId) return 1;
-        final aName = widget.storeNamesById[a] ?? a;
-        final bName = widget.storeNamesById[b] ?? b;
+        final aName = storeNamesById[a] ?? a;
+        final bName = storeNamesById[b] ?? b;
         return aName.compareTo(bName);
       });
 
-    final selectedStoreId = storeIds.contains(_selectedStoreId)
-        ? _selectedStoreId!
+    final selectedStoreId = storeIds.contains(locationState.selectedStoreId)
+        ? locationState.selectedStoreId!
         : (currentStoreId != null && storeIds.contains(currentStoreId)
             ? currentStoreId
             : storeIds.first);
-    final spacesPagination = widget.brandSpaces[selectedStoreId]!;
+    final spacesPagination = brandSpaces[selectedStoreId]!;
     final spaces = spacesPagination.items;
-    final storeName = widget.storeNamesById[selectedStoreId] ??
+    final storeName = storeNamesById[selectedStoreId] ??
         (spaces.isNotEmpty ? spaces.first.storeName : null) ??
         'Store';
     final isTargetStore = currentStoreId == selectedStoreId;
@@ -137,14 +134,16 @@ class _BrandLocationsViewState extends State<BrandLocationsView> {
                             (storeId) => DropdownMenuItem<String>(
                               value: storeId,
                               child: Text(
-                                widget.storeNamesById[storeId] ?? 'Store',
+                                storeNamesById[storeId] ?? 'Store',
                               ),
                             ),
                           )
                           .toList(),
                       onChanged: (value) {
                         if (value == null) return;
-                        setState(() => _selectedStoreId = value);
+                        context
+                            .read<LocationBloc>()
+                            .add(LocationSelectedStoreChanged(value));
                       },
                     ),
                   ),

@@ -8,11 +8,14 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/player/player_bloc.dart';
 import '../../../../core/presentation/shell_layout_metrics.dart';
 import '../../../../core/session/session_cubit.dart';
+import '../../../../core/services/local_storage_service.dart';
 import '../../../../core/theme/theme_provider.dart';
+import '../../../../injection_container.dart';
 import '../../../auth/domain/entities/user.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
+import '../../../cams/domain/usecases/pairing_usecases.dart';
 import '../bloc/settings_cubit.dart';
 import '../bloc/settings_state.dart';
 
@@ -175,15 +178,20 @@ class SettingsPage extends StatelessWidget {
                   explicitMusicLabel: snapshot.explicitMusicLabel,
                   blockingSongsLabel: snapshot.blockingSongsLabel,
                 ),
-                if (!isPlayback) ...[
-                  const SizedBox(height: 20),
-                  _SectionTitle(title: 'Session', palette: palette),
-                  const SizedBox(height: 10),
-                  _DangerPanel(
-                    palette: palette,
-                    onLogout: () => _confirmLogout(context, palette),
-                  ),
-                ],
+                const SizedBox(height: 20),
+                _SectionTitle(title: 'Session', palette: palette),
+                const SizedBox(height: 10),
+                _DangerPanel(
+                  palette: palette,
+                  title: isPlayback ? 'Unpair device' : 'Log out',
+                  subtitle: isPlayback
+                      ? 'Remove this playback session and return to the pairing screen.'
+                      : 'End this manager session on the current device.',
+                  icon: isPlayback ? LucideIcons.unlink : LucideIcons.logOut,
+                  onTap: () => isPlayback
+                      ? _confirmUnpairPlaybackDevice(context, palette)
+                      : _confirmLogout(context, palette),
+                ),
               ],
             );
           },
@@ -286,6 +294,60 @@ class SettingsPage extends StatelessWidget {
                 context.read<AuthBloc>().add(const LogoutRequested());
               },
               child: const Text('Log out'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _confirmUnpairPlaybackDevice(
+    BuildContext context,
+    _SettingsPalette palette,
+  ) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Unpair this device?'),
+          content: const Text(
+            'This will revoke the current playback-device session and take you back to the pairing screen.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(dialogContext).pop();
+                final session = context.read<SessionCubit>().state;
+                final spaceId = session.currentSpace?.id;
+                if (spaceId == null) {
+                  return;
+                }
+
+                final result = await sl<UnpairPlaybackDevice>()(spaceId);
+                if (!context.mounted) return;
+
+                result.fold(
+                  (failure) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(failure.message),
+                        backgroundColor: palette.dangerForeground,
+                      ),
+                    );
+                  },
+                  (_) async {
+                    await sl<LocalStorageService>().clearDeviceSession();
+                    if (!context.mounted) return;
+                    context.read<SessionCubit>().reset();
+                    context.go('/pair-device');
+                  },
+                );
+              },
+              child: const Text('Unpair'),
             ),
           ],
         );
@@ -937,11 +999,17 @@ class _PolicyMetric extends StatelessWidget {
 class _DangerPanel extends StatelessWidget {
   const _DangerPanel({
     required this.palette,
-    required this.onLogout,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.onTap,
   });
 
   final _SettingsPalette palette;
-  final VoidCallback onLogout;
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -952,7 +1020,7 @@ class _DangerPanel extends StatelessWidget {
         border: Border.all(color: palette.dangerBorder),
       ),
       child: InkWell(
-        onTap: onLogout,
+        onTap: onTap,
         borderRadius: BorderRadius.circular(20),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -966,7 +1034,7 @@ class _DangerPanel extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
-                  LucideIcons.logOut,
+                  icon,
                   color: palette.dangerForeground,
                   size: 18,
                 ),
@@ -977,7 +1045,7 @@ class _DangerPanel extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Log out',
+                      title,
                       style: GoogleFonts.poppins(
                         color: palette.textPrimary,
                         fontSize: 15,
@@ -986,7 +1054,7 @@ class _DangerPanel extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'End this manager session on the current device.',
+                      subtitle,
                       style: GoogleFonts.inter(
                         color: palette.textMuted,
                         fontSize: 12,

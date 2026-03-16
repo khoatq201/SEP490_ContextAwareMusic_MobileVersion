@@ -6,7 +6,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/enums/playback_command_enum.dart';
 import '../../../../core/player/player_bloc.dart';
 import '../../../../core/player/player_event.dart';
 import '../../../../core/session/session_cubit.dart';
@@ -368,7 +367,7 @@ class _MetaChip extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Track tile — tap to skip-to-track in HLS stream
+// Track tile — tap to play this track in the selected playlist.
 // ─────────────────────────────────────────────────────────────────────────────
 class _TrackTile extends StatelessWidget {
   const _TrackTile({
@@ -561,10 +560,10 @@ void _playTrackToCurrentSpace({
     return;
   }
 
-  context.read<CamsPlaybackBloc>().add(CamsSendCommand(
-        command: PlaybackCommandEnum.skipToTrack,
-        seekPositionSeconds: track.seekOffsetSeconds.toDouble(),
+  context.read<CamsPlaybackBloc>().add(CamsPlayPlaylistTrack(
+        playlistId: playlist.id,
         targetTrackId: track.trackId,
+        reason: 'Manual track selection',
       ));
 }
 

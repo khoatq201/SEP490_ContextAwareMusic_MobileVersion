@@ -10,7 +10,8 @@ class ApiConstants {
 
   // Base URLs
   // Android emulator can use 10.0.2.2 (host localhost); real devices should use LAN IP.
-  static const String baseUrl = 'http://192.168.1.6:7001';
+  static const String baseUrl =
+      'http://ec2-47-129-189-32.ap-southeast-1.compute.amazonaws.com';
   static const String mqttBrokerUrl = 'mqtt.cams.example.com';
   static const int mqttPort = 1883;
 
@@ -18,6 +19,8 @@ class ApiConstants {
   static const String login = '/api/auth/login';
   static const String logout = '/api/auth/logout';
   static const String refreshToken = '/api/auth/refresh-token';
+  static const String authPair = '/api/auth/pair';
+  static const String authDeviceRefreshToken = '/api/auth/device/refresh-token';
   static const String profile = '/api/auth/profile';
   static const String changePassword = '/api/auth/change-password';
 
@@ -47,6 +50,14 @@ class ApiConstants {
   static String camsPlayback(String spaceId) =>
       '/api/cams/spaces/$spaceId/playback';
   static String camsState(String spaceId) => '/api/cams/spaces/$spaceId/state';
+  static const String camsCurrentDeviceState = '/api/cams/spaces/state';
+  static String camsPairDevice(String spaceId) =>
+      '/api/cams/spaces/$spaceId/pair-device';
+  static const String camsCurrentPairDevice = '/api/cams/spaces/pair-device';
+  static String camsPairCode(String spaceId) =>
+      '/api/cams/spaces/$spaceId/pair-code';
+  static String camsUnpair(String spaceId) =>
+      '/api/cams/spaces/$spaceId/unpair';
 
   // SignalR
   static String get storeHubUrl => '$baseUrl/hubs/store';

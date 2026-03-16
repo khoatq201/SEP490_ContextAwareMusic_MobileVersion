@@ -4,6 +4,8 @@ import '../../../../core/enums/override_mode_enum.dart';
 class SpacePlaybackStateModel extends SpacePlaybackState {
   const SpacePlaybackStateModel({
     required super.spaceId,
+    super.storeId,
+    super.brandId,
     super.currentPlaylistId,
     super.currentPlaylistName,
     super.hlsUrl,
@@ -12,13 +14,19 @@ class SpacePlaybackStateModel extends SpacePlaybackState {
     super.overrideMode,
     super.startedAtUtc,
     super.expectedEndAtUtc,
+    super.isPaused,
+    super.pausePositionSeconds,
     super.seekOffsetSeconds,
+    super.pendingPlaylistId,
+    super.pendingOverrideReason,
   });
 
   /// Parse from GET /api/cams/spaces/{spaceId}/state → data field.
   factory SpacePlaybackStateModel.fromJson(Map<String, dynamic> json) {
     return SpacePlaybackStateModel(
       spaceId: json['spaceId'] as String,
+      storeId: json['storeId'] as String?,
+      brandId: json['brandId'] as String?,
       currentPlaylistId: json['currentPlaylistId'] as String?,
       currentPlaylistName: json['currentPlaylistName'] as String?,
       hlsUrl: json['hlsUrl'] as String?,
@@ -31,7 +39,11 @@ class SpacePlaybackStateModel extends SpacePlaybackState {
       expectedEndAtUtc: json['expectedEndAtUtc'] != null
           ? DateTime.tryParse(json['expectedEndAtUtc'] as String)
           : null,
+      isPaused: json['isPaused'] as bool? ?? false,
+      pausePositionSeconds: json['pausePositionSeconds'] as int?,
       seekOffsetSeconds: (json['seekOffsetSeconds'] as num?)?.toDouble(),
+      pendingPlaylistId: json['pendingPlaylistId'] as String?,
+      pendingOverrideReason: json['pendingOverrideReason'] as String?,
     );
   }
 

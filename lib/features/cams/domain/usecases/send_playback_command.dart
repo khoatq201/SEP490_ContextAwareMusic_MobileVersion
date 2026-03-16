@@ -13,12 +13,14 @@ class SendPlaybackCommand {
     required PlaybackCommandEnum command,
     double? seekPositionSeconds,
     String? targetTrackId,
+    bool usePlaybackDeviceScope = false,
   }) {
     return repository.sendPlaybackCommand(
       spaceId: spaceId,
       command: command,
       seekPositionSeconds: seekPositionSeconds,
       targetTrackId: targetTrackId,
+      usePlaybackDeviceScope: usePlaybackDeviceScope,
     );
   }
 }

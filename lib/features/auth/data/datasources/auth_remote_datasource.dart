@@ -120,7 +120,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<AuthResponseModel> refreshToken() async {
     // Backend requires the (possibly expired) access token in the header
-    final expiredToken = await localStorage.getAuthToken();
+    final expiredToken = localStorage.getManagerAuthToken();
     debugPrint(
       '[AuthRemoteDataSource] refreshToken auth header present: ${expiredToken != null && expiredToken.isNotEmpty}',
     );

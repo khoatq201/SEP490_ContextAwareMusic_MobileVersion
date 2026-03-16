@@ -2,6 +2,8 @@ import 'package:equatable/equatable.dart';
 
 import '../../../../core/enums/entity_status_enum.dart';
 import '../../../../core/enums/space_type_enum.dart';
+import '../../../cams/domain/entities/pair_code_snapshot.dart';
+import '../../../cams/domain/entities/pair_device_info.dart';
 
 /// Represents a space (and its summary info) displayed in the Location Tab.
 class LocationSpace extends Equatable {
@@ -23,6 +25,8 @@ class LocationSpace extends Equatable {
   final String? currentTrackName;
   final String? currentTrackArtist;
   final double volume;
+  final PairDeviceInfo? pairDeviceInfo;
+  final PairCodeSnapshot? activePairCode;
 
   const LocationSpace({
     required this.id,
@@ -39,11 +43,30 @@ class LocationSpace extends Equatable {
     this.currentTrackName,
     this.currentTrackArtist,
     this.volume = 50.0,
+    this.pairDeviceInfo,
+    this.activePairCode,
   });
 
   bool get hasLivePlayback =>
       (currentPlaylistId != null && currentPlaylistId!.isNotEmpty) ||
       (currentTrackName != null && currentTrackName!.isNotEmpty);
+
+  bool get hasPairedPlaybackDevice => pairDeviceInfo?.isPaired ?? false;
+
+  bool get hasActivePairCode =>
+      !hasPairedPlaybackDevice &&
+      activePairCode != null &&
+      !activePairCode!.isExpired;
+
+  String get pairingStatusLabel {
+    if (hasPairedPlaybackDevice) {
+      return pairDeviceInfo?.managerStatusLabel ?? 'Da paired';
+    }
+    if (hasActivePairCode) {
+      return activePairCode!.displayCode;
+    }
+    return 'No playback device';
+  }
 
   LocationSpace copyWith({
     String? id,
@@ -60,6 +83,15 @@ class LocationSpace extends Equatable {
     String? currentTrackName,
     String? currentTrackArtist,
     double? volume,
+    PairDeviceInfo? pairDeviceInfo,
+    PairCodeSnapshot? activePairCode,
+    bool clearCurrentPlaylistId = false,
+    bool clearCurrentPlaylistName = false,
+    bool clearCurrentMoodName = false,
+    bool clearCurrentTrackName = false,
+    bool clearCurrentTrackArtist = false,
+    bool clearPairDeviceInfo = false,
+    bool clearActivePairCode = false,
   }) {
     return LocationSpace(
       id: id ?? this.id,
@@ -68,14 +100,25 @@ class LocationSpace extends Equatable {
       type: type ?? this.type,
       description: description ?? this.description,
       status: status ?? this.status,
-      currentPlaylistId: currentPlaylistId ?? this.currentPlaylistId,
+      currentPlaylistId:
+          clearCurrentPlaylistId ? null : (currentPlaylistId ?? this.currentPlaylistId),
       storeName: storeName ?? this.storeName,
       isOnline: isOnline ?? this.isOnline,
-      currentPlaylistName: currentPlaylistName ?? this.currentPlaylistName,
-      currentMoodName: currentMoodName ?? this.currentMoodName,
-      currentTrackName: currentTrackName ?? this.currentTrackName,
-      currentTrackArtist: currentTrackArtist ?? this.currentTrackArtist,
+      currentPlaylistName: clearCurrentPlaylistName
+          ? null
+          : (currentPlaylistName ?? this.currentPlaylistName),
+      currentMoodName:
+          clearCurrentMoodName ? null : (currentMoodName ?? this.currentMoodName),
+      currentTrackName:
+          clearCurrentTrackName ? null : (currentTrackName ?? this.currentTrackName),
+      currentTrackArtist: clearCurrentTrackArtist
+          ? null
+          : (currentTrackArtist ?? this.currentTrackArtist),
       volume: volume ?? this.volume,
+      pairDeviceInfo:
+          clearPairDeviceInfo ? null : (pairDeviceInfo ?? this.pairDeviceInfo),
+      activePairCode:
+          clearActivePairCode ? null : (activePairCode ?? this.activePairCode),
     );
   }
 
@@ -95,5 +138,7 @@ class LocationSpace extends Equatable {
         currentTrackName,
         currentTrackArtist,
         volume,
+        pairDeviceInfo,
+        activePairCode,
       ];
 }

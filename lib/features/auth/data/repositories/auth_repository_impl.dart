@@ -40,9 +40,13 @@ class AuthRepositoryImpl implements AuthRepository {
         rememberMe: rememberMe,
       );
 
-      // 2. Save access token & expiry
-      await localStorage.saveAuthToken(authResponse.accessToken);
-      await localStorage.saveAccessTokenExpiry(authResponse.expiresAt);
+      // 2. Switch the app back to manager mode.
+      await localStorage.clearDeviceSession();
+      await localStorage.saveManagerAuthToken(authResponse.accessToken);
+      await localStorage.saveManagerAccessTokenExpiry(authResponse.expiresAt);
+      await localStorage.saveActiveSessionMode(
+        LocalStorageService.sessionModeManager,
+      );
 
       // 3. Fetch full profile
       final profileResponse = await remoteDataSource.getProfile();
@@ -73,9 +77,8 @@ class AuthRepositoryImpl implements AuthRepository {
         }
       }
 
-      // Clear local storage & cookies
-      await localStorage.clearAuthToken();
-      await localStorage.clearUser();
+      // Clear only manager artifacts.
+      await localStorage.clearManagerSession();
       await dioClient.clearCookies();
 
       return const Right(null);
@@ -87,7 +90,7 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, User>> getCurrentUser() async {
     try {
-      final token = await localStorage.getAuthToken();
+      final token = localStorage.getManagerAuthToken();
       if (token == null || token.isEmpty) {
         await localStorage.clearUser();
         return const Left(CacheFailure('No user found'));
@@ -105,6 +108,9 @@ class AuthRepositoryImpl implements AuthRepository {
         final profileResponse = await remoteDataSource.getProfile();
         final user = profileResponse.toUser();
         await localStorage.saveUser(UserModel.fromEntity(user).toJson());
+        await localStorage.saveActiveSessionMode(
+          LocalStorageService.sessionModeManager,
+        );
         return Right(user);
       }
 
@@ -121,7 +127,7 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, bool>> isLoggedIn() async {
     try {
-      final token = await localStorage.getAuthToken();
+      final token = localStorage.getManagerAuthToken();
       return Right(token != null && token.isNotEmpty);
     } catch (e) {
       return const Right(false);
@@ -163,8 +169,11 @@ class AuthRepositoryImpl implements AuthRepository {
       final authResponse = await remoteDataSource.refreshToken();
 
       // 2. Save new access token & expiry
-      await localStorage.saveAuthToken(authResponse.accessToken);
-      await localStorage.saveAccessTokenExpiry(authResponse.expiresAt);
+      await localStorage.saveManagerAuthToken(authResponse.accessToken);
+      await localStorage.saveManagerAccessTokenExpiry(authResponse.expiresAt);
+      await localStorage.saveActiveSessionMode(
+        LocalStorageService.sessionModeManager,
+      );
 
       // 3. Fetch updated profile
       final profileResponse = await remoteDataSource.getProfile();

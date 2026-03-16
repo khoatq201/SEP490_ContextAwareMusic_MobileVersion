@@ -35,6 +35,8 @@ class CamsPlaybackState extends Equatable {
   final double? lastSeekPositionSeconds;
   final String? lastTargetTrackId;
   final int commandSequence;
+  final String? pendingTrackPlaylistId;
+  final String? pendingTrackId;
 
   const CamsPlaybackState({
     this.status = CamsStatus.initial,
@@ -49,6 +51,8 @@ class CamsPlaybackState extends Equatable {
     this.lastSeekPositionSeconds,
     this.lastTargetTrackId,
     this.commandSequence = 0,
+    this.pendingTrackPlaylistId,
+    this.pendingTrackId,
   });
 
   /// Whether any playlist is currently streaming.
@@ -79,9 +83,12 @@ class CamsPlaybackState extends Equatable {
     double? lastSeekPositionSeconds,
     String? lastTargetTrackId,
     int? commandSequence,
+    String? pendingTrackPlaylistId,
+    String? pendingTrackId,
     bool clearError = false,
     bool clearOverrideResponse = false,
     bool clearLastCommand = false,
+    bool clearPendingTrackJump = false,
   }) {
     return CamsPlaybackState(
       status: status ?? this.status,
@@ -104,6 +111,11 @@ class CamsPlaybackState extends Equatable {
           ? null
           : (lastTargetTrackId ?? this.lastTargetTrackId),
       commandSequence: commandSequence ?? this.commandSequence,
+      pendingTrackPlaylistId: clearPendingTrackJump
+          ? null
+          : (pendingTrackPlaylistId ?? this.pendingTrackPlaylistId),
+      pendingTrackId:
+          clearPendingTrackJump ? null : (pendingTrackId ?? this.pendingTrackId),
     );
   }
 
@@ -121,5 +133,7 @@ class CamsPlaybackState extends Equatable {
         lastSeekPositionSeconds,
         lastTargetTrackId,
         commandSequence,
+        pendingTrackPlaylistId,
+        pendingTrackId,
       ];
 }

@@ -97,7 +97,8 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
       hlsUrl: playbackState.hlsUrl!,
       playlistId: playbackState.currentPlaylistId,
       playlistName: playbackState.currentPlaylistName ?? playbackState.moodName,
-      seekOffsetSeconds: playbackState.seekOffsetSeconds ?? 0,
+      seekOffsetSeconds: playbackState.effectiveSeekOffset,
+      isPaused: playbackState.isPaused,
       playLocally: session.isPlaybackDevice,
     ));
   }
@@ -195,6 +196,12 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
                 previousPlayback?.hlsUrl != currentPlayback?.hlsUrl ||
                 previousPlayback?.currentPlaylistId !=
                     currentPlayback?.currentPlaylistId ||
+                previousPlayback?.isPaused != currentPlayback?.isPaused ||
+                previousPlayback?.pausePositionSeconds !=
+                    currentPlayback?.pausePositionSeconds ||
+                previousPlayback?.startedAtUtc != currentPlayback?.startedAtUtc ||
+                previousPlayback?.pendingPlaylistId !=
+                    currentPlayback?.pendingPlaylistId ||
                 previous.status != current.status;
           },
           listener: (context, camsState) => _syncCamsState(camsState),

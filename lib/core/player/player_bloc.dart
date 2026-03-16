@@ -335,7 +335,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       hlsUrl: event.hlsUrl,
       playlistName: event.playlistName,
       playlistId: event.playlistId ?? state.playlistId,
-      isPlaying: true,
+      isPlaying: !event.isPaused,
       currentPosition: event.seekOffsetSeconds.toInt(),
       currentTrack: resolvedTrack,
       currentIndex: resolvedIndex >= 0 ? resolvedIndex : state.currentIndex,
@@ -350,7 +350,11 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
         await _audioService
             .seek(Duration(seconds: event.seekOffsetSeconds.toInt()));
       }
-      _audioService.play();
+      if (event.isPaused) {
+        await _audioService.pause();
+      } else {
+        _audioService.play();
+      }
     } catch (_) {
       // Silently handle audio errors
     }
@@ -405,8 +409,16 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       case PlaybackCommandEnum.skipNext:
       case PlaybackCommandEnum.skipPrevious:
       case PlaybackCommandEnum.skipToTrack:
-        if (absolutePosition != null && event.playLocally) {
-          await _audioService.seek(Duration(seconds: absolutePosition));
+        if (absolutePosition != null &&
+            event.playLocally &&
+            state.isHlsMode &&
+            state.hlsUrl != null &&
+            state.hlsUrl!.isNotEmpty) {
+          try {
+            await _audioService.seek(Duration(seconds: absolutePosition));
+          } catch (_) {
+            // Ignore seeks that arrive before the HLS source is fully loaded.
+          }
         }
         emit(state.copyWith(
           currentPosition: absolutePosition ?? state.currentPosition,

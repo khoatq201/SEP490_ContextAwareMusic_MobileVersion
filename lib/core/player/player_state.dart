@@ -57,6 +57,13 @@ class PlayerState extends Equatable {
   /// Whether we have enough data to render the MiniPlayer.
   bool get hasTrack => currentTrack != null;
 
+  /// True when the player is following CAMS/SignalR state for a remote stream.
+  bool get isSyncedCamsPlayback =>
+      isHlsMode && (hlsUrl?.isNotEmpty ?? false);
+
+  /// True when audio is playing only on the current device.
+  bool get isLocalPreview => hasTrack && !isSyncedCamsPlayback;
+
   /// Whether there is a next track in the queue.
   bool get hasNext => queue.isNotEmpty && currentIndex < queue.length - 1;
 

@@ -17,7 +17,14 @@ class DevicePairingBloc extends Bloc<DevicePairingEvent, DevicePairingState> {
   ) async {
     emit(state.copyWith(status: DevicePairingStatus.loading));
 
-    final result = await pairDeviceUseCase(event.pairCode);
+    final result = await pairDeviceUseCase(
+      code: event.code,
+      manufacturer: event.manufacturer,
+      model: event.model,
+      osVersion: event.osVersion,
+      appVersion: event.appVersion,
+      deviceId: event.deviceId,
+    );
 
     result.fold(
       (failure) {

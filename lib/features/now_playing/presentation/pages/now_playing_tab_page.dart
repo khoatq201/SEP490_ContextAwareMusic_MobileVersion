@@ -136,6 +136,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
     final duration = playerState.duration;
     final currentPosition = playerState.currentPosition;
     final isPlaying = playerState.isPlaying;
+    final showLocalPreviewBanner = isPlayback && playerState.isLocalPreview;
 
     final spaceName =
         spaceState.space?.name ?? playerState.activeSpaceName ?? 'No Space';
@@ -264,6 +265,10 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
+                ],
+                if (showLocalPreviewBanner) ...[
+                  const SizedBox(height: 12),
+                  _LocalPreviewBanner(palette: palette),
                 ],
 
                 const SizedBox(height: 24),
@@ -724,6 +729,46 @@ class _QueueSheetState extends State<_QueueSheet> {
 // ═════════════════════════════════════════════════════════════════════════════
 
 // ── Top Bar ──────────────────────────────────────────────────────────────────
+class _LocalPreviewBanner extends StatelessWidget {
+  const _LocalPreviewBanner({required this.palette});
+
+  final _NPPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: palette.overlay,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: palette.border),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            LucideIcons.smartphone,
+            color: palette.accent,
+            size: 18,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Local preview only. Manager devices and Location sync update only for CAMS playlist streams.',
+              style: GoogleFonts.inter(
+                color: palette.textMuted,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                height: 1.35,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _TopBar extends StatelessWidget {
   const _TopBar({
     required this.spaceName,

@@ -12,12 +12,16 @@ import 'core/presentation/app_playback_coordinator.dart';
 import 'core/session/session_cubit.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_provider.dart';
+import 'core/enums/entity_status_enum.dart';
+import 'core/enums/space_type_enum.dart';
 import 'core/player/player_bloc.dart';
 import 'core/audio/audio_player_service.dart';
 import 'core/audio/playback_notification_service.dart';
 import 'features/cams/presentation/bloc/cams_playback_bloc.dart';
 import 'features/space_control/presentation/bloc/music_control_bloc.dart';
 import 'features/space_control/presentation/bloc/space_monitoring_bloc.dart';
+import 'features/space_control/domain/entities/space.dart';
+import 'features/store_dashboard/domain/entities/store.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/bloc/auth_event.dart';
 import 'features/auth/presentation/bloc/auth_state.dart';
@@ -79,8 +83,7 @@ class _MyAppState extends State<MyApp> {
         'API base URL changed: $previousBaseUrl -> $currentBaseUrl. '
         'Clearing auth token, cached user and cookies.',
       );
-      await localStorage.clearAuthToken();
-      await localStorage.clearUser();
+      await localStorage.clearAllAuthSessions();
       await dioClient.clearCookies();
     }
 
@@ -111,29 +114,60 @@ class _MyAppState extends State<MyApp> {
       dioClient: dioClient,
     );
 
-    // ── Restore auth session from persisted token ──
-    // Reads the saved JWT from Hive and, if valid, restores
-    // AuthState.authenticated so the user is NOT forced to re-login.
-    // We MUST await this before marking _isInitialized = true,
-    // otherwise GoRouter evaluates its redirect while AuthBloc is
-    // still in initial/loading state and sends the user to /login.
-    final authBloc = sl<AuthBloc>();
-    authBloc.add(const CheckAuthStatus());
-    // Wait until the auth check resolves (authenticated or unauthenticated)
-    final resolvedAuthState = await authBloc.stream
-        .firstWhere((s) =>
-            s.status == AuthStatus.authenticated ||
-            s.status == AuthStatus.unauthenticated)
-        .timeout(
-          const Duration(seconds: 5),
-          onTimeout: () => const AuthState(status: AuthStatus.unauthenticated),
-        );
-
     final sessionCubit = sl<SessionCubit>();
-    if (resolvedAuthState.status == AuthStatus.authenticated) {
-      await sessionCubit.restoreSelectionFromStorage();
+    final deviceSession = localStorage.getDeviceSession();
+    final hasRestorablePlaybackSession = deviceSession != null &&
+        deviceSession['storeId'] != null &&
+        deviceSession['spaceId'] != null &&
+        deviceSession['storeName'] != null &&
+        deviceSession['spaceName'] != null &&
+        !localStorage.isDeviceTokenExpired();
+
+    if (hasRestorablePlaybackSession) {
+      await localStorage.saveActiveSessionMode(
+        LocalStorageService.sessionModePlaybackDevice,
+      );
+      sessionCubit.setPlaybackMode(
+        store: Store(
+          id: deviceSession['storeId'].toString(),
+          name: deviceSession['storeName'].toString(),
+          brandId: deviceSession['brandId']?.toString() ?? '',
+        ),
+        space: Space(
+          id: deviceSession['spaceId'].toString(),
+          name: deviceSession['spaceName'].toString(),
+          storeId: deviceSession['storeId'].toString(),
+          type: SpaceTypeEnum.hall,
+          status: EntityStatusEnum.active,
+        ),
+        deviceId:
+            deviceSession['deviceId']?.toString() ?? deviceSession['spaceId'].toString(),
+      );
     } else {
-      sessionCubit.reset();
+      await localStorage.clearDeviceSession();
+
+      // ── Restore manager auth session from persisted token ──
+      final authBloc = sl<AuthBloc>();
+      authBloc.add(const CheckAuthStatus());
+      final resolvedAuthState = await authBloc.stream
+          .firstWhere((s) =>
+              s.status == AuthStatus.authenticated ||
+              s.status == AuthStatus.unauthenticated)
+          .timeout(
+            const Duration(seconds: 5),
+            onTimeout: () =>
+                const AuthState(status: AuthStatus.unauthenticated),
+          );
+
+      if (resolvedAuthState.status == AuthStatus.authenticated) {
+        await localStorage.saveActiveSessionMode(
+          LocalStorageService.sessionModeManager,
+        );
+        await sessionCubit.restoreSelectionFromStorage();
+      } else {
+        await localStorage.clearManagerSession();
+        sessionCubit.reset();
+      }
     }
 
     // Skip MQTT in demo mode — no backend required

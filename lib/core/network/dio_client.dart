@@ -15,6 +15,13 @@ class DioClient {
   PersistCookieJar? _cookieJar;
   bool _isRefreshing = false;
 
+  bool _shouldSkipAuthorization(String path) {
+    return path == ApiConstants.login ||
+        path == ApiConstants.refreshToken ||
+        path == ApiConstants.authPair ||
+        path == ApiConstants.authDeviceRefreshToken;
+  }
+
   void _log(String message) {
     developer.log(message, name: 'DioClient');
     debugPrint('[DioClient] $message');
@@ -80,29 +87,26 @@ class DioClient {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          // Skip token injection for login and refresh-token endpoints
           final path = options.path;
-          if (path == ApiConstants.login || path == ApiConstants.refreshToken) {
+          if (_shouldSkipAuthorization(path)) {
             return handler.next(options);
           }
 
-          final token = await _localStorage.getAuthToken();
+          final token = _localStorage.getToken();
           if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
           }
           return handler.next(options);
         },
         onError: (error, handler) async {
-          // Handle 401 with automatic token refresh
+          final path = error.requestOptions.path;
           if (error.response?.statusCode == 401 &&
-              error.requestOptions.path != ApiConstants.login &&
-              error.requestOptions.path != ApiConstants.refreshToken) {
+              !_shouldSkipAuthorization(path)) {
             if (!_isRefreshing) {
               _isRefreshing = true;
               try {
-                final newToken = await _refreshToken();
+                final newToken = await _refreshActiveSessionToken();
                 if (newToken != null) {
-                  // Retry original request with new token
                   final opts = error.requestOptions;
                   opts.headers['Authorization'] = 'Bearer $newToken';
                   final response = await _dio.fetch(opts);
@@ -131,9 +135,14 @@ class DioClient {
 
   Future<void> _clearLocalSessionAfterRefreshFailure(String reason) async {
     try {
-      await _localStorage.clearAuthToken();
-      await _localStorage.clearUser();
-      await clearCookies();
+      final isPlaybackMode = _localStorage.getActiveSessionMode() ==
+          LocalStorageService.sessionModePlaybackDevice;
+      if (isPlaybackMode) {
+        await _localStorage.clearDeviceSession();
+      } else {
+        await _localStorage.clearManagerSession();
+        await clearCookies();
+      }
       _log('Cleared local auth session after refresh failure ($reason)');
     } catch (e) {
       _log('Failed to clear local auth session after refresh failure: $e');
@@ -177,10 +186,17 @@ class DioClient {
     }
   }
 
-  /// Attempt to refresh the access token using the HttpOnly cookie.
-  Future<String?> _refreshToken() async {
+  Future<String?> _refreshActiveSessionToken() async {
+    final mode = _localStorage.getActiveSessionMode();
+    if (mode == LocalStorageService.sessionModePlaybackDevice) {
+      return _refreshDeviceToken();
+    }
+    return _refreshManagerToken();
+  }
+
+  /// Attempt to refresh the manager access token using the HttpOnly cookie.
+  Future<String?> _refreshManagerToken() async {
     try {
-      // Log cookies for debugging
       if (_cookieJar != null) {
         final uri =
             Uri.parse('${ApiConstants.baseUrl}${ApiConstants.refreshToken}');
@@ -203,8 +219,7 @@ class DioClient {
         }
       }
 
-      // Include expired access token in header (backend requires it for refresh)
-      final expiredToken = await _localStorage.getAuthToken();
+      final expiredToken = _localStorage.getManagerAuthToken();
       _log(
         'Refresh token - sending with Authorization: '
         '${expiredToken != null ? "Bearer ${expiredToken.substring(0, 20)}..." : "null"}',
@@ -228,8 +243,10 @@ class DioClient {
         final newToken = data['data']['accessToken'] as String;
         final expiresAt = DateTime.parse(data['data']['expiresAt'] as String);
 
-        await _localStorage.saveAuthToken(newToken);
-        await _localStorage.saveAccessTokenExpiry(expiresAt);
+        await _localStorage.saveManagerAuthToken(newToken);
+        await _localStorage.saveManagerAccessTokenExpiry(expiresAt);
+        await _localStorage
+            .saveActiveSessionMode(LocalStorageService.sessionModeManager);
 
         _log('Token refreshed successfully');
         return newToken;
@@ -251,6 +268,67 @@ class DioClient {
       }
       throw AuthenticationException(
         'Session expired. Please login again.',
+      );
+    }
+  }
+
+  Future<String?> _refreshDeviceToken() async {
+    try {
+      final expiredToken = _localStorage.getDeviceAccessToken();
+      final refreshToken = _localStorage.getDeviceRefreshToken();
+      if (refreshToken == null || refreshToken.isEmpty) {
+        throw AuthenticationException('Missing device refresh token.');
+      }
+
+      final response = await _dio.post(
+        ApiConstants.authDeviceRefreshToken,
+        data: {
+          'deviceRefreshToken': refreshToken,
+        },
+        options: Options(
+          headers: {
+            if (expiredToken != null && expiredToken.isNotEmpty)
+              'Authorization': 'Bearer $expiredToken',
+          },
+        ),
+      );
+
+      final data = response.data;
+      if (data is Map<String, dynamic> &&
+          data['isSuccess'] == true &&
+          data['data'] != null) {
+        final payload = Map<String, dynamic>.from(data['data'] as Map);
+        final newToken = payload['deviceAccessToken'] as String;
+        final expiresRaw =
+            payload['expiresAt'] ?? payload['accessTokenExpiresAt'];
+        final expiresAt = DateTime.parse(expiresRaw as String);
+
+        await _localStorage.saveDeviceAccessToken(newToken);
+        await _localStorage.saveDeviceAccessTokenExpiry(expiresAt);
+        await _localStorage.saveActiveSessionMode(
+          LocalStorageService.sessionModePlaybackDevice,
+        );
+
+        _log('Device token refreshed successfully');
+        return newToken;
+      }
+
+      throw AuthenticationException('Device refresh token failed.');
+    } on AuthenticationException {
+      await _clearLocalSessionAfterRefreshFailure('invalid device refresh');
+      rethrow;
+    } on DioException catch (e) {
+      _log(
+        'Device refresh DioException: ${e.response?.statusCode} - ${e.response?.data}',
+      );
+      final statusCode = e.response?.statusCode;
+      if (statusCode == 401 || statusCode == 403) {
+        await _clearLocalSessionAfterRefreshFailure(
+          'device refresh endpoint returned $statusCode',
+        );
+      }
+      throw AuthenticationException(
+        'Device session expired. Please pair again.',
       );
     }
   }

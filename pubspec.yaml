@@ -26,6 +26,8 @@ dependencies:
   cookie_jar: ^4.0.8
   mqtt_client: ^10.0.0
   connectivity_plus: ^5.0.1
+  device_info_plus: ^11.1.0
+  package_info_plus: ^8.1.2
 
   # Local Storage
   hive: ^2.2.3

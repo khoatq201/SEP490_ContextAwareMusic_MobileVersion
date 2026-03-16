@@ -22,6 +22,7 @@ class StoreHubService {
   final String Function() _accessTokenFactory;
   HubConnection? _connection;
   String? _currentSpaceId;
+  String? _currentManagerStoreId;
 
   StoreHubService({required String Function() accessTokenFactory})
       : _accessTokenFactory = accessTokenFactory;
@@ -90,6 +91,9 @@ class StoreHubService {
     if (_currentSpaceId != null) {
       await leaveSpace(_currentSpaceId!);
     }
+    if (_currentManagerStoreId != null) {
+      await leaveManagerRoom(_currentManagerStoreId!);
+    }
     await _connection?.stop();
     _connection = null;
     _connectionController.add(ConnectionStatus.disconnected);
@@ -108,6 +112,22 @@ class StoreHubService {
     await _connection?.invoke('LeaveSpaceAsync', args: [spaceId]);
     if (_currentSpaceId == spaceId) {
       _currentSpaceId = null;
+    }
+  }
+
+  Future<void> joinManagerRoom(String storeId) async {
+    _currentManagerStoreId = storeId;
+    await _connection?.invoke('JoinManagerRoomAsync', args: [storeId]);
+  }
+
+  Future<void> leaveManagerRoom(String storeId) async {
+    try {
+      await _connection?.invoke('LeaveManagerRoomAsync', args: [storeId]);
+    } catch (_) {
+      // Some environments may not expose LeaveManagerRoomAsync yet.
+    }
+    if (_currentManagerStoreId == storeId) {
+      _currentManagerStoreId = null;
     }
   }
 
@@ -136,15 +156,17 @@ class StoreHubService {
 
     // Connection confirmed after joining
     conn.on('ConnectionConfirmed', (args) {
-      final data = args?[0] as Map<String, dynamic>?;
+      final data = _asMap(args?[0]);
       if (data != null) {
-        print('[StoreHub] Connected to Space: ${data['spaceId']}');
+        print(
+          '[StoreHub] Connected to group: ${data['spaceId'] ?? data['storeId']}',
+        );
       }
     });
 
     // Playlist changed (AI or override)
     conn.on('PlayStream', (args) {
-      final payload = args?[0] as Map<String, dynamic>?;
+      final payload = _asMap(args?[0]);
       if (payload == null) return;
 
       final transitionType = payload['transitionType'] as int? ?? 1;
@@ -166,7 +188,7 @@ class StoreHubService {
 
     // Playback command from manager
     conn.on('PlaybackStateChanged', (args) {
-      final payload = args?[0] as Map<String, dynamic>?;
+      final payload = _asMap(args?[0]);
       if (payload == null) return;
 
       _playbackCommandController.add(PlaybackCommandEvent(
@@ -180,7 +202,7 @@ class StoreHubService {
 
     // Full state sync (after cancel override)
     conn.on('SpaceStateSync', (args) {
-      final payload = args?[0] as Map<String, dynamic>?;
+      final payload = _asMap(args?[0]);
       if (payload != null) {
         _statesSyncController.add(
           SpacePlaybackStateModel.fromSignalR(payload),
@@ -212,6 +234,9 @@ class StoreHubService {
       if (_currentSpaceId != null) {
         joinSpace(_currentSpaceId!);
       }
+      if (_currentManagerStoreId != null) {
+        joinManagerRoom(_currentManagerStoreId!);
+      }
     });
 
     conn.onclose(({error}) {
@@ -229,6 +254,12 @@ class StoreHubService {
     _statesSyncController.close();
     _stopPlaybackController.close();
     _connectionController.close();
+  }
+
+  Map<String, dynamic>? _asMap(dynamic raw) {
+    if (raw is Map<String, dynamic>) return raw;
+    if (raw is Map) return Map<String, dynamic>.from(raw);
+    return null;
   }
 }
 

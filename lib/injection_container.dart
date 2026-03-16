@@ -135,6 +135,7 @@ import 'features/cams/data/services/store_hub_service.dart';
 import 'features/cams/domain/usecases/get_space_state.dart';
 import 'features/cams/domain/usecases/override_space.dart';
 import 'features/cams/domain/usecases/cancel_override.dart';
+import 'features/cams/domain/usecases/pairing_usecases.dart';
 import 'features/cams/domain/usecases/send_playback_command.dart';
 import 'features/cams/presentation/bloc/cams_playback_bloc.dart';
 
@@ -230,6 +231,8 @@ Future<void> initializeDependencies() async {
     () => DevicePairingRepositoryImpl(
       remoteDataSource: sl(),
       networkInfo: sl(),
+      localStorage: sl(),
+      dioClient: sl(),
     ),
   );
 
@@ -276,8 +279,14 @@ Future<void> initializeDependencies() async {
       getSpacesForStore: sl(),
       getSpacesForBrand: sl(),
       getSpaceState: sl(),
+      getPairDeviceInfoForManager: sl(),
+      getPairDeviceInfoForPlaybackDevice: sl(),
+      generatePairCode: sl(),
+      revokePairCode: sl(),
+      unpairPlaybackDevice: sl(),
       playlistDataSource: sl(),
       getUserStores: sl(),
+      storeHubService: sl(),
     ),
   );
 
@@ -559,7 +568,7 @@ Future<void> initializeDependencies() async {
   );
 
   // SignalR StoreHub — requires access token factory
-  sl.registerLazySingleton<StoreHubService>(
+  sl.registerFactory<StoreHubService>(
     () => StoreHubService(
       accessTokenFactory: () {
         final localStorage = sl<LocalStorageService>();
@@ -570,9 +579,15 @@ Future<void> initializeDependencies() async {
 
   // Use cases
   sl.registerLazySingleton(() => GetSpaceState(sl()));
+  sl.registerLazySingleton(() => GetCurrentDeviceSpaceState(sl()));
   sl.registerLazySingleton(() => OverrideSpace(sl()));
   sl.registerLazySingleton(() => CancelOverride(sl()));
   sl.registerLazySingleton(() => SendPlaybackCommand(sl()));
+  sl.registerLazySingleton(() => GetPairDeviceInfoForManager(sl()));
+  sl.registerLazySingleton(() => GetPairDeviceInfoForPlaybackDevice(sl()));
+  sl.registerLazySingleton(() => GeneratePairCode(sl()));
+  sl.registerLazySingleton(() => RevokePairCode(sl()));
+  sl.registerLazySingleton(() => UnpairPlaybackDevice(sl()));
 
   // BLoCs
   sl.registerFactory(
@@ -583,6 +598,7 @@ Future<void> initializeDependencies() async {
       sendPlaybackCommand: sl(),
       getMoods: sl(),
       storeHubService: sl(),
+      sessionCubit: sl(),
     ),
   );
 

@@ -8,7 +8,13 @@ class GetSpaceState {
 
   GetSpaceState(this.repository);
 
-  Future<Either<Failure, SpacePlaybackState>> call(String spaceId) {
-    return repository.getSpaceState(spaceId);
+  Future<Either<Failure, SpacePlaybackState>> call(
+    String spaceId, {
+    bool usePlaybackDeviceScope = false,
+  }) {
+    return repository.getSpaceState(
+      spaceId,
+      usePlaybackDeviceScope: usePlaybackDeviceScope,
+    );
   }
 }

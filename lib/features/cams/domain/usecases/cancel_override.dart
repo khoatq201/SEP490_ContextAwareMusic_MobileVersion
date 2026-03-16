@@ -7,7 +7,13 @@ class CancelOverride {
 
   CancelOverride(this.repository);
 
-  Future<Either<Failure, void>> call(String spaceId) {
-    return repository.cancelOverride(spaceId);
+  Future<Either<Failure, void>> call(
+    String spaceId, {
+    bool usePlaybackDeviceScope = false,
+  }) {
+    return repository.cancelOverride(
+      spaceId,
+      usePlaybackDeviceScope: usePlaybackDeviceScope,
+    );
   }
 }

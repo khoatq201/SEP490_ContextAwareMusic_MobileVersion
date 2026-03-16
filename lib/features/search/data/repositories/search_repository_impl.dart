@@ -101,6 +101,8 @@ class SearchRepositoryImpl implements SearchRepository {
         imageUrl: t.coverImageUrl,
         type: SearchResultType.song,
         duration: t.formattedDuration,
+        durationSeconds: t.durationSec,
+        streamUrl: t.audioUrl,
       ));
     }
 

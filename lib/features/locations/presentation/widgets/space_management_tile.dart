@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -11,6 +13,8 @@ import '../../../cams/presentation/bloc/cams_playback_bloc.dart';
 import '../../../space_control/domain/entities/space.dart';
 import '../../../store_dashboard/domain/entities/store.dart';
 import '../../domain/entities/location_space.dart';
+import '../bloc/location_bloc.dart';
+import '../bloc/location_event.dart';
 import 'space_settings_sheet.dart';
 
 /// A role-aware card representing a single space inside the Location tab.
@@ -32,7 +36,12 @@ class SpaceManagementTile extends StatelessWidget {
     final session = context.watch<SessionCubit>().state;
     final playerState = context.watch<PlayerBloc>().state;
     final camsState = context.watch<CamsPlaybackBloc>().state;
+    final locationState = context.watch<LocationBloc>().state;
     final isTargeted = session.currentSpace?.id == space.id;
+    final isPairActionBusy = locationState.busySpaceIds.contains(space.id);
+    final isTargetedLocalPreview = isTargeted &&
+        session.isPlaybackDevice &&
+        playerState.isLocalPreview;
 
     final displayMood = _firstNonEmpty([
       if (isTargeted) camsState.currentMoodName,
@@ -43,12 +52,17 @@ class SpaceManagementTile extends StatelessWidget {
       space.currentPlaylistName,
     ]);
     final displayTrackName = _firstNonEmpty([
-      if (isTargeted) playerState.currentTrack?.title,
+      if (isTargeted && playerState.isSyncedCamsPlayback)
+        playerState.currentTrack?.title,
       space.currentTrackName,
+      if (isTargetedLocalPreview) playerState.currentTrack?.title,
     ]);
     final displayTrackArtist = _firstNonEmpty([
-      if (isTargeted) playerState.currentTrack?.artist,
+      if (isTargeted && playerState.isSyncedCamsPlayback)
+        playerState.currentTrack?.artist,
       space.currentTrackArtist,
+      if (isTargetedLocalPreview)
+        'Playing locally on this device only',
     ]);
     final isOnline = space.status.isActive || space.isOnline;
 
@@ -119,6 +133,13 @@ class SpaceManagementTile extends StatelessWidget {
                               color: palette.accent,
                             ),
                           if (isTargeted) const SizedBox(width: 8),
+                          if (isTargetedLocalPreview)
+                            const _HeaderBadge(
+                              icon: LucideIcons.smartphone,
+                              label: 'LOCAL',
+                              color: Color(0xFFB7791F),
+                            ),
+                          if (isTargetedLocalPreview) const SizedBox(width: 8),
                           _StatusBadge(isOnline: isOnline, palette: palette),
                         ],
                       ),
@@ -240,6 +261,17 @@ class SpaceManagementTile extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
+          if (!session.isPlaybackDevice) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _PairingSection(
+                space: space,
+                palette: palette,
+                isBusy: isPairActionBusy,
+              ),
+            ),
+            const SizedBox(height: 14),
+          ],
           Container(height: 1, color: palette.border),
           _ActionRow(
             space: space,
@@ -301,6 +333,295 @@ class SpaceManagementTile extends StatelessWidget {
       SnackBar(
         content: Text('Targeting ${space.name}'),
         behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+}
+
+class _PairingSection extends StatelessWidget {
+  const _PairingSection({
+    required this.space,
+    required this.palette,
+    required this.isBusy,
+  });
+
+  final LocationSpace space;
+  final _SpacePalette palette;
+  final bool isBusy;
+
+  @override
+  Widget build(BuildContext context) {
+    final pairInfo = space.pairDeviceInfo;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: palette.panel,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: palette.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: palette.accent.withAlpha(18),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  space.hasPairedPlaybackDevice
+                      ? LucideIcons.smartphone
+                      : space.hasActivePairCode
+                          ? LucideIcons.keyRound
+                          : LucideIcons.link2Off,
+                  color: palette.accent,
+                  size: 17,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Playback device',
+                      style: GoogleFonts.poppins(
+                        color: palette.textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      space.pairingStatusLabel,
+                      style: GoogleFonts.inter(
+                        color: palette.textMuted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (isBusy)
+                SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: palette.accent,
+                  ),
+                ),
+            ],
+          ),
+          if (space.hasActivePairCode) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: palette.card,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: palette.border),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      space.activePairCode!.displayCode,
+                      style: GoogleFonts.outfit(
+                        color: palette.textPrimary,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 2,
+                      ),
+                    ),
+                  ),
+                  _PairCodeCountdown(
+                    expiresAt: space.activePairCode!.expiresAt,
+                    palette: palette,
+                  ),
+                ],
+              ),
+            ),
+          ] else if (space.hasPairedPlaybackDevice &&
+              pairInfo?.lastActiveAtUtc != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              'Last active ${_formatRelative(pairInfo!.lastActiveAtUtc!)}',
+              style: GoogleFonts.inter(
+                color: palette.textMuted,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              if (!space.hasPairedPlaybackDevice)
+                _PairActionChip(
+                  label: space.hasActivePairCode
+                      ? 'Generate new code'
+                      : 'Generate code',
+                  icon: LucideIcons.badgePlus,
+                  palette: palette,
+                  enabled: !isBusy,
+                  onTap: () => context
+                      .read<LocationBloc>()
+                      .add(LocationGeneratePairCodeRequested(space.id)),
+                ),
+              if (space.hasActivePairCode)
+                _PairActionChip(
+                  label: 'Revoke',
+                  icon: LucideIcons.shield,
+                  palette: palette,
+                  enabled: !isBusy,
+                  onTap: () => context
+                      .read<LocationBloc>()
+                      .add(LocationRevokePairCodeRequested(space.id)),
+                ),
+              if (space.hasPairedPlaybackDevice)
+                _PairActionChip(
+                  label: 'Unpair',
+                  icon: LucideIcons.unlink,
+                  palette: palette,
+                  enabled: !isBusy,
+                  onTap: () => context
+                      .read<LocationBloc>()
+                      .add(LocationUnpairDeviceRequested(space.id)),
+                  destructive: true,
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _formatRelative(DateTime value) {
+    final diff = DateTime.now().toUtc().difference(value.toUtc());
+    if (diff.inMinutes < 1) return 'just now';
+    if (diff.inHours < 1) return '${diff.inMinutes}m ago';
+    if (diff.inDays < 1) return '${diff.inHours}h ago';
+    return '${diff.inDays}d ago';
+  }
+}
+
+class _PairCodeCountdown extends StatefulWidget {
+  const _PairCodeCountdown({
+    required this.expiresAt,
+    required this.palette,
+  });
+
+  final DateTime expiresAt;
+  final _SpacePalette palette;
+
+  @override
+  State<_PairCodeCountdown> createState() => _PairCodeCountdownState();
+}
+
+class _PairCodeCountdownState extends State<_PairCodeCountdown> {
+  Timer? _timer;
+  Duration _remaining = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _updateRemaining();
+    _timer = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) => _updateRemaining(),
+    );
+  }
+
+  void _updateRemaining() {
+    final remaining = widget.expiresAt.difference(DateTime.now().toUtc());
+    if (!mounted) return;
+    setState(() {
+      _remaining = remaining.isNegative ? Duration.zero : remaining;
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final minutes = _remaining.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = _remaining.inSeconds.remainder(60).toString().padLeft(2, '0');
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: widget.palette.accent.withAlpha(16),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        '$minutes:$seconds',
+        style: GoogleFonts.inter(
+          color: widget.palette.accent,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _PairActionChip extends StatelessWidget {
+  const _PairActionChip({
+    required this.label,
+    required this.icon,
+    required this.palette,
+    required this.onTap,
+    this.enabled = true,
+    this.destructive = false,
+  });
+
+  final String label;
+  final IconData icon;
+  final _SpacePalette palette;
+  final VoidCallback onTap;
+  final bool enabled;
+  final bool destructive;
+
+  @override
+  Widget build(BuildContext context) {
+    final accentColor = destructive ? AppColors.error : palette.accent;
+    return InkWell(
+      onTap: enabled ? onTap : null,
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: accentColor.withAlpha(enabled ? 18 : 8),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: accentColor.withAlpha(60)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: accentColor),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                color: accentColor,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

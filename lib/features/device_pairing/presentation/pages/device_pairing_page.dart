@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/services.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/enums/entity_status_enum.dart';
 import '../../../../core/enums/space_type_enum.dart';
 import '../../../../core/session/session_cubit.dart';
+import '../../../../core/services/device_metadata_service.dart';
 import '../../../../features/store_dashboard/domain/entities/store.dart';
 import '../../../../features/space_control/domain/entities/space.dart';
 import '../bloc/device_pairing_bloc.dart';
@@ -24,7 +26,7 @@ class _DevicePairingPageState extends State<DevicePairingPage> {
   final _pairCodeController = TextEditingController();
   bool _isPairing = false;
 
-  void _onPairPressed() {
+  Future<void> _onPairPressed() async {
     final code = _pairCodeController.text.trim();
     if (code.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -38,7 +40,20 @@ class _DevicePairingPageState extends State<DevicePairingPage> {
       );
       return;
     }
-    context.read<DevicePairingBloc>().add(PairDeviceRequested(code));
+
+    final metadata = await DeviceMetadataService.collect();
+    if (!mounted) return;
+
+    context.read<DevicePairingBloc>().add(
+          PairDeviceRequested(
+            code: code,
+            manufacturer: metadata.manufacturer,
+            model: metadata.model,
+            osVersion: metadata.osVersion,
+            appVersion: metadata.appVersion,
+            deviceId: metadata.deviceId,
+          ),
+        );
   }
 
   @override
@@ -108,7 +123,7 @@ class _DevicePairingPageState extends State<DevicePairingPage> {
                 assignedHubId: 'hub-123',
                 storeId: result.storeId,
               ),
-              deviceId: result.deviceId,
+              deviceId: result.pairedDeviceId,
             );
 
             ScaffoldMessenger.of(context).showSnackBar(
@@ -152,8 +167,18 @@ class _DevicePairingPageState extends State<DevicePairingPage> {
                 const SizedBox(height: 48),
                 TextField(
                   controller: _pairCodeController,
-                  keyboardType: TextInputType.number,
-                  maxLength: 6,
+                  keyboardType: TextInputType.text,
+                  textCapitalization: TextCapitalization.characters,
+                  maxLength: 7,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9-]')),
+                    TextInputFormatter.withFunction((oldValue, newValue) {
+                      return newValue.copyWith(
+                        text: newValue.text.toUpperCase(),
+                        selection: newValue.selection,
+                      );
+                    }),
+                  ],
                   textAlign: TextAlign.center,
                   style: GoogleFonts.outfit(
                     fontSize: 32,

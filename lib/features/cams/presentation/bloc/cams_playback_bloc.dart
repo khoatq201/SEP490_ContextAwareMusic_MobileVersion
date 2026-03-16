@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/enums/playback_command_enum.dart';
+import '../../../../core/session/session_cubit.dart';
 import '../../domain/entities/space_playback_state.dart';
 import '../../domain/usecases/get_space_state.dart';
 import '../../domain/usecases/override_space.dart';
@@ -19,6 +21,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
   final SendPlaybackCommand sendPlaybackCommand;
   final GetMoods getMoods;
   final StoreHubService storeHubService;
+  final SessionCubit sessionCubit;
 
   StreamSubscription? _playStreamSub;
   StreamSubscription? _playbackCommandSub;
@@ -33,11 +36,13 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     required this.sendPlaybackCommand,
     required this.getMoods,
     required this.storeHubService,
+    required this.sessionCubit,
   }) : super(const CamsPlaybackState()) {
     on<CamsInitPlayback>(_onInit);
     on<CamsDisposePlayback>(_onDispose);
     on<CamsOverrideMood>(_onOverrideMood);
     on<CamsOverridePlaylist>(_onOverridePlaylist);
+    on<CamsPlayPlaylistTrack>(_onPlayPlaylistTrack);
     on<CamsCancelOverride>(_onCancelOverride);
     on<CamsSendCommand>(_onSendCommand);
     on<CamsPlayStreamReceived>(_onPlayStream);
@@ -65,6 +70,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
       status: CamsStatus.loading,
       spaceId: event.spaceId,
       clearError: true,
+      clearPendingTrackJump: true,
     ));
 
     // 1. Connect SignalR + join space
@@ -80,7 +86,10 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     _subscribeToHub();
 
     // 3. Fetch initial state + moods in parallel
-    final stateResult = await getSpaceState(event.spaceId);
+    final stateResult = await getSpaceState(
+      event.spaceId,
+      usePlaybackDeviceScope: sessionCubit.state.isPlaybackDevice,
+    );
     final moodsResult = await getMoods();
 
     // Process moods
@@ -97,7 +106,9 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
       )),
       (pbState) {
         emit(state.copyWith(
-          status: pbState.isStreaming ? CamsStatus.active : CamsStatus.idle,
+          status: (pbState.isStreaming || pbState.hasPendingPlaylist)
+              ? CamsStatus.active
+              : CamsStatus.idle,
           playbackState: pbState,
         ));
       },
@@ -113,6 +124,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
 
     _playStreamSub = storeHubService.onPlayStream.listen((event) {
       add(CamsPlayStreamReceived(
+        spaceId: event.spaceId,
         hlsUrl: event.hlsUrl,
         playlistId: event.playlistId,
         isManualOverride: event.isManualOverride,
@@ -122,6 +134,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
 
     _playbackCommandSub = storeHubService.onPlaybackCommand.listen((event) {
       add(CamsPlaybackCommandReceived(
+        spaceId: event.spaceId,
         command: event.command,
         seekPositionSeconds: event.seekPositionSeconds,
         targetTrackId: event.targetTrackId,
@@ -129,15 +142,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     });
 
     _stateSyncSub = storeHubService.onSpaceStateSync.listen((model) {
-      add(CamsStateSyncReceived(
-        spaceId: model.spaceId,
-        hlsUrl: model.hlsUrl,
-        playlistId: model.currentPlaylistId,
-        playlistName: model.currentPlaylistName,
-        moodName: model.moodName,
-        isManualOverride: model.isManualOverride,
-        seekOffsetSeconds: model.seekOffsetSeconds,
-      ));
+      add(CamsStateSyncReceived(playbackState: model));
     });
 
     _stopPlaybackSub = storeHubService.onStopPlayback.listen((_) {
@@ -145,7 +150,9 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     });
 
     _connectionSub = storeHubService.onConnectionStatus.listen((status) {
-      // Re-join space on reconnect handled by StoreHubService internally
+      if (status == ConnectionStatus.connected && state.spaceId != null) {
+        add(const CamsRefreshState());
+      }
     });
   }
 
@@ -176,6 +183,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
       spaceId: spaceId,
       moodId: event.moodId,
       reason: event.reason,
+      usePlaybackDeviceScope: sessionCubit.state.isPlaybackDevice,
     );
 
     result.fold(
@@ -184,24 +192,32 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
         errorMessage: 'Override failed: ${failure.message}',
       )),
       (response) {
+        final isPending = !response.isStreamReady;
         // Update playback state from override response
         final newPlaybackState = SpacePlaybackState(
           spaceId: spaceId,
-          currentPlaylistId: response.playlistId,
-          currentPlaylistName: response.playlistName,
+          currentPlaylistId: isPending ? null : response.playlistId,
+          currentPlaylistName: isPending ? null : response.playlistName,
           hlsUrl: response.hlsUrl,
           moodName: response.moodName,
           isManualOverride: response.isManualOverride,
           overrideMode: response.overrideMode,
           startedAtUtc: response.startedAtUtc,
           expectedEndAtUtc: response.expectedEndAtUtc,
+          seekOffsetSeconds: null,
+          pendingPlaylistId: isPending ? response.playlistId : null,
+          pendingOverrideReason:
+              isPending ? (event.reason ?? 'Preparing stream') : null,
         );
 
         emit(state.copyWith(
           isOverriding: false,
           lastOverrideResponse: response,
           playbackState: newPlaybackState,
-          status: response.isStreamReady ? CamsStatus.active : CamsStatus.idle,
+          status: (newPlaybackState.isStreaming || newPlaybackState.hasPendingPlaylist)
+              ? CamsStatus.active
+              : CamsStatus.idle,
+          clearPendingTrackJump: true,
         ));
       },
     );
@@ -220,32 +236,140 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
       spaceId: spaceId,
       playlistId: event.playlistId,
       reason: event.reason,
+      usePlaybackDeviceScope: sessionCubit.state.isPlaybackDevice,
     );
 
     result.fold(
       (failure) => emit(state.copyWith(
         isOverriding: false,
         errorMessage: 'Override failed: ${failure.message}',
+        clearPendingTrackJump: true,
       )),
       (response) {
+        final isPending = !response.isStreamReady;
+        final current = state.playbackState;
         final newPlaybackState = SpacePlaybackState(
           spaceId: spaceId,
-          currentPlaylistId: response.playlistId,
-          currentPlaylistName: response.playlistName,
+          currentPlaylistId: isPending ? null : response.playlistId,
+          currentPlaylistName: isPending ? null : response.playlistName,
           hlsUrl: response.hlsUrl,
           moodName: response.moodName,
           isManualOverride: response.isManualOverride,
           overrideMode: response.overrideMode,
           startedAtUtc: response.startedAtUtc,
           expectedEndAtUtc: response.expectedEndAtUtc,
+          seekOffsetSeconds: null,
+          storeId: current?.storeId,
+          brandId: current?.brandId,
+          pendingPlaylistId: isPending ? response.playlistId : null,
+          pendingOverrideReason:
+              isPending ? (event.reason ?? 'Preparing stream') : null,
         );
 
         emit(state.copyWith(
           isOverriding: false,
           lastOverrideResponse: response,
           playbackState: newPlaybackState,
-          status: response.isStreamReady ? CamsStatus.active : CamsStatus.idle,
+          status: (newPlaybackState.isStreaming || newPlaybackState.hasPendingPlaylist)
+              ? CamsStatus.active
+              : CamsStatus.idle,
+          clearPendingTrackJump: true,
         ));
+      },
+    );
+  }
+
+  Future<void> _onPlayPlaylistTrack(
+    CamsPlayPlaylistTrack event,
+    Emitter<CamsPlaybackState> emit,
+  ) async {
+    final spaceId = state.spaceId;
+    if (spaceId == null) return;
+
+    final current = state.playbackState;
+    final isCurrentPlaylist = current?.currentPlaylistId == event.playlistId;
+    final isPendingCurrentPlaylist = current?.pendingPlaylistId == event.playlistId;
+
+    if (isCurrentPlaylist && (current?.isStreaming ?? false)) {
+      emit(state.copyWith(
+        pendingTrackPlaylistId: event.playlistId,
+        pendingTrackId: event.targetTrackId,
+        clearError: true,
+      ));
+      _dispatchDeferredTrackJump(
+        playbackState: current!,
+        emit: emit,
+      );
+      return;
+    }
+
+    if (isPendingCurrentPlaylist) {
+      emit(state.copyWith(
+        pendingTrackPlaylistId: event.playlistId,
+        pendingTrackId: event.targetTrackId,
+        clearError: true,
+      ));
+      return;
+    }
+
+    emit(state.copyWith(
+      isOverriding: true,
+      clearError: true,
+      pendingTrackPlaylistId: event.playlistId,
+      pendingTrackId: event.targetTrackId,
+    ));
+
+    final result = await overrideSpace(
+      spaceId: spaceId,
+      playlistId: event.playlistId,
+      reason: event.reason ?? 'Play selected track',
+      usePlaybackDeviceScope: sessionCubit.state.isPlaybackDevice,
+    );
+
+    result.fold(
+      (failure) => emit(state.copyWith(
+        isOverriding: false,
+        errorMessage: 'Play track failed: ${failure.message}',
+        clearPendingTrackJump: true,
+      )),
+      (response) {
+        final isPending = !response.isStreamReady;
+        final updatedState = SpacePlaybackState(
+          spaceId: spaceId,
+          storeId: current?.storeId,
+          brandId: current?.brandId,
+          currentPlaylistId: isPending ? null : response.playlistId,
+          currentPlaylistName: isPending ? null : response.playlistName,
+          hlsUrl: response.hlsUrl,
+          moodName: response.moodName,
+          isManualOverride: response.isManualOverride,
+          overrideMode: response.overrideMode,
+          startedAtUtc: response.startedAtUtc,
+          expectedEndAtUtc: response.expectedEndAtUtc,
+          isPaused: false,
+          pausePositionSeconds: null,
+          seekOffsetSeconds: null,
+          pendingPlaylistId: isPending ? response.playlistId : null,
+          pendingOverrideReason: isPending
+              ? (event.reason ?? 'Play selected track')
+              : null,
+        );
+
+        emit(state.copyWith(
+          isOverriding: false,
+          lastOverrideResponse: response,
+          playbackState: updatedState,
+          status: (updatedState.isStreaming || updatedState.hasPendingPlaylist)
+              ? CamsStatus.active
+              : CamsStatus.idle,
+        ));
+
+        if (!isPending) {
+          _dispatchDeferredTrackJump(
+            playbackState: updatedState,
+            emit: emit,
+          );
+        }
       },
     );
   }
@@ -259,16 +383,21 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
 
     emit(state.copyWith(isOverriding: true, clearError: true));
 
-    final result = await cancelOverride(spaceId);
+    final result = await cancelOverride(
+      spaceId,
+      usePlaybackDeviceScope: sessionCubit.state.isPlaybackDevice,
+    );
 
     result.fold(
       (failure) => emit(state.copyWith(
         isOverriding: false,
         errorMessage: 'Cancel override failed: ${failure.message}',
+        clearPendingTrackJump: true,
       )),
       (_) => emit(state.copyWith(
         isOverriding: false,
         clearOverrideResponse: true,
+        clearPendingTrackJump: true,
       )),
     );
     // State will be updated via SpaceStateSync SignalR event
@@ -286,6 +415,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
       command: event.command,
       seekPositionSeconds: event.seekPositionSeconds,
       targetTrackId: event.targetTrackId,
+      usePlaybackDeviceScope: sessionCubit.state.isPlaybackDevice,
     );
 
     result.fold(
@@ -302,30 +432,41 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     CamsPlayStreamReceived event,
     Emitter<CamsPlaybackState> emit,
   ) {
+    if (event.spaceId != state.spaceId) return;
     final spaceId = state.spaceId ?? '';
     final current = state.playbackState;
+    final nextPlaybackState = SpacePlaybackState(
+      spaceId: spaceId,
+      currentPlaylistId: event.playlistId,
+      currentPlaylistName: current?.currentPlaylistName,
+      hlsUrl: event.hlsUrl,
+      moodName: current?.moodName,
+      isManualOverride: event.isManualOverride,
+      overrideMode: current?.overrideMode,
+      startedAtUtc: event.startedAtUtc,
+      expectedEndAtUtc: current?.expectedEndAtUtc,
+      isPaused: false,
+      pausePositionSeconds: null,
+      seekOffsetSeconds: null,
+      storeId: current?.storeId,
+      brandId: current?.brandId,
+      pendingPlaylistId: null,
+      pendingOverrideReason: null,
+    );
 
     emit(state.copyWith(
       status: CamsStatus.active,
-      playbackState: SpacePlaybackState(
-        spaceId: spaceId,
-        currentPlaylistId: event.playlistId,
-        currentPlaylistName: current?.currentPlaylistName,
-        hlsUrl: event.hlsUrl,
-        moodName: current?.moodName,
-        isManualOverride: event.isManualOverride,
-        overrideMode: current?.overrideMode,
-        startedAtUtc: event.startedAtUtc,
-        expectedEndAtUtc: current?.expectedEndAtUtc,
-        seekOffsetSeconds: 0,
-      ),
+      playbackState: nextPlaybackState,
     ));
+
+    _dispatchDeferredTrackJump(playbackState: nextPlaybackState, emit: emit);
   }
 
   void _onPlaybackCommand(
     CamsPlaybackCommandReceived event,
     Emitter<CamsPlaybackState> emit,
   ) {
+    if (event.spaceId != state.spaceId) return;
     emit(state.copyWith(
       lastPlaybackCommand: event.command,
       lastSeekPositionSeconds: event.seekPositionSeconds,
@@ -338,21 +479,18 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     CamsStateSyncReceived event,
     Emitter<CamsPlaybackState> emit,
   ) {
-    final newState = SpacePlaybackState(
-      spaceId: event.spaceId,
-      currentPlaylistId: event.playlistId,
-      currentPlaylistName: event.playlistName,
-      hlsUrl: event.hlsUrl,
-      moodName: event.moodName,
-      isManualOverride: event.isManualOverride,
-      seekOffsetSeconds: event.seekOffsetSeconds,
-    );
+    final newState = event.playbackState;
+    if (newState.spaceId != state.spaceId) return;
 
     emit(state.copyWith(
-      status: newState.isStreaming ? CamsStatus.active : CamsStatus.idle,
+      status: (newState.isStreaming || newState.hasPendingPlaylist)
+          ? CamsStatus.active
+          : CamsStatus.idle,
       playbackState: newState,
       clearOverrideResponse: true,
     ));
+
+    _dispatchDeferredTrackJump(playbackState: newState, emit: emit);
   }
 
   void _onStopPlayback(
@@ -364,6 +502,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
       status: CamsStatus.idle,
       playbackState: SpacePlaybackState(spaceId: spaceId),
       clearOverrideResponse: true,
+      clearPendingTrackJump: true,
     ));
   }
 
@@ -374,16 +513,44 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     final spaceId = state.spaceId;
     if (spaceId == null) return;
 
-    final result = await getSpaceState(spaceId);
+    final result = await getSpaceState(
+      spaceId,
+      usePlaybackDeviceScope: sessionCubit.state.isPlaybackDevice,
+    );
     result.fold(
       (failure) => emit(state.copyWith(
         errorMessage: failure.message,
       )),
-      (playbackState) => emit(state.copyWith(
-        status: playbackState.isStreaming ? CamsStatus.active : CamsStatus.idle,
-        playbackState: playbackState,
-      )),
+      (playbackState) {
+        emit(state.copyWith(
+          status: (playbackState.isStreaming || playbackState.hasPendingPlaylist)
+              ? CamsStatus.active
+              : CamsStatus.idle,
+          playbackState: playbackState,
+        ));
+        _dispatchDeferredTrackJump(playbackState: playbackState, emit: emit);
+      },
     );
+  }
+
+  void _dispatchDeferredTrackJump({
+    required SpacePlaybackState playbackState,
+    required Emitter<CamsPlaybackState> emit,
+  }) {
+    final pendingTrackId = state.pendingTrackId;
+    final pendingTrackPlaylistId = state.pendingTrackPlaylistId;
+    if (pendingTrackId == null ||
+        pendingTrackPlaylistId == null ||
+        !playbackState.isStreaming ||
+        playbackState.currentPlaylistId != pendingTrackPlaylistId) {
+      return;
+    }
+
+    emit(state.copyWith(clearPendingTrackJump: true));
+    add(CamsSendCommand(
+      command: PlaybackCommandEnum.skipToTrack,
+      targetTrackId: pendingTrackId,
+    ));
   }
 
   Future<void> _onReportPlaybackState(

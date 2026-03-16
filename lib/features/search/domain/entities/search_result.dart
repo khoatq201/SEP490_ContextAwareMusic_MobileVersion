@@ -9,6 +9,8 @@ class SearchResult {
 
   /// Optional duration string for songs (e.g. "3:25")
   final String? duration;
+  final int? durationSeconds;
+  final String? streamUrl;
 
   const SearchResult({
     required this.id,
@@ -18,6 +20,8 @@ class SearchResult {
     this.imageUrl,
     required this.type,
     this.duration,
+    this.durationSeconds,
+    this.streamUrl,
   });
 }
 

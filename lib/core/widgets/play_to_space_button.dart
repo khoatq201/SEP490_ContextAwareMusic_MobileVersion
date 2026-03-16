@@ -5,9 +5,9 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../features/space_control/domain/entities/space.dart';
 import '../../features/space_control/domain/entities/track.dart';
-import '../constants/app_colors.dart';
 import '../player/player_bloc.dart';
 import '../player/player_event.dart';
+import '../player/local_preview_feedback.dart';
 import '../session/session_cubit.dart';
 
 /// A reusable "Play to Space" button used on Search detail pages.
@@ -69,31 +69,21 @@ class PlayToSpaceButton extends StatelessWidget {
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Remote playback for album/artist track lists is not supported yet. Use a CMS playlist to control a space.',
-        ),
-      ),
+      const SnackBar(content: Text(kManagerPlaylistOnlyMessage)),
     );
   }
 
   void _play(BuildContext context, {Space? space}) {
-    // For now, just starts the local player queue.
-    // When MQTT is wired, this would also push to the selected space.
+    // Current implementation is a local preview on the paired device only.
     context.read<PlayerBloc>().add(PlayerPlaylistStarted(
           tracks: tracks,
           startIndex: startIndex,
           playlistName: playlistName,
         ));
 
-    if (space != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Playing to ${space.name}'),
-          duration: const Duration(seconds: 2),
-          backgroundColor: AppColors.success,
-        ),
-      );
-    }
+    showLocalPreviewStartedSnackBar(
+      context,
+      spaceName: space?.name,
+    );
   }
 }
