@@ -22,11 +22,21 @@ class MiniPlayerWidget extends StatelessWidget {
       builder: (context, state) {
         if (!state.hasTrack) return const SizedBox.shrink();
 
+        final camsState = context.watch<CamsPlaybackBloc>().state;
         final isDark = Theme.of(context).brightness == Brightness.dark;
         final track = state.currentTrack!;
         final colorScheme = Theme.of(context).colorScheme;
         final useRemoteControls =
             state.isHlsMode && (state.activeSpaceId?.isNotEmpty ?? false);
+        final canEndStream =
+            state.isSyncedCamsPlayback && camsState.hasActiveOverride;
+        final nextTrackIndex =
+            state.hasNext ? state.currentIndex + 1 : state.currentIndex;
+        final optimisticNextOffset = state.hasNext
+            ? state.offsetForIndex(nextTrackIndex).toDouble()
+            : null;
+        final optimisticNextTrackId =
+            state.hasNext ? state.queue[nextTrackIndex].id : null;
 
         return GestureDetector(
           onTap: () => context.push('/now-playing-full'),
@@ -150,6 +160,16 @@ class MiniPlayerWidget extends StatelessWidget {
                           ),
                           onPressed: () {
                             if (useRemoteControls) {
+                              if (optimisticNextOffset != null) {
+                                context.read<PlayerBloc>().add(
+                                      PlayerRemoteCommandApplied(
+                                        command: PlaybackCommandEnum.skipNext,
+                                        positionSeconds: optimisticNextOffset,
+                                        targetTrackId: optimisticNextTrackId,
+                                        playLocally: true,
+                                      ),
+                                    );
+                              }
                               context.read<CamsPlaybackBloc>().add(
                                     const CamsSendCommand(
                                       command: PlaybackCommandEnum.skipNext,
@@ -162,6 +182,23 @@ class MiniPlayerWidget extends StatelessWidget {
                                 .add(const PlayerSkipRequested());
                           },
                         ),
+
+                        if (canEndStream)
+                          IconButton(
+                            icon: Icon(
+                              Icons.close_rounded,
+                              size: 22,
+                              color: isDark
+                                  ? AppColors.textDarkSecondary
+                                  : AppColors.textSecondary,
+                            ),
+                            tooltip: 'End manual stream',
+                            onPressed: () {
+                              context
+                                  .read<CamsPlaybackBloc>()
+                                  .add(const CamsCancelOverride());
+                            },
+                          ),
                       ],
                     ),
                   ),

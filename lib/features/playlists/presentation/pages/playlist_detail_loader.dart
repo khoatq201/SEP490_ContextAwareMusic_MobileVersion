@@ -46,6 +46,7 @@ class _PlaylistDetailLoaderState extends State<PlaylistDetailLoader> {
               moodTags: const [],
               duration: track.effectiveDuration,
               albumArt: track.coverImageUrl,
+              seekOffsetSeconds: track.seekOffsetSeconds,
             ))
         .toList();
 

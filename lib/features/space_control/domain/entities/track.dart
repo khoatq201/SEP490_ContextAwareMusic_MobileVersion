@@ -9,6 +9,7 @@ class Track extends Equatable {
   final List<String> moodTags;
   final int? duration; // in seconds
   final String? albumArt;
+  final int? seekOffsetSeconds;
 
   const Track({
     required this.id,
@@ -19,6 +20,7 @@ class Track extends Equatable {
     required this.moodTags,
     this.duration,
     this.albumArt,
+    this.seekOffsetSeconds,
   });
 
   @override
@@ -31,6 +33,7 @@ class Track extends Equatable {
         moodTags,
         duration,
         albumArt,
+        seekOffsetSeconds,
       ];
 
   bool get isAvailableOffline => localPath != null && localPath!.isNotEmpty;

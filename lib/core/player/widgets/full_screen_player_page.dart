@@ -5,6 +5,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../constants/app_colors.dart';
+import '../../enums/playback_command_enum.dart';
+import '../../../features/cams/presentation/bloc/cams_playback_bloc.dart';
+import '../../../features/cams/presentation/bloc/cams_playback_event.dart';
 import '../player_bloc.dart';
 import '../player_event.dart';
 import '../player_state.dart' as ps;
@@ -35,6 +38,25 @@ class FullScreenPlayerPage extends StatelessWidget {
         builder: (context, state) {
           final track = state.currentTrack;
           final isPlaying = state.isPlaying;
+          final camsState = context.watch<CamsPlaybackBloc>().state;
+          final useRemoteControls =
+              state.isHlsMode && (state.activeSpaceId?.isNotEmpty ?? false);
+          final hasQueueIndex = state.currentIndex >= 0 &&
+              state.currentIndex < state.queue.length;
+          final nextTrackIndex = state.hasNext ? state.currentIndex + 1 : null;
+          final optimisticNextOffset = nextTrackIndex != null
+              ? state.offsetForIndex(nextTrackIndex).toDouble()
+              : null;
+          final optimisticNextTrackId =
+              nextTrackIndex != null ? state.queue[nextTrackIndex].id : null;
+          final previousTrackIndex = hasQueueIndex
+              ? state.displayPosition > 5
+                  ? state.currentIndex
+                  : (state.hasPrevious ? state.currentIndex - 1 : null)
+              : null;
+          final optimisticPreviousOffset = previousTrackIndex != null
+              ? state.offsetForIndex(previousTrackIndex).toDouble()
+              : null;
           final moodTags = track?.moodTags;
           final mood =
               (moodTags != null && moodTags.isNotEmpty) ? moodTags.first : null;
@@ -160,7 +182,7 @@ class FullScreenPlayerPage extends StatelessWidget {
                       ),
                     Text(
                       track?.title ?? 'No track playing',
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
                       style: GoogleFonts.poppins(
@@ -209,6 +231,21 @@ class FullScreenPlayerPage extends StatelessWidget {
                         ),
                       ),
                     ],
+                    if (camsState.hasActiveOverride) ...[
+                      const SizedBox(height: 10),
+                      OutlinedButton.icon(
+                        onPressed: camsState.isOverriding
+                            ? null
+                            : () => context
+                                .read<CamsPlaybackBloc>()
+                                .add(const CamsCancelOverride()),
+                        icon: const Icon(LucideIcons.square),
+                        label: Text(
+                          'End manual stream',
+                          style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ).animate().fadeIn(duration: 380.ms).slideY(begin: 0.08),
@@ -250,7 +287,7 @@ class FullScreenPlayerPage extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              _fmt(state.currentPosition),
+                              _fmt(state.displayPosition),
                               style: GoogleFonts.inter(
                                   color: palette.textMuted, fontSize: 12),
                             ),
@@ -276,7 +313,28 @@ class FullScreenPlayerPage extends StatelessWidget {
                   children: [
                     // Skip previous
                     GestureDetector(
-                      onTap: () {},
+                      onTap: () {
+                        if (useRemoteControls) {
+                          if (optimisticPreviousOffset != null) {
+                            context.read<PlayerBloc>().add(
+                                  PlayerRemoteCommandApplied(
+                                    command: PlaybackCommandEnum.skipPrevious,
+                                    positionSeconds: optimisticPreviousOffset,
+                                    playLocally: true,
+                                  ),
+                                );
+                          }
+                          context.read<CamsPlaybackBloc>().add(
+                                const CamsSendCommand(
+                                  command: PlaybackCommandEnum.skipPrevious,
+                                ),
+                              );
+                          return;
+                        }
+                        context
+                            .read<PlayerBloc>()
+                            .add(const PlayerSkipBackRequested());
+                      },
                       child: Container(
                         width: 52,
                         height: 52,
@@ -293,9 +351,21 @@ class FullScreenPlayerPage extends StatelessWidget {
 
                     // Play / Pause
                     GestureDetector(
-                      onTap: () => context
-                          .read<PlayerBloc>()
-                          .add(const PlayerPlayPauseToggled()),
+                      onTap: () {
+                        if (useRemoteControls) {
+                          context.read<CamsPlaybackBloc>().add(
+                                CamsSendCommand(
+                                  command: isPlaying
+                                      ? PlaybackCommandEnum.pause
+                                      : PlaybackCommandEnum.resume,
+                                ),
+                              );
+                          return;
+                        }
+                        context
+                            .read<PlayerBloc>()
+                            .add(const PlayerPlayPauseToggled());
+                      },
                       child: Container(
                         width: 76,
                         height: 76,
@@ -314,9 +384,29 @@ class FullScreenPlayerPage extends StatelessWidget {
 
                     // Skip next
                     GestureDetector(
-                      onTap: () => context
-                          .read<PlayerBloc>()
-                          .add(const PlayerSkipRequested()),
+                      onTap: () {
+                        if (useRemoteControls) {
+                          if (optimisticNextOffset != null) {
+                            context.read<PlayerBloc>().add(
+                                  PlayerRemoteCommandApplied(
+                                    command: PlaybackCommandEnum.skipNext,
+                                    positionSeconds: optimisticNextOffset,
+                                    targetTrackId: optimisticNextTrackId,
+                                    playLocally: true,
+                                  ),
+                                );
+                          }
+                          context.read<CamsPlaybackBloc>().add(
+                                const CamsSendCommand(
+                                  command: PlaybackCommandEnum.skipNext,
+                                ),
+                              );
+                          return;
+                        }
+                        context
+                            .read<PlayerBloc>()
+                            .add(const PlayerSkipRequested());
+                      },
                       child: Container(
                         width: 52,
                         height: 52,

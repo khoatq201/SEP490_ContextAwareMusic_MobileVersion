@@ -58,8 +58,7 @@ class PlayerState extends Equatable {
   bool get hasTrack => currentTrack != null;
 
   /// True when the player is following CAMS/SignalR state for a remote stream.
-  bool get isSyncedCamsPlayback =>
-      isHlsMode && (hlsUrl?.isNotEmpty ?? false);
+  bool get isSyncedCamsPlayback => isHlsMode && (hlsUrl?.isNotEmpty ?? false);
 
   /// True when audio is playing only on the current device.
   bool get isLocalPreview => hasTrack && !isSyncedCamsPlayback;
@@ -70,8 +69,50 @@ class PlayerState extends Equatable {
   /// Whether there is a previous track in the queue.
   bool get hasPrevious => queue.isNotEmpty && currentIndex > 0;
 
+  int offsetForIndex(int index) {
+    if (index < 0 || index >= queue.length) return 0;
+
+    final explicitOffset = queue[index].seekOffsetSeconds;
+    if (explicitOffset != null) return explicitOffset;
+
+    var cumulativeOffset = 0;
+    for (var offsetIndex = 0; offsetIndex < index; offsetIndex++) {
+      cumulativeOffset += queue[offsetIndex].duration ?? 0;
+    }
+    return cumulativeOffset;
+  }
+
+  int get currentTrackStartOffset {
+    if (!isSyncedCamsPlayback ||
+        queue.isEmpty ||
+        currentIndex < 0 ||
+        currentIndex >= queue.length) {
+      return 0;
+    }
+
+    return offsetForIndex(currentIndex);
+  }
+
+  int get displayPosition {
+    final boundedPosition =
+        duration > 0 ? currentPosition.clamp(0, duration) : currentPosition;
+
+    if (!isSyncedCamsPlayback) {
+      return boundedPosition.toInt();
+    }
+
+    final relativePosition = currentPosition - currentTrackStartOffset;
+    if (duration <= 0) return relativePosition < 0 ? 0 : relativePosition;
+    return relativePosition.clamp(0, duration).toInt();
+  }
+
+  int get remainingDuration {
+    if (duration <= 0) return 0;
+    return (duration - displayPosition).clamp(0, duration).toInt();
+  }
+
   double get progress =>
-      (duration > 0) ? (currentPosition / duration).clamp(0.0, 1.0) : 0.0;
+      (duration > 0) ? (displayPosition / duration).clamp(0.0, 1.0) : 0.0;
 
   PlayerState copyWith({
     Track? currentTrack,

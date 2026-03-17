@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:audio_session/audio_session.dart';
+import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
 
 /// Wraps [AudioPlayer] from `just_audio` to provide a clean interface
@@ -12,6 +13,8 @@ class AudioPlayerService {
   AudioSession? _session;
   StreamSubscription<AudioInterruptionEvent>? _interruptionSub;
   StreamSubscription<void>? _becomingNoisySub;
+  Future<void> _pendingLoad = Future.value();
+  String? _loadedUrl;
 
   // ── Streams ──────────────────────────────────────────────────────────────
 
@@ -41,6 +44,7 @@ class AudioPlayerService {
   Duration? get duration => _player.duration;
   bool get playing => _player.playing;
   ProcessingState get processingState => _player.processingState;
+  String? get loadedUrl => _loadedUrl;
 
   // ── Controls ─────────────────────────────────────────────────────────────
 
@@ -79,8 +83,36 @@ class AudioPlayerService {
   ///
   /// Returns the total duration if available.
   Future<Duration?> loadUrl(String url) async {
-    final audioSource = AudioSource.uri(Uri.parse(url));
-    return await _player.setAudioSource(audioSource);
+    final completer = Completer<Duration?>();
+    final loadFuture = _pendingLoad.then((_) async {
+      if (_loadedUrl == url && processingState != ProcessingState.idle) {
+        completer.complete(_player.duration);
+        return;
+      }
+
+      final audioSource = AudioSource.uri(Uri.parse(url));
+      try {
+        final duration = await _player.setAudioSource(audioSource);
+        _loadedUrl = url;
+        completer.complete(duration);
+      } on PlatformException catch (error) {
+        final message = error.message ?? '';
+        final details = '${error.details ?? ''}';
+        final isDuplicatePlatformPlayer =
+            message.contains('already exists') ||
+            details.contains('already exists');
+        if (isDuplicatePlatformPlayer && _loadedUrl == url) {
+          completer.complete(_player.duration);
+          return;
+        }
+        completer.completeError(error, StackTrace.current);
+      } catch (error, stackTrace) {
+        completer.completeError(error, stackTrace);
+      }
+    });
+
+    _pendingLoad = loadFuture.catchError((_) {});
+    return completer.future;
   }
 
   /// Start / resume playback.
@@ -95,6 +127,7 @@ class AudioPlayerService {
   /// Stop playback and reset position.
   Future<void> stop() async {
     await _player.stop();
+    _loadedUrl = null;
     await _session?.setActive(false);
   }
 
@@ -108,6 +141,7 @@ class AudioPlayerService {
   Future<void> dispose() async {
     await _interruptionSub?.cancel();
     await _becomingNoisySub?.cancel();
+    await _pendingLoad.catchError((_) {});
     await _session?.setActive(false);
     await _player.dispose();
   }

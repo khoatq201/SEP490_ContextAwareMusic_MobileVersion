@@ -8,6 +8,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/player/player_bloc.dart';
 import '../../../../core/player/player_event.dart';
+import '../../../../core/presentation/shell_layout_metrics.dart';
 import '../../../../core/session/session_cubit.dart';
 import '../../../../core/widgets/select_playlist_bottom_sheet.dart';
 import '../../../../core/widgets/song_options_bottom_sheet.dart';
@@ -31,6 +32,13 @@ class ApiPlaylistDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = _Palette.fromBrightness(Theme.of(context).brightness);
+    final hasMiniPlayer =
+        context.select((PlayerBloc bloc) => bloc.state.hasTrack);
+    final bottomSpacing = ShellLayoutMetrics.reservedBottom(
+      context,
+      hasMiniPlayer: hasMiniPlayer,
+      extra: 24,
+    );
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -77,7 +85,7 @@ class ApiPlaylistDetailPage extends StatelessWidget {
                 ),
               ),
             ),
-          const SliverToBoxAdapter(child: SizedBox(height: 160)),
+          SliverToBoxAdapter(child: SizedBox(height: bottomSpacing)),
         ],
       ),
     );
@@ -581,6 +589,7 @@ void _seedPlaylistQueue(
             moodTags: const [],
             duration: playlistTrack.effectiveDuration,
             albumArt: playlistTrack.coverImageUrl,
+            seekOffsetSeconds: playlistTrack.seekOffsetSeconds,
           ))
       .toList();
 

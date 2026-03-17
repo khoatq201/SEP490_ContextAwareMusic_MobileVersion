@@ -5,14 +5,17 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../audio/playback_notification_service.dart';
 import '../enums/playback_command_enum.dart';
+import '../../features/playlists/data/datasources/playlist_remote_datasource.dart';
 import '../../features/cams/presentation/bloc/cams_playback_bloc.dart';
 import '../../features/cams/presentation/bloc/cams_playback_event.dart';
 import '../../features/cams/presentation/bloc/cams_playback_state.dart';
+import '../../features/space_control/domain/entities/track.dart';
 import '../player/player_bloc.dart';
 import '../player/player_event.dart';
 import '../player/player_state.dart';
 import '../session/session_cubit.dart';
 import '../session/session_state.dart';
+import '../../injection_container.dart';
 
 /// Keeps Session, CAMS and the global PlayerBloc synchronized app-wide.
 class AppPlaybackCoordinator extends StatefulWidget {
@@ -26,6 +29,7 @@ class AppPlaybackCoordinator extends StatefulWidget {
 
 class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
   StreamSubscription<PlaybackNotificationCommand>? _notificationCommandSub;
+  String? _hydratedPlaylistId;
 
   @override
   void initState() {
@@ -52,10 +56,15 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
     final space = session.currentSpace;
 
     if (store == null || space == null) {
+      _hydratedPlaylistId = null;
       playerBloc.add(const PlayerContextCleared());
       camsBloc.add(const CamsDisposePlayback());
       unawaited(notificationService.clear());
       return;
+    }
+
+    if (playerBloc.state.activeSpaceId != space.id) {
+      _hydratedPlaylistId = null;
     }
 
     playerBloc.add(PlayerContextUpdated(
@@ -85,13 +94,25 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
     final playerBloc = context.read<PlayerBloc>();
     final session = context.read<SessionCubit>().state;
 
-    if (playbackState == null ||
-        !camsState.isStreaming ||
+    if (playbackState == null) {
+      return;
+    }
+
+    if (!camsState.isStreaming ||
         playbackState.hlsUrl == null ||
         playbackState.hlsUrl!.isEmpty) {
+      final shouldStopPlayer = !playbackState.hasPendingPlaylist &&
+          (playbackState.currentPlaylistId == null ||
+              playbackState.currentPlaylistId!.isEmpty);
+      if (!shouldStopPlayer) {
+        return;
+      }
+      _hydratedPlaylistId = null;
       playerBloc.add(const PlayerHlsStopped());
       return;
     }
+
+    _hydrateQueueForPlayback(playbackState.currentPlaylistId);
 
     playerBloc.add(PlayerHlsStarted(
       hlsUrl: playbackState.hlsUrl!,
@@ -101,6 +122,40 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
       isPaused: playbackState.isPaused,
       playLocally: session.isPlaybackDevice,
     ));
+  }
+
+  Future<void> _hydrateQueueForPlayback(String? playlistId) async {
+    if (!mounted || playlistId == null || playlistId.isEmpty) return;
+    if (_hydratedPlaylistId == playlistId) return;
+
+    try {
+      final playlist =
+          await sl<PlaylistRemoteDataSource>().getPlaylistById(playlistId);
+      if (!mounted) return;
+
+      final queue = (playlist.tracks ?? const [])
+          .map((playlistTrack) => Track(
+                id: playlistTrack.trackId,
+                title: playlistTrack.title ?? 'Unknown Track',
+                artist: playlistTrack.artist ?? 'Unknown Artist',
+                fileUrl: '',
+                moodTags: const [],
+                duration: playlistTrack.effectiveDuration,
+                albumArt: playlistTrack.coverImageUrl,
+                seekOffsetSeconds: playlistTrack.seekOffsetSeconds,
+              ))
+          .toList();
+
+      _hydratedPlaylistId = playlistId;
+      context.read<PlayerBloc>().add(PlayerQueueSeeded(
+            tracks: queue,
+            playlistName: playlist.name,
+            playlistId: playlist.id,
+            force: true,
+          ));
+    } catch (_) {
+      // Keep the synthetic track fallback if playlist detail hydration fails.
+    }
   }
 
   void _handleNotificationCommand(PlaybackNotificationCommand command) {
@@ -140,6 +195,16 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
           }
           return;
         case PlaybackNotificationCommand.skipNext:
+          if (session.isPlaybackDevice && playerState.hasNext) {
+            final nextTrackIndex = playerState.currentIndex + 1;
+            playerBloc.add(PlayerRemoteCommandApplied(
+              command: PlaybackCommandEnum.skipNext,
+              positionSeconds:
+                  playerState.offsetForIndex(nextTrackIndex).toDouble(),
+              targetTrackId: playerState.queue[nextTrackIndex].id,
+              playLocally: true,
+            ));
+          }
           camsBloc.add(const CamsSendCommand(
             command: PlaybackCommandEnum.skipNext,
           ));
@@ -196,10 +261,15 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
                 previousPlayback?.hlsUrl != currentPlayback?.hlsUrl ||
                 previousPlayback?.currentPlaylistId !=
                     currentPlayback?.currentPlaylistId ||
+                previousPlayback?.currentPlaylistName !=
+                    currentPlayback?.currentPlaylistName ||
                 previousPlayback?.isPaused != currentPlayback?.isPaused ||
                 previousPlayback?.pausePositionSeconds !=
                     currentPlayback?.pausePositionSeconds ||
-                previousPlayback?.startedAtUtc != currentPlayback?.startedAtUtc ||
+                previousPlayback?.seekOffsetSeconds !=
+                    currentPlayback?.seekOffsetSeconds ||
+                previousPlayback?.startedAtUtc !=
+                    currentPlayback?.startedAtUtc ||
                 previousPlayback?.pendingPlaylistId !=
                     currentPlayback?.pendingPlaylistId ||
                 previous.status != current.status;

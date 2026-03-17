@@ -139,16 +139,39 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       return;
     }
 
-    emit(state.copyWith(
+    var nextState = state.copyWith(
       queue: event.tracks,
       playlistName: event.playlistName,
       playlistId: event.playlistId,
-    ));
+    );
+
+    if (nextState.isHlsMode &&
+        event.playlistId != null &&
+        nextState.playlistId == event.playlistId &&
+        event.tracks.isNotEmpty) {
+      final resolvedIndex =
+          _resolveIndexForOffset(nextState.currentPosition.toDouble());
+      if (resolvedIndex >= 0 && resolvedIndex < event.tracks.length) {
+        final resolvedTrack = event.tracks[resolvedIndex];
+        nextState = nextState.copyWith(
+          currentIndex: resolvedIndex,
+          currentTrack: resolvedTrack,
+          duration: resolvedTrack.duration ?? nextState.duration,
+        );
+      }
+    }
+
+    emit(nextState);
   }
 
   // ── Single-track changed (legacy / space-context) ─────────────────────
   void _onTrackChanged(
       PlayerTrackChanged event, Emitter<PlayerState> emit) async {
+    if (state.isSyncedCamsPlayback) {
+      // Ignore legacy MusicControl sync while a CAMS/HLS stream is active.
+      return;
+    }
+
     emit(state.copyWith(
       currentTrack: event.track,
       isPlaying: event.isPlaying,
@@ -198,6 +221,12 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
   // ── Skip forward ──────────────────────────────────────────────────────
   void _onSkipRequested(
       PlayerSkipRequested event, Emitter<PlayerState> emit) async {
+    if (state.isHlsMode && (state.hlsUrl?.isNotEmpty ?? false)) {
+      // CAMS controls drive the remote HLS stream. Wait for SignalR/state sync
+      // instead of mutating the queue into a fake local preview state.
+      return;
+    }
+
     // If we have a queue, advance to next track
     if (state.queue.isNotEmpty && state.hasNext) {
       await _loadAndPlayTrack(state.currentIndex + 1, emit);
@@ -214,6 +243,11 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
   // ── Skip back ─────────────────────────────────────────────────────────
   void _onSkipBackRequested(
       PlayerSkipBackRequested event, Emitter<PlayerState> emit) async {
+    if (state.isHlsMode && (state.hlsUrl?.isNotEmpty ?? false)) {
+      // Remote HLS playback should be reconciled from CAMS events only.
+      return;
+    }
+
     // If more than 3 seconds into the track, restart current track
     if (state.currentPosition > 3) {
       await _audioService.seek(Duration.zero);
@@ -235,6 +269,10 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
   // ── Auto-advance when track completes ─────────────────────────────────
   void _onTrackCompleted(
       PlayerTrackCompleted event, Emitter<PlayerState> emit) async {
+    if (state.isHlsMode && (state.hlsUrl?.isNotEmpty ?? false)) {
+      return;
+    }
+
     // If there's a next track in the queue, play it
     if (state.hasNext) {
       await _loadAndPlayTrack(state.currentIndex + 1, emit);
@@ -267,6 +305,21 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
 
   void _onPositionUpdated(
       PlayerPositionUpdated event, Emitter<PlayerState> emit) {
+    if (state.isHlsMode && state.queue.isNotEmpty) {
+      final resolvedIndex =
+          _resolveIndexForOffset(event.positionSeconds.toDouble());
+      if (resolvedIndex >= 0 && resolvedIndex < state.queue.length) {
+        final resolvedTrack = state.queue[resolvedIndex];
+        emit(state.copyWith(
+          currentPosition: event.positionSeconds,
+          currentIndex: resolvedIndex,
+          currentTrack: resolvedTrack,
+          duration: resolvedTrack.duration ?? state.duration,
+        ));
+        return;
+      }
+    }
+
     emit(state.copyWith(currentPosition: event.positionSeconds));
   }
 
@@ -286,17 +339,30 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     return state.queue.indexWhere((track) => track.id == trackId);
   }
 
+  int _trackStartOffsetAt(int index, [List<Track>? queueOverride]) {
+    final queue = queueOverride ?? state.queue;
+    if (index < 0 || index >= queue.length) return 0;
+
+    final explicitOffset = queue[index].seekOffsetSeconds;
+    if (explicitOffset != null) return explicitOffset;
+
+    var cumulativeOffset = 0;
+    for (var offsetIndex = 0; offsetIndex < index; offsetIndex++) {
+      cumulativeOffset += queue[offsetIndex].duration ?? 0;
+    }
+    return cumulativeOffset;
+  }
+
   int _resolveIndexForOffset(double offsetSeconds) {
     if (state.queue.isEmpty) return -1;
 
-    var accumulated = 0.0;
     for (var i = 0; i < state.queue.length; i++) {
-      final trackDuration = state.queue[i].duration?.toDouble() ?? 0.0;
-      final nextAccumulated = accumulated + trackDuration;
-      if (offsetSeconds < nextAccumulated || i == state.queue.length - 1) {
+      final nextTrackStart = i < state.queue.length - 1
+          ? _trackStartOffsetAt(i + 1).toDouble()
+          : null;
+      if (nextTrackStart == null || offsetSeconds < nextTrackStart) {
         return i;
       }
-      accumulated = nextAccumulated;
     }
     return state.queue.length - 1;
   }
@@ -345,15 +411,28 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     if (!event.playLocally) return;
 
     try {
-      await _audioService.loadUrl(event.hlsUrl);
+      final shouldReloadSource = _audioService.loadedUrl != event.hlsUrl ||
+          !state.isHlsMode ||
+          state.hlsUrl != event.hlsUrl;
+
+      if (shouldReloadSource) {
+        await _audioService.loadUrl(event.hlsUrl);
+      }
+
       if (event.seekOffsetSeconds > 0) {
-        await _audioService
-            .seek(Duration(seconds: event.seekOffsetSeconds.toInt()));
+        final targetPosition =
+            Duration(seconds: event.seekOffsetSeconds.toInt());
+        final currentPosition = _audioService.position;
+        final positionDrift =
+            (currentPosition - targetPosition).inSeconds.abs();
+        if (shouldReloadSource || positionDrift > 2) {
+          await _audioService.seek(targetPosition);
+        }
       }
       if (event.isPaused) {
         await _audioService.pause();
       } else {
-        _audioService.play();
+        await _audioService.play();
       }
     } catch (_) {
       // Silently handle audio errors
@@ -448,6 +527,10 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
   // Call this inside SpaceDetailPage's BlocListener.
   // -------------------------------------------------------------------------
   void syncFromMusicState(MusicControlState musicState) {
+    if (state.isSyncedCamsPlayback) {
+      return;
+    }
+
     final track = musicState.playerState?.currentTrack;
     final isPlaying = musicState.status == MusicControlStatus.playing;
     final position = musicState.playerState?.currentPosition ?? 0;

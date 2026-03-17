@@ -10,8 +10,7 @@ class ApiConstants {
 
   // Base URLs
   // Android emulator can use 10.0.2.2 (host localhost); real devices should use LAN IP.
-  static const String baseUrl =
-      'http://ec2-47-129-189-32.ap-southeast-1.compute.amazonaws.com';
+  static const String baseUrl = 'http://192.168.1.6:7001';
   static const String mqttBrokerUrl = 'mqtt.cams.example.com';
   static const int mqttPort = 1883;
 

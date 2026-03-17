@@ -77,8 +77,6 @@ class _SpaceDetailPageState extends State<SpaceDetailPage>
     _tabController.dispose();
     context.read<SpaceMonitoringBloc>().add(const StopMonitoring());
     context.read<MusicControlBloc>().add(const StopMusicMonitoring());
-    // Clear global player context when leaving the space
-    context.read<PlayerBloc>().add(const PlayerContextCleared());
     super.dispose();
   }
 
@@ -89,7 +87,11 @@ class _SpaceDetailPageState extends State<SpaceDetailPage>
     // ── Sync MusicControlBloc → global PlayerBloc ────────────────────
     return BlocListener<MusicControlBloc, MusicControlState>(
       listener: (context, musicState) {
-        context.read<PlayerBloc>().syncFromMusicState(musicState);
+        final playerBloc = context.read<PlayerBloc>();
+        if (playerBloc.state.isSyncedCamsPlayback) {
+          return;
+        }
+        playerBloc.syncFromMusicState(musicState);
       },
       child: BlocBuilder<SpaceMonitoringBloc, SpaceMonitoringState>(
         builder: (context, spaceState) {

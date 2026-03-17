@@ -134,7 +134,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
             ? track.moodTags.first
             : spaceState.space?.currentMood);
     final duration = playerState.duration;
-    final currentPosition = playerState.currentPosition;
+    final displayPosition = playerState.displayPosition;
     final isPlaying = playerState.isPlaying;
     final showLocalPreviewBanner = isPlayback && playerState.isLocalPreview;
 
@@ -146,6 +146,24 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
     final playlistName = camsState.currentPlaylistName?.toUpperCase() ??
         mood?.toUpperCase() ??
         'MUSIC';
+    final hasQueueIndex = playerState.currentIndex >= 0 &&
+        playerState.currentIndex < playerState.queue.length;
+    final nextTrackIndex =
+        playerState.hasNext ? playerState.currentIndex + 1 : null;
+    final optimisticNextOffset = nextTrackIndex != null
+        ? playerState.offsetForIndex(nextTrackIndex).toDouble()
+        : null;
+    final optimisticNextTrackId =
+        nextTrackIndex != null ? playerState.queue[nextTrackIndex].id : null;
+    final previousTrackIndex = hasQueueIndex
+        ? displayPosition > 5
+            ? playerState.currentIndex
+            : (playerState.hasPrevious ? playerState.currentIndex - 1 : null)
+        : null;
+    final optimisticPreviousOffset = previousTrackIndex != null
+        ? playerState.offsetForIndex(previousTrackIndex).toDouble()
+        : null;
+    final canEndStream = camsState.hasActiveOverride;
 
     // Device label for "Playing from"
     final String deviceLabel;
@@ -232,7 +250,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                 // ── Song title + artist ─────────────────────────────
                 Text(
                   track?.title ?? 'No track playing',
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.poppins(
                     color: palette.textPrimary,
@@ -257,7 +275,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                   const SizedBox(height: 4),
                   Text(
                     'Playing from: ${playerState.playlistName}',
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
                       color: palette.accent,
@@ -270,13 +288,34 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                   const SizedBox(height: 12),
                   _LocalPreviewBanner(palette: palette),
                 ],
+                if (canEndStream) ...[
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: OutlinedButton.icon(
+                      onPressed: camsState.isOverriding
+                          ? null
+                          : () => context
+                              .read<CamsPlaybackBloc>()
+                              .add(const CamsCancelOverride()),
+                      icon: const Icon(LucideIcons.square),
+                      label: Text(
+                        'End manual stream',
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ),
+                ],
 
                 const SizedBox(height: 24),
 
                 // ── Progress bar ────────────────────────────────────
                 _ProgressBar(
                   duration: duration,
-                  currentPosition: currentPosition,
+                  currentPosition: displayPosition,
+                  remainingDuration: playerState.remainingDuration,
+                  seekBaseOffsetSeconds: playerState.currentTrackStartOffset,
+                  useAbsoluteSeek: playerState.isSyncedCamsPlayback,
                   palette: palette,
                 ),
 
@@ -289,7 +328,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                   volume: _volume,
                   palette: palette,
                   hasNext: playerState.hasNext,
-                  hasPrevious: playerState.hasPrevious || currentPosition > 3,
+                  hasPrevious: playerState.hasPrevious || displayPosition > 3,
                   onShuffle: () => setState(() => _isShuffleOn = !_isShuffleOn),
                   onPlayPause: () {
                     // Send CAMS command + toggle local player
@@ -306,11 +345,21 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                   },
                   onSkipBack: () {
                     if (camsState.isStreaming) {
+                      if (isPlayback && optimisticPreviousOffset != null) {
+                        context.read<PlayerBloc>().add(
+                              PlayerRemoteCommandApplied(
+                                command: PlaybackCommandEnum.skipPrevious,
+                                positionSeconds: optimisticPreviousOffset,
+                                playLocally: true,
+                              ),
+                            );
+                      }
                       context
                           .read<CamsPlaybackBloc>()
                           .add(const CamsSendCommand(
                             command: PlaybackCommandEnum.skipPrevious,
                           ));
+                      return;
                     }
                     context
                         .read<PlayerBloc>()
@@ -318,11 +367,22 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                   },
                   onSkip: () {
                     if (camsState.isStreaming) {
+                      if (isPlayback && optimisticNextOffset != null) {
+                        context.read<PlayerBloc>().add(
+                              PlayerRemoteCommandApplied(
+                                command: PlaybackCommandEnum.skipNext,
+                                positionSeconds: optimisticNextOffset,
+                                targetTrackId: optimisticNextTrackId,
+                                playLocally: true,
+                              ),
+                            );
+                      }
                       context
                           .read<CamsPlaybackBloc>()
                           .add(const CamsSendCommand(
                             command: PlaybackCommandEnum.skipNext,
                           ));
+                      return;
                     }
                     context.read<PlayerBloc>().add(const PlayerSkipRequested());
                   },
@@ -872,8 +932,15 @@ class _ProgressBar extends StatelessWidget {
   const _ProgressBar(
       {required this.duration,
       required this.currentPosition,
+      required this.remainingDuration,
+      required this.seekBaseOffsetSeconds,
+      required this.useAbsoluteSeek,
       required this.palette});
-  final int duration, currentPosition;
+  final int duration;
+  final int currentPosition;
+  final int remainingDuration;
+  final int seekBaseOffsetSeconds;
+  final bool useAbsoluteSeek;
   final _NPPalette palette;
 
   String _fmt(int sec) {
@@ -884,6 +951,9 @@ class _ProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final clampedPosition =
+        duration > 0 ? currentPosition.clamp(0, duration).toInt() : 0;
+
     return Column(
       children: [
         SliderTheme(
@@ -897,23 +967,27 @@ class _ProgressBar extends StatelessWidget {
             overlayColor: palette.textPrimary.withOpacity(0.15),
           ),
           child: Slider(
-            value: duration > 0
-                ? currentPosition.clamp(0, duration).toDouble()
-                : 0,
+            value: duration > 0 ? clampedPosition.toDouble() : 0,
             min: 0,
             max: duration > 0 ? duration.toDouble() : 1,
             onChanged: (value) {
+              final targetSeconds = useAbsoluteSeek
+                  ? seekBaseOffsetSeconds + value.toInt()
+                  : value.toInt();
               context.read<PlayerBloc>().add(
-                    PlayerSeekRequested(positionSeconds: value.toInt()),
+                    PlayerSeekRequested(positionSeconds: targetSeconds),
                   );
             },
             onChangeEnd: (value) {
               final camsState = context.read<CamsPlaybackBloc>().state;
               if (!camsState.isStreaming) return;
+              final targetSeconds = useAbsoluteSeek
+                  ? seekBaseOffsetSeconds + value.toInt()
+                  : value.toInt();
               context.read<CamsPlaybackBloc>().add(
                     CamsSendCommand(
                       command: PlaybackCommandEnum.seek,
-                      seekPositionSeconds: value.toDouble(),
+                      seekPositionSeconds: targetSeconds.toDouble(),
                     ),
                   );
             },
@@ -924,13 +998,10 @@ class _ProgressBar extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(_fmt(currentPosition),
+              Text(_fmt(clampedPosition),
                   style: GoogleFonts.inter(
                       color: palette.textMuted, fontSize: 12)),
-              Text(
-                  duration > 0
-                      ? '-${_fmt(duration - currentPosition)}'
-                      : '--:--',
+              Text(duration > 0 ? '-${_fmt(remainingDuration)}' : '--:--',
                   style: GoogleFonts.inter(
                       color: palette.textMuted, fontSize: 12)),
             ],
