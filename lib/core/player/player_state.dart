@@ -69,6 +69,33 @@ class PlayerState extends Equatable {
   /// Whether there is a previous track in the queue.
   bool get hasPrevious => queue.isNotEmpty && currentIndex > 0;
 
+  int get totalQueueDuration {
+    if (queue.isEmpty) return 0;
+
+    final lastIndex = queue.length - 1;
+    final lastTrackDuration = queue[lastIndex].duration ?? 0;
+    return offsetForIndex(lastIndex) + lastTrackDuration;
+  }
+
+  int get normalizedPlaylistPosition {
+    if (!isSyncedCamsPlayback) {
+      final boundedPosition =
+          duration > 0 ? currentPosition.clamp(0, duration) : currentPosition;
+      return boundedPosition.toInt();
+    }
+
+    final queueDuration = totalQueueDuration;
+    if (queueDuration <= 0) {
+      return currentPosition < 0 ? 0 : currentPosition;
+    }
+
+    final normalizedPosition = currentPosition % queueDuration;
+    return (normalizedPosition < 0
+            ? normalizedPosition + queueDuration
+            : normalizedPosition)
+        .toInt();
+  }
+
   int offsetForIndex(int index) {
     if (index < 0 || index >= queue.length) return 0;
 
@@ -94,14 +121,12 @@ class PlayerState extends Equatable {
   }
 
   int get displayPosition {
-    final boundedPosition =
-        duration > 0 ? currentPosition.clamp(0, duration) : currentPosition;
-
     if (!isSyncedCamsPlayback) {
-      return boundedPosition.toInt();
+      return normalizedPlaylistPosition;
     }
 
-    final relativePosition = currentPosition - currentTrackStartOffset;
+    final relativePosition =
+        normalizedPlaylistPosition - currentTrackStartOffset;
     if (duration <= 0) return relativePosition < 0 ? 0 : relativePosition;
     return relativePosition.clamp(0, duration).toInt();
   }

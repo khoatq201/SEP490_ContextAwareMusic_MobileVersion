@@ -145,7 +145,12 @@ class CamsStopPlaybackReceived extends CamsPlaybackEvent {
 
 /// Refresh state from server (manual pull).
 class CamsRefreshState extends CamsPlaybackEvent {
-  const CamsRefreshState();
+  final bool silent;
+
+  const CamsRefreshState({this.silent = false});
+
+  @override
+  List<Object?> get props => [silent];
 }
 
 /// Report current playback telemetry from playback device to StoreHub.

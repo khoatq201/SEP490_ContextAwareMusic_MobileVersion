@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/enums/user_role.dart';
+import '../../../../core/error/exceptions.dart';
 import '../../../../core/player/player_bloc.dart';
+import '../../../../core/session/session_cubit.dart';
 import '../../../../injection_container.dart';
 import '../../../home/domain/entities/playlist_entity.dart';
 import '../../../home/domain/entities/song_entity.dart';
 import '../../../playlists/data/datasources/playlist_remote_datasource.dart';
+import '../../../tracks/data/datasources/track_remote_datasource.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Filter options
@@ -160,6 +165,28 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
     }
   }
 
+  Future<void> _openUploadTrackSheet() async {
+    final uploaded = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const _UploadTrackBottomSheet(),
+    );
+
+    if (!mounted || uploaded != true) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Track uploaded successfully.',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+        ),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
   void _unblockSong(String songId) {
     setState(() => _blockedSongs.removeWhere((s) => s.id == songId));
   }
@@ -167,6 +194,9 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
   @override
   Widget build(BuildContext context) {
     final palette = _Palette.fromBrightness(Theme.of(context).brightness);
+    final session = context.watch<SessionCubit>().state;
+    final canUploadTrack = !session.isPlaybackDevice &&
+        session.currentRole == UserRole.brandManager;
     final playerState = context.watch<PlayerBloc>().state;
     final safeBottom = MediaQuery.of(context).viewPadding.bottom;
     // Some Android devices/reporting modes can return 0 here while the shell
@@ -352,6 +382,19 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
               child: const Icon(Icons.add, size: 26),
             ),
           ),
+          if (canUploadTrack)
+            Positioned(
+              right: 16,
+              bottom: fabBottomOffset + 74,
+              child: FloatingActionButton.small(
+                heroTag: 'upload-track-fab',
+                onPressed: _openUploadTrackSheet,
+                backgroundColor: palette.card,
+                foregroundColor: palette.textPrimary,
+                elevation: 4,
+                child: const Icon(Icons.upload_file_rounded, size: 20),
+              ),
+            ),
         ],
       ),
     );
@@ -774,6 +817,381 @@ class _EmptyState extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // Palette
 // ─────────────────────────────────────────────────────────────────────────────
+class _UploadTrackBottomSheet extends StatefulWidget {
+  const _UploadTrackBottomSheet();
+
+  @override
+  State<_UploadTrackBottomSheet> createState() =>
+      _UploadTrackBottomSheetState();
+}
+
+class _UploadTrackBottomSheetState extends State<_UploadTrackBottomSheet> {
+  static const int _maxAudioBytes = 50 * 1024 * 1024;
+  static const int _maxCoverBytes = 5 * 1024 * 1024;
+
+  final _formKey = GlobalKey<FormState>();
+  final _titleController = TextEditingController();
+  final _artistController = TextEditingController();
+  final _genreController = TextEditingController();
+
+  PlatformFile? _audioFile;
+  PlatformFile? _coverFile;
+  bool _submitting = false;
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _artistController.dispose();
+    _genreController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickAudioFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['mp3', 'wav', 'aac', 'flac', 'ogg', 'm4a'],
+      withData: true,
+    );
+    if (!mounted || result == null || result.files.isEmpty) return;
+
+    final selected = result.files.single;
+    if (selected.size > _maxAudioBytes) {
+      _showError('Audio file must be 50 MB or smaller.');
+      return;
+    }
+
+    setState(() => _audioFile = selected);
+  }
+
+  Future<void> _pickCoverFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['jpg', 'jpeg', 'png', 'webp'],
+      withData: true,
+    );
+    if (!mounted || result == null || result.files.isEmpty) return;
+
+    final selected = result.files.single;
+    if (selected.size > _maxCoverBytes) {
+      _showError('Cover image must be 5 MB or smaller.');
+      return;
+    }
+
+    setState(() => _coverFile = selected);
+  }
+
+  Future<void> _submit() async {
+    final isValid = _formKey.currentState?.validate() ?? false;
+    if (!isValid) return;
+
+    if (_audioFile == null) {
+      _showError('Please select an audio file.');
+      return;
+    }
+
+    setState(() => _submitting = true);
+
+    try {
+      await sl<TrackRemoteDataSource>().createTrack(
+        CreateTrackRequest(
+          title: _titleController.text.trim(),
+          artist: _nullableText(_artistController.text),
+          genre: _nullableText(_genreController.text),
+          audioFile: _toUploadFile(_audioFile!),
+          coverImageFile:
+              _coverFile != null ? _toUploadFile(_coverFile!) : null,
+        ),
+      );
+
+      if (!mounted) return;
+      Navigator.pop(context, true);
+    } on ServerException catch (e) {
+      if (!mounted) return;
+      _showError(e.message);
+    } catch (_) {
+      if (!mounted) return;
+      _showError('Failed to upload track.');
+    } finally {
+      if (mounted) {
+        setState(() => _submitting = false);
+      }
+    }
+  }
+
+  String? _nullableText(String value) {
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+
+  TrackUploadFile _toUploadFile(PlatformFile file) {
+    return TrackUploadFile(
+      fileName: file.name,
+      filePath: file.path,
+      bytes: file.bytes,
+    );
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+        ),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF1C1C1E) : Colors.white;
+    final textPrimary = isDark ? Colors.white : Colors.black87;
+    final textMuted = isDark ? Colors.white60 : Colors.black45;
+    final cardColor = isDark
+        ? Colors.white.withOpacity(0.06)
+        : Colors.black.withOpacity(0.04);
+
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 38,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white24 : Colors.black26,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Text(
+                        'Upload Track',
+                        style: GoogleFonts.poppins(
+                          color: textPrimary,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        onPressed: _submitting
+                            ? null
+                            : () => Navigator.pop(context, false),
+                        icon: Icon(LucideIcons.x, color: textMuted, size: 20),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Only Brand Manager can upload new tracks.',
+                    style: GoogleFonts.inter(
+                      color: textMuted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  TextFormField(
+                    controller: _titleController,
+                    enabled: !_submitting,
+                    style: GoogleFonts.inter(color: textPrimary),
+                    decoration: _inputDecoration(
+                      label: 'Title *',
+                      isDark: isDark,
+                    ),
+                    validator: (value) {
+                      final text = value?.trim() ?? '';
+                      if (text.isEmpty) return 'Title is required.';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _artistController,
+                    enabled: !_submitting,
+                    style: GoogleFonts.inter(color: textPrimary),
+                    decoration: _inputDecoration(
+                      label: 'Artist',
+                      isDark: isDark,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _genreController,
+                    enabled: !_submitting,
+                    style: GoogleFonts.inter(color: textPrimary),
+                    decoration: _inputDecoration(
+                      label: 'Genre',
+                      isDark: isDark,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  _FilePickerTile(
+                    title: 'Audio File *',
+                    subtitle: _audioFile?.name ??
+                        'mp3, wav, aac, flac, ogg, m4a (max 50 MB)',
+                    onTap: _submitting ? null : _pickAudioFile,
+                    icon: Icons.audiotrack_rounded,
+                    textPrimary: textPrimary,
+                    textMuted: textMuted,
+                    cardColor: cardColor,
+                  ),
+                  const SizedBox(height: 10),
+                  _FilePickerTile(
+                    title: 'Cover Image',
+                    subtitle:
+                        _coverFile?.name ?? 'jpg, jpeg, png, webp (max 5 MB)',
+                    onTap: _submitting ? null : _pickCoverFile,
+                    icon: Icons.image_outlined,
+                    textPrimary: textPrimary,
+                    textMuted: textMuted,
+                    cardColor: cardColor,
+                  ),
+                  const SizedBox(height: 18),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: _submitting ? null : _submit,
+                      icon: _submitting
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.upload_file_rounded, size: 18),
+                      label: Text(
+                        _submitting ? 'Uploading...' : 'Upload Track',
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration({
+    required String label,
+    required bool isDark,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: GoogleFonts.inter(
+        color: isDark ? Colors.white60 : Colors.black54,
+        fontSize: 12,
+      ),
+      filled: true,
+      fillColor: isDark
+          ? Colors.white.withOpacity(0.06)
+          : Colors.black.withOpacity(0.04),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+    );
+  }
+}
+
+class _FilePickerTile extends StatelessWidget {
+  const _FilePickerTile({
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    required this.icon,
+    required this.textPrimary,
+    required this.textMuted,
+    required this.cardColor,
+  });
+
+  final String title;
+  final String subtitle;
+  final VoidCallback? onTap;
+  final IconData icon;
+  final Color textPrimary;
+  final Color textMuted;
+  final Color cardColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: textMuted, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.inter(
+                      color: textPrimary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      color: textMuted,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, color: textMuted),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _Palette {
   const _Palette({
     required this.isDark,

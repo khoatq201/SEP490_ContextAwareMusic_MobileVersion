@@ -65,6 +65,7 @@ class _DevicePairingPageState extends State<DevicePairingPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
     final backgroundColor =
         isDark ? AppColors.backgroundDarkPrimary : AppColors.backgroundPrimary;
     final textColorPrimary =
@@ -140,100 +141,129 @@ class _DevicePairingPageState extends State<DevicePairingPage> {
           }
         },
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 48),
-                Text(
-                  'Playback Device\nSetup',
-                  style: GoogleFonts.outfit(
-                    fontSize: 36,
-                    fontWeight: FontWeight.bold,
-                    color: textColorPrimary,
-                    height: 1.2,
-                  ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              const horizontalPadding = 24.0;
+              const topPadding = 24.0;
+              const bottomPadding = 16.0;
+              final contentMinHeight =
+                  constraints.maxHeight - topPadding - bottomPadding;
+
+              return SingleChildScrollView(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: EdgeInsets.fromLTRB(
+                  horizontalPadding,
+                  topPadding,
+                  horizontalPadding,
+                  bottomPadding + keyboardInset,
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  'Enter the 6-digit pairing code shown on your management dashboard to link this device to a space.',
-                  style: GoogleFonts.inter(
-                    fontSize: 16,
-                    color: textColorSecondary,
-                    height: 1.5,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: contentMinHeight > 0 ? contentMinHeight : 0,
                   ),
-                ),
-                const SizedBox(height: 48),
-                TextField(
-                  controller: _pairCodeController,
-                  keyboardType: TextInputType.text,
-                  textCapitalization: TextCapitalization.characters,
-                  maxLength: 7,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9-]')),
-                    TextInputFormatter.withFunction((oldValue, newValue) {
-                      return newValue.copyWith(
-                        text: newValue.text.toUpperCase(),
-                        selection: newValue.selection,
-                      );
-                    }),
-                  ],
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.outfit(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 8,
-                    color: textColorPrimary,
-                  ),
-                  decoration: InputDecoration(
-                    counterText: '',
-                    hintText: '000000',
-                    hintStyle: GoogleFonts.outfit(
-                      color: textColorSecondary.withAlpha(76),
-                    ),
-                    filled: true,
-                    fillColor: surfaceColor,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 24),
-                  ),
-                ),
-                const Spacer(),
-                ElevatedButton(
-                  onPressed: _isPairing ? null : _onPairPressed,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
-                    disabledBackgroundColor: primaryColor.withAlpha(128),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: _isPairing
-                      ? const SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : Text(
-                          'Pair Device',
-                          style: GoogleFonts.inter(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
+                  child: IntrinsicHeight(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const SizedBox(height: 48),
+                        Text(
+                          'Playback Device\nSetup',
+                          style: GoogleFonts.outfit(
+                            fontSize: 36,
+                            fontWeight: FontWeight.bold,
+                            color: textColorPrimary,
+                            height: 1.2,
                           ),
                         ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Enter the 6-digit pairing code shown on your management dashboard to link this device to a space.',
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            color: textColorSecondary,
+                            height: 1.5,
+                          ),
+                        ),
+                        const SizedBox(height: 48),
+                        TextField(
+                          controller: _pairCodeController,
+                          keyboardType: TextInputType.text,
+                          textCapitalization: TextCapitalization.characters,
+                          maxLength: 7,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                              RegExp(r'[A-Za-z0-9-]'),
+                            ),
+                            TextInputFormatter.withFunction(
+                              (oldValue, newValue) {
+                                return newValue.copyWith(
+                                  text: newValue.text.toUpperCase(),
+                                  selection: newValue.selection,
+                                );
+                              },
+                            ),
+                          ],
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.outfit(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 8,
+                            color: textColorPrimary,
+                          ),
+                          decoration: InputDecoration(
+                            counterText: '',
+                            hintText: '000000',
+                            hintStyle: GoogleFonts.outfit(
+                              color: textColorSecondary.withAlpha(76),
+                            ),
+                            filled: true,
+                            fillColor: surfaceColor,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide.none,
+                            ),
+                            contentPadding:
+                                const EdgeInsets.symmetric(vertical: 24),
+                          ),
+                        ),
+                        const Spacer(),
+                        ElevatedButton(
+                          onPressed: _isPairing ? null : _onPairPressed,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: primaryColor,
+                            disabledBackgroundColor:
+                                primaryColor.withAlpha(128),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: _isPairing
+                              ? const SizedBox(
+                                  height: 24,
+                                  width: 24,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Text(
+                                  'Pair Device',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                const SizedBox(height: 16),
-              ],
-            ),
+              );
+            },
           ),
         ),
       ),

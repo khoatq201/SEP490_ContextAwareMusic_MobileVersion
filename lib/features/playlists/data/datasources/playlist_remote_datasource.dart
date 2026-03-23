@@ -2,6 +2,7 @@ import '../models/api_playlist_model.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/error/exceptions.dart';
+import 'package:dio/dio.dart';
 
 abstract class PlaylistRemoteDataSource {
   /// Fetch paginated list of playlists.
@@ -17,6 +18,12 @@ abstract class PlaylistRemoteDataSource {
 
   /// Fetch single playlist detail by ID (includes tracks with seekOffsetSeconds).
   Future<ApiPlaylistModel> getPlaylistById(String playlistId);
+
+  /// Add one or many tracks to an existing playlist.
+  Future<void> addTracksToPlaylist({
+    required String playlistId,
+    required List<String> trackIds,
+  });
 }
 
 /// Wrapper for paginated playlist list response.
@@ -113,5 +120,46 @@ class PlaylistRemoteDataSourceImpl implements PlaylistRemoteDataSource {
     } catch (e) {
       throw ServerException('Failed to fetch playlist detail: $e');
     }
+  }
+
+  @override
+  Future<void> addTracksToPlaylist({
+    required String playlistId,
+    required List<String> trackIds,
+  }) async {
+    if (trackIds.isEmpty) return;
+
+    try {
+      final response = await dioClient.post(
+        ApiConstants.addTracksToPlaylist(playlistId),
+        data: {
+          'trackIds': trackIds,
+        },
+      );
+
+      final data = response.data;
+      if (data is Map<String, dynamic> && data['isSuccess'] == false) {
+        throw ServerException(_extractErrorMessage(data));
+      }
+    } on DioException catch (e) {
+      final payload = e.response?.data;
+      if (payload is Map<String, dynamic>) {
+        throw ServerException(_extractErrorMessage(payload));
+      }
+      throw ServerException('Failed to add track to playlist: ${e.message}');
+    } catch (e) {
+      throw ServerException('Failed to add track to playlist: $e');
+    }
+  }
+
+  String _extractErrorMessage(Map<String, dynamic> payload) {
+    final errors = payload['errors'];
+    if (errors is List && errors.isNotEmpty) {
+      return errors.first.toString();
+    }
+    final message = payload['message']?.toString();
+    return (message != null && message.isNotEmpty)
+        ? message
+        : 'Request failed.';
   }
 }

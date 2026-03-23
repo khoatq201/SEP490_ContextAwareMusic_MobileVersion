@@ -53,14 +53,16 @@ class SpacePlaybackState extends Equatable {
   bool get hasActiveOverride => isManualOverride && overrideMode != null;
 
   double get effectiveSeekOffset {
-    if (isPaused) return pausePositionSeconds?.toDouble() ?? 0;
-    if (seekOffsetSeconds != null) return seekOffsetSeconds!;
-    if (startedAtUtc == null) return 0;
-    return DateTime.now()
-            .toUtc()
-            .difference(startedAtUtc!)
-            .inMilliseconds /
-        1000.0;
+    if (isPaused) {
+      return pausePositionSeconds?.toDouble() ?? seekOffsetSeconds ?? 0;
+    }
+    if (startedAtUtc != null) {
+      final elapsedSeconds =
+          DateTime.now().toUtc().difference(startedAtUtc!).inMilliseconds /
+              1000.0;
+      return elapsedSeconds < 0 ? 0 : elapsedSeconds;
+    }
+    return seekOffsetSeconds ?? 0;
   }
 
   @override

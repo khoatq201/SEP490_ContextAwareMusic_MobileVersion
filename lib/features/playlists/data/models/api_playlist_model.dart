@@ -19,11 +19,11 @@ class PlaylistTrackItemModel extends PlaylistTrackItem {
       trackId: json['trackId'] as String,
       title: json['title'] as String?,
       artist: json['artist'] as String?,
-      durationSec: json['durationSec'] as int?,
-      orderIndex: json['orderIndex'] as int?,
+      durationSec: (json['durationSec'] as num?)?.toInt(),
+      orderIndex: (json['orderIndex'] as num?)?.toInt(),
       coverImageUrl: json['coverImageUrl'] as String?,
-      actualDurationSec: json['actualDurationSec'] as int?,
-      seekOffsetSeconds: json['seekOffsetSeconds'] as int? ?? 0,
+      actualDurationSec: (json['actualDurationSec'] as num?)?.toInt(),
+      seekOffsetSeconds: (json['seekOffsetSeconds'] as num?)?.toInt() ?? 0,
     );
   }
 }
@@ -63,8 +63,8 @@ class ApiPlaylistModel extends ApiPlaylist {
       isDynamic: json['isDynamic'] as bool?,
       isDefault: json['isDefault'] as bool?,
       hlsUrl: json['hlsUrl'] as String?,
-      totalDurationSeconds: json['totalDurationSeconds'] as int?,
-      trackCount: json['trackCount'] as int? ?? 0,
+      totalDurationSeconds: (json['totalDurationSeconds'] as num?)?.toInt(),
+      trackCount: (json['trackCount'] as num?)?.toInt() ?? 0,
       status: EntityStatusEnum.fromJson(json['status'] ?? 1),
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: json['updatedAt'] != null
@@ -89,16 +89,16 @@ class ApiPlaylistModel extends ApiPlaylist {
       isDynamic: json['isDynamic'] as bool?,
       isDefault: json['isDefault'] as bool?,
       hlsUrl: json['hlsUrl'] as String?,
-      totalDurationSeconds: json['totalDurationSeconds'] as int?,
-      trackCount: json['trackCount'] as int? ?? 0,
+      totalDurationSeconds: (json['totalDurationSeconds'] as num?)?.toInt(),
+      trackCount: (json['trackCount'] as num?)?.toInt() ?? 0,
       status: EntityStatusEnum.fromJson(json['status'] ?? 1),
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: json['updatedAt'] != null
           ? DateTime.parse(json['updatedAt'] as String)
           : null,
       tracks: tracksJson
-          ?.map((e) =>
-              PlaylistTrackItemModel.fromJson(e as Map<String, dynamic>))
+          ?.map(
+              (e) => PlaylistTrackItemModel.fromJson(e as Map<String, dynamic>))
           .toList(),
     );
   }

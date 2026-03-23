@@ -48,11 +48,30 @@ class ApiPlaylist extends Equatable {
   /// Whether this playlist has a ready HLS stream
   bool get isStreamReady => hlsUrl != null && hlsUrl!.isNotEmpty;
 
+  int? get resolvedTotalDurationSeconds {
+    final playlistTracks = tracks;
+    if (playlistTracks != null && playlistTracks.isNotEmpty) {
+      final summedTrackDuration = playlistTracks.fold<int>(
+        0,
+        (total, track) => total + track.effectiveDuration,
+      );
+      if (summedTrackDuration > 0) {
+        final backendTotal = totalDurationSeconds;
+        if (backendTotal == null || backendTotal != summedTrackDuration) {
+          return summedTrackDuration;
+        }
+      }
+    }
+
+    return totalDurationSeconds;
+  }
+
   /// Formatted total duration
   String get formattedDuration {
-    if (totalDurationSeconds == null) return '--:--';
-    final hours = totalDurationSeconds! ~/ 3600;
-    final minutes = (totalDurationSeconds! % 3600) ~/ 60;
+    final resolvedDuration = resolvedTotalDurationSeconds;
+    if (resolvedDuration == null) return '--:--';
+    final hours = resolvedDuration ~/ 3600;
+    final minutes = (resolvedDuration % 3600) ~/ 60;
     if (hours > 0) {
       return '$hours:${minutes.toString().padLeft(2, '0')}h';
     }

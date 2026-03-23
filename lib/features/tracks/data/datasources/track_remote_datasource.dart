@@ -1,7 +1,10 @@
+import 'dart:typed_data';
+
 import '../models/api_track_model.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/error/exceptions.dart';
+import 'package:dio/dio.dart';
 
 abstract class TrackRemoteDataSource {
   /// Fetch paginated list of tracks.
@@ -18,6 +21,9 @@ abstract class TrackRemoteDataSource {
 
   /// Fetch single track detail by ID.
   Future<ApiTrackModel> getTrackById(String trackId);
+
+  /// Create a new manual-upload track.
+  Future<void> createTrack(CreateTrackRequest request);
 }
 
 /// Wrapper for paginated track list response.
@@ -48,6 +54,46 @@ class TrackListResponse {
       hasPrevious: json['hasPrevious'] as bool? ?? false,
     );
   }
+}
+
+class TrackUploadFile {
+  final String fileName;
+  final String? filePath;
+  final Uint8List? bytes;
+
+  const TrackUploadFile({
+    required this.fileName,
+    this.filePath,
+    this.bytes,
+  }) : assert(filePath != null || bytes != null);
+}
+
+class CreateTrackRequest {
+  final String title;
+  final String? artist;
+  final String? moodId;
+  final int? durationSec;
+  final int? bpm;
+  final String? genre;
+  final double? energyLevel;
+  final double? valence;
+  final int? provider;
+  final TrackUploadFile audioFile;
+  final TrackUploadFile? coverImageFile;
+
+  const CreateTrackRequest({
+    required this.title,
+    required this.audioFile,
+    this.artist,
+    this.moodId,
+    this.durationSec,
+    this.bpm,
+    this.genre,
+    this.energyLevel,
+    this.valence,
+    this.provider,
+    this.coverImageFile,
+  });
 }
 
 class TrackRemoteDataSourceImpl implements TrackRemoteDataSource {
@@ -109,5 +155,83 @@ class TrackRemoteDataSourceImpl implements TrackRemoteDataSource {
     } catch (e) {
       throw ServerException('Failed to fetch track detail: $e');
     }
+  }
+
+  @override
+  Future<void> createTrack(CreateTrackRequest request) async {
+    try {
+      final audioMultipart = await _toMultipartFile(request.audioFile);
+      final coverMultipart = request.coverImageFile != null
+          ? await _toMultipartFile(request.coverImageFile!)
+          : null;
+
+      final formData = FormData.fromMap({
+        'title': request.title,
+        if (request.artist != null && request.artist!.isNotEmpty)
+          'artist': request.artist,
+        if (request.moodId != null && request.moodId!.isNotEmpty)
+          'moodId': request.moodId,
+        if (request.durationSec != null) 'durationSec': request.durationSec,
+        if (request.bpm != null) 'bpm': request.bpm,
+        if (request.genre != null && request.genre!.isNotEmpty)
+          'genre': request.genre,
+        if (request.energyLevel != null) 'energyLevel': request.energyLevel,
+        if (request.valence != null) 'valence': request.valence,
+        if (request.provider != null) 'provider': request.provider,
+        'audioFile': audioMultipart,
+        if (coverMultipart != null) 'coverImageFile': coverMultipart,
+      });
+
+      final response = await dioClient.post(
+        ApiConstants.getTracks,
+        data: formData,
+        options: Options(
+          contentType: 'multipart/form-data',
+          headers: const {
+            'Accept': 'application/json',
+          },
+        ),
+      );
+
+      final data = response.data;
+      if (data is Map<String, dynamic> && data['isSuccess'] == false) {
+        throw ServerException(_extractErrorMessage(data));
+      }
+    } on DioException catch (e) {
+      final payload = e.response?.data;
+      if (payload is Map<String, dynamic>) {
+        throw ServerException(_extractErrorMessage(payload));
+      }
+      throw ServerException('Failed to upload track: ${e.message}');
+    } catch (e) {
+      throw ServerException('Failed to upload track: $e');
+    }
+  }
+
+  Future<MultipartFile> _toMultipartFile(TrackUploadFile file) async {
+    if (file.bytes != null) {
+      return MultipartFile.fromBytes(
+        file.bytes!,
+        filename: file.fileName,
+      );
+    }
+    if (file.filePath != null && file.filePath!.isNotEmpty) {
+      return MultipartFile.fromFile(
+        file.filePath!,
+        filename: file.fileName,
+      );
+    }
+    throw ServerException('Invalid upload file payload.');
+  }
+
+  String _extractErrorMessage(Map<String, dynamic> payload) {
+    final errors = payload['errors'];
+    if (errors is List && errors.isNotEmpty) {
+      return errors.first.toString();
+    }
+    final message = payload['message']?.toString();
+    return (message != null && message.isNotEmpty)
+        ? message
+        : 'Request failed.';
   }
 }

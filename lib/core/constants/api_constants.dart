@@ -10,7 +10,7 @@ class ApiConstants {
 
   // Base URLs
   // Android emulator can use 10.0.2.2 (host localhost); real devices should use LAN IP.
-  static const String baseUrl = 'http://192.168.1.6:7001';
+  static const String baseUrl = 'https://logcams.cloud';
   static const String mqttBrokerUrl = 'mqtt.cams.example.com';
   static const int mqttPort = 1883;
 
@@ -40,6 +40,7 @@ class ApiConstants {
   // Playlists
   static const String getPlaylists = '/api/playlists';
   static String getPlaylistDetail(String id) => '/api/playlists/$id';
+  static String addTracksToPlaylist(String id) => '/api/playlists/$id/tracks';
 
   // CAMS — Context-Aware Music System
   static String camsOverride(String spaceId) =>

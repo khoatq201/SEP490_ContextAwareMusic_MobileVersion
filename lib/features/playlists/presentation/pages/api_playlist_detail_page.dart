@@ -8,6 +8,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/player/player_bloc.dart';
 import '../../../../core/player/player_event.dart';
+import '../../../../core/player/playlist_queue_builder.dart';
 import '../../../../core/presentation/shell_layout_metrics.dart';
 import '../../../../core/session/session_cubit.dart';
 import '../../../../core/widgets/select_playlist_bottom_sheet.dart';
@@ -19,7 +20,6 @@ import '../../../cams/presentation/bloc/cams_playback_event.dart';
 import '../../../cams/presentation/bloc/cams_playback_state.dart';
 import '../../../space_control/data/datasources/space_remote_datasource.dart';
 import '../../../space_control/domain/entities/space.dart';
-import '../../../space_control/domain/entities/track.dart';
 import '../../domain/entities/api_playlist.dart';
 import '../../domain/entities/playlist_track_item.dart';
 
@@ -580,18 +580,7 @@ void _seedPlaylistQueue(
   ApiPlaylist playlist, {
   bool force = false,
 }) {
-  final queue = (playlist.tracks ?? const [])
-      .map((playlistTrack) => Track(
-            id: playlistTrack.trackId,
-            title: playlistTrack.title ?? 'Unknown Track',
-            artist: playlistTrack.artist ?? 'Unknown Artist',
-            fileUrl: '',
-            moodTags: const [],
-            duration: playlistTrack.effectiveDuration,
-            albumArt: playlistTrack.coverImageUrl,
-            seekOffsetSeconds: playlistTrack.seekOffsetSeconds,
-          ))
-      .toList();
+  final queue = buildPlaylistQueue(playlist);
 
   context.read<PlayerBloc>().add(PlayerQueueSeeded(
         tracks: queue,

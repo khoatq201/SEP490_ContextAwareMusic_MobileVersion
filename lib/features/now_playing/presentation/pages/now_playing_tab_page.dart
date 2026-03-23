@@ -63,7 +63,9 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
           listener: (context, playerState) {
             final camsBloc = context.read<CamsPlaybackBloc>();
             final camsState = camsBloc.state;
-            if (!camsState.isStreaming) return;
+            if (!camsState.isStreaming && !playerState.isSyncedCamsPlayback) {
+              return;
+            }
 
             final spaceId = camsState.spaceId ?? playerState.activeSpaceId;
             final hlsUrl = playerState.hlsUrl ?? camsState.hlsUrl;
@@ -78,6 +80,9 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
           },
         ),
         BlocListener<CamsPlaybackBloc, CamsPlaybackState>(
+          listenWhen: (previous, current) =>
+              previous.errorMessage != current.errorMessage &&
+              current.errorMessage != null,
           listener: (context, camsState) {
             // Show error snackbar
             if (camsState.errorMessage != null) {
@@ -136,6 +141,8 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
     final duration = playerState.duration;
     final displayPosition = playerState.displayPosition;
     final isPlaying = playerState.isPlaying;
+    final useRemoteControls =
+        playerState.isSyncedCamsPlayback || camsState.isStreaming;
     final showLocalPreviewBanner = isPlayback && playerState.isLocalPreview;
 
     final spaceName =
@@ -163,7 +170,6 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
     final optimisticPreviousOffset = previousTrackIndex != null
         ? playerState.offsetForIndex(previousTrackIndex).toDouble()
         : null;
-    final canEndStream = camsState.hasActiveOverride;
 
     // Device label for "Playing from"
     final String deviceLabel;
@@ -288,24 +294,6 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                   const SizedBox(height: 12),
                   _LocalPreviewBanner(palette: palette),
                 ],
-                if (canEndStream) ...[
-                  const SizedBox(height: 12),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: OutlinedButton.icon(
-                      onPressed: camsState.isOverriding
-                          ? null
-                          : () => context
-                              .read<CamsPlaybackBloc>()
-                              .add(const CamsCancelOverride()),
-                      icon: const Icon(LucideIcons.square),
-                      label: Text(
-                        'End manual stream',
-                        style: GoogleFonts.inter(fontWeight: FontWeight.w700),
-                      ),
-                    ),
-                  ),
-                ],
 
                 const SizedBox(height: 24),
 
@@ -316,6 +304,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                   remainingDuration: playerState.remainingDuration,
                   seekBaseOffsetSeconds: playerState.currentTrackStartOffset,
                   useAbsoluteSeek: playerState.isSyncedCamsPlayback,
+                  useRemoteControls: useRemoteControls,
                   palette: palette,
                 ),
 
@@ -331,20 +320,20 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                   hasPrevious: playerState.hasPrevious || displayPosition > 3,
                   onShuffle: () => setState(() => _isShuffleOn = !_isShuffleOn),
                   onPlayPause: () {
-                    // Send CAMS command + toggle local player
-                    if (camsState.isStreaming) {
+                    if (useRemoteControls) {
                       context.read<CamsPlaybackBloc>().add(CamsSendCommand(
                             command: isPlaying
                                 ? PlaybackCommandEnum.pause
                                 : PlaybackCommandEnum.resume,
                           ));
+                      return;
                     }
                     context
                         .read<PlayerBloc>()
                         .add(const PlayerPlayPauseToggled());
                   },
                   onSkipBack: () {
-                    if (camsState.isStreaming) {
+                    if (useRemoteControls) {
                       if (isPlayback && optimisticPreviousOffset != null) {
                         context.read<PlayerBloc>().add(
                               PlayerRemoteCommandApplied(
@@ -366,7 +355,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                         .add(const PlayerSkipBackRequested());
                   },
                   onSkip: () {
-                    if (camsState.isStreaming) {
+                    if (useRemoteControls) {
                       if (isPlayback && optimisticNextOffset != null) {
                         context.read<PlayerBloc>().add(
                               PlayerRemoteCommandApplied(
@@ -596,8 +585,9 @@ class _QueueSheetState extends State<_QueueSheet> {
     setState(() => _pendingTrackId = track.id);
 
     final camsBloc = context.read<CamsPlaybackBloc>();
-    if (camsBloc.state.isStreaming &&
-        state.isHlsMode &&
+    final useRemoteControls =
+        state.isSyncedCamsPlayback || camsBloc.state.isStreaming;
+    if (useRemoteControls &&
         state.playlistId != null &&
         state.playlistId!.isNotEmpty) {
       camsBloc.add(CamsSendCommand(
@@ -935,12 +925,14 @@ class _ProgressBar extends StatelessWidget {
       required this.remainingDuration,
       required this.seekBaseOffsetSeconds,
       required this.useAbsoluteSeek,
+      required this.useRemoteControls,
       required this.palette});
   final int duration;
   final int currentPosition;
   final int remainingDuration;
   final int seekBaseOffsetSeconds;
   final bool useAbsoluteSeek;
+  final bool useRemoteControls;
   final _NPPalette palette;
 
   String _fmt(int sec) {
@@ -971,19 +963,20 @@ class _ProgressBar extends StatelessWidget {
             min: 0,
             max: duration > 0 ? duration.toDouble() : 1,
             onChanged: (value) {
+              final seekSeconds = value.round();
               final targetSeconds = useAbsoluteSeek
-                  ? seekBaseOffsetSeconds + value.toInt()
-                  : value.toInt();
+                  ? seekBaseOffsetSeconds + seekSeconds
+                  : seekSeconds;
               context.read<PlayerBloc>().add(
                     PlayerSeekRequested(positionSeconds: targetSeconds),
                   );
             },
             onChangeEnd: (value) {
-              final camsState = context.read<CamsPlaybackBloc>().state;
-              if (!camsState.isStreaming) return;
+              if (!useRemoteControls) return;
+              final seekSeconds = value.round();
               final targetSeconds = useAbsoluteSeek
-                  ? seekBaseOffsetSeconds + value.toInt()
-                  : value.toInt();
+                  ? seekBaseOffsetSeconds + seekSeconds
+                  : seekSeconds;
               context.read<CamsPlaybackBloc>().add(
                     CamsSendCommand(
                       command: PlaybackCommandEnum.seek,

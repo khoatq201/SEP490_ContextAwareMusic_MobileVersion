@@ -38,7 +38,6 @@ class FullScreenPlayerPage extends StatelessWidget {
         builder: (context, state) {
           final track = state.currentTrack;
           final isPlaying = state.isPlaying;
-          final camsState = context.watch<CamsPlaybackBloc>().state;
           final useRemoteControls =
               state.isHlsMode && (state.activeSpaceId?.isNotEmpty ?? false);
           final hasQueueIndex = state.currentIndex >= 0 &&
@@ -228,21 +227,6 @@ class FullScreenPlayerPage extends StatelessWidget {
                               ),
                             ),
                           ],
-                        ),
-                      ),
-                    ],
-                    if (camsState.hasActiveOverride) ...[
-                      const SizedBox(height: 10),
-                      OutlinedButton.icon(
-                        onPressed: camsState.isOverriding
-                            ? null
-                            : () => context
-                                .read<CamsPlaybackBloc>()
-                                .add(const CamsCancelOverride()),
-                        icon: const Icon(LucideIcons.square),
-                        label: Text(
-                          'End manual stream',
-                          style: GoogleFonts.inter(fontWeight: FontWeight.w700),
                         ),
                       ),
                     ],

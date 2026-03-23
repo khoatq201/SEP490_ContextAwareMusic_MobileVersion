@@ -6,6 +6,7 @@ import '../../../../core/network/dio_client.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/enums/playback_command_enum.dart';
+import 'package:dio/dio.dart';
 
 abstract class CamsRemoteDataSource {
   /// Override Space music — DirectPlaylist or MoodOverride.
@@ -113,19 +114,40 @@ class CamsRemoteDataSourceImpl implements CamsRemoteDataSource {
     String? targetTrackId,
     bool usePlaybackDeviceScope = false,
   }) async {
+    final payload = {
+      'command': command.value,
+      if (seekPositionSeconds != null) 'seekPositionSeconds': seekPositionSeconds,
+      if (targetTrackId != null) 'targetTrackId': targetTrackId,
+    };
+
+    final managerScopedPath =
+        spaceId.isEmpty ? null : ApiConstants.camsPlayback(spaceId);
+    const playbackScopedPath = '/api/cams/spaces/playback';
+    final primaryPath = usePlaybackDeviceScope
+        ? playbackScopedPath
+        : (managerScopedPath ?? playbackScopedPath);
+    final fallbackPath = usePlaybackDeviceScope
+        ? managerScopedPath
+        : playbackScopedPath;
+
     try {
-      await dioClient.post(
-        usePlaybackDeviceScope
-            ? '/api/cams/spaces/playback'
-            : ApiConstants.camsPlayback(spaceId),
-        data: {
-          'command': command.value,
-          if (seekPositionSeconds != null)
-            'seekPositionSeconds': seekPositionSeconds,
-          if (targetTrackId != null) 'targetTrackId': targetTrackId,
-        },
-      );
+      await dioClient.post(primaryPath, data: payload);
+      return;
+    } on DioException catch (e) {
+      final canFallback = fallbackPath != null &&
+          fallbackPath != primaryPath &&
+          _isScopeFallbackStatusCode(e.response?.statusCode);
+      if (canFallback) {
+        try {
+          await dioClient.post(fallbackPath, data: payload);
+          return;
+        } catch (_) {
+          // Fall through to the common error below with primary exception.
+        }
+      }
+      throw ServerException('Failed to send playback command: $e');
     } catch (e) {
+      if (e is ServerException) rethrow;
       throw ServerException('Failed to send playback command: $e');
     }
   }
@@ -135,23 +157,48 @@ class CamsRemoteDataSourceImpl implements CamsRemoteDataSource {
     String spaceId, {
     bool usePlaybackDeviceScope = false,
   }) async {
-    try {
-      final response = await dioClient.get(
-        usePlaybackDeviceScope
-            ? ApiConstants.camsCurrentDeviceState
-            : ApiConstants.camsState(spaceId),
-      );
+    final managerScopedPath =
+        spaceId.isEmpty ? null : ApiConstants.camsState(spaceId);
+    const playbackScopedPath = ApiConstants.camsCurrentDeviceState;
+    final primaryPath = usePlaybackDeviceScope
+        ? playbackScopedPath
+        : (managerScopedPath ?? playbackScopedPath);
+    final fallbackPath = usePlaybackDeviceScope
+        ? managerScopedPath
+        : playbackScopedPath;
 
-      final data = response.data;
-      if (data is Map<String, dynamic>) {
-        final model = SpacePlaybackStateModel.fromApiResponse(data);
-        if (model != null) return model;
+    try {
+      return await _fetchSpaceStateByPath(primaryPath);
+    } on DioException catch (e) {
+      final canFallback = fallbackPath != null &&
+          fallbackPath != primaryPath &&
+          _isScopeFallbackStatusCode(e.response?.statusCode);
+      if (canFallback) {
+        try {
+          return await _fetchSpaceStateByPath(fallbackPath);
+        } catch (_) {
+          // Fall through to the common error message below.
+        }
       }
-      throw ServerException('Invalid space state response');
+      throw ServerException('Failed to get space state: $e');
     } catch (e) {
       if (e is ServerException) rethrow;
       throw ServerException('Failed to get space state: $e');
     }
+  }
+
+  bool _isScopeFallbackStatusCode(int? statusCode) {
+    return statusCode == 401 || statusCode == 403 || statusCode == 404;
+  }
+
+  Future<SpacePlaybackStateModel> _fetchSpaceStateByPath(String path) async {
+    final response = await dioClient.get(path);
+    final data = response.data;
+    if (data is Map<String, dynamic>) {
+      final model = SpacePlaybackStateModel.fromApiResponse(data);
+      if (model != null) return model;
+    }
+    throw ServerException('Invalid space state response');
   }
 
   @override
@@ -160,9 +207,11 @@ class CamsRemoteDataSourceImpl implements CamsRemoteDataSource {
   }
 
   @override
-  Future<PairDeviceInfoModel> getPairDeviceInfoForManager(String spaceId) async {
+  Future<PairDeviceInfoModel> getPairDeviceInfoForManager(
+      String spaceId) async {
     try {
-      final response = await dioClient.get(ApiConstants.camsPairDevice(spaceId));
+      final response =
+          await dioClient.get(ApiConstants.camsPairDevice(spaceId));
       final data = response.data;
       if (data is Map<String, dynamic> &&
           data['isSuccess'] == true &&

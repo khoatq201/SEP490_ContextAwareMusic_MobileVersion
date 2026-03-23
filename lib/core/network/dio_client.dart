@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer' as developer;
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
@@ -13,7 +14,7 @@ class DioClient {
   late final Dio _dio;
   final LocalStorageService _localStorage;
   PersistCookieJar? _cookieJar;
-  bool _isRefreshing = false;
+  Completer<String?>? _refreshCompleter;
 
   bool _shouldSkipAuthorization(String path) {
     return path == ApiConstants.login ||
@@ -102,23 +103,36 @@ class DioClient {
           final path = error.requestOptions.path;
           if (error.response?.statusCode == 401 &&
               !_shouldSkipAuthorization(path)) {
-            if (!_isRefreshing) {
-              _isRefreshing = true;
+            String? refreshedToken;
+            final inFlightRefresh = _refreshCompleter;
+            if (inFlightRefresh != null) {
+              refreshedToken = await inFlightRefresh.future;
+            } else {
+              final refreshCompleter = Completer<String?>();
+              _refreshCompleter = refreshCompleter;
               try {
-                final newToken = await _refreshActiveSessionToken();
-                if (newToken != null) {
-                  final opts = error.requestOptions;
-                  opts.headers['Authorization'] = 'Bearer $newToken';
-                  final response = await _dio.fetch(opts);
-                  return handler.resolve(response);
+                refreshedToken = await _refreshActiveSessionToken();
+                if (!refreshCompleter.isCompleted) {
+                  refreshCompleter.complete(refreshedToken);
                 }
               } on AuthenticationException {
-                // Refresh failed — propagate as 401
+                if (!refreshCompleter.isCompleted) {
+                  refreshCompleter.complete(null);
+                }
               } catch (_) {
-                // Unexpected error during refresh
+                if (!refreshCompleter.isCompleted) {
+                  refreshCompleter.complete(null);
+                }
               } finally {
-                _isRefreshing = false;
+                _refreshCompleter = null;
               }
+            }
+
+            if (refreshedToken != null && refreshedToken.isNotEmpty) {
+              final opts = error.requestOptions;
+              opts.headers['Authorization'] = 'Bearer $refreshedToken';
+              final response = await _dio.fetch(opts);
+              return handler.resolve(response);
             }
             return handler.next(error);
           }
@@ -298,12 +312,31 @@ class DioClient {
           data['isSuccess'] == true &&
           data['data'] != null) {
         final payload = Map<String, dynamic>.from(data['data'] as Map);
-        final newToken = payload['deviceAccessToken'] as String;
-        final expiresRaw =
-            payload['expiresAt'] ?? payload['accessTokenExpiresAt'];
-        final expiresAt = DateTime.parse(expiresRaw as String);
+        final newToken =
+            (payload['deviceAccessToken'] ?? payload['accessToken']) as String?;
+        if (newToken == null || newToken.isEmpty) {
+          throw AuthenticationException(
+            'Device refresh response missing access token.',
+          );
+        }
+
+        final rotatedRefreshToken =
+            (payload['deviceRefreshToken'] ?? payload['refreshToken']) as String?;
+        final expiresRaw = payload['expiresAt'] ??
+            payload['accessTokenExpiresAt'] ??
+            payload['deviceAccessTokenExpiresAt'];
+        final expiresAt =
+            DateTime.tryParse(expiresRaw?.toString() ?? '')?.toUtc();
+        if (expiresAt == null) {
+          throw AuthenticationException(
+            'Device refresh response missing token expiry.',
+          );
+        }
 
         await _localStorage.saveDeviceAccessToken(newToken);
+        if (rotatedRefreshToken != null && rotatedRefreshToken.isNotEmpty) {
+          await _localStorage.saveDeviceRefreshToken(rotatedRefreshToken);
+        }
         await _localStorage.saveDeviceAccessTokenExpiry(expiresAt);
         await _localStorage.saveActiveSessionMode(
           LocalStorageService.sessionModePlaybackDevice,

@@ -5,11 +5,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../audio/playback_notification_service.dart';
 import '../enums/playback_command_enum.dart';
+import '../player/playlist_queue_builder.dart';
 import '../../features/playlists/data/datasources/playlist_remote_datasource.dart';
 import '../../features/cams/presentation/bloc/cams_playback_bloc.dart';
 import '../../features/cams/presentation/bloc/cams_playback_event.dart';
 import '../../features/cams/presentation/bloc/cams_playback_state.dart';
-import '../../features/space_control/domain/entities/track.dart';
+import '../../features/cams/domain/entities/space_playback_state.dart';
 import '../player/player_bloc.dart';
 import '../player/player_event.dart';
 import '../player/player_state.dart';
@@ -30,6 +31,13 @@ class AppPlaybackCoordinator extends StatefulWidget {
 class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
   StreamSubscription<PlaybackNotificationCommand>? _notificationCommandSub;
   String? _hydratedPlaylistId;
+  Timer? _managerProgressTicker;
+  Timer? _expectedEndTimer;
+  String? _expectedEndSignature;
+  String? _managerWarmupSignature;
+  DateTime? _managerWarmupUntilUtc;
+  static const Duration _managerWarmupDuration = Duration(seconds: 4);
+  static const double _managerWarmupCompensationSeconds = 2;
 
   @override
   void initState() {
@@ -57,6 +65,9 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
 
     if (store == null || space == null) {
       _hydratedPlaylistId = null;
+      _stopManagerProgressTicker();
+      _resetManagerWarmup();
+      _stopExpectedEndWatcher();
       playerBloc.add(const PlayerContextCleared());
       camsBloc.add(const CamsDisposePlayback());
       unawaited(notificationService.clear());
@@ -65,6 +76,8 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
 
     if (playerBloc.state.activeSpaceId != space.id) {
       _hydratedPlaylistId = null;
+      _resetManagerWarmup();
+      _stopExpectedEndWatcher();
     }
 
     playerBloc.add(PlayerContextUpdated(
@@ -73,6 +86,10 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
       spaceName: space.name,
     ));
     camsBloc.add(CamsInitPlayback(spaceId: space.id));
+    _syncManagerProgressTicker(
+      session: session,
+      playbackState: camsBloc.state.playbackState,
+    );
   }
 
   void _syncNotification({
@@ -93,6 +110,15 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
     final playbackState = camsState.playbackState;
     final playerBloc = context.read<PlayerBloc>();
     final session = context.read<SessionCubit>().state;
+
+    _syncManagerProgressTicker(
+      session: session,
+      playbackState: playbackState,
+    );
+    _syncExpectedEndWatcher(
+      session: session,
+      playbackState: playbackState,
+    );
 
     if (playbackState == null) {
       return;
@@ -122,6 +148,10 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
       isPaused: playbackState.isPaused,
       playLocally: session.isPlaybackDevice,
     ));
+
+    if (!session.isPlaybackDevice) {
+      _pushManagerPositionSnapshot(playbackState);
+    }
   }
 
   Future<void> _hydrateQueueForPlayback(String? playlistId) async {
@@ -133,29 +163,241 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
           await sl<PlaylistRemoteDataSource>().getPlaylistById(playlistId);
       if (!mounted) return;
 
-      final queue = (playlist.tracks ?? const [])
-          .map((playlistTrack) => Track(
-                id: playlistTrack.trackId,
-                title: playlistTrack.title ?? 'Unknown Track',
-                artist: playlistTrack.artist ?? 'Unknown Artist',
-                fileUrl: '',
-                moodTags: const [],
-                duration: playlistTrack.effectiveDuration,
-                albumArt: playlistTrack.coverImageUrl,
-                seekOffsetSeconds: playlistTrack.seekOffsetSeconds,
-              ))
-          .toList();
+      final queue = buildPlaylistQueue(playlist);
 
       _hydratedPlaylistId = playlistId;
-      context.read<PlayerBloc>().add(PlayerQueueSeeded(
-            tracks: queue,
-            playlistName: playlist.name,
-            playlistId: playlist.id,
-            force: true,
-          ));
-    } catch (_) {
+      final playerBloc = context.read<PlayerBloc>();
+      playerBloc.add(PlayerQueueSeeded(
+        tracks: queue,
+        playlistName: playlist.name,
+        playlistId: playlist.id,
+        force: true,
+      ));
+      final playbackState =
+          context.read<CamsPlaybackBloc>().state.playbackState;
+      if (playbackState != null &&
+          playbackState.currentPlaylistId == playlistId) {
+        playerBloc.add(PlayerPositionUpdated(
+          positionSeconds: _snapshotPositionSeconds(playbackState),
+        ));
+      }
+    } catch (error) {
+      debugPrint(
+        '[AppPlaybackCoordinator] Failed to hydrate playlist $playlistId: $error',
+      );
       // Keep the synthetic track fallback if playlist detail hydration fails.
     }
+  }
+
+  void _syncManagerProgressTicker({
+    required SessionState session,
+    required SpacePlaybackState? playbackState,
+  }) {
+    if (session.isPlaybackDevice ||
+        playbackState == null ||
+        !playbackState.isStreaming) {
+      _stopManagerProgressTicker();
+      _resetManagerWarmup();
+      return;
+    }
+
+    _updateManagerWarmup(playbackState);
+    _pushManagerPositionSnapshot(playbackState);
+
+    if (playbackState.isPaused) {
+      _stopManagerProgressTicker();
+      _resetManagerWarmup();
+      return;
+    }
+
+    _managerProgressTicker?.cancel();
+    _managerProgressTicker =
+        Timer.periodic(const Duration(milliseconds: 500), (_) {
+      if (!mounted) return;
+
+      final currentSession = context.read<SessionCubit>().state;
+      final currentPlaybackState =
+          context.read<CamsPlaybackBloc>().state.playbackState;
+      if (currentSession.isPlaybackDevice ||
+          currentPlaybackState == null ||
+          !currentPlaybackState.isStreaming ||
+          currentPlaybackState.isPaused) {
+        _stopManagerProgressTicker();
+        return;
+      }
+
+      _pushManagerPositionSnapshot(currentPlaybackState);
+    });
+  }
+
+  void _pushManagerPositionSnapshot(SpacePlaybackState playbackState) {
+    if (!mounted) return;
+
+    context.read<PlayerBloc>().add(
+          PlayerPositionUpdated(
+            positionSeconds: _snapshotPositionSeconds(playbackState),
+          ),
+        );
+  }
+
+  int _snapshotPositionSeconds(SpacePlaybackState playbackState) {
+    var effectiveSeekOffset = playbackState.effectiveSeekOffset;
+    if (!playbackState.isPaused && _isManagerWarmupActive(playbackState)) {
+      effectiveSeekOffset =
+          (effectiveSeekOffset - _managerWarmupCompensationSeconds)
+              .clamp(0.0, double.infinity);
+    }
+    return effectiveSeekOffset.floor();
+  }
+
+  void _stopManagerProgressTicker() {
+    _managerProgressTicker?.cancel();
+    _managerProgressTicker = null;
+  }
+
+  void _resetManagerWarmup() {
+    _managerWarmupSignature = null;
+    _managerWarmupUntilUtc = null;
+  }
+
+  String _streamWarmupSignature(SpacePlaybackState playbackState) {
+    return [
+      playbackState.spaceId.toLowerCase(),
+      playbackState.currentPlaylistId ?? '',
+      playbackState.hlsUrl ?? '',
+      playbackState.startedAtUtc?.toUtc().toIso8601String() ?? '',
+    ].join('|');
+  }
+
+  void _updateManagerWarmup(SpacePlaybackState playbackState) {
+    if (playbackState.isPaused) {
+      _managerWarmupUntilUtc = null;
+      return;
+    }
+
+    final signature = _streamWarmupSignature(playbackState);
+    if (_managerWarmupSignature != signature) {
+      _managerWarmupSignature = signature;
+      if (playbackState.effectiveSeekOffset <= 6) {
+        _managerWarmupUntilUtc =
+            DateTime.now().toUtc().add(_managerWarmupDuration);
+      } else {
+        _managerWarmupUntilUtc = null;
+      }
+    }
+  }
+
+  bool _isManagerWarmupActive(SpacePlaybackState playbackState) {
+    final warmupUntilUtc = _managerWarmupUntilUtc;
+    if (warmupUntilUtc == null) return false;
+    if (_managerWarmupSignature != _streamWarmupSignature(playbackState)) {
+      return false;
+    }
+    final isActive = DateTime.now().toUtc().isBefore(warmupUntilUtc);
+    if (!isActive) {
+      _managerWarmupUntilUtc = null;
+    }
+    return isActive;
+  }
+
+  void _syncExpectedEndWatcher({
+    required SessionState session,
+    required SpacePlaybackState? playbackState,
+  }) {
+    if (session.currentSpace == null ||
+        playbackState == null ||
+        !playbackState.isStreaming ||
+        playbackState.isPaused ||
+        playbackState.expectedEndAtUtc == null) {
+      _stopExpectedEndWatcher();
+      return;
+    }
+
+    final expectedEndUtc = playbackState.expectedEndAtUtc!.toUtc();
+    final signature = [
+      playbackState.spaceId.toLowerCase(),
+      playbackState.currentPlaylistId ?? '',
+      playbackState.hlsUrl ?? '',
+      expectedEndUtc.toIso8601String(),
+    ].join('|');
+
+    if (_expectedEndSignature == signature && _expectedEndTimer != null) {
+      return;
+    }
+
+    _expectedEndSignature = signature;
+    _expectedEndTimer?.cancel();
+
+    final delay = expectedEndUtc.difference(DateTime.now().toUtc());
+    if (delay <= Duration.zero) {
+      _handleExpectedEndReached(
+        watchedSpaceId: playbackState.spaceId,
+        watchedPlaylistId: playbackState.currentPlaylistId,
+        watchedHlsUrl: playbackState.hlsUrl,
+      );
+      return;
+    }
+
+    _expectedEndTimer = Timer(delay, () {
+      if (!mounted) return;
+      _handleExpectedEndReached(
+        watchedSpaceId: playbackState.spaceId,
+        watchedPlaylistId: playbackState.currentPlaylistId,
+        watchedHlsUrl: playbackState.hlsUrl,
+      );
+    });
+  }
+
+  void _handleExpectedEndReached({
+    required String watchedSpaceId,
+    required String? watchedPlaylistId,
+    required String? watchedHlsUrl,
+  }) {
+    if (!mounted) return;
+
+    final camsBloc = context.read<CamsPlaybackBloc>();
+    final activePlayback = camsBloc.state.playbackState;
+    if (activePlayback == null || !activePlayback.isStreaming) {
+      _stopExpectedEndWatcher();
+      return;
+    }
+
+    final activeSpaceId = activePlayback.spaceId.toLowerCase();
+    if (activeSpaceId != watchedSpaceId.toLowerCase()) {
+      _stopExpectedEndWatcher();
+      return;
+    }
+    if ((activePlayback.currentPlaylistId ?? '') != (watchedPlaylistId ?? '')) {
+      _stopExpectedEndWatcher();
+      return;
+    }
+    if ((activePlayback.hlsUrl ?? '') != (watchedHlsUrl ?? '')) {
+      _stopExpectedEndWatcher();
+      return;
+    }
+
+    final expectedEndUtc = activePlayback.expectedEndAtUtc?.toUtc();
+    if (expectedEndUtc == null ||
+        DateTime.now().toUtc().isBefore(
+              expectedEndUtc.subtract(const Duration(seconds: 1)),
+            )) {
+      _syncExpectedEndWatcher(
+        session: context.read<SessionCubit>().state,
+        playbackState: activePlayback,
+      );
+      return;
+    }
+
+    // Do not force-stop local player from the timer alone because backend
+    // ExpectedEndAtUtc can drift around pause/resume. Reconcile from server state.
+    camsBloc.add(const CamsRefreshState(silent: true));
+    _stopExpectedEndWatcher();
+  }
+
+  void _stopExpectedEndWatcher() {
+    _expectedEndTimer?.cancel();
+    _expectedEndTimer = null;
+    _expectedEndSignature = null;
   }
 
   void _handleNotificationCommand(PlaybackNotificationCommand command) {
@@ -232,6 +474,8 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
   @override
   void dispose() {
     _notificationCommandSub?.cancel();
+    _stopManagerProgressTicker();
+    _stopExpectedEndWatcher();
     super.dispose();
   }
 

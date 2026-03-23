@@ -6,8 +6,8 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../../core/player/player_bloc.dart';
 import '../../../../core/player/player_event.dart';
+import '../../../../core/player/playlist_queue_builder.dart';
 import '../../../../injection_container.dart';
-import '../../../space_control/domain/entities/track.dart';
 import '../../data/datasources/playlist_remote_datasource.dart';
 import '../../domain/entities/api_playlist.dart';
 import 'api_playlist_detail_page.dart';
@@ -37,18 +37,7 @@ class _PlaylistDetailLoaderState extends State<PlaylistDetailLoader> {
     if (_playerSeeded) return;
     _playerSeeded = true;
 
-    final queue = (playlist.tracks ?? const [])
-        .map((track) => Track(
-              id: track.trackId,
-              title: track.title ?? 'Unknown Track',
-              artist: track.artist ?? 'Unknown Artist',
-              fileUrl: '',
-              moodTags: const [],
-              duration: track.effectiveDuration,
-              albumArt: track.coverImageUrl,
-              seekOffsetSeconds: track.seekOffsetSeconds,
-            ))
-        .toList();
+    final queue = buildPlaylistQueue(playlist);
 
     context.read<PlayerBloc>().add(PlayerQueueSeeded(
           tracks: queue,

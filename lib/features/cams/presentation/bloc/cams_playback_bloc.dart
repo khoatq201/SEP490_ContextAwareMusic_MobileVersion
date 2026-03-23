@@ -28,6 +28,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
   StreamSubscription? _stateSyncSub;
   StreamSubscription? _stopPlaybackSub;
   StreamSubscription? _connectionSub;
+  int _silentEmptyStateStreak = 0;
 
   CamsPlaybackBloc({
     required this.getSpaceState,
@@ -77,6 +78,12 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     try {
       await storeHubService.connect();
       await storeHubService.joinSpace(event.spaceId);
+      final managerStoreId = sessionCubit.state.isPlaybackDevice
+          ? null
+          : sessionCubit.state.currentStore?.id;
+      if (managerStoreId != null && managerStoreId.isNotEmpty) {
+        await storeHubService.joinManagerRoom(managerStoreId);
+      }
       emit(state.copyWith(isHubConnected: true));
     } catch (e) {
       // Non-fatal: continue without real-time updates
@@ -105,11 +112,16 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
         errorMessage: failure.message,
       )),
       (pbState) {
+        final normalizedState = _normalizePlaybackStateForClientClock(
+          incoming: pbState,
+          current: state.playbackState,
+        );
         emit(state.copyWith(
-          status: (pbState.isStreaming || pbState.hasPendingPlaylist)
+          status: (normalizedState.isStreaming ||
+                  normalizedState.hasPendingPlaylist)
               ? CamsStatus.active
               : CamsStatus.idle,
-          playbackState: pbState,
+          playbackState: normalizedState,
         ));
       },
     );
@@ -151,7 +163,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
 
     _connectionSub = storeHubService.onConnectionStatus.listen((status) {
       if (status == ConnectionStatus.connected && state.spaceId != null) {
-        add(const CamsRefreshState());
+        add(const CamsRefreshState(silent: true));
       }
     });
   }
@@ -214,7 +226,8 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
           isOverriding: false,
           lastOverrideResponse: response,
           playbackState: newPlaybackState,
-          status: (newPlaybackState.isStreaming || newPlaybackState.hasPendingPlaylist)
+          status: (newPlaybackState.isStreaming ||
+                  newPlaybackState.hasPendingPlaylist)
               ? CamsStatus.active
               : CamsStatus.idle,
           clearPendingTrackJump: true,
@@ -270,7 +283,8 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
           isOverriding: false,
           lastOverrideResponse: response,
           playbackState: newPlaybackState,
-          status: (newPlaybackState.isStreaming || newPlaybackState.hasPendingPlaylist)
+          status: (newPlaybackState.isStreaming ||
+                  newPlaybackState.hasPendingPlaylist)
               ? CamsStatus.active
               : CamsStatus.idle,
           clearPendingTrackJump: true,
@@ -288,7 +302,8 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
 
     final current = state.playbackState;
     final isCurrentPlaylist = current?.currentPlaylistId == event.playlistId;
-    final isPendingCurrentPlaylist = current?.pendingPlaylistId == event.playlistId;
+    final isPendingCurrentPlaylist =
+        current?.pendingPlaylistId == event.playlistId;
 
     if (isCurrentPlaylist && (current?.isStreaming ?? false)) {
       emit(state.copyWith(
@@ -350,9 +365,8 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
           pausePositionSeconds: null,
           seekOffsetSeconds: null,
           pendingPlaylistId: isPending ? response.playlistId : null,
-          pendingOverrideReason: isPending
-              ? (event.reason ?? 'Play selected track')
-              : null,
+          pendingOverrideReason:
+              isPending ? (event.reason ?? 'Play selected track') : null,
         );
 
         emit(state.copyWith(
@@ -432,18 +446,25 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     CamsPlayStreamReceived event,
     Emitter<CamsPlaybackState> emit,
   ) {
-    if (event.spaceId != state.spaceId) return;
+    if (!_isSameSpace(event.spaceId, state.spaceId)) return;
     final spaceId = state.spaceId ?? '';
     final current = state.playbackState;
+    final resolvedPlaylistId = event.playlistId.isNotEmpty
+        ? event.playlistId
+        : current?.currentPlaylistId;
+    final resolvedPlaylistName = (resolvedPlaylistId != null &&
+            resolvedPlaylistId == current?.currentPlaylistId)
+        ? current?.currentPlaylistName
+        : null;
     final nextPlaybackState = SpacePlaybackState(
       spaceId: spaceId,
-      currentPlaylistId: event.playlistId,
-      currentPlaylistName: current?.currentPlaylistName,
+      currentPlaylistId: resolvedPlaylistId,
+      currentPlaylistName: resolvedPlaylistName,
       hlsUrl: event.hlsUrl,
       moodName: current?.moodName,
       isManualOverride: event.isManualOverride,
       overrideMode: current?.overrideMode,
-      startedAtUtc: event.startedAtUtc,
+      startedAtUtc: DateTime.now().toUtc(),
       expectedEndAtUtc: current?.expectedEndAtUtc,
       isPaused: false,
       pausePositionSeconds: null,
@@ -458,37 +479,67 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
       status: CamsStatus.active,
       playbackState: nextPlaybackState,
     ));
+    _silentEmptyStateStreak = 0;
 
     _dispatchDeferredTrackJump(playbackState: nextPlaybackState, emit: emit);
+    // Ensure we reconcile with authoritative state in case PlayStream payload is
+    // partial (e.g. missing playlistId on some server paths).
+    add(const CamsRefreshState(silent: true));
   }
 
   void _onPlaybackCommand(
     CamsPlaybackCommandReceived event,
     Emitter<CamsPlaybackState> emit,
   ) {
-    if (event.spaceId != state.spaceId) return;
+    if (!_isSameSpace(event.spaceId, state.spaceId)) return;
+    final syncedPlaybackState = _applyPlaybackCommandToState(
+      current: state.playbackState,
+      command: event.command,
+      seekPositionSeconds: event.seekPositionSeconds,
+    );
+    final nextPlaybackState = syncedPlaybackState ?? state.playbackState;
+    final nextStatus = nextPlaybackState == null
+        ? state.status
+        : (nextPlaybackState.isStreaming ||
+                nextPlaybackState.hasPendingPlaylist)
+            ? CamsStatus.active
+            : CamsStatus.idle;
+
     emit(state.copyWith(
+      status: nextStatus,
+      playbackState: nextPlaybackState,
       lastPlaybackCommand: event.command,
       lastSeekPositionSeconds: event.seekPositionSeconds,
       lastTargetTrackId: event.targetTrackId,
       commandSequence: state.commandSequence + 1,
     ));
+    if (nextPlaybackState?.isStreaming ?? false) {
+      _silentEmptyStateStreak = 0;
+    }
   }
 
   void _onStateSync(
     CamsStateSyncReceived event,
     Emitter<CamsPlaybackState> emit,
   ) {
-    final newState = event.playbackState;
-    if (newState.spaceId != state.spaceId) return;
+    final incomingState = event.playbackState;
+    if (!_isSameSpace(incomingState.spaceId, state.spaceId)) return;
+    final newState = _mergePlaybackState(
+      current: state.playbackState,
+      incoming: incomingState,
+    );
 
     emit(state.copyWith(
       status: (newState.isStreaming || newState.hasPendingPlaylist)
           ? CamsStatus.active
           : CamsStatus.idle,
       playbackState: newState,
+      clearError: true,
       clearOverrideResponse: true,
     ));
+    if (newState.isStreaming || newState.hasPendingPlaylist) {
+      _silentEmptyStateStreak = 0;
+    }
 
     _dispatchDeferredTrackJump(playbackState: newState, emit: emit);
   }
@@ -518,17 +569,43 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
       usePlaybackDeviceScope: sessionCubit.state.isPlaybackDevice,
     );
     result.fold(
-      (failure) => emit(state.copyWith(
-        errorMessage: failure.message,
-      )),
-      (playbackState) {
+      (failure) {
+        if (event.silent) return;
         emit(state.copyWith(
-          status: (playbackState.isStreaming || playbackState.hasPendingPlaylist)
-              ? CamsStatus.active
-              : CamsStatus.idle,
-          playbackState: playbackState,
+          errorMessage: failure.message,
         ));
-        _dispatchDeferredTrackJump(playbackState: playbackState, emit: emit);
+      },
+      (playbackState) {
+        final normalizedState = _normalizePlaybackStateForClientClock(
+          incoming: playbackState,
+          current: state.playbackState,
+        );
+        final hasIncomingStream =
+            normalizedState.isStreaming || normalizedState.hasPendingPlaylist;
+        final hadCurrentStream = (state.playbackState?.isStreaming ?? false) ||
+            (state.playbackState?.hasPendingPlaylist ?? false);
+        final isSilentTransientEmpty =
+            event.silent && !hasIncomingStream && hadCurrentStream;
+        if (isSilentTransientEmpty) {
+          _silentEmptyStateStreak += 1;
+          if (_silentEmptyStateStreak < 3) {
+            Future<void>.delayed(const Duration(milliseconds: 700), () {
+              if (!isClosed) {
+                add(const CamsRefreshState(silent: true));
+              }
+            });
+            return;
+          }
+        } else {
+          _silentEmptyStateStreak = 0;
+        }
+
+        emit(state.copyWith(
+          status: hasIncomingStream ? CamsStatus.active : CamsStatus.idle,
+          playbackState: normalizedState,
+          clearError: true,
+        ));
+        _dispatchDeferredTrackJump(playbackState: normalizedState, emit: emit);
       },
     );
   }
@@ -559,7 +636,9 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
   ) async {
     if (!state.isHubConnected) return;
     final activeSpaceId = state.spaceId;
-    if (activeSpaceId == null || activeSpaceId != event.spaceId) return;
+    if (activeSpaceId == null || !_isSameSpace(activeSpaceId, event.spaceId)) {
+      return;
+    }
 
     try {
       await storeHubService.reportPlaybackState(
@@ -579,6 +658,221 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     _stateSyncSub?.cancel();
     _stopPlaybackSub?.cancel();
     _connectionSub?.cancel();
+  }
+
+  bool _isSameSpace(String? left, String? right) {
+    if (left == null || right == null) return false;
+    return left.toLowerCase() == right.toLowerCase();
+  }
+
+  SpacePlaybackState? _applyPlaybackCommandToState({
+    required SpacePlaybackState? current,
+    required PlaybackCommandEnum command,
+    required double? seekPositionSeconds,
+  }) {
+    if (current == null) return null;
+
+    final nowUtc = DateTime.now().toUtc();
+    final resolvedSeek = seekPositionSeconds == null
+        ? null
+        : (seekPositionSeconds < 0 ? 0.0 : seekPositionSeconds);
+    final fallbackCurrentPosition = current.effectiveSeekOffset;
+
+    switch (command) {
+      case PlaybackCommandEnum.pause:
+        final pausePosition = (resolvedSeek ?? fallbackCurrentPosition)
+            .round()
+            .clamp(0, 1 << 31)
+            .toInt();
+        return _copyPlaybackStateWithTiming(
+          source: current,
+          isPaused: true,
+          pausePositionSeconds: pausePosition,
+          seekOffsetSeconds: resolvedSeek ?? current.seekOffsetSeconds,
+        );
+      case PlaybackCommandEnum.resume:
+        final resumePosition = resolvedSeek ??
+            current.pausePositionSeconds?.toDouble() ??
+            fallbackCurrentPosition;
+        return _copyPlaybackStateWithTiming(
+          source: current,
+          isPaused: false,
+          pausePositionSeconds: null,
+          seekOffsetSeconds: resumePosition,
+          startedAtUtc: _startedAtForOffset(nowUtc, resumePosition),
+        );
+      case PlaybackCommandEnum.seek:
+      case PlaybackCommandEnum.seekForward:
+      case PlaybackCommandEnum.seekBackward:
+      case PlaybackCommandEnum.skipNext:
+      case PlaybackCommandEnum.skipPrevious:
+      case PlaybackCommandEnum.skipToTrack:
+        if (resolvedSeek == null) {
+          return current;
+        }
+        if (current.isPaused) {
+          return _copyPlaybackStateWithTiming(
+            source: current,
+            isPaused: true,
+            pausePositionSeconds:
+                resolvedSeek.round().clamp(0, 1 << 31).toInt(),
+            seekOffsetSeconds: resolvedSeek,
+          );
+        }
+        return _copyPlaybackStateWithTiming(
+          source: current,
+          isPaused: false,
+          pausePositionSeconds: null,
+          seekOffsetSeconds: resolvedSeek,
+          startedAtUtc: _startedAtForOffset(nowUtc, resolvedSeek),
+        );
+    }
+  }
+
+  DateTime _startedAtForOffset(DateTime nowUtc, double offsetSeconds) {
+    final safeOffsetSeconds = offsetSeconds < 0 ? 0.0 : offsetSeconds;
+    final offsetMilliseconds = (safeOffsetSeconds * 1000).round();
+    return nowUtc.subtract(Duration(milliseconds: offsetMilliseconds));
+  }
+
+  SpacePlaybackState _copyPlaybackStateWithTiming({
+    required SpacePlaybackState source,
+    required bool isPaused,
+    required int? pausePositionSeconds,
+    required double? seekOffsetSeconds,
+    DateTime? startedAtUtc,
+  }) {
+    return SpacePlaybackState(
+      spaceId: source.spaceId,
+      storeId: source.storeId,
+      brandId: source.brandId,
+      currentPlaylistId: source.currentPlaylistId,
+      currentPlaylistName: source.currentPlaylistName,
+      hlsUrl: source.hlsUrl,
+      moodName: source.moodName,
+      isManualOverride: source.isManualOverride,
+      overrideMode: source.overrideMode,
+      startedAtUtc: startedAtUtc ?? source.startedAtUtc,
+      expectedEndAtUtc: source.expectedEndAtUtc,
+      isPaused: isPaused,
+      pausePositionSeconds: pausePositionSeconds,
+      seekOffsetSeconds: seekOffsetSeconds,
+      pendingPlaylistId: source.pendingPlaylistId,
+      pendingOverrideReason: source.pendingOverrideReason,
+    );
+  }
+
+  bool _hasStreamIdentity(String? playlistId, String? hlsUrl) {
+    return playlistId != null &&
+        playlistId.isNotEmpty &&
+        hlsUrl != null &&
+        hlsUrl.isNotEmpty;
+  }
+
+  SpacePlaybackState _mergePlaybackState({
+    required SpacePlaybackState? current,
+    required SpacePlaybackState incoming,
+  }) {
+    if (current == null) return incoming;
+
+    final incomingPlaylistId = incoming.currentPlaylistId;
+    final incomingHlsUrl = incoming.hlsUrl;
+    final incomingHasIdentity =
+        _hasStreamIdentity(incomingPlaylistId, incomingHlsUrl);
+    final currentHasIdentity =
+        _hasStreamIdentity(current.currentPlaylistId, current.hlsUrl);
+    final incomingCarriesPlaybackSignals = incoming.startedAtUtc != null ||
+        incoming.isPaused ||
+        incoming.pausePositionSeconds != null ||
+        incoming.seekOffsetSeconds != null;
+    final shouldPreserveIdentity = !incomingHasIdentity &&
+        currentHasIdentity &&
+        incomingCarriesPlaybackSignals;
+
+    final resolvedPlaylistId =
+        incomingPlaylistId != null && incomingPlaylistId.isNotEmpty
+            ? incomingPlaylistId
+            : shouldPreserveIdentity
+                ? current.currentPlaylistId
+                : null;
+    final resolvedHlsUrl = incomingHlsUrl != null && incomingHlsUrl.isNotEmpty
+        ? incomingHlsUrl
+        : shouldPreserveIdentity
+            ? current.hlsUrl
+            : null;
+    final resolvedPlaylistName = incoming.currentPlaylistName ??
+        (resolvedPlaylistId == current.currentPlaylistId
+            ? current.currentPlaylistName
+            : null);
+    final streamIdentityChanged =
+        resolvedPlaylistId != current.currentPlaylistId ||
+            resolvedHlsUrl != current.hlsUrl;
+    final mergedStartedAt = incoming.startedAtUtc ??
+        (streamIdentityChanged ? null : current.startedAtUtc);
+
+    final mergedState = SpacePlaybackState(
+      spaceId: incoming.spaceId.isNotEmpty ? incoming.spaceId : current.spaceId,
+      storeId: incoming.storeId ?? current.storeId,
+      brandId: incoming.brandId ?? current.brandId,
+      currentPlaylistId: resolvedPlaylistId,
+      currentPlaylistName: resolvedPlaylistName,
+      hlsUrl: resolvedHlsUrl,
+      moodName: incoming.moodName ?? current.moodName,
+      isManualOverride: incoming.isManualOverride,
+      overrideMode: incoming.overrideMode ?? current.overrideMode,
+      startedAtUtc: mergedStartedAt,
+      expectedEndAtUtc: incoming.expectedEndAtUtc ?? current.expectedEndAtUtc,
+      isPaused: incoming.isPaused,
+      pausePositionSeconds: incoming.pausePositionSeconds,
+      seekOffsetSeconds: incoming.seekOffsetSeconds,
+      pendingPlaylistId: incoming.pendingPlaylistId,
+      pendingOverrideReason: incoming.pendingOverrideReason,
+    );
+
+    return _normalizePlaybackStateForClientClock(
+      incoming: mergedState,
+      current: current,
+    );
+  }
+
+  bool _hasSameStreamIdentity(
+    SpacePlaybackState left,
+    SpacePlaybackState right,
+  ) {
+    return (left.currentPlaylistId ?? '') == (right.currentPlaylistId ?? '') &&
+        (left.hlsUrl ?? '') == (right.hlsUrl ?? '');
+  }
+
+  SpacePlaybackState _normalizePlaybackStateForClientClock({
+    required SpacePlaybackState incoming,
+    SpacePlaybackState? current,
+  }) {
+    if (incoming.isPaused) return incoming;
+
+    final nowUtc = DateTime.now().toUtc();
+    if (incoming.seekOffsetSeconds != null) {
+      return _copyPlaybackStateWithTiming(
+        source: incoming,
+        isPaused: incoming.isPaused,
+        pausePositionSeconds: incoming.pausePositionSeconds,
+        seekOffsetSeconds: incoming.seekOffsetSeconds,
+        startedAtUtc: _startedAtForOffset(nowUtc, incoming.seekOffsetSeconds!),
+      );
+    }
+
+    if (current != null &&
+        _hasSameStreamIdentity(current, incoming) &&
+        current.startedAtUtc != null) {
+      return _copyPlaybackStateWithTiming(
+        source: incoming,
+        isPaused: incoming.isPaused,
+        pausePositionSeconds: incoming.pausePositionSeconds,
+        seekOffsetSeconds: incoming.seekOffsetSeconds,
+        startedAtUtc: current.startedAtUtc,
+      );
+    }
+
+    return incoming;
   }
 
   @override

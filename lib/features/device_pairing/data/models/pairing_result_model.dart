@@ -18,25 +18,35 @@ class DeviceAuthSessionModel extends DeviceAuthSession {
   });
 
   factory DeviceAuthSessionModel.fromJson(Map<String, dynamic> json) {
-    return DeviceAuthSessionModel(
-      deviceAccessToken: json['deviceAccessToken'] as String? ?? '',
-      deviceRefreshToken: json['deviceRefreshToken'] as String? ?? '',
-      accessTokenExpiresAt: DateTime.tryParse(
-            json['accessTokenExpiresAt'] as String? ??
-                json['expiresAt'] as String? ??
-                '',
-          ) ??
-          DateTime.now().toUtc(),
-      storeId: json['storeId'] as String? ?? '',
-      spaceId: json['spaceId'] as String? ?? '',
-      storeName: json['storeName'] as String? ?? 'Unknown Store',
-      spaceName: json['spaceName'] as String? ?? 'Unknown Space',
-      deviceId: json['deviceId'] as String?,
-      manufacturer: json['manufacturer'] as String?,
-      model: json['model'] as String?,
-      osVersion: json['osVersion'] as String?,
-      appVersion: json['appVersion'] as String?,
+    final parsedExpiry = _parseDateTime(
+      json['accessTokenExpiresAt'] ??
+          json['expiresAt'] ??
+          json['deviceAccessTokenExpiresAt'],
     );
+
+    return DeviceAuthSessionModel(
+      deviceAccessToken:
+          (json['deviceAccessToken'] ?? json['accessToken'])?.toString() ?? '',
+      deviceRefreshToken:
+          (json['deviceRefreshToken'] ?? json['refreshToken'])?.toString() ?? '',
+      accessTokenExpiresAt: parsedExpiry ??
+          DateTime.now().toUtc().add(const Duration(minutes: 10)),
+      storeId: json['storeId']?.toString() ?? '',
+      spaceId: json['spaceId']?.toString() ?? '',
+      storeName: json['storeName']?.toString() ?? 'Unknown Store',
+      spaceName: json['spaceName']?.toString() ?? 'Unknown Space',
+      deviceId: json['deviceId']?.toString(),
+      manufacturer: json['manufacturer']?.toString(),
+      model: json['model']?.toString(),
+      osVersion: json['osVersion']?.toString(),
+      appVersion: json['appVersion']?.toString(),
+    );
+  }
+
+  static DateTime? _parseDateTime(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is DateTime) return raw.toUtc();
+    return DateTime.tryParse(raw.toString())?.toUtc();
   }
 
   DeviceAuthSessionModel copyWith({

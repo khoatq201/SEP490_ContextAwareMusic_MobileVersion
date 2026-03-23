@@ -159,7 +159,7 @@ class StoreHubService {
       final data = _asMap(args?[0]);
       if (data != null) {
         print(
-          '[StoreHub] Connected to group: ${data['spaceId'] ?? data['storeId']}',
+          '[StoreHub] Connected to group: ${_readString(data, 'spaceId') ?? _readString(data, 'storeId')}',
         );
       }
     });
@@ -169,20 +169,18 @@ class StoreHubService {
       final payload = _asMap(args?[0]);
       if (payload == null) return;
 
-      final transitionType = payload['transitionType'] as int? ?? 1;
+      final transitionType = _readNum(payload, 'transitionType')?.toInt() ?? 1;
 
       // Skip Pending (3) — wait for the next event with ready HLS
       if (transitionType == TransitionTypeEnum.pending.value) return;
 
       _playStreamController.add(PlayStreamEvent(
-        spaceId: payload['spaceId'] as String? ?? '',
-        hlsUrl: payload['hlsUrl'] as String? ?? '',
-        playlistId: payload['playlistId'] as String? ?? '',
+        spaceId: _readString(payload, 'spaceId') ?? '',
+        hlsUrl: _readString(payload, 'hlsUrl') ?? '',
+        playlistId: _readString(payload, 'playlistId') ?? '',
         transitionType: TransitionTypeEnum.fromValue(transitionType),
-        isManualOverride: payload['isManualOverride'] as bool? ?? false,
-        startedAtUtc: payload['startedAtUtc'] != null
-            ? DateTime.tryParse(payload['startedAtUtc'] as String)
-            : null,
+        isManualOverride: _readBool(payload, 'isManualOverride') ?? false,
+        startedAtUtc: _parseDateTime(_readValue(payload, 'startedAtUtc')),
       ));
     });
 
@@ -192,11 +190,13 @@ class StoreHubService {
       if (payload == null) return;
 
       _playbackCommandController.add(PlaybackCommandEvent(
-        spaceId: payload['spaceId'] as String? ?? '',
-        command: PlaybackCommandEnum.fromValue(payload['command'] as int? ?? 1),
+        spaceId: _readString(payload, 'spaceId') ?? '',
+        command: PlaybackCommandEnum.fromValue(
+          _readNum(payload, 'command')?.toInt() ?? 1,
+        ),
         seekPositionSeconds:
-            (payload['seekPositionSeconds'] as num?)?.toDouble(),
-        targetTrackId: payload['targetTrackId'] as String?,
+            _readNum(payload, 'seekPositionSeconds')?.toDouble(),
+        targetTrackId: _readString(payload, 'targetTrackId'),
       ));
     });
 
@@ -205,7 +205,7 @@ class StoreHubService {
       final payload = _asMap(args?[0]);
       if (payload != null) {
         _statesSyncController.add(
-          SpacePlaybackStateModel.fromSignalR(payload),
+          SpacePlaybackStateModel.fromSignalR(_normalizeKeyCasing(payload)),
         );
       }
     });
@@ -232,10 +232,10 @@ class StoreHubService {
       _connectionController.add(ConnectionStatus.connected);
       // Re-join Space after reconnect
       if (_currentSpaceId != null) {
-        joinSpace(_currentSpaceId!);
+        unawaited(joinSpace(_currentSpaceId!));
       }
       if (_currentManagerStoreId != null) {
-        joinManagerRoom(_currentManagerStoreId!);
+        unawaited(joinManagerRoom(_currentManagerStoreId!));
       }
     });
 
@@ -259,6 +259,55 @@ class StoreHubService {
   Map<String, dynamic>? _asMap(dynamic raw) {
     if (raw is Map<String, dynamic>) return raw;
     if (raw is Map) return Map<String, dynamic>.from(raw);
+    return null;
+  }
+
+  Map<String, dynamic> _normalizeKeyCasing(Map<String, dynamic> payload) {
+    final normalized = <String, dynamic>{};
+    payload.forEach((key, value) {
+      normalized[key] = value;
+      if (key.isEmpty) return;
+      final camelCaseKey = '${key[0].toLowerCase()}${key.substring(1)}';
+      normalized.putIfAbsent(camelCaseKey, () => value);
+    });
+    return normalized;
+  }
+
+  dynamic _readValue(Map<String, dynamic> payload, String key) {
+    if (payload.containsKey(key)) return payload[key];
+    if (key.isEmpty) return null;
+    final pascalCaseKey = '${key[0].toUpperCase()}${key.substring(1)}';
+    if (payload.containsKey(pascalCaseKey)) return payload[pascalCaseKey];
+    return null;
+  }
+
+  String? _readString(Map<String, dynamic> payload, String key) {
+    final value = _readValue(payload, key);
+    if (value == null) return null;
+    if (value is String) return value;
+    return value.toString();
+  }
+
+  num? _readNum(Map<String, dynamic> payload, String key) {
+    final value = _readValue(payload, key);
+    if (value is num) return value;
+    if (value is String) return num.tryParse(value);
+    return null;
+  }
+
+  bool? _readBool(Map<String, dynamic> payload, String key) {
+    final value = _readValue(payload, key);
+    if (value is bool) return value;
+    if (value is String) {
+      if (value.toLowerCase() == 'true') return true;
+      if (value.toLowerCase() == 'false') return false;
+    }
+    return null;
+  }
+
+  DateTime? _parseDateTime(dynamic raw) {
+    if (raw is DateTime) return raw;
+    if (raw is String) return DateTime.tryParse(raw);
     return null;
   }
 }

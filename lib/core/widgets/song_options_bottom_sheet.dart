@@ -5,6 +5,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../../features/home/domain/entities/song_entity.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/session/session_cubit.dart';
+import '../../core/enums/user_role.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Enum: the set of actions the user can pick from the bottom sheet
@@ -48,7 +49,9 @@ class SongOptionsBottomSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final session = context.watch<SessionCubit>().state;
-    final isPlayback = session.isPlaybackDevice;
+    final canAddToPlaylist = !session.isPlaybackDevice &&
+        (session.currentRole == UserRole.brandManager ||
+            session.currentRole == UserRole.storeManager);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? const Color(0xFF1C1C1E) : Colors.white;
     final cardColor = isDark
@@ -156,7 +159,7 @@ class SongOptionsBottomSheet extends StatelessWidget {
             const SizedBox(height: 8),
             Divider(color: dividerColor, height: 1, indent: 16, endIndent: 16),
 
-            if (!isPlayback)
+            if (canAddToPlaylist)
               _OptionTile(
                 icon: Icons.playlist_add,
                 label: 'Add to Playlist',

@@ -149,8 +149,10 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
         event.playlistId != null &&
         nextState.playlistId == event.playlistId &&
         event.tracks.isNotEmpty) {
-      final resolvedIndex =
-          _resolveIndexForOffset(nextState.currentPosition.toDouble());
+      final resolvedIndex = _resolveIndexForOffset(
+        nextState.currentPosition.toDouble(),
+        event.tracks,
+      );
       if (resolvedIndex >= 0 && resolvedIndex < event.tracks.length) {
         final resolvedTrack = event.tracks[resolvedIndex];
         nextState = nextState.copyWith(
@@ -325,7 +327,12 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
 
   void _onSeekRequested(
       PlayerSeekRequested event, Emitter<PlayerState> emit) async {
-    await _audioService.seek(Duration(seconds: event.positionSeconds));
+    try {
+      await _audioService.seek(Duration(seconds: event.positionSeconds));
+    } catch (_) {
+      // Manager devices can optimistically update UI before SignalR confirms
+      // the new position even though they do not hold a local audio source.
+    }
     emit(state.copyWith(currentPosition: event.positionSeconds));
   }
 
@@ -353,18 +360,45 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     return cumulativeOffset;
   }
 
-  int _resolveIndexForOffset(double offsetSeconds) {
-    if (state.queue.isEmpty) return -1;
+  int _queueTotalDuration([List<Track>? queueOverride]) {
+    final queue = queueOverride ?? state.queue;
+    if (queue.isEmpty) return 0;
 
-    for (var i = 0; i < state.queue.length; i++) {
-      final nextTrackStart = i < state.queue.length - 1
-          ? _trackStartOffsetAt(i + 1).toDouble()
+    final lastIndex = queue.length - 1;
+    return _trackStartOffsetAt(lastIndex, queue) +
+        (queue[lastIndex].duration ?? 0);
+  }
+
+  double _normalizeOffsetForQueue(
+    double offsetSeconds, [
+    List<Track>? queueOverride,
+  ]) {
+    final totalDuration = _queueTotalDuration(queueOverride);
+    if (totalDuration <= 0) return offsetSeconds;
+
+    final normalized = offsetSeconds % totalDuration;
+    return normalized < 0 ? normalized + totalDuration : normalized;
+  }
+
+  int _resolveIndexForOffset(
+    double offsetSeconds, [
+    List<Track>? queueOverride,
+  ]) {
+    final queue = queueOverride ?? state.queue;
+    if (queue.isEmpty) return -1;
+
+    final normalizedOffset =
+        _normalizeOffsetForQueue(offsetSeconds, queueOverride);
+
+    for (var i = 0; i < queue.length; i++) {
+      final nextTrackStart = i < queue.length - 1
+          ? _trackStartOffsetAt(i + 1, queue).toDouble()
           : null;
-      if (nextTrackStart == null || offsetSeconds < nextTrackStart) {
+      if (nextTrackStart == null || normalizedOffset < nextTrackStart) {
         return i;
       }
     }
-    return state.queue.length - 1;
+    return queue.length - 1;
   }
 
   Track _buildSyntheticStreamTrack({
