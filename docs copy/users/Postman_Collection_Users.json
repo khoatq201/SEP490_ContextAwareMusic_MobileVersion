@@ -1,0 +1,647 @@
+{
+  "info": {
+    "name": "Log.AI-CAMS - CMS User API",
+    "_postman_id": "c2d3e4f5-a6b7-8901-cdef-012345678901",
+    "description": "User management endpoints for Log.AI-CAMS CMS.\n\n**Variables:**\n- `baseUrl` — e.g. `https://localhost:7001`\n- `accessToken` — Bearer token (login via Auth collection first)\n- `userId` — Target user ID (Guid) for single-user operations\n\n**Auth roles:**\n- SystemAdmin (0): Full access to all endpoints\n- BrandManager (1): Limited access — own brand only\n- StoreManager (2): No access — use /api/auth/profile instead",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://localhost:7001", "type": "string" },
+    { "key": "accessToken", "value": "", "type": "string" },
+    { "key": "userId", "value": "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Get Users (Paged List)",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/users?page=1&pageSize=10&search=&sortBy=&isAscending=true&status=&role=&brandId=&storeId=&joiningFrom=&joiningTo=&isPrimaryOwner=",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "users"],
+          "query": [
+            { "key": "page", "value": "1", "description": "Page number (default: 1)" },
+            { "key": "pageSize", "value": "10", "description": "Items per page (default: 10, max: 500)" },
+            { "key": "search", "value": "", "description": "Search across email, first/last name, phone", "disabled": true },
+            { "key": "sortBy", "value": "", "description": "Sort field (e.g. email, firstName, createdAt)", "disabled": true },
+            { "key": "isAscending", "value": "true", "description": "Sort direction — true=ascending (default)", "disabled": true },
+            { "key": "status", "value": "", "description": "Filter by status int: 0=Inactive, 1=Active", "disabled": true },
+            { "key": "role", "value": "", "description": "Filter by role int: 0=SystemAdmin, 1=BrandManager, 2=StoreManager", "disabled": true },
+            { "key": "brandId", "value": "", "description": "Filter by brand Guid (SA only; BM: auto set to own brand)", "disabled": true },
+            { "key": "storeId", "value": "", "description": "Filter by store Guid", "disabled": true },
+            { "key": "joiningFrom", "value": "", "description": "Filter by CreatedAt >= date (ISO 8601)", "disabled": true },
+            { "key": "joiningTo", "value": "", "description": "Filter by CreatedAt <= date (ISO 8601)", "disabled": true },
+            { "key": "isPrimaryOwner", "value": "", "description": "true=only PrimaryOwners, false=non-PrimaryOwners, omit=all", "disabled": true }
+          ]
+        },
+        "description": "**Auth:** SystemAdmin, BrandManager.\n\nSystemAdmin sees all users across all brands.\nBrandManager sees only users within their own brand (brandId filter is auto-overridden).\nStoreManager cannot call this endpoint — returns 403.\n\n**Query params (all optional except page/pageSize):**\n- `page` / `pageSize`: pagination\n- `search`: searches email, name, phone\n- `role`: 0=SystemAdmin | 1=BrandManager | 2=StoreManager\n- `brandId`: SA only; BM's brandId filter is always forced to own brand\n- `storeId`: filter by store\n- `joiningFrom` / `joiningTo`: filter by CreatedAt date range\n- `isPrimaryOwner`: true/false/omit"
+      },
+      "response": [
+        {
+          "name": "200 OK",
+          "originalRequest": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/users?page=1&pageSize=10", "host": ["{{baseUrl}}"], "path": ["api", "users"], "query": [{"key":"page","value":"1"},{"key":"pageSize","value":"10"}] }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"currentPage\": 1,\n  \"pageSize\": 10,\n  \"totalItems\": 2,\n  \"totalPages\": 1,\n  \"hasPrevious\": false,\n  \"hasNext\": false,\n  \"items\": [\n    {\n      \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n      \"firstName\": \"Nguyen\",\n      \"lastName\": \"Van A\",\n      \"fullName\": \"Nguyen Van A\",\n      \"email\": \"nguyenvana@example.com\",\n      \"phoneNumber\": \"0901234567\",\n      \"avatarUrl\": \"https://localhost:7001/uploads/avatars/user-abc123.png\",\n      \"lastLoginAt\": \"2026-02-25T08:30:00Z\",\n      \"roles\": [1],\n      \"brandId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n      \"brandName\": \"Tech Brand\",\n      \"storeId\": null,\n      \"storeName\": null,\n      \"isPrimaryOwner\": true,\n      \"createdAt\": \"2025-06-01T00:00:00Z\",\n      \"updatedAt\": \"2026-01-15T10:00:00Z\",\n      \"createdBy\": \"00000000-0000-0000-0000-000000000001\",\n      \"updatedBy\": null,\n      \"status\": 1\n    },\n    {\n      \"id\": \"b2c3d4e5-f6a7-8901-bcde-f12345678901\",\n      \"firstName\": \"Tran\",\n      \"lastName\": \"Thi B\",\n      \"fullName\": \"Tran Thi B\",\n      \"email\": \"tranthib@example.com\",\n      \"phoneNumber\": null,\n      \"avatarUrl\": null,\n      \"lastLoginAt\": null,\n      \"roles\": [2],\n      \"brandId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n      \"brandName\": \"Tech Brand\",\n      \"storeId\": \"4ea96f75-6828-5673-c4fd-3d074g77bfb7\",\n      \"storeName\": \"Store 01\",\n      \"isPrimaryOwner\": false,\n      \"createdAt\": \"2025-08-15T00:00:00Z\",\n      \"updatedAt\": null,\n      \"createdBy\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n      \"updatedBy\": null,\n      \"status\": 1\n    }\n  ],\n  \"isSuccess\": true,\n  \"message\": \"Users retrieved successfully\",\n  \"errors\": null,\n  \"errorCode\": null\n}"
+        },
+        {
+          "name": "403 Forbidden (StoreManager)",
+          "originalRequest": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/users?page=1", "host": ["{{baseUrl}}"], "path": ["api", "users"], "query": [{"key":"page","value":"1"}] }
+          },
+          "status": "Forbidden",
+          "code": 403,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"isSuccess\": false,\n  \"message\": \"You do not have permission to access this resource\",\n  \"errors\": null,\n  \"errorCode\": \"Forbidden\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Get User By Id",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/users/:id",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "users", ":id"],
+          "variable": [
+            { "key": "id", "value": "{{userId}}", "description": "User ID (Guid)" }
+          ]
+        },
+        "description": "**Auth:** SystemAdmin, BrandManager.\n\nSystemAdmin can view any user.\nBrandManager can view users in their own brand (except SystemAdmin accounts).\nStoreManager cannot call this endpoint.\n\n**Response 403:** BrandManager trying to view a SystemAdmin or different-brand user.\n**Response 404:** User not found."
+      },
+      "response": [
+        {
+          "name": "200 OK",
+          "originalRequest": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/users/a1b2c3d4-e5f6-7890-abcd-ef1234567890", "host": ["{{baseUrl}}"], "path": ["api", "users", "a1b2c3d4-e5f6-7890-abcd-ef1234567890"] }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"isSuccess\": true,\n  \"message\": \"User retrieved successfully\",\n  \"data\": {\n    \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    \"firstName\": \"Nguyen\",\n    \"lastName\": \"Van A\",\n    \"fullName\": \"Nguyen Van A\",\n    \"email\": \"nguyenvana@example.com\",\n    \"phoneNumber\": \"0901234567\",\n    \"avatarUrl\": \"https://localhost:7001/uploads/avatars/user-abc123.png\",\n    \"lastLoginAt\": \"2026-02-25T08:30:00Z\",\n    \"roles\": [1],\n    \"brandId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"brandName\": \"Tech Brand\",\n    \"storeId\": null,\n    \"storeName\": null,\n    \"isPrimaryOwner\": true,\n    \"emailConfirmed\": true,\n    \"phoneNumberConfirmed\": false,\n    \"twoFactorEnabled\": false,\n    \"createdAt\": \"2025-06-01T00:00:00Z\",\n    \"updatedAt\": null,\n    \"createdBy\": \"00000000-0000-0000-0000-000000000001\",\n    \"updatedBy\": null,\n    \"status\": 1\n  },\n  \"errors\": null,\n  \"errorCode\": null\n}"
+        },
+        {
+          "name": "403 Forbidden",
+          "originalRequest": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/users/00000000-0000-0000-0000-000000000001", "host": ["{{baseUrl}}"], "path": ["api", "users", "00000000-0000-0000-0000-000000000001"] }
+          },
+          "status": "Forbidden",
+          "code": 403,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"isSuccess\": false,\n  \"message\": \"You do not have permission to access this resource\",\n  \"errors\": null,\n  \"errorCode\": \"Forbidden\"\n}"
+        },
+        {
+          "name": "404 Not Found",
+          "originalRequest": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/users/00000000-0000-0000-0000-000000000000", "host": ["{{baseUrl}}"], "path": ["api", "users", "00000000-0000-0000-0000-000000000000"] }
+          },
+          "status": "Not Found",
+          "code": 404,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"isSuccess\": false,\n  \"message\": \"User not found\",\n  \"data\": null,\n  \"errors\": null,\n  \"errorCode\": \"NotFound\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Create User",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            { "key": "firstName", "value": "Nguyen", "type": "text", "description": "Required. Max 100 chars." },
+            { "key": "lastName", "value": "Van A", "type": "text", "description": "Required. Max 100 chars." },
+            { "key": "email", "value": "nguyenvana@example.com", "type": "text", "description": "Required. Valid email format. Must be unique in system." },
+            { "key": "password", "value": "Pass@123", "type": "text", "description": "Required. Min 6 characters." },
+            { "key": "role", "value": "2", "type": "text", "description": "Required. Integer: 0=SystemAdmin, 1=BrandManager, 2=StoreManager." },
+            { "key": "phoneNumber", "value": "0901234567", "type": "text", "description": "Optional. Valid phone: 7-15 digits, supports +, (), -, spaces.", "disabled": true },
+            { "key": "brandId", "value": "3fa85f64-5717-4562-b3fc-2c963f66afa6", "type": "text", "description": "Conditional. Required for BrandManager/StoreManager. Must be null for SystemAdmin." },
+            { "key": "storeId", "value": "4ea96f75-6828-5673-c4fd-3d074g77bfb7", "type": "text", "description": "Conditional. Required for StoreManager. Must be null for SystemAdmin/BrandManager." },
+            { "key": "avatar", "type": "file", "description": "Optional. Image file (.jpg .jpeg .png .gif .webp .bmp .svg), max 5 MB. Select file manually in Postman.", "disabled": true }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/users",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "users"]
+        },
+        "description": "**Auth:** SystemAdmin, BrandManager.\n\n**Content-Type:** `multipart/form-data` (set automatically by Postman).\n\n**Role rules:**\n- `role=0` (SystemAdmin): brandId and storeId must be null\n- `role=1` (BrandManager): brandId required, storeId must be null\n- `role=2` (StoreManager): both brandId and storeId required\n\n**Permission rules:**\n- Only PrimaryOwner or SystemAdmin can create BrandManager\n- BrandManager can only create StoreManager within their own brand\n\n**Validation errors (400):**\n- firstName empty → required\n- lastName empty → required\n- email empty or invalid format\n- password empty or < 6 chars\n- phoneNumber invalid phone format\n- avatar wrong type or > 5MB\n\n**Business rule errors (422):**\n- SA with brandId set → NoBrandOrStore violation\n- Non-SA without brandId → violation\n- Email/phone already used → DuplicateEntry\n- Brand/Store not found → 404"
+      },
+      "response": [
+        {
+          "name": "201 Created",
+          "originalRequest": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "body": { "mode": "formdata", "formdata": [{"key":"firstName","value":"Nguyen","type":"text"},{"key":"lastName","value":"Van A","type":"text"},{"key":"email","value":"new@example.com","type":"text"},{"key":"password","value":"Pass@123","type":"text"},{"key":"role","value":"2","type":"text"},{"key":"brandId","value":"3fa85f64-5717-4562-b3fc-2c963f66afa6","type":"text"},{"key":"storeId","value":"4ea96f75-6828-5673-c4fd-3d074g77bfb7","type":"text"}] },
+            "url": { "raw": "{{baseUrl}}/api/users", "host": ["{{baseUrl}}"], "path": ["api","users"] }
+          },
+          "status": "Created",
+          "code": 201,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"isSuccess\": true,\n  \"message\": \"User created successfully\",\n  \"errors\": null,\n  \"errorCode\": null\n}"
+        },
+        {
+          "name": "400 Validation Failed",
+          "originalRequest": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "body": { "mode": "formdata", "formdata": [{"key":"firstName","value":"","type":"text"},{"key":"email","value":"invalid-email","type":"text"},{"key":"password","value":"123","type":"text"}] },
+            "url": { "raw": "{{baseUrl}}/api/users", "host": ["{{baseUrl}}"], "path": ["api","users"] }
+          },
+          "status": "Bad Request",
+          "code": 400,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Validation failed\",\n  \"errors\": [\n    { \"field\": \"FirstName\", \"message\": \"First Name is required\" },\n    { \"field\": \"Email\", \"message\": \"Email is not a valid email address\" },\n    { \"field\": \"Password\", \"message\": \"Password must be at least 6 characters\" }\n  ],\n  \"errorCode\": \"ValidationFailed\"\n}"
+        },
+        {
+          "name": "403 Forbidden",
+          "originalRequest": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "body": { "mode": "formdata", "formdata": [{"key":"firstName","value":"Test","type":"text"},{"key":"lastName","value":"User","type":"text"},{"key":"email","value":"test@example.com","type":"text"},{"key":"password","value":"Pass@123","type":"text"},{"key":"role","value":"0","type":"text"}] },
+            "url": { "raw": "{{baseUrl}}/api/users", "host": ["{{baseUrl}}"], "path": ["api","users"] }
+          },
+          "status": "Forbidden",
+          "code": 403,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"isSuccess\": false,\n  \"message\": \"You do not have permission to create this role\",\n  \"errors\": null,\n  \"errorCode\": \"Forbidden\"\n}"
+        },
+        {
+          "name": "422 Email Already Exists",
+          "originalRequest": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "body": { "mode": "formdata", "formdata": [{"key":"firstName","value":"Nguyen","type":"text"},{"key":"lastName","value":"Van A","type":"text"},{"key":"email","value":"existing@example.com","type":"text"},{"key":"password","value":"Pass@123","type":"text"},{"key":"role","value":"2","type":"text"},{"key":"brandId","value":"3fa85f64-5717-4562-b3fc-2c963f66afa6","type":"text"},{"key":"storeId","value":"4ea96f75-6828-5673-c4fd-3d074g77bfb7","type":"text"}] },
+            "url": { "raw": "{{baseUrl}}/api/users", "host": ["{{baseUrl}}"], "path": ["api","users"] }
+          },
+          "status": "Unprocessable Entity",
+          "code": 422,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"isSuccess\": false,\n  \"message\": \"A user with this email already exists\",\n  \"errors\": null,\n  \"errorCode\": \"BusinessRuleViolation\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Update User (Partial)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            { "key": "firstName", "value": "Nguyen Updated", "type": "text", "description": "Optional. Max 100 chars.", "disabled": true },
+            { "key": "lastName", "value": "Van A Updated", "type": "text", "description": "Optional. Max 100 chars.", "disabled": true },
+            { "key": "email", "value": "updated@example.com", "type": "text", "description": "Optional. Valid email format. Must be unique.", "disabled": true },
+            { "key": "phoneNumber", "value": "0987654321", "type": "text", "description": "Optional. Valid phone: 7-15 digits, supports +, (), -, spaces. Must be unique.", "disabled": true },
+            { "key": "avatar", "type": "file", "description": "Optional. New avatar replaces old one after DB commit. Select file manually.", "disabled": true }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/users/:id",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "users", ":id"],
+          "variable": [
+            { "key": "id", "value": "{{userId}}", "description": "User ID (Guid)" }
+          ]
+        },
+        "description": "**Auth:** SystemAdmin, BrandManager.\n\n**Partial update (PATCH):** Only enable fields you want to change. Omitted fields retain their current values.\n\n**Avatar behavior:** If a new avatar is uploaded, the old avatar is deleted in the background after DB commit.\n\n**BrandManager restrictions:**\n- Cannot update their own account via this endpoint\n- Can only update users within their own brand\n- Cannot update another BrandManager's account\n\n**403:** BrandManager updating self or cross-brand user.\n**422:** Email/phone already used by another user."
+      },
+      "response": [
+        {
+          "name": "200 OK",
+          "originalRequest": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "body": { "mode": "formdata", "formdata": [{"key":"firstName","value":"Updated Name","type":"text"}] },
+            "url": { "raw": "{{baseUrl}}/api/users/a1b2c3d4-e5f6-7890-abcd-ef1234567890", "host": ["{{baseUrl}}"], "path": ["api","users","a1b2c3d4-e5f6-7890-abcd-ef1234567890"] }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"isSuccess\": true,\n  \"message\": \"User updated successfully\",\n  \"errors\": null,\n  \"errorCode\": null\n}"
+        },
+        {
+          "name": "403 Forbidden (BM updating self)",
+          "originalRequest": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "body": { "mode": "formdata", "formdata": [{"key":"firstName","value":"Self Update","type":"text"}] },
+            "url": { "raw": "{{baseUrl}}/api/users/a1b2c3d4-e5f6-7890-abcd-ef1234567890", "host": ["{{baseUrl}}"], "path": ["api","users","a1b2c3d4-e5f6-7890-abcd-ef1234567890"] }
+          },
+          "status": "Forbidden",
+          "code": 403,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"isSuccess\": false,\n  \"message\": \"You do not have permission to access this resource\",\n  \"errors\": null,\n  \"errorCode\": \"Forbidden\"\n}"
+        },
+        {
+          "name": "422 Email Duplicate",
+          "originalRequest": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "body": { "mode": "formdata", "formdata": [{"key":"email","value":"existing@example.com","type":"text"}] },
+            "url": { "raw": "{{baseUrl}}/api/users/a1b2c3d4-e5f6-7890-abcd-ef1234567890", "host": ["{{baseUrl}}"], "path": ["api","users","a1b2c3d4-e5f6-7890-abcd-ef1234567890"] }
+          },
+          "status": "Unprocessable Entity",
+          "code": 422,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"isSuccess\": false,\n  \"message\": \"A user with this email already exists\",\n  \"errors\": null,\n  \"errorCode\": \"BusinessRuleViolation\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Toggle User Status",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/users/:id/status",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "users", ":id", "status"],
+          "variable": [
+            { "key": "id", "value": "{{userId}}", "description": "User ID (Guid)" }
+          ]
+        },
+        "description": "**Auth:** SystemAdmin, BrandManager.\n\n**No request body required.**\n\nToggles user status: Active (1) → Inactive (0), or Inactive (0) → Active (1).\nAccounts are never permanently deleted — toggle is the only status operation.\n\n**Restrictions (403):**\n- Cannot toggle own account\n- Cannot toggle a SystemAdmin account (active or inactive)\n- Cannot toggle a PrimaryOwner account\n- BrandManager cannot toggle users in different brands or SA-owned users\n\n**404:** User not found."
+      },
+      "response": [
+        {
+          "name": "200 OK (Active → Inactive)",
+          "originalRequest": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/users/a1b2c3d4-e5f6-7890-abcd-ef1234567890/status", "host": ["{{baseUrl}}"], "path": ["api","users","a1b2c3d4-e5f6-7890-abcd-ef1234567890","status"] }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"isSuccess\": true,\n  \"message\": \"User status updated successfully\",\n  \"errors\": null,\n  \"errorCode\": null\n}"
+        },
+        {
+          "name": "403 Cannot Toggle SystemAdmin",
+          "originalRequest": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/users/00000000-0000-0000-0000-000000000001/status", "host": ["{{baseUrl}}"], "path": ["api","users","00000000-0000-0000-0000-000000000001","status"] }
+          },
+          "status": "Forbidden",
+          "code": 403,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Cannot deactivate a SystemAdmin account\",\n  \"errors\": null,\n  \"errorCode\": \"Forbidden\"\n}"
+        },
+        {
+          "name": "403 Cannot Toggle Self",
+          "originalRequest": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/users/a1b2c3d4-e5f6-7890-abcd-ef1234567890/status", "host": ["{{baseUrl}}"], "path": ["api","users","a1b2c3d4-e5f6-7890-abcd-ef1234567890","status"] }
+          },
+          "status": "Forbidden",
+          "code": 403,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Cannot deactivate your own account\",\n  \"errors\": null,\n  \"errorCode\": \"Forbidden\"\n}"
+        },
+        {
+          "name": "404 Not Found",
+          "originalRequest": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/users/00000000-0000-0000-0000-000000000000/status", "host": ["{{baseUrl}}"], "path": ["api","users","00000000-0000-0000-0000-000000000000","status"] }
+          },
+          "status": "Not Found",
+          "code": 404,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"isSuccess\": false,\n  \"message\": \"User not found\",\n  \"errors\": null,\n  \"errorCode\": \"NotFound\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Reset User Password",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+          { "key": "Content-Type", "value": "application/json", "type": "text" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"newPassword\": \"NewPass@123\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/users/:id/reset-password",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "users", ":id", "reset-password"],
+          "variable": [
+            { "key": "id", "value": "{{userId}}", "description": "User ID (Guid)" }
+          ]
+        },
+        "description": "**Auth:** SystemAdmin, BrandManager.\n\nAdmin-initiated password reset — does NOT require the user's current password.\n\nFor self-service password change, use `POST /api/auth/change-password` instead.\n\n**Authorization rules:**\n- SystemAdmin: can reset any user (including self)\n- BrandManager: can only reset StoreManagers within their own brand\n- BrandManager CANNOT reset another BrandManager or a SystemAdmin\n\n**Validation (400):**\n- `newPassword` empty → required\n- `newPassword` < 6 chars → minimum length\n\n**403:** BM trying to reset BM/SA or cross-brand user.\n**404:** User not found."
+      },
+      "response": [
+        {
+          "name": "200 OK",
+          "originalRequest": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"newPassword\": \"NewPass@123\"}" },
+            "url": { "raw": "{{baseUrl}}/api/users/a1b2c3d4-e5f6-7890-abcd-ef1234567890/reset-password", "host": ["{{baseUrl}}"], "path": ["api","users","a1b2c3d4-e5f6-7890-abcd-ef1234567890","reset-password"] }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Password reset successfully\",\n  \"errors\": null,\n  \"errorCode\": null\n}"
+        },
+        {
+          "name": "400 Validation Failed",
+          "originalRequest": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"newPassword\": \"123\"}" },
+            "url": { "raw": "{{baseUrl}}/api/users/a1b2c3d4-e5f6-7890-abcd-ef1234567890/reset-password", "host": ["{{baseUrl}}"], "path": ["api","users","a1b2c3d4-e5f6-7890-abcd-ef1234567890","reset-password"] }
+          },
+          "status": "Bad Request",
+          "code": 400,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Validation failed\",\n  \"errors\": [\n    { \"field\": \"NewPassword\", \"message\": \"New Password must be at least 6 characters\" }\n  ],\n  \"errorCode\": \"ValidationFailed\"\n}"
+        },
+        {
+          "name": "403 Forbidden (BM resets BM)",
+          "originalRequest": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"newPassword\": \"NewPass@123\"}" },
+            "url": { "raw": "{{baseUrl}}/api/users/a1b2c3d4-e5f6-7890-abcd-ef1234567890/reset-password", "host": ["{{baseUrl}}"], "path": ["api","users","a1b2c3d4-e5f6-7890-abcd-ef1234567890","reset-password"] }
+          },
+          "status": "Forbidden",
+          "code": 403,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"isSuccess\": false,\n  \"message\": \"You do not have permission to reset this user's password\",\n  \"errors\": null,\n  \"errorCode\": \"Forbidden\"\n}"
+        },
+        {
+          "name": "404 Not Found",
+          "originalRequest": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"newPassword\": \"NewPass@123\"}" },
+            "url": { "raw": "{{baseUrl}}/api/users/00000000-0000-0000-0000-000000000000/reset-password", "host": ["{{baseUrl}}"], "path": ["api","users","00000000-0000-0000-0000-000000000000","reset-password"] }
+          },
+          "status": "Not Found",
+          "code": 404,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"isSuccess\": false,\n  \"message\": \"User not found\",\n  \"errors\": null,\n  \"errorCode\": \"NotFound\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Assign User to Brand",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+          { "key": "Content-Type", "value": "application/json", "type": "text" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"newBrandId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/users/:id/brand",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "users", ":id", "brand"],
+          "variable": [
+            { "key": "id", "value": "{{userId}}", "description": "User ID (Guid)" }
+          ]
+        },
+        "description": "**Auth:** SystemAdmin only.\n\nMoves a user to a different brand.\n\n**Important side effects:**\n- Changing brand clears the user's store assignment (previous store may not belong to new brand)\n- ALL active sessions of the target user are revoked immediately after success → user must re-login\n\n**Guard:** If the target user is the current PrimaryOwner of their brand,\ncall `PUT /api/brands/{id}/transfer-ownership` first.\n\n**Restrictions (403/422):**\n- Cannot reassign self → 403\n- Cannot reassign a SystemAdmin → 403\n- Cannot reassign a PrimaryOwner (transfer ownership first) → 422\n- Target brand not found → 404\n- User already in target brand → 422"
+      },
+      "response": [
+        {
+          "name": "200 OK",
+          "originalRequest": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"newBrandId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"}" },
+            "url": { "raw": "{{baseUrl}}/api/users/a1b2c3d4-e5f6-7890-abcd-ef1234567890/brand", "host": ["{{baseUrl}}"], "path": ["api","users","a1b2c3d4-e5f6-7890-abcd-ef1234567890","brand"] }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"isSuccess\": true,\n  \"message\": \"User assigned to brand successfully\",\n  \"errors\": null,\n  \"errorCode\": null\n}"
+        },
+        {
+          "name": "403 Forbidden (Not SystemAdmin)",
+          "originalRequest": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"newBrandId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"}" },
+            "url": { "raw": "{{baseUrl}}/api/users/a1b2c3d4-e5f6-7890-abcd-ef1234567890/brand", "host": ["{{baseUrl}}"], "path": ["api","users","a1b2c3d4-e5f6-7890-abcd-ef1234567890","brand"] }
+          },
+          "status": "Forbidden",
+          "code": 403,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"isSuccess\": false,\n  \"message\": \"You do not have permission to access this resource\",\n  \"errors\": null,\n  \"errorCode\": \"Forbidden\"\n}"
+        },
+        {
+          "name": "422 User Already In Brand",
+          "originalRequest": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"newBrandId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"}" },
+            "url": { "raw": "{{baseUrl}}/api/users/a1b2c3d4-e5f6-7890-abcd-ef1234567890/brand", "host": ["{{baseUrl}}"], "path": ["api","users","a1b2c3d4-e5f6-7890-abcd-ef1234567890","brand"] }
+          },
+          "status": "Unprocessable Entity",
+          "code": 422,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"isSuccess\": false,\n  \"message\": \"User already belongs to this brand\",\n  \"errors\": null,\n  \"errorCode\": \"BusinessRuleViolation\"\n}"
+        },
+        {
+          "name": "422 PrimaryOwner Guard",
+          "originalRequest": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"newBrandId\": \"9fb96g86-6828-6784-d5ge-4e185h88cgc8\"}" },
+            "url": { "raw": "{{baseUrl}}/api/users/a1b2c3d4-e5f6-7890-abcd-ef1234567890/brand", "host": ["{{baseUrl}}"], "path": ["api","users","a1b2c3d4-e5f6-7890-abcd-ef1234567890","brand"] }
+          },
+          "status": "Unprocessable Entity",
+          "code": 422,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Cannot reassign the Primary Owner. Transfer ownership first.\",\n  \"errors\": null,\n  \"errorCode\": \"BusinessRuleViolation\"\n}"
+        },
+        {
+          "name": "404 Brand Not Found",
+          "originalRequest": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"newBrandId\": \"00000000-0000-0000-0000-000000000000\"}" },
+            "url": { "raw": "{{baseUrl}}/api/users/a1b2c3d4-e5f6-7890-abcd-ef1234567890/brand", "host": ["{{baseUrl}}"], "path": ["api","users","a1b2c3d4-e5f6-7890-abcd-ef1234567890","brand"] }
+          },
+          "status": "Not Found",
+          "code": 404,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Brand not found\",\n  \"errors\": null,\n  \"errorCode\": \"NotFound\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Assign User to Store (or Unassign)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+          { "key": "Content-Type", "value": "application/json", "type": "text" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"newStoreId\": \"4ea96f75-6828-5673-c4fd-3d074g77bfb7\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/users/:id/store",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "users", ":id", "store"],
+          "variable": [
+            { "key": "id", "value": "{{userId}}", "description": "User ID (Guid)" }
+          ]
+        },
+        "description": "**Auth:** SystemAdmin, BrandManager.\n\nAssigns or removes a user's store assignment.\n\n**To UNASSIGN a store:** send `{ \"newStoreId\": null }`\n**To ASSIGN a store:** send `{ \"newStoreId\": \"<store-guid>\" }`\n\n**Important:**\n- The store must belong to the same brand as the target user\n- To assign a store in a different brand: change user's brand first via `PUT /users/{id}/brand`\n- BrandManager role cannot be assigned to a specific store\n- ALL active sessions of the target user are revoked after a successful change\n\n**Guard:** If target user is PrimaryOwner, call transfer-ownership first.\n\n**Business rules (422):**\n- BrandManager target → cannot assign store\n- Store belongs to different brand\n- User already assigned to same store\n\n**403:** Reassigning self, targeting SA/PrimaryOwner, or cross-brand."
+      },
+      "response": [
+        {
+          "name": "200 OK (Assign Store)",
+          "originalRequest": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"newStoreId\": \"4ea96f75-6828-5673-c4fd-3d074g77bfb7\"}" },
+            "url": { "raw": "{{baseUrl}}/api/users/b2c3d4e5-f6a7-8901-bcde-f12345678901/store", "host": ["{{baseUrl}}"], "path": ["api","users","b2c3d4e5-f6a7-8901-bcde-f12345678901","store"] }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"isSuccess\": true,\n  \"message\": \"User store assignment updated successfully\",\n  \"errors\": null,\n  \"errorCode\": null\n}"
+        },
+        {
+          "name": "200 OK (Unassign Store)",
+          "originalRequest": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"newStoreId\": null}" },
+            "url": { "raw": "{{baseUrl}}/api/users/b2c3d4e5-f6a7-8901-bcde-f12345678901/store", "host": ["{{baseUrl}}"], "path": ["api","users","b2c3d4e5-f6a7-8901-bcde-f12345678901","store"] }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"isSuccess\": true,\n  \"message\": \"User store assignment updated successfully\",\n  \"errors\": null,\n  \"errorCode\": null\n}"
+        },
+        {
+          "name": "403 Forbidden (Target is PrimaryOwner)",
+          "originalRequest": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"newStoreId\": \"4ea96f75-6828-5673-c4fd-3d074g77bfb7\"}" },
+            "url": { "raw": "{{baseUrl}}/api/users/a1b2c3d4-e5f6-7890-abcd-ef1234567890/store", "host": ["{{baseUrl}}"], "path": ["api","users","a1b2c3d4-e5f6-7890-abcd-ef1234567890","store"] }
+          },
+          "status": "Forbidden",
+          "code": 403,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Cannot reassign the Primary Owner\",\n  \"errors\": null,\n  \"errorCode\": \"Forbidden\"\n}"
+        },
+        {
+          "name": "422 BrandManager Cannot Have Store",
+          "originalRequest": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"newStoreId\": \"4ea96f75-6828-5673-c4fd-3d074g77bfb7\"}" },
+            "url": { "raw": "{{baseUrl}}/api/users/a1b2c3d4-e5f6-7890-abcd-ef1234567890/store", "host": ["{{baseUrl}}"], "path": ["api","users","a1b2c3d4-e5f6-7890-abcd-ef1234567890","store"] }
+          },
+          "status": "Unprocessable Entity",
+          "code": 422,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"isSuccess\": false,\n  \"message\": \"BrandManager cannot be assigned to a specific store\",\n  \"errors\": null,\n  \"errorCode\": \"BusinessRuleViolation\"\n}"
+        },
+        {
+          "name": "422 Store Different Brand",
+          "originalRequest": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"newStoreId\": \"5fb07g86-7939-6784-d5ge-4e185h88cgc8\"}" },
+            "url": { "raw": "{{baseUrl}}/api/users/b2c3d4e5-f6a7-8901-bcde-f12345678901/store", "host": ["{{baseUrl}}"], "path": ["api","users","b2c3d4e5-f6a7-8901-bcde-f12345678901","store"] }
+          },
+          "status": "Unprocessable Entity",
+          "code": 422,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Store does not belong to the user's brand\",\n  \"errors\": null,\n  \"errorCode\": \"BusinessRuleViolation\"\n}"
+        },
+        {
+          "name": "404 Store Not Found",
+          "originalRequest": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"newStoreId\": \"00000000-0000-0000-0000-000000000000\"}" },
+            "url": { "raw": "{{baseUrl}}/api/users/b2c3d4e5-f6a7-8901-bcde-f12345678901/store", "host": ["{{baseUrl}}"], "path": ["api","users","b2c3d4e5-f6a7-8901-bcde-f12345678901","store"] }
+          },
+          "status": "Not Found",
+          "code": 404,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Store not found\",\n  \"errors\": null,\n  \"errorCode\": \"NotFound\"\n}"
+        }
+      ]
+    }
+  ]
+}

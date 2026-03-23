@@ -158,17 +158,25 @@ class PlayerHlsStarted extends PlayerEvent {
   final String hlsUrl;
   final String? playlistName;
   final String? playlistId;
+  final String? queueItemId;
+  final String? trackId;
+  final String? trackName;
   final double seekOffsetSeconds;
   final bool isPaused;
   final bool playLocally;
+  final bool forceReload;
 
   const PlayerHlsStarted({
     required this.hlsUrl,
     this.playlistName,
     this.playlistId,
+    this.queueItemId,
+    this.trackId,
+    this.trackName,
     this.seekOffsetSeconds = 0,
     this.isPaused = false,
     this.playLocally = true,
+    this.forceReload = false,
   });
 
   @override
@@ -176,10 +184,28 @@ class PlayerHlsStarted extends PlayerEvent {
         hlsUrl,
         playlistName,
         playlistId,
+        queueItemId,
+        trackId,
+        trackName,
         seekOffsetSeconds,
         isPaused,
         playLocally,
+        forceReload,
       ];
+}
+
+/// Applies remote volume/mute settings from CAMS state.
+class PlayerAudioSettingsApplied extends PlayerEvent {
+  final int volumePercent;
+  final bool isMuted;
+
+  const PlayerAudioSettingsApplied({
+    required this.volumePercent,
+    required this.isMuted,
+  });
+
+  @override
+  List<Object?> get props => [volumePercent, isMuted];
 }
 
 /// Fired when CAMS stops playback.

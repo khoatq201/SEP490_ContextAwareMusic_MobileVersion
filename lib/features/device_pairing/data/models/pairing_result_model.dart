@@ -28,7 +28,8 @@ class DeviceAuthSessionModel extends DeviceAuthSession {
       deviceAccessToken:
           (json['deviceAccessToken'] ?? json['accessToken'])?.toString() ?? '',
       deviceRefreshToken:
-          (json['deviceRefreshToken'] ?? json['refreshToken'])?.toString() ?? '',
+          (json['deviceRefreshToken'] ?? json['refreshToken'])?.toString() ??
+              '',
       accessTokenExpiresAt: parsedExpiry ??
           DateTime.now().toUtc().add(const Duration(minutes: 10)),
       storeId: json['storeId']?.toString() ?? '',

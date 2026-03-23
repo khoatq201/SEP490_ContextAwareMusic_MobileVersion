@@ -23,7 +23,8 @@ class SpaceModel extends Space {
   });
 
   factory SpaceModel.fromJson(Map<String, dynamic> json) {
-    final statusEnum = EntityStatusEnum.fromJson(json['status'] ?? json['statusStr']);
+    final statusEnum =
+        EntityStatusEnum.fromJson(json['status'] ?? json['statusStr']);
     final typeEnum = SpaceTypeEnum.fromValue(json['type'] as int?);
 
     return SpaceModel(
@@ -39,8 +40,12 @@ class SpaceModel extends Space {
       criticalQueueThreshold: json['criticalQueueThreshold'] as int?,
       wiFiSensorId: json['wiFiSensorId'] as String?,
       currentPlaylistId: json['currentPlaylistId'] as String?,
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt'] as String) : null,
-      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt'] as String) : null,
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'] as String)
+          : null,
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'] as String)
+          : null,
       currentMood: json['currentMood'] as String?,
       assignedHubId: json['assignedHubId'] as String?,
     );
@@ -109,4 +114,3 @@ class SpaceModel extends Space {
     );
   }
 }
-

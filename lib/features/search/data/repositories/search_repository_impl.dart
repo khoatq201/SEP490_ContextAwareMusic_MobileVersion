@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../../home/domain/entities/playlist_entity.dart';
 import '../../../home/domain/entities/song_entity.dart';
 import '../../../moods/data/datasources/mood_remote_datasource.dart';
@@ -102,7 +102,7 @@ class SearchRepositoryImpl implements SearchRepository {
         type: SearchResultType.song,
         duration: t.formattedDuration,
         durationSeconds: t.durationSec,
-        streamUrl: t.audioUrl,
+        streamUrl: t.hlsUrl,
       ));
     }
 
@@ -131,7 +131,7 @@ class SearchRepositoryImpl implements SearchRepository {
               artist: t.artist ?? 'Unknown',
               duration: t.durationSec ?? 0,
               coverUrl: t.coverImageUrl,
-              streamUrl: t.audioUrl,
+              streamUrl: t.hlsUrl,
             ))
         .toList();
 

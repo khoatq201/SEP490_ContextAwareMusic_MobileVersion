@@ -1,10 +1,9 @@
 import 'package:equatable/equatable.dart';
+
 import '../../../../core/enums/entity_status_enum.dart';
 import '../../../../core/enums/music_provider_enum.dart';
 
 /// Track entity matching backend TrackListItem DTO.
-/// This is separate from the old space_control Track entity
-/// which was designed for mock/offline playback.
 class ApiTrack extends Equatable {
   final String id;
   final String? brandId;
@@ -15,7 +14,7 @@ class ApiTrack extends Equatable {
   final String? genre;
   final MusicProviderEnum? provider;
   final int? durationSec;
-  final String? audioUrl;
+  final String? hlsUrl;
   final String? coverImageUrl;
   final int playCount;
   final bool? isAiGenerated;
@@ -33,7 +32,7 @@ class ApiTrack extends Equatable {
     this.genre,
     this.provider,
     this.durationSec,
-    this.audioUrl,
+    this.hlsUrl,
     this.coverImageUrl,
     this.playCount = 0,
     this.isAiGenerated,
@@ -41,6 +40,10 @@ class ApiTrack extends Equatable {
     required this.createdAt,
     this.updatedAt,
   });
+
+  /// Legacy alias during migration from `audioUrl` to `hlsUrl`.
+  @Deprecated('Use hlsUrl instead')
+  String? get audioUrl => hlsUrl;
 
   /// Formatted duration string (e.g., "3:30")
   String get formattedDuration {
@@ -61,7 +64,7 @@ class ApiTrack extends Equatable {
         genre,
         provider,
         durationSec,
-        audioUrl,
+        hlsUrl,
         coverImageUrl,
         playCount,
         isAiGenerated,

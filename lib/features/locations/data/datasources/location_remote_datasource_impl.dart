@@ -19,7 +19,8 @@ class LocationRemoteDataSourceImpl implements LocationRemoteDataSource {
       final response = await dioClient.get(endpoint);
       final data = response.data;
       if (data != null && data['data'] != null) {
-        return LocationSpaceModel.fromJson(data['data'] as Map<String, dynamic>);
+        return LocationSpaceModel.fromJson(
+            data['data'] as Map<String, dynamic>);
       }
       return LocationSpaceModel.fromJson(data as Map<String, dynamic>);
     } catch (e) {
@@ -28,7 +29,8 @@ class LocationRemoteDataSourceImpl implements LocationRemoteDataSource {
   }
 
   @override
-  Future<PaginationResult<LocationSpaceModel>> getSpacesForStore(String storeId, {int page = 1, int pageSize = 10}) async {
+  Future<PaginationResult<LocationSpaceModel>> getSpacesForStore(String storeId,
+      {int page = 1, int pageSize = 10}) async {
     try {
       final response = await dioClient.get(
         ApiConstants.getSpacesEndpoint,
@@ -38,7 +40,7 @@ class LocationRemoteDataSourceImpl implements LocationRemoteDataSource {
           'pageSize': pageSize,
         },
       );
-      
+
       return PaginationResult.fromJson(
         response.data as Map<String, dynamic>,
         fromItemJson: (json) => LocationSpaceModel.fromJson(json),
@@ -50,13 +52,16 @@ class LocationRemoteDataSourceImpl implements LocationRemoteDataSource {
 
   @override
   Future<Map<String, PaginationResult<LocationSpaceModel>>> getSpacesForBrand(
-      List<String> storeIds, {int page = 1, int pageSize = 10}) async {
+      List<String> storeIds,
+      {int page = 1,
+      int pageSize = 10}) async {
     try {
       final result = <String, PaginationResult<LocationSpaceModel>>{};
       // Future-proofing: Normally you'd want to request all by brandId in a single call,
       // but following the existing pattern we fetch per store.
       for (final storeId in storeIds) {
-        result[storeId] = await getSpacesForStore(storeId, page: page, pageSize: pageSize);
+        result[storeId] =
+            await getSpacesForStore(storeId, page: page, pageSize: pageSize);
       }
       return result;
     } catch (e) {
@@ -64,4 +69,3 @@ class LocationRemoteDataSourceImpl implements LocationRemoteDataSource {
     }
   }
 }
-

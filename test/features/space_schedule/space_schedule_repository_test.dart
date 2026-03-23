@@ -46,7 +46,8 @@ void main() {
           expect(bootstrap.draftSchedule, isNotNull);
           expect(bootstrap.draftSchedule!.spaceId, 'space-1');
           expect(
-            bootstrap.librarySources.any((source) => source.id == 'user-library-001'),
+            bootstrap.librarySources
+                .any((source) => source.id == 'user-library-001'),
             isTrue,
           );
           expect(bootstrap.librarySources.length, greaterThanOrEqualTo(3));
@@ -67,9 +68,12 @@ void main() {
         spaceName: 'VIP Area',
       );
 
-      final template = bootstrap.getOrElse(
-        () => throw StateError('Bootstrap failed'),
-      ).templateSources.first;
+      final template = bootstrap
+          .getOrElse(
+            () => throw StateError('Bootstrap failed'),
+          )
+          .templateSources
+          .first;
 
       final result = await repository.applyScheduleSource(
         spaceId: 'space-9',
@@ -78,7 +82,8 @@ void main() {
       );
 
       result.fold(
-        (failure) => fail('Expected applyScheduleSource to succeed: ${failure.message}'),
+        (failure) =>
+            fail('Expected applyScheduleSource to succeed: ${failure.message}'),
         (schedule) {
           expect(schedule.spaceId, 'space-9');
           expect(schedule.id, 'space-schedule-space-9');
@@ -105,7 +110,8 @@ void main() {
       );
 
       result.fold(
-        (failure) => fail('Expected slot deletion to succeed: ${failure.message}'),
+        (failure) =>
+            fail('Expected slot deletion to succeed: ${failure.message}'),
         (schedule) => expect(schedule.slots, isEmpty),
       );
     });

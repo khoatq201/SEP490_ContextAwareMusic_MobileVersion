@@ -179,14 +179,14 @@ class _ArtistBody extends StatelessWidget {
                   song: song,
                   onTap: () {
                     final session = ctx.read<SessionCubit>().state;
-                  if (!session.isPlaybackDevice) {
-                    ScaffoldMessenger.of(ctx).showSnackBar(
-                      const SnackBar(
-                        content: Text(kManagerPlaylistOnlyMessage),
-                      ),
-                    );
-                    return;
-                  }
+                    if (!session.isPlaybackDevice) {
+                      ScaffoldMessenger.of(ctx).showSnackBar(
+                        const SnackBar(
+                          content: Text(kManagerPlaylistOnlyMessage),
+                        ),
+                      );
+                      return;
+                    }
                     final tracks = artist.popularSongs
                         .map((s) => Track(
                               id: s.id,
@@ -196,7 +196,7 @@ class _ArtistBody extends StatelessWidget {
                               moodTags: const [],
                               duration: s.duration,
                               albumArt: s.coverUrl,
-                        ))
+                            ))
                         .toList();
                     showLocalPreviewStartedSnackBar(
                       ctx,

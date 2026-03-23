@@ -77,7 +77,8 @@ void main() {
       await waitForScheduleData();
 
       expect(
-        bloc.state.librarySources.any((source) => source.title == 'Copied Schedule'),
+        bloc.state.librarySources
+            .any((source) => source.title == 'Copied Schedule'),
         isTrue,
       );
     });

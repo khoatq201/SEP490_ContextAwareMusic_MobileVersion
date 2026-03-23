@@ -17,7 +17,8 @@ class LocationRepositoryImpl implements LocationRepository {
   });
 
   @override
-  Future<Either<Failure, LocationSpace>> getPairedSpace(String spaceId, String storeId) async {
+  Future<Either<Failure, LocationSpace>> getPairedSpace(
+      String spaceId, String storeId) async {
     if (await networkInfo.isConnected) {
       try {
         final result = await remoteDataSource.getSpace(spaceId, storeId);
@@ -32,11 +33,15 @@ class LocationRepositoryImpl implements LocationRepository {
   }
 
   @override
-  Future<Either<Failure, PaginationResult<LocationSpace>>> getSpacesForStore(String storeId, {int page = 1, int pageSize = 10}) async {
+  Future<Either<Failure, PaginationResult<LocationSpace>>> getSpacesForStore(
+      String storeId,
+      {int page = 1,
+      int pageSize = 10}) async {
     if (await networkInfo.isConnected) {
       try {
-        final result = await remoteDataSource.getSpacesForStore(storeId, page: page, pageSize: pageSize);
-        // Cast the paginated model list to entity list without mapping, 
+        final result = await remoteDataSource.getSpacesForStore(storeId,
+            page: page, pageSize: pageSize);
+        // Cast the paginated model list to entity list without mapping,
         // since LocationSpaceModel extends LocationSpace and the type is covariant.
         return Right(PaginationResult<LocationSpace>(
           currentPage: result.currentPage,
@@ -57,12 +62,15 @@ class LocationRepositoryImpl implements LocationRepository {
   }
 
   @override
-  Future<Either<Failure, Map<String, PaginationResult<LocationSpace>>>> getSpacesForBrand(List<String> storeIds, {int page = 1, int pageSize = 10}) async {
-     if (await networkInfo.isConnected) {
+  Future<Either<Failure, Map<String, PaginationResult<LocationSpace>>>>
+      getSpacesForBrand(List<String> storeIds,
+          {int page = 1, int pageSize = 10}) async {
+    if (await networkInfo.isConnected) {
       try {
-        final result = await remoteDataSource.getSpacesForBrand(storeIds, page: page, pageSize: pageSize);
+        final result = await remoteDataSource.getSpacesForBrand(storeIds,
+            page: page, pageSize: pageSize);
         final resultMap = result.map((key, paginationModel) => MapEntry(
-            key, 
+            key,
             PaginationResult<LocationSpace>(
               currentPage: paginationModel.currentPage,
               pageSize: paginationModel.pageSize,
@@ -71,8 +79,7 @@ class LocationRepositoryImpl implements LocationRepository {
               hasPrevious: paginationModel.hasPrevious,
               hasNext: paginationModel.hasNext,
               items: paginationModel.items,
-            )
-        ));
+            )));
         return Right(resultMap);
       } on ServerException catch (e) {
         return Left(ServerFailure(e.message));
@@ -83,4 +90,3 @@ class LocationRepositoryImpl implements LocationRepository {
     return const Left(NetworkFailure('No internet connection'));
   }
 }
-

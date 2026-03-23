@@ -1,6 +1,6 @@
-import '../../domain/entities/api_track.dart';
 import '../../../../core/enums/entity_status_enum.dart';
 import '../../../../core/enums/music_provider_enum.dart';
+import '../../domain/entities/api_track.dart';
 
 class ApiTrackModel extends ApiTrack {
   const ApiTrackModel({
@@ -13,7 +13,7 @@ class ApiTrackModel extends ApiTrack {
     super.genre,
     super.provider,
     super.durationSec,
-    super.audioUrl,
+    super.hlsUrl,
     super.coverImageUrl,
     super.playCount,
     super.isAiGenerated,
@@ -23,6 +23,7 @@ class ApiTrackModel extends ApiTrack {
   });
 
   factory ApiTrackModel.fromJson(Map<String, dynamic> json) {
+    final hlsUrl = json['hlsUrl'] as String? ?? json['audioUrl'] as String?;
     return ApiTrackModel(
       id: json['id'] as String,
       brandId: json['brandId'] as String?,
@@ -32,10 +33,10 @@ class ApiTrackModel extends ApiTrack {
       moodName: json['moodName'] as String?,
       genre: json['genre'] as String?,
       provider: MusicProviderEnum.fromJson(json['provider']),
-      durationSec: json['durationSec'] as int?,
-      audioUrl: json['audioUrl'] as String?,
+      durationSec: (json['durationSec'] as num?)?.toInt(),
+      hlsUrl: hlsUrl,
       coverImageUrl: json['coverImageUrl'] as String?,
-      playCount: json['playCount'] as int? ?? 0,
+      playCount: (json['playCount'] as num?)?.toInt() ?? 0,
       isAiGenerated: json['isAiGenerated'] as bool?,
       status: EntityStatusEnum.fromJson(json['status'] ?? 1),
       createdAt: DateTime.parse(json['createdAt'] as String),
@@ -56,7 +57,7 @@ class ApiTrackModel extends ApiTrack {
       'genre': genre,
       'provider': provider?.value,
       'durationSec': durationSec,
-      'audioUrl': audioUrl,
+      'hlsUrl': hlsUrl,
       'coverImageUrl': coverImageUrl,
       'playCount': playCount,
       'isAiGenerated': isAiGenerated,

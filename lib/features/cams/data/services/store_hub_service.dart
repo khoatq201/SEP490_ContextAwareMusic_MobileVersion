@@ -169,16 +169,24 @@ class StoreHubService {
       final payload = _asMap(args?[0]);
       if (payload == null) return;
 
-      final transitionType = _readNum(payload, 'transitionType')?.toInt() ?? 1;
+      final transitionType =
+          TransitionTypeEnum.fromJson(_readValue(payload, 'transitionType')) ??
+              TransitionTypeEnum.immediate;
+      final hlsUrl = _readString(payload, 'hlsUrl') ?? '';
 
-      // Skip Pending (3) — wait for the next event with ready HLS
-      if (transitionType == TransitionTypeEnum.pending.value) return;
+      // Pending means stream is not ready yet.
+      if (transitionType == TransitionTypeEnum.pending && hlsUrl.isEmpty) {
+        return;
+      }
 
       _playStreamController.add(PlayStreamEvent(
         spaceId: _readString(payload, 'spaceId') ?? '',
-        hlsUrl: _readString(payload, 'hlsUrl') ?? '',
-        playlistId: _readString(payload, 'playlistId') ?? '',
-        transitionType: TransitionTypeEnum.fromValue(transitionType),
+        hlsUrl: hlsUrl,
+        playlistId: _readString(payload, 'playlistId'),
+        currentQueueItemId: _readString(payload, 'currentQueueItemId'),
+        trackId: _readString(payload, 'trackId'),
+        trackName: _readString(payload, 'trackName'),
+        transitionType: transitionType,
         isManualOverride: _readBool(payload, 'isManualOverride') ?? false,
         startedAtUtc: _parseDateTime(_readValue(payload, 'startedAtUtc')),
       ));
@@ -318,7 +326,10 @@ class StoreHubService {
 class PlayStreamEvent {
   final String spaceId;
   final String hlsUrl;
-  final String playlistId;
+  final String? playlistId;
+  final String? currentQueueItemId;
+  final String? trackId;
+  final String? trackName;
   final TransitionTypeEnum transitionType;
   final bool isManualOverride;
   final DateTime? startedAtUtc;
@@ -326,7 +337,10 @@ class PlayStreamEvent {
   const PlayStreamEvent({
     required this.spaceId,
     required this.hlsUrl,
-    required this.playlistId,
+    this.playlistId,
+    this.currentQueueItemId,
+    this.trackId,
+    this.trackName,
     required this.transitionType,
     this.isManualOverride = false,
     this.startedAtUtc,

@@ -98,11 +98,13 @@ class HomeCubit extends Cubit<HomeState> {
           isManualOverride: pbState.isManualOverride,
           isManualSelectionOpen: false,
           currentMoodName: pbState.moodName,
-          currentPlaylistName: pbState.currentPlaylistName,
+          currentPlaylistName:
+              pbState.currentTrackName ?? pbState.currentPlaylistName,
           isStreaming: pbState.isStreaming,
-          isPendingTranscode: false,
+          isPendingTranscode: pbState.hasPendingPlayback,
           clearMood: pbState.moodName == null,
-          clearPlaylist: pbState.currentPlaylistName == null,
+          clearPlaylist:
+              (pbState.currentTrackName ?? pbState.currentPlaylistName) == null,
         ));
       },
     );
@@ -183,22 +185,14 @@ class HomeCubit extends Cubit<HomeState> {
         isApplyingOverride: false,
         modeMessage: 'Override failed: ${failure.message}',
       )),
-      (response) {
-        final isPending = !response.isStreamReady;
+      (_) async {
         emit(state.copyWith(
           isApplyingOverride: false,
           isManualOverride: true,
           isManualSelectionOpen: false,
-          currentMoodName: response.moodName,
-          currentPlaylistName: response.playlistName,
-          isStreaming: response.isStreamReady,
-          isPendingTranscode: isPending,
-          modeMessage: isPending
-              ? 'Processing playlist in background. Stream starts automatically when transcode is ready.'
-              : null,
-          clearMood: response.moodName == null,
-          clearPlaylist: response.playlistName == null,
+          modeMessage: null,
         ));
+        await loadSpacePlaybackState(spaceId);
       },
     );
   }

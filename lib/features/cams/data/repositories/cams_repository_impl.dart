@@ -2,8 +2,10 @@ import 'package:dartz/dartz.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/enums/playback_command_enum.dart';
+import '../../../../core/enums/queue_insert_mode_enum.dart';
 import '../../domain/entities/pair_code_snapshot.dart';
 import '../../domain/entities/pair_device_info.dart';
+import '../../domain/entities/space_queue_state_item.dart';
 import '../../domain/entities/space_playback_state.dart';
 import '../models/override_response_model.dart';
 import '../datasources/cams_remote_datasource.dart';
@@ -12,8 +14,10 @@ abstract class CamsRepository {
   /// Override Space music.
   Future<Either<Failure, OverrideResponse>> overrideSpace({
     required String spaceId,
+    List<String>? trackIds,
     String? playlistId,
     String? moodId,
+    bool? isClearManagerSelectedQueues,
     String? reason,
     bool usePlaybackDeviceScope = false,
   });
@@ -30,6 +34,54 @@ abstract class CamsRepository {
     required PlaybackCommandEnum command,
     double? seekPositionSeconds,
     String? targetTrackId,
+    bool usePlaybackDeviceScope = false,
+  });
+
+  Future<Either<Failure, void>> updateAudioState({
+    required String spaceId,
+    int? volumePercent,
+    bool? isMuted,
+    int? queueEndBehavior,
+    bool usePlaybackDeviceScope = false,
+  });
+
+  Future<Either<Failure, void>> queueTracks({
+    required String spaceId,
+    required List<String> trackIds,
+    required QueueInsertModeEnum mode,
+    bool isClearExistingQueue = false,
+    String? reason,
+    bool usePlaybackDeviceScope = false,
+  });
+
+  Future<Either<Failure, void>> queuePlaylist({
+    required String spaceId,
+    required String playlistId,
+    required QueueInsertModeEnum mode,
+    bool isClearExistingQueue = false,
+    String? reason,
+    bool usePlaybackDeviceScope = false,
+  });
+
+  Future<Either<Failure, void>> reorderQueue({
+    required String spaceId,
+    required List<String> queueItemIds,
+    bool usePlaybackDeviceScope = false,
+  });
+
+  Future<Either<Failure, void>> removeQueueItems({
+    required String spaceId,
+    required List<String> queueItemIds,
+    bool usePlaybackDeviceScope = false,
+  });
+
+  Future<Either<Failure, void>> clearQueue({
+    required String spaceId,
+    bool usePlaybackDeviceScope = false,
+  });
+
+  Future<Either<Failure, List<SpaceQueueStateItem>>> getQueue(
+    String spaceId, {
     bool usePlaybackDeviceScope = false,
   });
 
@@ -62,16 +114,20 @@ class CamsRepositoryImpl implements CamsRepository {
   @override
   Future<Either<Failure, OverrideResponse>> overrideSpace({
     required String spaceId,
+    List<String>? trackIds,
     String? playlistId,
     String? moodId,
+    bool? isClearManagerSelectedQueues,
     String? reason,
     bool usePlaybackDeviceScope = false,
   }) async {
     try {
       final result = await remoteDataSource.overrideSpace(
         spaceId: spaceId,
+        trackIds: trackIds,
         playlistId: playlistId,
         moodId: moodId,
+        isClearManagerSelectedQueues: isClearManagerSelectedQueues,
         reason: reason,
         usePlaybackDeviceScope: usePlaybackDeviceScope,
       );
@@ -126,6 +182,158 @@ class CamsRepositoryImpl implements CamsRepository {
   }
 
   @override
+  Future<Either<Failure, void>> updateAudioState({
+    required String spaceId,
+    int? volumePercent,
+    bool? isMuted,
+    int? queueEndBehavior,
+    bool usePlaybackDeviceScope = false,
+  }) async {
+    try {
+      await remoteDataSource.updateAudioState(
+        spaceId: spaceId,
+        volumePercent: volumePercent,
+        isMuted: isMuted,
+        queueEndBehavior: queueEndBehavior,
+        usePlaybackDeviceScope: usePlaybackDeviceScope,
+      );
+      return const Right(null);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure('Failed to update audio state: $e'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> queueTracks({
+    required String spaceId,
+    required List<String> trackIds,
+    required QueueInsertModeEnum mode,
+    bool isClearExistingQueue = false,
+    String? reason,
+    bool usePlaybackDeviceScope = false,
+  }) async {
+    try {
+      await remoteDataSource.queueTracks(
+        spaceId: spaceId,
+        trackIds: trackIds,
+        mode: mode,
+        isClearExistingQueue: isClearExistingQueue,
+        reason: reason,
+        usePlaybackDeviceScope: usePlaybackDeviceScope,
+      );
+      return const Right(null);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure('Failed to queue tracks: $e'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> queuePlaylist({
+    required String spaceId,
+    required String playlistId,
+    required QueueInsertModeEnum mode,
+    bool isClearExistingQueue = false,
+    String? reason,
+    bool usePlaybackDeviceScope = false,
+  }) async {
+    try {
+      await remoteDataSource.queuePlaylist(
+        spaceId: spaceId,
+        playlistId: playlistId,
+        mode: mode,
+        isClearExistingQueue: isClearExistingQueue,
+        reason: reason,
+        usePlaybackDeviceScope: usePlaybackDeviceScope,
+      );
+      return const Right(null);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure('Failed to queue playlist: $e'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> reorderQueue({
+    required String spaceId,
+    required List<String> queueItemIds,
+    bool usePlaybackDeviceScope = false,
+  }) async {
+    try {
+      await remoteDataSource.reorderQueue(
+        spaceId: spaceId,
+        queueItemIds: queueItemIds,
+        usePlaybackDeviceScope: usePlaybackDeviceScope,
+      );
+      return const Right(null);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure('Failed to reorder queue: $e'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> removeQueueItems({
+    required String spaceId,
+    required List<String> queueItemIds,
+    bool usePlaybackDeviceScope = false,
+  }) async {
+    try {
+      await remoteDataSource.removeQueueItems(
+        spaceId: spaceId,
+        queueItemIds: queueItemIds,
+        usePlaybackDeviceScope: usePlaybackDeviceScope,
+      );
+      return const Right(null);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure('Failed to remove queue items: $e'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> clearQueue({
+    required String spaceId,
+    bool usePlaybackDeviceScope = false,
+  }) async {
+    try {
+      await remoteDataSource.clearQueue(
+        spaceId: spaceId,
+        usePlaybackDeviceScope: usePlaybackDeviceScope,
+      );
+      return const Right(null);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure('Failed to clear queue: $e'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<SpaceQueueStateItem>>> getQueue(
+    String spaceId, {
+    bool usePlaybackDeviceScope = false,
+  }) async {
+    try {
+      final queue = await remoteDataSource.getQueue(
+        spaceId,
+        usePlaybackDeviceScope: usePlaybackDeviceScope,
+      );
+      return Right(queue);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure('Failed to get queue: $e'));
+    }
+  }
+
+  @override
   Future<Either<Failure, SpacePlaybackState>> getSpaceState(
     String spaceId, {
     bool usePlaybackDeviceScope = false,
@@ -144,7 +352,8 @@ class CamsRepositoryImpl implements CamsRepository {
   }
 
   @override
-  Future<Either<Failure, SpacePlaybackState>> getSpaceStateForPlaybackDevice() async {
+  Future<Either<Failure, SpacePlaybackState>>
+      getSpaceStateForPlaybackDevice() async {
     try {
       final state = await remoteDataSource.getSpaceStateForPlaybackDevice();
       return Right(state);
@@ -160,7 +369,8 @@ class CamsRepositoryImpl implements CamsRepository {
     String spaceId,
   ) async {
     try {
-      final result = await remoteDataSource.getPairDeviceInfoForManager(spaceId);
+      final result =
+          await remoteDataSource.getPairDeviceInfoForManager(spaceId);
       return Right(result);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
@@ -170,9 +380,11 @@ class CamsRepositoryImpl implements CamsRepository {
   }
 
   @override
-  Future<Either<Failure, PairDeviceInfo>> getPairDeviceInfoForPlaybackDevice() async {
+  Future<Either<Failure, PairDeviceInfo>>
+      getPairDeviceInfoForPlaybackDevice() async {
     try {
-      final result = await remoteDataSource.getPairDeviceInfoForPlaybackDevice();
+      final result =
+          await remoteDataSource.getPairDeviceInfoForPlaybackDevice();
       return Right(result);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));

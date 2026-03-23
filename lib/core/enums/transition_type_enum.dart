@@ -3,7 +3,8 @@
 enum TransitionTypeEnum {
   immediate(1),
   crossfade(2),
-  pending(3);
+  pending(3),
+  queued(4);
 
   const TransitionTypeEnum(this.value);
   final int value;
@@ -29,6 +30,8 @@ enum TransitionTypeEnum {
         return 'Crossfade';
       case TransitionTypeEnum.pending:
         return 'Pending';
+      case TransitionTypeEnum.queued:
+        return 'Queued';
     }
   }
 }

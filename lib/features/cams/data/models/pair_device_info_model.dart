@@ -22,8 +22,7 @@ class PairDeviceInfoModel extends PairDeviceInfo {
       storeId: json['storeId'] as String,
       brandId: json['brandId'] as String,
       deviceSessionId: json['deviceSessionId'] as String?,
-      isPlaybackDeviceCaller:
-          json['isPlaybackDeviceCaller'] as bool? ?? false,
+      isPlaybackDeviceCaller: json['isPlaybackDeviceCaller'] as bool? ?? false,
       manufacturer: json['manufacturer'] as String?,
       model: json['model'] as String?,
       osVersion: json['osVersion'] as String?,

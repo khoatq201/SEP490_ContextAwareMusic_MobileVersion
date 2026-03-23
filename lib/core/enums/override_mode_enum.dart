@@ -2,7 +2,8 @@
 /// Used by CAMS override API.
 enum OverrideModeEnum {
   directPlaylist(1),
-  moodOverride(2);
+  moodOverride(2),
+  trackListOverride(3);
 
   const OverrideModeEnum(this.value);
   final int value;
@@ -26,6 +27,8 @@ enum OverrideModeEnum {
         return 'Direct Playlist';
       case OverrideModeEnum.moodOverride:
         return 'Mood Override';
+      case OverrideModeEnum.trackListOverride:
+        return 'Track List Override';
     }
   }
 }

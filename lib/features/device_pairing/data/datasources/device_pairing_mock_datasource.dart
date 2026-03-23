@@ -21,8 +21,8 @@ class DevicePairingMockDataSource implements DevicePairingRemoteDataSource {
         deviceAccessToken: 'mock_device_access_token',
         deviceRefreshToken: 'mock_device_refresh_token',
         accessTokenExpiresAt: DateTime.now().toUtc().add(
-          const Duration(minutes: 15),
-        ),
+              const Duration(minutes: 15),
+            ),
         storeId: 'store-1',
         spaceId: 'space-1',
         storeName: 'Highlands Coffee',
@@ -40,8 +40,8 @@ class DevicePairingMockDataSource implements DevicePairingRemoteDataSource {
         deviceAccessToken: 'mock_device_access_token_2',
         deviceRefreshToken: 'mock_device_refresh_token_2',
         accessTokenExpiresAt: DateTime.now().toUtc().add(
-          const Duration(minutes: 15),
-        ),
+              const Duration(minutes: 15),
+            ),
         storeId: 'store-2',
         spaceId: 'space-2',
         storeName: 'The Coffee House',

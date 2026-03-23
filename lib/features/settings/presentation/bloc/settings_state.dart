@@ -24,7 +24,8 @@ class SettingsState extends Equatable {
     return SettingsState(
       status: status ?? this.status,
       snapshot: snapshot ?? this.snapshot,
-      errorMessage: clearErrorMessage ? null : (errorMessage ?? this.errorMessage),
+      errorMessage:
+          clearErrorMessage ? null : (errorMessage ?? this.errorMessage),
     );
   }
 

@@ -1,0 +1,646 @@
+{
+  "info": {
+    "name": "Log.AI-CAMS — Playlists",
+    "_postman_id": "d5e6f7a8-b9c0-1234-efff-456789012345",
+    "description": "Playlist Management API — CMS (React & Flutter)\n\nBase URL: {{baseUrl}}\nAuth: Bearer {{accessToken}} (user) hoặc {{deviceAccessToken}} (PlaybackDevice)\n\nEndpoints:\n  GET    /api/playlists                             SA, BM, SM, PlaybackDevice ✅ (device: scope Store session)\n  GET    /api/playlists/{id}                        SA, BM, SM, PlaybackDevice ✅ (device: playlist.StoreId = session)\n  POST   /api/playlists                             BM, SM only\n  PUT    /api/playlists/{id}                        BM, SM only\n  DELETE /api/playlists/{id}                        BM, SM only\n  PUT    /api/playlists/{id}/toggle-status           BM, SM only\n  POST   /api/playlists/{id}/tracks                 BM, SM only\n  DELETE /api/playlists/{id}/tracks/{trackId}       BM, SM only\n  POST   /api/playlists/{id}/retranscode            BM, SM only\n\nKey rules:\n- Playlist has no BrandId; brand derived from playlist.Store.BrandId\n- BrandManager must provide storeId (must belong to their brand)\n- StoreManager: storeId auto-resolved from user.StoreId\n- trackIds in UpdatePlaylist: null=no-op, []=remove all, [ids]=sync\n- Auto-transcode triggered (debounced 5 min) on track add/remove\n- Retranscode: force re-generate HLS, bumps TranscodeVersion, clears HlsUrl\n\nEntityStatusEnum: Inactive=0, Active=1, Pending=2, Rejected=3\n\nSee: docs/playlists/API_Playlists.md",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://localhost:7001",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "playlistId",
+      "value": "p1000000-0000-0000-0000-000000000001",
+      "type": "string"
+    },
+    {
+      "key": "trackId",
+      "value": "a1b2c3d4-0001-0000-0000-000000000001",
+      "type": "string"
+    },
+    {
+      "key": "deviceAccessToken",
+      "value": "",
+      "type": "string",
+      "description": "JWT Bearer token (PlaybackDevice — tablet đã pair). Dùng cho GET playlists / GET playlist by id (scope Store của session)."
+    }
+  ],
+  "item": [
+    {
+      "name": "Playlists",
+      "item": [
+        {
+          "name": "Get Playlists (Paginated)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "vi-VN",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/playlists?page=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "playlists"],
+              "query": [
+                { "key": "page", "value": "1", "description": "Current page (default: 1)" },
+                { "key": "pageSize", "value": "10", "description": "Items per page (default: 10, max: 500)" },
+                { "key": "search", "value": "", "description": "Search by name, description", "disabled": true },
+                { "key": "sortBy", "value": "", "description": "Field to sort by (e.g. name, createdAt)", "disabled": true },
+                { "key": "isAscending", "value": "false", "description": "Sort direction (default: false = newest first)", "disabled": true },
+                { "key": "status", "value": "1", "description": "Filter by status: 0=Inactive, 1=Active, 2=Pending, 3=Rejected", "disabled": true },
+                { "key": "brandId", "value": "", "description": "⚠️ BM/SM: always overridden to their own brand. SA: free filter", "disabled": true },
+                { "key": "storeId", "value": "", "description": "⚠️ SM: always overridden to their own store. BM: filter within brand. SA: free filter", "disabled": true },
+                { "key": "moodId", "value": "", "description": "Filter by mood (Guid)", "disabled": true },
+                { "key": "isDynamic", "value": "", "description": "true = dynamic playlists only; false = static playlists only", "disabled": true },
+                { "key": "isDefault", "value": "", "description": "true = default playlists only", "disabled": true },
+                { "key": "createdFrom", "value": "", "description": "Filter playlists created from this date (ISO 8601)", "disabled": true },
+                { "key": "createdTo", "value": "", "description": "Filter playlists created up to this date (ISO 8601)", "disabled": true }
+              ]
+            },
+            "description": "Get paginated list of playlists.\n\nAuth: SystemAdmin ✅, BrandManager (own brand) ✅, StoreManager (own store) ✅, PlaybackDevice ✅ (scope = Store của session; dùng Authorization: Bearer {{deviceAccessToken}}).\n\nNotes:\n- BrandManager: brandId is always overridden to their own brand.\n- StoreManager: storeId and brandId always overridden to their own store/brand.\n- PlaybackDevice: storeId/brandId lấy từ device session — chỉ thấy playlists thuộc Store đó.\n- SystemAdmin: can pass storeId or brandId to filter freely.\n- Includes: Mood (name), Store (name), PlaylistTracks (trackCount).\n- Default sort: newest first (isAscending = false)."
+          },
+          "response": [
+            {
+              "name": "200 OK — Playlist list",
+              "originalRequest": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "url": {
+                  "raw": "{{baseUrl}}/api/playlists?page=1&pageSize=10",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "playlists"],
+                  "query": [
+                    { "key": "page", "value": "1" },
+                    { "key": "pageSize", "value": "10" }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"currentPage\": 1,\n  \"pageSize\": 10,\n  \"totalItems\": 1,\n  \"totalPages\": 1,\n  \"hasPrevious\": false,\n  \"hasNext\": false,\n  \"items\": [\n    {\n      \"id\": \"p1000000-0000-0000-0000-000000000001\",\n      \"brandId\": \"b0000000-0000-0000-0000-000000000001\",\n      \"storeId\": \"s0000000-0000-0000-0000-000000000001\",\n      \"storeName\": \"Store Alpha\",\n      \"moodId\": \"m0000000-0000-0000-0000-000000000001\",\n      \"moodName\": \"Relaxing\",\n      \"name\": \"Afternoon Chill\",\n      \"description\": \"Soft background music for afternoon hours\",\n      \"isDefault\": true,\n      \"trackCount\": 12,\n      \"createdAt\": \"2026-01-20T10:00:00Z\",\n      \"updatedAt\": null,\n      \"createdBy\": \"00000000-0000-0000-0000-000000000001\",\n      \"updatedBy\": null,\n      \"status\": 1\n    }\n  ],\n  \"isSuccess\": true,\n  \"message\": \"Playlist retrieved successfully\",\n  \"errors\": null,\n  \"errorCode\": null\n}"
+            },
+            {
+              "name": "401 Unauthorized",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/playlists", "host": ["{{baseUrl}}"], "path": ["api", "playlists"] }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Unauthorized\",\n  \"errors\": null,\n  \"errorCode\": \"Unauthorized\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Playlist By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/playlists/{{playlistId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "playlists", "{{playlistId}}"]
+            },
+            "description": "Get full playlist detail including ordered tracks with HLS seek offsets.\n\nAuth: SystemAdmin ✅, BrandManager (own brand) ✅, StoreManager (own store) ✅, PlaybackDevice ✅ (chỉ khi playlist.StoreId = Store của session; dùng Bearer {{deviceAccessToken}}).\n\nIncludes: PlaylistTracks → Track, Mood, Store navigation.\n\nseekOffsetSeconds is computed server-side (cumulative sum of actualDurationSec ?? durationSec).\nUse seekOffsetSeconds to implement SkipToTrack by seeking the HLS player."
+          },
+          "response": [
+            {
+              "name": "200 OK — Playlist detail",
+              "originalRequest": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "url": {
+                  "raw": "{{baseUrl}}/api/playlists/{{playlistId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "playlists", "{{playlistId}}"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Playlist retrieved successfully\",\n  \"data\": {\n    \"id\": \"p1000000-0000-0000-0000-000000000001\",\n    \"brandId\": \"b0000000-0000-0000-0000-000000000001\",\n    \"storeId\": \"s0000000-0000-0000-0000-000000000001\",\n    \"storeName\": \"Store Alpha\",\n    \"moodId\": \"m0000000-0000-0000-0000-000000000001\",\n    \"moodName\": \"Relaxing\",\n    \"name\": \"Afternoon Chill\",\n    \"description\": \"Soft background music for afternoon hours\",\n    \"isDefault\": true,\n    \"trackCount\": 2,\n    \"tracks\": [\n      {\n        \"trackId\": \"a1b2c3d4-0001-0000-0000-000000000001\",\n        \"title\": \"Summer Vibes\",\n        \"artist\": \"Studio One\",\n        \"durationSec\": 210,\n        \"orderIndex\": 1,\n        \"hlsUrl\": \"https://cdn.example.com/tracks/audio/summer-vibes.m3u8\",\n        \"seekOffsetSeconds\": 0\n      },\n      {\n        \"trackId\": \"a1b2c3d4-0002-0000-0000-000000000002\",\n        \"title\": \"Ocean Breeze\",\n        \"artist\": \"Ambient Lab\",\n        \"durationSec\": 195,\n        \"orderIndex\": 2,\n        \"hlsUrl\": \"https://cdn.example.com/tracks/audio/ocean-breeze.m3u8\",\n        \"seekOffsetSeconds\": 210\n      }\n    ],\n    \"createdAt\": \"2026-01-20T10:00:00Z\",\n    \"updatedAt\": null,\n    \"createdBy\": \"00000000-0000-0000-0000-000000000001\",\n    \"updatedBy\": null,\n    \"status\": 1\n  },\n  \"errors\": null,\n  \"errorCode\": null\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "url": {
+                  "raw": "{{baseUrl}}/api/playlists/00000000-0000-0000-0000-000000000000",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "playlists", "00000000-0000-0000-0000-000000000000"]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Playlist not found\",\n  \"errors\": null,\n  \"errorCode\": \"NotFound\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Playlists (PlaybackDevice)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{deviceAccessToken}}", "type": "text" },
+              { "key": "Accept-Language", "value": "vi-VN", "type": "text", "disabled": true }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/playlists?page=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "playlists"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "10" }
+              ]
+            },
+            "description": "Cùng endpoint GET /api/playlists; dùng token PlaybackDevice (tablet đã pair). Scope = Store của device session; storeId/brandId bị override từ session."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Playlist",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Afternoon Chill\",\n  \"storeId\": \"s0000000-0000-0000-0000-000000000001\",\n  \"moodId\": null,\n  \"description\": \"Soft background music for afternoon hours\",\n  \"isDefault\": false,\n  \"trackIds\": [\n    \"a1b2c3d4-0001-0000-0000-000000000001\",\n    \"a1b2c3d4-0002-0000-0000-000000000002\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/playlists",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "playlists"]
+            },
+            "description": "Create a new playlist.\n\nAuth: BrandManager ✅, StoreManager ✅\n\nNotes:\n- StoreManager: storeId is auto-resolved from user.StoreId (ignore storeId in body).\n- BrandManager: storeId is REQUIRED and must belong to their brand.\n- moodId must exist if provided.\n- name must be unique within the store.\n- trackIds is optional. Invalid track IDs (wrong brand) are silently ignored.\n- All inserts (Playlist + PlaylistTrack) in a single transaction."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+                  { "key": "Content-Type", "value": "application/json", "type": "text" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Afternoon Chill\",\n  \"storeId\": \"s0000000-0000-0000-0000-000000000001\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": { "raw": "{{baseUrl}}/api/playlists", "host": ["{{baseUrl}}"], "path": ["api", "playlists"] }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Playlist created successfully\",\n  \"data\": null,\n  \"errors\": null,\n  \"errorCode\": null\n}"
+            },
+            {
+              "name": "400 Validation Failed",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+                  { "key": "Content-Type", "value": "application/json", "type": "text" }
+                ],
+                "body": { "mode": "raw", "raw": "{}", "options": { "raw": { "language": "json" } } },
+                "url": { "raw": "{{baseUrl}}/api/playlists", "host": ["{{baseUrl}}"], "path": ["api", "playlists"] }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Validation failed\",\n  \"errors\": [\"Name is required\"],\n  \"errorCode\": \"ValidationFailed\"\n}"
+            },
+            {
+              "name": "422 Duplicate Name",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+                  { "key": "Content-Type", "value": "application/json", "type": "text" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Afternoon Chill\",\n  \"storeId\": \"s0000000-0000-0000-0000-000000000001\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": { "raw": "{{baseUrl}}/api/playlists", "host": ["{{baseUrl}}"], "path": ["api", "playlists"] }
+              },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Playlist with this name already exists\",\n  \"errors\": null,\n  \"errorCode\": \"BusinessRuleViolation\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Playlist",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Afternoon Chill (Extended)\",\n  \"description\": \"Extended version with more tracks\",\n  \"moodId\": null,\n  \"isDefault\": null,\n  \"trackIds\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/playlists/{{playlistId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "playlists", "{{playlistId}}"]
+            },
+            "description": "Update an existing playlist (partial update / patch semantics).\n\nAuth: BrandManager (own brand) ✅, StoreManager (own store) ✅\n\nNotes:\n- trackIds semantics:\n  • null → do NOT touch track list\n  • [] → REMOVE ALL tracks from playlist\n  • [id1, id2] → SYNC: delete tracks not in list, add new ones (validates brand)\n- name uniqueness only re-checked if name actually changed.\n- moodId must exist if changed.\n- Scalar update + track sync in a single transaction.\n- After track changes: reindex OrderIndex in background."
+          },
+          "response": [
+            {
+              "name": "200 OK — Updated",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+                  { "key": "Content-Type", "value": "application/json", "type": "text" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Afternoon Chill (Extended)\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/playlists/{{playlistId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "playlists", "{{playlistId}}"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Playlist updated successfully\",\n  \"data\": null,\n  \"errors\": null,\n  \"errorCode\": null\n}"
+            },
+            {
+              "name": "403 Forbidden",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+                  { "key": "Content-Type", "value": "application/json", "type": "text" }
+                ],
+                "body": { "mode": "raw", "raw": "{}", "options": { "raw": { "language": "json" } } },
+                "url": {
+                  "raw": "{{baseUrl}}/api/playlists/{{playlistId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "playlists", "{{playlistId}}"]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"You do not have permission to access this resource\",\n  \"errors\": null,\n  \"errorCode\": \"Forbidden\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Playlist",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/playlists/{{playlistId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "playlists", "{{playlistId}}"]
+            },
+            "description": "Soft-delete a playlist.\n\nAuth: BrandManager (own brand) ✅, StoreManager (own store) ✅\n\nSoft delete: IsDeleted = true.\nAfter DB commit: S3 folder cleanup enqueued for all transcode outputs."
+          },
+          "response": [
+            {
+              "name": "200 OK — Deleted",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "url": {
+                  "raw": "{{baseUrl}}/api/playlists/{{playlistId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "playlists", "{{playlistId}}"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Playlist deleted successfully\",\n  \"data\": null,\n  \"errors\": null,\n  \"errorCode\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Toggle Playlist Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/playlists/{{playlistId}}/toggle-status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "playlists", "{{playlistId}}", "toggle-status"]
+            },
+            "description": "Toggle playlist status: Active (1) ↔ Inactive (0).\n\nAuth: BrandManager (own brand) ✅, StoreManager (own store) ✅"
+          },
+          "response": [
+            {
+              "name": "200 OK — Status toggled",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "url": {
+                  "raw": "{{baseUrl}}/api/playlists/{{playlistId}}/toggle-status",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "playlists", "{{playlistId}}", "toggle-status"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Playlist status toggled successfully\",\n  \"data\": null,\n  \"errors\": null,\n  \"errorCode\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Add Tracks to Playlist",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trackIds\": [\n    \"a1b2c3d4-0003-0000-0000-000000000003\",\n    \"a1b2c3d4-0004-0000-0000-000000000004\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/playlists/{{playlistId}}/tracks",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "playlists", "{{playlistId}}", "tracks"]
+            },
+            "description": "Add one or more tracks to a playlist.\n\nAuth: BrandManager (own brand) ✅, StoreManager (own store) ✅\n\nNotes:\n- Duplicate track IDs in request are silently deduplicated.\n- Tracks already in playlist are skipped (not duplicated).\n- Track IDs not belonging to the brand are silently ignored.\n- After DB commit: OrderIndex reindexed in background; auto-transcode triggered (debounced 5 min)."
+          },
+          "response": [
+            {
+              "name": "200 OK — Tracks added",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+                  { "key": "Content-Type", "value": "application/json", "type": "text" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"trackIds\": [\"a1b2c3d4-0003-0000-0000-000000000003\"]\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/playlists/{{playlistId}}/tracks",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "playlists", "{{playlistId}}", "tracks"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Playlist updated successfully\",\n  \"data\": null,\n  \"errors\": null,\n  \"errorCode\": null\n}"
+            },
+            {
+              "name": "404 Playlist Not Found",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+                  { "key": "Content-Type", "value": "application/json", "type": "text" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"trackIds\": []\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/playlists/00000000-0000-0000-0000-000000000000/tracks",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "playlists", "00000000-0000-0000-0000-000000000000", "tracks"]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Playlist not found\",\n  \"errors\": null,\n  \"errorCode\": \"NotFound\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Remove Track from Playlist",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/playlists/{{playlistId}}/tracks/{{trackId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "playlists", "{{playlistId}}", "tracks", "{{trackId}}"]
+            },
+            "description": "Remove a single track from a playlist.\n\nAuth: BrandManager (own brand) ✅, StoreManager (own store) ✅\n\nNotes:\n- Idempotent: if track is not in playlist, succeeds anyway.\n- After DB commit: OrderIndex reindexed in background; auto-transcode triggered (debounced 5 min)."
+          },
+          "response": [
+            {
+              "name": "200 OK — Track removed",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "url": {
+                  "raw": "{{baseUrl}}/api/playlists/{{playlistId}}/tracks/{{trackId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "playlists", "{{playlistId}}", "tracks", "{{trackId}}"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Playlist updated successfully\",\n  \"data\": null,\n  \"errors\": null,\n  \"errorCode\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Retranscode Playlist",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/playlists/{{playlistId}}/retranscode",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "playlists", "{{playlistId}}", "retranscode"]
+            },
+            "description": "Force re-transcode a playlist to generate a new HLS version.\n\nAuth: BrandManager (own brand) ✅, StoreManager (own store) ✅\n\nNo request body required.\n\nNotes:\n- Clears current HlsUrl, increments TranscodeVersion, queues new MediaConvert job.\n- Use when existing HLS stream is broken or needs regeneration after S3/CloudFront config changes.\n- After job completes, HlsUrl is updated and SignalR pushes PlayStream notification to tablet."
+          },
+          "response": [
+            {
+              "name": "202 Accepted — Job queued",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/playlists/{{playlistId}}/retranscode",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "playlists", "{{playlistId}}", "retranscode"]
+                }
+              },
+              "status": "Accepted",
+              "code": 202,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Retranscode job queued successfully.\",\n  \"data\": null,\n  \"errors\": null,\n  \"errorCode\": null\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/playlists/{{playlistId}}/retranscode",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "playlists", "{{playlistId}}", "retranscode"]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Playlist not found\",\n  \"data\": null,\n  \"errors\": null,\n  \"errorCode\": \"NotFound\"\n}"
+            },
+            {
+              "name": "403 Forbidden",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/playlists/{{playlistId}}/retranscode",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "playlists", "{{playlistId}}", "retranscode"]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"You do not have permission to access this resource\",\n  \"data\": null,\n  \"errors\": null,\n  \"errorCode\": \"Forbidden\"\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

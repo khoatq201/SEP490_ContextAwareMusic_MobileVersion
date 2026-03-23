@@ -18,7 +18,8 @@ class PairDevice {
     String? deviceId,
   }) {
     if (code.trim().isEmpty) {
-      return Future.value(const Left(ValidationFailure('Pair code cannot be empty')));
+      return Future.value(
+          const Left(ValidationFailure('Pair code cannot be empty')));
     }
     return repository.pairDevice(
       code: code.trim(),

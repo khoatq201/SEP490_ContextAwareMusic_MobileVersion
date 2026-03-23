@@ -7,11 +7,11 @@ class Space extends Equatable {
   final String id;
   final String name;
   final String storeId;
-  
+
   // Real API fields
   final SpaceTypeEnum type;
   final String? description;
-  final EntityStatusEnum status; 
+  final EntityStatusEnum status;
   final String? cameraId;
   final String? roiCoordinates;
   final int? maxOccupancy;
@@ -77,7 +77,8 @@ class Space extends Equatable {
       cameraId: cameraId ?? this.cameraId,
       roiCoordinates: roiCoordinates ?? this.roiCoordinates,
       maxOccupancy: maxOccupancy ?? this.maxOccupancy,
-      criticalQueueThreshold: criticalQueueThreshold ?? this.criticalQueueThreshold,
+      criticalQueueThreshold:
+          criticalQueueThreshold ?? this.criticalQueueThreshold,
       wiFiSensorId: wiFiSensorId ?? this.wiFiSensorId,
       currentPlaylistId: currentPlaylistId ?? this.currentPlaylistId,
       createdAt: createdAt ?? this.createdAt,
@@ -112,4 +113,3 @@ class Space extends Equatable {
   bool get isOnline => status.isActive;
   bool get isOffline => !isOnline;
 }
-

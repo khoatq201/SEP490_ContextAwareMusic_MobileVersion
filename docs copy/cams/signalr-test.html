@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>StoreHub — SignalR Tester</title>
+<script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@8.0.0/dist/browser/signalr.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; display: flex; flex-direction: column; }
+
+  header { background: #1a1d2e; border-bottom: 1px solid #2d3148; padding: 14px 20px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 16px; font-weight: 600; color: #a78bfa; }
+  #statusBadge { padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; background: #374151; color: #9ca3af; }
+  #statusBadge.connected    { background: #064e3b; color: #34d399; }
+  #statusBadge.reconnecting { background: #451a03; color: #fbbf24; }
+  #statusBadge.error        { background: #450a0a; color: #f87171; }
+
+  main { display: grid; grid-template-columns: 320px 1fr; gap: 0; flex: 1; overflow: hidden; height: calc(100vh - 49px); }
+
+  /* LEFT PANEL */
+  .panel-left { background: #151722; border-right: 1px solid #2d3148; overflow-y: auto; display: flex; flex-direction: column; gap: 0; }
+  section { border-bottom: 1px solid #2d3148; padding: 14px 16px; }
+  section h2 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #6b7280; margin-bottom: 10px; }
+
+  label { display: block; font-size: 12px; color: #9ca3af; margin-bottom: 3px; margin-top: 8px; }
+  label:first-of-type { margin-top: 0; }
+  input, select, textarea {
+    width: 100%; background: #1e2030; border: 1px solid #374151; border-radius: 6px;
+    color: #e2e8f0; font-size: 12px; padding: 6px 8px; outline: none; font-family: 'Consolas', monospace;
+  }
+  input:focus, select:focus, textarea:focus { border-color: #7c3aed; }
+  textarea { resize: vertical; min-height: 60px; }
+
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;
+    padding: 7px 12px; transition: opacity .15s; width: 100%; margin-top: 8px; }
+  .btn:hover { opacity: .85; } .btn:active { opacity: .7; }
+  .btn:disabled { opacity: .35; cursor: not-allowed; }
+  .btn-primary  { background: #7c3aed; color: #fff; }
+  .btn-danger   { background: #b91c1c; color: #fff; }
+  .btn-success  { background: #065f46; color: #34d399; }
+  .btn-gray     { background: #1f2937; color: #d1d5db; border: 1px solid #374151; }
+  .btn-row      { display: flex; gap: 6px; }
+  .btn-row .btn { margin-top: 0; }
+
+  /* RIGHT PANEL — EVENT LOG */
+  .panel-right { display: flex; flex-direction: column; overflow: hidden; }
+  .log-header  { background: #151722; border-bottom: 1px solid #2d3148; padding: 10px 16px; display: flex; align-items: center; gap: 10px; }
+  .log-header span { font-size: 13px; font-weight: 600; flex: 1; }
+  #logCount { font-size: 11px; color: #6b7280; }
+
+  #log { flex: 1; overflow-y: auto; padding: 10px 14px; display: flex; flex-direction: column; gap: 6px; }
+
+  .entry { background: #1a1d2e; border-radius: 8px; padding: 10px 12px; border-left: 3px solid #374151; font-size: 12px; }
+  .entry.info      { border-color: #3b82f6; }
+  .entry.event     { border-color: #a78bfa; }
+  .entry.send      { border-color: #059669; }
+  .entry.warn      { border-color: #d97706; }
+  .entry.err       { border-color: #ef4444; }
+  .entry .ts       { color: #6b7280; font-size: 10px; font-family: 'Consolas', monospace; margin-bottom: 4px; }
+  .entry .tag      { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 10px; font-weight: 700;
+                     margin-right: 6px; text-transform: uppercase; letter-spacing: .05em; }
+  .tag-info      { background: #1d4ed8; color: #bfdbfe; }
+  .tag-event     { background: #5b21b6; color: #ddd6fe; }
+  .tag-send      { background: #064e3b; color: #6ee7b7; }
+  .tag-warn      { background: #78350f; color: #fde68a; }
+  .tag-err       { background: #7f1d1d; color: #fca5a5; }
+  .entry pre { color: #c4b5fd; font-family: 'Consolas', monospace; font-size: 11px; white-space: pre-wrap; word-break: break-all; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⚡ StoreHub — SignalR Tester</h1>
+  <span id="statusBadge">Disconnected</span>
+</header>
+
+<main>
+  <!-- ═══════════════════ LEFT PANEL ═══════════════════ -->
+  <div class="panel-left">
+
+    <!-- Connection -->
+    <section>
+      <h2>🔌 Connection</h2>
+      <label>Base URL</label>
+      <input id="baseUrl" value="https://localhost:7001" />
+      <label>JWT Token</label>
+      <textarea id="jwt" placeholder="Paste Bearer token (without 'Bearer ')..." rows="3"></textarea>
+      <div class="btn-row" style="margin-top:10px">
+        <button class="btn btn-primary" id="btnConnect">Connect</button>
+        <button class="btn btn-danger"  id="btnDisconnect" disabled>Disconnect</button>
+      </div>
+    </section>
+
+    <!-- Join / Leave -->
+    <section>
+      <h2>🏪 Groups</h2>
+      <label>Space ID</label>
+      <input id="spaceId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+      <div class="btn-row" style="margin-top:8px">
+        <button class="btn btn-success" id="btnJoinSpace"  disabled>Join Space</button>
+        <button class="btn btn-gray"    id="btnLeaveSpace" disabled>Leave</button>
+      </div>
+      <label style="margin-top:12px">Store ID</label>
+      <input id="storeId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+      <button class="btn btn-success" id="btnJoinManager" style="margin-top:8px" disabled>Join Manager Room</button>
+    </section>
+
+    <!-- Playback Control -->
+    <section>
+      <h2>🎮 Send Playback Command</h2>
+      <label>Command</label>
+      <select id="playbackCmd">
+        <option value="1">1 — Pause</option>
+        <option value="2">2 — Resume</option>
+        <option value="3">3 — Seek</option>
+        <option value="4">4 — SeekForward</option>
+        <option value="5">5 — SeekBackward</option>
+        <option value="6">6 — SkipNext</option>
+        <option value="7">7 — SkipPrevious</option>
+        <option value="8">8 — SkipToTrack</option>
+      </select>
+      <label>seekPositionSeconds <span style="color:#6b7280">(optional)</span></label>
+      <input id="seekPos" type="number" placeholder="e.g. 142.5" />
+      <label>targetTrackId <span style="color:#6b7280">(optional, GUID)</span></label>
+      <input id="targetTrackId" placeholder="xxxxxxxx-..." />
+      <button class="btn btn-primary" id="btnSendPlayback" disabled style="margin-top:10px">Send Command</button>
+    </section>
+
+    <!-- Report Playback State -->
+    <section>
+      <h2>📊 Report Playback State</h2>
+      <label>isPlaying</label>
+      <select id="isPlaying">
+        <option value="true">true</option>
+        <option value="false">false</option>
+      </select>
+      <label>positionSeconds</label>
+      <input id="posSeconds" type="number" placeholder="e.g. 90.0" />
+      <label>currentHlsUrl</label>
+      <input id="hlsUrl" placeholder="https://..." />
+      <button class="btn btn-success" id="btnReport" disabled style="margin-top:10px">Report State</button>
+    </section>
+
+    <!-- Custom Invoke -->
+    <section>
+      <h2>🛠 Custom Invoke</h2>
+      <label>Method name</label>
+      <input id="customMethod" placeholder="e.g. JoinSpaceAsync" />
+      <label>Arguments (JSON array)</label>
+      <textarea id="customArgs" placeholder='["uuid-here"]' rows="2"></textarea>
+      <button class="btn btn-gray" id="btnInvoke" disabled style="margin-top:10px">Invoke</button>
+    </section>
+
+  </div>
+
+  <!-- ═══════════════════ RIGHT PANEL ═══════════════════ -->
+  <div class="panel-right">
+    <div class="log-header">
+      <span>📋 Event Log</span>
+      <span id="logCount">0 events</span>
+      <button class="btn btn-gray" id="btnClear" style="width:auto;margin-top:0;padding:4px 10px">Clear</button>
+    </div>
+    <div id="log"></div>
+  </div>
+</main>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let hub = null;
+let logCount = 0;
+
+// ── DOM refs ────────────────────────────────────────────────────────────────
+const $  = id => document.getElementById(id);
+const btnConnect     = $('btnConnect');
+const btnDisconnect  = $('btnDisconnect');
+const btnJoinSpace   = $('btnJoinSpace');
+const btnLeaveSpace  = $('btnLeaveSpace');
+const btnJoinManager = $('btnJoinManager');
+const btnSendPlayback= $('btnSendPlayback');
+const btnReport      = $('btnReport');
+const btnInvoke      = $('btnInvoke');
+const statusBadge    = $('statusBadge');
+
+// ── Log helper ───────────────────────────────────────────────────────────────
+function addLog(type, label, title, data) {
+  const log = $('log');
+  const entry = document.createElement('div');
+  entry.className = `entry ${type}`;
+  const ts = new Date().toISOString().split('T')[1].replace('Z','');
+  entry.innerHTML = `
+    <div class="ts">${ts}</div>
+    <span class="tag tag-${type}">${label}</span>
+    <strong style="font-size:12px">${title}</strong>
+    ${data !== undefined ? `<pre>${typeof data === 'string' ? data : JSON.stringify(data, null, 2)}</pre>` : ''}
+  `;
+  log.appendChild(entry);
+  log.scrollTop = log.scrollHeight;
+  $('logCount').textContent = `${++logCount} event${logCount > 1 ? 's' : ''}`;
+}
+
+// ── Update status badge ──────────────────────────────────────────────────────
+function setStatus(text, cls) {
+  statusBadge.textContent = text;
+  statusBadge.className = cls;
+}
+
+// ── Enable/disable controls ──────────────────────────────────────────────────
+function setConnected(connected) {
+  btnConnect.disabled     =  connected;
+  btnDisconnect.disabled  = !connected;
+  btnJoinSpace.disabled   = !connected;
+  btnLeaveSpace.disabled  = !connected;
+  btnJoinManager.disabled = !connected;
+  btnSendPlayback.disabled= !connected;
+  btnReport.disabled      = !connected;
+  btnInvoke.disabled      = !connected;
+}
+
+// ── Connect ──────────────────────────────────────────────────────────────────
+btnConnect.addEventListener('click', async () => {
+  const baseUrl = $('baseUrl').value.trim().replace(/\/$/, '');
+  const jwt     = $('jwt').value.trim();
+
+  if (!jwt) { addLog('err', 'ERR', 'JWT token is empty', null); return; }
+
+  hub = new signalR.HubConnectionBuilder()
+    .withUrl(`${baseUrl}/hubs/store`, {
+      accessTokenFactory: () => jwt,
+    })
+    .withAutomaticReconnect({ nextRetryDelayInMilliseconds: ctx => [0, 2000, 5000, 10000][Math.min(ctx.previousRetryCount, 3)] })
+    .configureLogging(signalR.LogLevel.Warning)
+    .build();
+
+  // ── Register all server events ─────────────────────────────────────────────
+  hub.on('ConnectionConfirmed',   d => addLog('event', 'EVENT', 'ConnectionConfirmed',   d));
+  hub.on('PlayStream',            d => addLog('event', 'EVENT', 'PlayStream',            d));
+  hub.on('PlaybackStateChanged',  d => addLog('event', 'EVENT', 'PlaybackStateChanged',  d));
+  hub.on('SpaceStateSync',        d => addLog('event', 'EVENT', 'SpaceStateSync',        d));
+  hub.on('StopPlayback',          () => addLog('event', 'EVENT', 'StopPlayback',          null));
+  hub.on('Error',                 m => addLog('err',   'HUB',   'Error from server',     m));
+
+  hub.onreconnecting(err => {
+    setStatus('Reconnecting…', 'reconnecting');
+    addLog('warn', 'WARN', 'Reconnecting…', err?.message);
+  });
+  hub.onreconnected(cid => {
+    setStatus('Connected', 'connected');
+    addLog('info', 'INFO', `Reconnected (connectionId: ${cid})`, null);
+  });
+  hub.onclose(err => {
+    setStatus('Disconnected', '');
+    setConnected(false);
+    addLog('warn', 'WARN', 'Connection closed', err?.message);
+  });
+
+  // ── Start ──────────────────────────────────────────────────────────────────
+  try {
+    addLog('info', 'INFO', 'Connecting…', `${baseUrl}/hubs/store`);
+    await hub.start();
+    setStatus('Connected', 'connected');
+    setConnected(true);
+    addLog('info', 'INFO', `Connected! connectionId: ${hub.connectionId}`, null);
+  } catch (e) {
+    setStatus('Error', 'error');
+    addLog('err', 'ERR', 'Connection failed', e.message);
+  }
+});
+
+// ── Disconnect ───────────────────────────────────────────────────────────────
+btnDisconnect.addEventListener('click', async () => {
+  await hub?.stop();
+  hub = null;
+  setStatus('Disconnected', '');
+  setConnected(false);
+  addLog('info', 'INFO', 'Disconnected manually', null);
+});
+
+// ── Join Space ───────────────────────────────────────────────────────────────
+btnJoinSpace.addEventListener('click', async () => {
+  const id = $('spaceId').value.trim();
+  if (!id) { addLog('err', 'ERR', 'spaceId is empty', null); return; }
+  try {
+    await hub.invoke('JoinSpaceAsync', id);
+    addLog('send', 'SEND', 'JoinSpaceAsync', id);
+  } catch(e) { addLog('err', 'ERR', 'JoinSpaceAsync failed', e.message); }
+});
+
+// ── Leave Space ───────────────────────────────────────────────────────────────
+btnLeaveSpace.addEventListener('click', async () => {
+  const id = $('spaceId').value.trim();
+  if (!id) { addLog('err', 'ERR', 'spaceId is empty', null); return; }
+  try {
+    await hub.invoke('LeaveSpaceAsync', id);
+    addLog('send', 'SEND', 'LeaveSpaceAsync', id);
+  } catch(e) { addLog('err', 'ERR', 'LeaveSpaceAsync failed', e.message); }
+});
+
+// ── Join Manager Room ────────────────────────────────────────────────────────
+btnJoinManager.addEventListener('click', async () => {
+  const id = $('storeId').value.trim();
+  if (!id) { addLog('err', 'ERR', 'storeId is empty', null); return; }
+  try {
+    await hub.invoke('JoinManagerRoomAsync', id);
+    addLog('send', 'SEND', 'JoinManagerRoomAsync', id);
+  } catch(e) { addLog('err', 'ERR', 'JoinManagerRoomAsync failed', e.message); }
+});
+
+// ── Send Playback Command ────────────────────────────────────────────────────
+btnSendPlayback.addEventListener('click', async () => {
+  const spaceId = $('spaceId').value.trim();
+  if (!spaceId) { addLog('err', 'ERR', 'spaceId is empty', null); return; }
+  const payload = {
+    spaceId,
+    command: parseInt($('playbackCmd').value),
+    seekPositionSeconds: $('seekPos').value !== '' ? parseFloat($('seekPos').value) : null,
+    targetTrackId: $('targetTrackId').value.trim() || null,
+  };
+  try {
+    await hub.invoke('SendPlaybackCommandAsync', payload);
+    addLog('send', 'SEND', 'SendPlaybackCommandAsync', payload);
+  } catch(e) { addLog('err', 'ERR', 'SendPlaybackCommandAsync failed', e.message); }
+});
+
+// ── Report Playback State ────────────────────────────────────────────────────
+btnReport.addEventListener('click', async () => {
+  const spaceId = $('spaceId').value.trim();
+  if (!spaceId) { addLog('err', 'ERR', 'spaceId is empty', null); return; }
+  const payload = {
+    spaceId,
+    isPlaying: $('isPlaying').value === 'true',
+    positionSeconds: $('posSeconds').value !== '' ? parseFloat($('posSeconds').value) : null,
+    currentHlsUrl: $('hlsUrl').value.trim() || null,
+  };
+  try {
+    await hub.invoke('ReportPlaybackStateAsync', payload);
+    addLog('send', 'SEND', 'ReportPlaybackStateAsync', payload);
+  } catch(e) { addLog('err', 'ERR', 'ReportPlaybackStateAsync failed', e.message); }
+});
+
+// ── Custom Invoke ────────────────────────────────────────────────────────────
+btnInvoke.addEventListener('click', async () => {
+  const method = $('customMethod').value.trim();
+  if (!method) { addLog('err', 'ERR', 'Method name is empty', null); return; }
+  let args = [];
+  const raw = $('customArgs').value.trim();
+  if (raw) {
+    try { args = JSON.parse(raw); }
+    catch(e) { addLog('err', 'ERR', 'Invalid JSON in args', e.message); return; }
+  }
+  try {
+    const result = await hub.invoke(method, ...args);
+    addLog('send', 'SEND', `invoke: ${method}`, result ?? args);
+  } catch(e) { addLog('err', 'ERR', `invoke failed: ${method}`, e.message); }
+});
+
+// ── Clear log ────────────────────────────────────────────────────────────────
+$('btnClear').addEventListener('click', () => {
+  $('log').innerHTML = '';
+  logCount = 0;
+  $('logCount').textContent = '0 events';
+});
+</script>
+</body>
+</html>

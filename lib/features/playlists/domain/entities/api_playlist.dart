@@ -13,9 +13,15 @@ class ApiPlaylist extends Equatable {
   final String? moodName;
   final String name;
   final String? description;
+
+  /// Legacy field (playlist-level dynamic stream contract).
   final bool? isDynamic;
   final bool? isDefault;
+
+  /// Legacy playlist-level stream URL.
   final String? hlsUrl;
+
+  /// Legacy playlist-level duration; playback now prefers per-track metadata.
   final int? totalDurationSeconds;
   final int trackCount;
   final EntityStatusEnum status;
@@ -46,7 +52,12 @@ class ApiPlaylist extends Equatable {
   });
 
   /// Whether this playlist has a ready HLS stream
-  bool get isStreamReady => hlsUrl != null && hlsUrl!.isNotEmpty;
+  bool get isStreamReady {
+    if (hlsUrl != null && hlsUrl!.isNotEmpty) return true;
+    final playlistTracks = tracks;
+    if (playlistTracks == null || playlistTracks.isEmpty) return false;
+    return playlistTracks.any((item) => (item.hlsUrl ?? '').isNotEmpty);
+  }
 
   int? get resolvedTotalDurationSeconds {
     final playlistTracks = tracks;

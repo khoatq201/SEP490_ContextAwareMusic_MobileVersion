@@ -37,6 +37,13 @@ class PlayerState extends Equatable {
   /// Whether the player is streaming via HLS (CAMS mode).
   final bool isHlsMode;
 
+  /// Queue-first remote identity fields.
+  final String? currentQueueItemId;
+  final String? currentTrackId;
+
+  /// Increments when the local HLS player reports natural completion.
+  final int hlsCompletionSequence;
+
   const PlayerState({
     this.currentTrack,
     this.isPlaying = false,
@@ -52,6 +59,9 @@ class PlayerState extends Equatable {
     this.playlistId,
     this.hlsUrl,
     this.isHlsMode = false,
+    this.currentQueueItemId,
+    this.currentTrackId,
+    this.hlsCompletionSequence = 0,
   });
 
   /// Whether we have enough data to render the MiniPlayer.
@@ -154,10 +164,15 @@ class PlayerState extends Equatable {
     String? playlistId,
     String? hlsUrl,
     bool? isHlsMode,
+    String? currentQueueItemId,
+    String? currentTrackId,
+    int? hlsCompletionSequence,
     bool clearTrack = false,
     bool clearPlaylistName = false,
     bool clearPlaylistId = false,
     bool clearHlsUrl = false,
+    bool clearCurrentQueueItemId = false,
+    bool clearCurrentTrackId = false,
   }) {
     return PlayerState(
       currentTrack: clearTrack ? null : (currentTrack ?? this.currentTrack),
@@ -175,6 +190,13 @@ class PlayerState extends Equatable {
       playlistId: clearPlaylistId ? null : (playlistId ?? this.playlistId),
       hlsUrl: clearHlsUrl ? null : (hlsUrl ?? this.hlsUrl),
       isHlsMode: isHlsMode ?? this.isHlsMode,
+      currentQueueItemId: clearCurrentQueueItemId
+          ? null
+          : (currentQueueItemId ?? this.currentQueueItemId),
+      currentTrackId:
+          clearCurrentTrackId ? null : (currentTrackId ?? this.currentTrackId),
+      hlsCompletionSequence:
+          hlsCompletionSequence ?? this.hlsCompletionSequence,
     );
   }
 
@@ -194,5 +216,8 @@ class PlayerState extends Equatable {
         playlistId,
         hlsUrl,
         isHlsMode,
+        currentQueueItemId,
+        currentTrackId,
+        hlsCompletionSequence,
       ];
 }

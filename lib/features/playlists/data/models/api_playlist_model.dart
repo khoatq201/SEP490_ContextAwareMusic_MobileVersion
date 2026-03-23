@@ -11,6 +11,7 @@ class PlaylistTrackItemModel extends PlaylistTrackItem {
     super.orderIndex,
     super.coverImageUrl,
     super.actualDurationSec,
+    super.hlsUrl,
     super.seekOffsetSeconds,
   });
 
@@ -23,6 +24,7 @@ class PlaylistTrackItemModel extends PlaylistTrackItem {
       orderIndex: (json['orderIndex'] as num?)?.toInt(),
       coverImageUrl: json['coverImageUrl'] as String?,
       actualDurationSec: (json['actualDurationSec'] as num?)?.toInt(),
+      hlsUrl: json['hlsUrl'] as String? ?? json['audioUrl'] as String?,
       seekOffsetSeconds: (json['seekOffsetSeconds'] as num?)?.toInt() ?? 0,
     );
   }

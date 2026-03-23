@@ -8,6 +8,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/enums/entity_status_enum.dart';
 import '../../../../core/enums/playback_command_enum.dart';
+import '../../../../core/enums/queue_end_behavior_enum.dart';
 import '../../../../core/enums/space_type_enum.dart';
 import '../../../../core/player/player_bloc.dart';
 import '../../../../core/player/player_event.dart';
@@ -18,9 +19,9 @@ import '../../../../features/cams/presentation/bloc/cams_playback_bloc.dart';
 import '../../../../features/cams/presentation/bloc/cams_playback_event.dart';
 import '../../../../features/cams/presentation/bloc/cams_playback_state.dart';
 import '../../../../features/moods/domain/entities/mood.dart';
+import '../models/queue_sheet_view_data.dart';
 import '../../../../features/space_control/domain/entities/space.dart';
 import '../../../../features/space_control/domain/entities/sensor_data.dart';
-import '../../../../features/space_control/domain/entities/track.dart';
 import '../../../../features/space_control/presentation/bloc/music_control_bloc.dart';
 import '../../../../features/space_control/presentation/bloc/music_control_event.dart';
 import '../../../../features/space_control/presentation/bloc/space_monitoring_bloc.dart';
@@ -28,7 +29,7 @@ import '../../../../features/space_control/presentation/bloc/space_monitoring_ev
 import '../../../../features/space_control/presentation/bloc/space_monitoring_state.dart';
 import '../../../../core/session/session_cubit.dart';
 
-/// Redesigned "Now Playing" tab — Spotify-style full-screen player.
+/// Redesigned "Now Playing" tab â€” Spotify-style full-screen player.
 class NowPlayingTabPage extends StatefulWidget {
   const NowPlayingTabPage({super.key});
 
@@ -143,6 +144,14 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
     final isPlaying = playerState.isPlaying;
     final useRemoteControls =
         playerState.isSyncedCamsPlayback || camsState.isStreaming;
+    final syncedVolumePercent =
+        camsState.playbackState?.volumePercent.clamp(0, 100).toInt();
+    final syncedIsMuted = camsState.playbackState?.isMuted;
+    final resolvedVolumePercent =
+        syncedVolumePercent ?? (_volume * 100).round().clamp(0, 100);
+    final resolvedIsMuted = syncedIsMuted ?? resolvedVolumePercent == 0;
+    final effectiveVolume =
+        resolvedIsMuted ? 0.0 : (resolvedVolumePercent / 100.0);
     final showLocalPreviewBanner = isPlayback && playerState.isLocalPreview;
 
     final spaceName =
@@ -181,7 +190,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
 
     return Column(
       children: [
-        // ── Top bar: ↓  title  ⋮ ──────────────────────────────────────
+        // â”€â”€ Top bar: â†“  title  â‹® â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         _TopBar(
           spaceName: spaceName,
           playlistName: playlistName,
@@ -210,7 +219,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
               : null,
         ),
 
-        // ── Scrollable content ────────────────────────────────────────
+        // â”€â”€ Scrollable content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         Expanded(
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
@@ -230,7 +239,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                   const SizedBox(height: 16),
                 ],
 
-                // ── Album art ───────────────────────────────────────
+                // â”€â”€ Album art â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 Center(
                   child: AspectRatio(
                     aspectRatio: 1,
@@ -253,7 +262,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
 
                 const SizedBox(height: 28),
 
-                // ── Song title + artist ─────────────────────────────
+                // â”€â”€ Song title + artist â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 Text(
                   track?.title ?? 'No track playing',
                   maxLines: 2,
@@ -297,7 +306,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
 
                 const SizedBox(height: 24),
 
-                // ── Progress bar ────────────────────────────────────
+                // â”€â”€ Progress bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 _ProgressBar(
                   duration: duration,
                   currentPosition: displayPosition,
@@ -310,11 +319,11 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
 
                 const SizedBox(height: 20),
 
-                // ── Controls row ────────────────────────────────────
+                // â”€â”€ Controls row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 _ControlsRow(
                   isPlaying: isPlaying,
                   isShuffleOn: _isShuffleOn,
-                  volume: _volume,
+                  volume: effectiveVolume,
                   palette: palette,
                   hasNext: playerState.hasNext,
                   hasPrevious: playerState.hasPrevious || displayPosition > 3,
@@ -375,12 +384,35 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                     }
                     context.read<PlayerBloc>().add(const PlayerSkipRequested());
                   },
-                  onVolumeChanged: (v) => setState(() => _volume = v),
+                  onVolumeChanged: (v) {
+                    final normalized = v.clamp(0.0, 1.0);
+                    setState(() => _volume = normalized);
+
+                    final volumePercent =
+                        (normalized * 100).round().clamp(0, 100).toInt();
+                    final isMuted = volumePercent == 0;
+
+                    context.read<PlayerBloc>().add(
+                          PlayerAudioSettingsApplied(
+                            volumePercent: volumePercent,
+                            isMuted: isMuted,
+                          ),
+                        );
+
+                    if (useRemoteControls) {
+                      context.read<CamsPlaybackBloc>().add(
+                            CamsUpdateAudioState(
+                              volumePercent: volumePercent,
+                              isMuted: isMuted,
+                            ),
+                          );
+                    }
+                  },
                 ),
 
                 const SizedBox(height: 24),
 
-                // ── Override Mood CTA ───────────────────────────────
+                // â”€â”€ Override Mood CTA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 if (effectiveSpaceId != null)
                   _OverrideMoodCTA(
                     spaceId: effectiveSpaceId,
@@ -389,6 +421,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                     moods: camsState.moods,
                     hasActiveOverride: camsState.hasActiveOverride,
                     isOverriding: camsState.isOverriding,
+                    isPreparing: camsState.isPreparing,
                     lastOverrideResponse: camsState.lastOverrideResponse,
                   ).animate().fadeIn(duration: 450.ms).slideY(begin: 0.12),
 
@@ -398,12 +431,12 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
           ),
         ),
 
-        // ── Bottom bar: "Playing from…" + Queue ────────────────────────
+        // â”€â”€ Bottom bar: "Playing fromâ€¦" + Queue â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         _BottomBar(
           deviceLabel: deviceLabel,
           isPlayback: isPlayback,
           palette: palette,
-          onQueue: () => _showQueueSheet(context, playerState, palette),
+          onQueue: () => _showQueueSheet(context, palette),
         ),
       ],
     );
@@ -418,7 +451,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
     );
   }
 
-  // ── Song Options Bottom Sheet ──────────────────────────────────────────────
+  // â”€â”€ Song Options Bottom Sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   void _showSongOptionsSheet(
       BuildContext ctx, ps.PlayerState state, _NPPalette palette) {
     final track = state.currentTrack;
@@ -533,9 +566,8 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
     );
   }
 
-  // ── Queue Bottom Sheet ─────────────────────────────────────────────────────
-  void _showQueueSheet(
-      BuildContext ctx, ps.PlayerState state, _NPPalette palette) {
+  // â”€â”€ Queue Bottom Sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  void _showQueueSheet(BuildContext ctx, _NPPalette palette) {
     showModalBottomSheet(
       context: ctx,
       useRootNavigator: true,
@@ -558,7 +590,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
   }
 }
 
-class _QueueSheet extends StatefulWidget {
+class _QueueSheet extends StatelessWidget {
   const _QueueSheet({
     required this.palette,
     required this.controller,
@@ -567,218 +599,489 @@ class _QueueSheet extends StatefulWidget {
   final _NPPalette palette;
   final ScrollController controller;
 
-  @override
-  State<_QueueSheet> createState() => _QueueSheetState();
-}
-
-class _QueueSheetState extends State<_QueueSheet> {
-  String? _pendingTrackId;
-
-  void _handleQueueTrackTap(
+  void _dispatchQueueReorder(
     BuildContext context,
-    ps.PlayerState state,
-    Track track,
-    int queueIndex,
+    QueueSheetViewData data,
+    int fromIndex,
+    int toIndex,
   ) {
-    if (_pendingTrackId != null) return;
-
-    setState(() => _pendingTrackId = track.id);
-
-    final camsBloc = context.read<CamsPlaybackBloc>();
-    final useRemoteControls =
-        state.isSyncedCamsPlayback || camsBloc.state.isStreaming;
-    if (useRemoteControls &&
-        state.playlistId != null &&
-        state.playlistId!.isNotEmpty) {
-      camsBloc.add(CamsSendCommand(
-        command: PlaybackCommandEnum.skipToTrack,
-        targetTrackId: track.id,
-      ));
+    if (!data.isFromCams ||
+        fromIndex < 0 ||
+        toIndex < 0 ||
+        fromIndex >= data.items.length ||
+        toIndex >= data.items.length ||
+        fromIndex == toIndex) {
       return;
     }
 
-    if (state.queue.isEmpty) {
-      setState(() => _pendingTrackId = null);
+    final queueItemIds = data.items
+        .map((item) => item.queueItemId)
+        .whereType<String>()
+        .toList(growable: true);
+    if (queueItemIds.length != data.items.length) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content:
+              Text('Cannot reorder queue because some queue ids are missing.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
       return;
     }
 
-    context.read<PlayerBloc>().add(PlayerPlaylistStarted(
-          tracks: state.queue,
-          startIndex: queueIndex,
-          playlistName: state.playlistName,
-          playlistId: state.playlistId,
-        ));
+    final movedQueueItemId = queueItemIds.removeAt(fromIndex);
+    queueItemIds.insert(toIndex, movedQueueItemId);
+    context.read<CamsPlaybackBloc>().add(
+          CamsReorderQueue(queueItemIds: queueItemIds),
+        );
+  }
+
+  void _dispatchRemoveQueueItem(BuildContext context, QueueSheetItem item) {
+    final queueItemId = item.queueItemId;
+    if (queueItemId == null || queueItemId.isEmpty) return;
+
+    context.read<CamsPlaybackBloc>().add(
+          CamsRemoveQueueItems(queueItemIds: [queueItemId]),
+        );
+  }
+
+  Future<void> _confirmAndClearQueue(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Clear Queue'),
+          content: const Text(
+            'Remove all queued tracks and stop queued playback for this space?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Clear'),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed != true) return;
+    if (!context.mounted) return;
+
+    context.read<CamsPlaybackBloc>().add(const CamsClearQueue());
+  }
+
+  void _dispatchAudioStatePatch(
+    BuildContext context, {
+    int? volumePercent,
+    bool? isMuted,
+    int? queueEndBehavior,
+  }) {
+    context.read<CamsPlaybackBloc>().add(
+          CamsUpdateAudioState(
+            volumePercent: volumePercent,
+            isMuted: isMuted,
+            queueEndBehavior: queueEndBehavior,
+          ),
+        );
+
+    if (volumePercent != null || isMuted != null) {
+      context.read<PlayerBloc>().add(
+            PlayerAudioSettingsApplied(
+              volumePercent: volumePercent ?? 100,
+              isMuted: isMuted ?? false,
+            ),
+          );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocListener(
-      listeners: [
-        BlocListener<PlayerBloc, ps.PlayerState>(
-          listenWhen: (previous, current) =>
-              previous.currentTrack?.id != current.currentTrack?.id ||
-              previous.currentIndex != current.currentIndex,
-          listener: (context, state) {
-            final pendingTrackId = _pendingTrackId;
-            if (pendingTrackId == null) return;
-            if (state.currentTrack?.id != pendingTrackId) return;
-            if (!mounted) return;
-            Navigator.of(context).pop();
-          },
-        ),
-        BlocListener<CamsPlaybackBloc, CamsPlaybackState>(
-          listenWhen: (previous, current) =>
-              previous.errorMessage != current.errorMessage,
-          listener: (context, state) {
-            if (_pendingTrackId == null) return;
-            if (state.errorMessage == null || state.errorMessage!.isEmpty) {
-              return;
-            }
-            setState(() => _pendingTrackId = null);
-          },
-        ),
-      ],
-      child: BlocBuilder<PlayerBloc, ps.PlayerState>(
-        builder: (context, state) {
-          final queue = state.queue;
-          final resolvedCurrentIndex =
-              state.currentIndex >= 0 && state.currentIndex < queue.length
-                  ? state.currentIndex
-                  : state.currentTrack == null
-                      ? -1
-                      : queue.indexWhere(
-                          (item) => item.id == state.currentTrack!.id,
-                        );
-          final currentTrack = resolvedCurrentIndex >= 0
-              ? queue[resolvedCurrentIndex]
-              : state.currentTrack;
-          final upNext = resolvedCurrentIndex >= 0 &&
-                  resolvedCurrentIndex + 1 < queue.length
-              ? queue.sublist(resolvedCurrentIndex + 1)
-              : const <Track>[];
+    return BlocBuilder<PlayerBloc, ps.PlayerState>(
+      builder: (context, playerState) {
+        return BlocBuilder<CamsPlaybackBloc, CamsPlaybackState>(
+          builder: (context, camsState) {
+            final queueData = QueueSheetViewData.resolve(
+              playerState: playerState,
+              camsState: camsState,
+            );
+            final playback = camsState.playbackState;
+            final currentTrack = queueData.currentItem;
+            final upNext = queueData.upNext;
 
-          return SafeArea(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 8),
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: widget.palette.border,
-                      borderRadius: BorderRadius.circular(20),
+            return SafeArea(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 8),
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: palette.border,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
                     ),
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Queue',
-                          style: GoogleFonts.poppins(
-                            color: widget.palette.textPrimary,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                          )),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text('Close',
-                            style: GoogleFonts.inter(
-                              color: widget.palette.textMuted,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                    child: Row(
+                      children: [
+                        Text('Queue',
+                            style: GoogleFonts.poppins(
+                              color: palette.textPrimary,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
                             )),
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-                  child: Text('Now playing',
-                      style: GoogleFonts.inter(
-                        color: widget.palette.textMuted,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      )),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: _QueueTrackTile(
-                    title: currentTrack?.title ?? 'No track',
-                    artist: currentTrack?.artist ?? '',
-                    artUrl: currentTrack?.albumArt,
-                    isPlaying: true,
-                    palette: widget.palette,
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                  child: Text('Up next',
-                      style: GoogleFonts.poppins(
-                        color: widget.palette.textPrimary,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      )),
-                ),
-                Expanded(
-                  child: upNext.isEmpty
-                      ? Center(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 32),
-                            child: Text(
-                              state.queue.isEmpty
-                                  ? 'No queue is available for this track yet.'
-                                  : 'You have reached the end of the current queue.',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.inter(
-                                color: widget.palette.textMuted,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
+                        const Spacer(),
+                        if (queueData.isFromCams && queueData.items.isNotEmpty)
+                          TextButton.icon(
+                            onPressed: () => _confirmAndClearQueue(context),
+                            icon: const Icon(Icons.clear_all, size: 16),
+                            label: const Text('Clear'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: palette.textMuted,
+                              textStyle: GoogleFonts.inter(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
-                        )
-                      : ListView.builder(
-                          controller: widget.controller,
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          itemCount: upNext.length,
-                          itemBuilder: (_, i) {
-                            final queueIndex = resolvedCurrentIndex + i + 1;
-                            final queuedTrack = upNext[i];
-                            return _QueueTrackTile(
-                              title: queuedTrack.title,
-                              artist: queuedTrack.artist,
-                              artUrl: queuedTrack.albumArt,
-                              isPlaying: false,
-                              isPending: _pendingTrackId == queuedTrack.id,
-                              palette: widget.palette,
-                              onTap: () => _handleQueueTrackTap(
-                                context,
-                                state,
-                                queuedTrack,
-                                queueIndex,
-                              ),
-                            );
-                          },
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text('Close',
+                              style: GoogleFonts.inter(
+                                color: palette.textMuted,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              )),
                         ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                    child: Text(
+                      queueData.summaryLabel,
+                      style: GoogleFonts.inter(
+                        color: palette.textMuted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  if (queueData.isFromCams && playback != null)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+                      child: _QueueAudioControls(
+                        palette: palette,
+                        volumePercent: playback.volumePercent,
+                        isMuted: playback.isMuted,
+                        queueEndBehavior: playback.queueEndBehavior,
+                        onToggleMute: (nextMuted) {
+                          _dispatchAudioStatePatch(
+                            context,
+                            volumePercent: playback.volumePercent,
+                            isMuted: nextMuted,
+                          );
+                        },
+                        onVolumeChanged: (volumePercent) {
+                          final bounded = volumePercent.clamp(0, 100).toInt();
+                          _dispatchAudioStatePatch(
+                            context,
+                            volumePercent: bounded,
+                            isMuted: bounded == 0,
+                          );
+                        },
+                        onQueueEndBehaviorChanged: (behavior) {
+                          _dispatchAudioStatePatch(
+                            context,
+                            queueEndBehavior: behavior.value,
+                          );
+                        },
+                      ),
+                    ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                    child: Text('Now playing',
+                        style: GoogleFonts.inter(
+                          color: palette.textMuted,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        )),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: _QueueTrackTile(
+                      title: currentTrack?.title ?? 'No track',
+                      artist: currentTrack?.artist ?? '',
+                      artUrl: currentTrack?.artUrl,
+                      isPlaying: true,
+                      isPending: currentTrack?.isPending ?? false,
+                      meta: currentTrack?.metaLabel,
+                      palette: palette,
+                    ),
+                  ),
+                  if (queueData.pendingNotInQueueLabel != null)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: palette.overlay,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: palette.border),
+                        ),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: palette.accent,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                queueData.pendingNotInQueueLabel!,
+                                style: GoogleFonts.inter(
+                                  color: palette.textMuted,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                    child: Text('Up next',
+                        style: GoogleFonts.poppins(
+                          color: palette.textPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        )),
+                  ),
+                  Expanded(
+                    child: upNext.isEmpty
+                        ? Center(
+                            child: Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 32),
+                              child: Text(
+                                queueData.emptyMessage,
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.inter(
+                                  color: palette.textMuted,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          )
+                        : ListView.builder(
+                            controller: controller,
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            itemCount: upNext.length,
+                            itemBuilder: (_, i) {
+                              final queuedTrack = upNext[i];
+                              final fullQueueIndex = queueData.currentIndex >= 0
+                                  ? queueData.currentIndex + i + 1
+                                  : i;
+                              final minMovableIndex =
+                                  queueData.currentIndex >= 0
+                                      ? queueData.currentIndex + 1
+                                      : 0;
+                              final canMoveUp =
+                                  fullQueueIndex > minMovableIndex;
+                              final canMoveDown =
+                                  fullQueueIndex < queueData.items.length - 1;
+                              final canManageQueue = queueData.isFromCams &&
+                                  queuedTrack.queueItemId != null &&
+                                  queuedTrack.queueItemId!.isNotEmpty;
+
+                              return _QueueTrackTile(
+                                title: queuedTrack.title,
+                                artist: queuedTrack.artist,
+                                artUrl: queuedTrack.artUrl,
+                                isPlaying: false,
+                                isPending: queuedTrack.isPending,
+                                meta: queuedTrack.metaLabel,
+                                palette: palette,
+                                trailing: canManageQueue
+                                    ? _QueueTrackActions(
+                                        palette: palette,
+                                        canMoveUp: canMoveUp,
+                                        canMoveDown: canMoveDown,
+                                        onMoveUp: canMoveUp
+                                            ? () => _dispatchQueueReorder(
+                                                  context,
+                                                  queueData,
+                                                  fullQueueIndex,
+                                                  fullQueueIndex - 1,
+                                                )
+                                            : null,
+                                        onMoveDown: canMoveDown
+                                            ? () => _dispatchQueueReorder(
+                                                  context,
+                                                  queueData,
+                                                  fullQueueIndex,
+                                                  fullQueueIndex + 1,
+                                                )
+                                            : null,
+                                        onRemove: () =>
+                                            _dispatchRemoveQueueItem(
+                                          context,
+                                          queuedTrack,
+                                        ),
+                                      )
+                                    : null,
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// Sub-widgets
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+
+// â”€â”€ Top Bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+class _QueueAudioControls extends StatelessWidget {
+  const _QueueAudioControls({
+    required this.palette,
+    required this.volumePercent,
+    required this.isMuted,
+    required this.queueEndBehavior,
+    required this.onToggleMute,
+    required this.onVolumeChanged,
+    required this.onQueueEndBehaviorChanged,
+  });
+
+  final _NPPalette palette;
+  final int volumePercent;
+  final bool isMuted;
+  final int queueEndBehavior;
+  final ValueChanged<bool> onToggleMute;
+  final ValueChanged<int> onVolumeChanged;
+  final ValueChanged<QueueEndBehaviorEnum> onQueueEndBehaviorChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final boundedVolume = volumePercent.clamp(0, 100).toInt();
+    final effectiveVolume = isMuted ? 0 : boundedVolume;
+    final selectedBehavior = QueueEndBehaviorEnum.fromValue(queueEndBehavior);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+      decoration: BoxDecoration(
+        color: palette.overlay,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: palette.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                'Audio settings',
+                style: GoogleFonts.inter(
+                  color: palette.textPrimary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
                 ),
-              ],
+              ),
+              const Spacer(),
+              Text(
+                '${effectiveVolume.toStringAsFixed(0)}%',
+                style: GoogleFonts.inter(
+                  color: palette.textMuted,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(width: 6),
+              IconButton(
+                constraints:
+                    const BoxConstraints.tightFor(width: 28, height: 28),
+                padding: EdgeInsets.zero,
+                tooltip: isMuted ? 'Unmute' : 'Mute',
+                onPressed: () => onToggleMute(!isMuted),
+                icon: Icon(
+                  isMuted ? LucideIcons.volumeX : LucideIcons.volume2,
+                  size: 16,
+                  color: palette.textMuted,
+                ),
+              ),
+            ],
+          ),
+          SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              trackHeight: 3,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+              activeTrackColor: palette.textPrimary,
+              inactiveTrackColor: palette.textMuted.withOpacity(0.25),
+              thumbColor: palette.textPrimary,
+              overlayColor: palette.textPrimary.withOpacity(0.15),
             ),
-          );
-        },
+            child: Slider(
+              value: effectiveVolume.toDouble(),
+              min: 0,
+              max: 100,
+              divisions: 20,
+              onChanged: (value) => onVolumeChanged(value.round()),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: QueueEndBehaviorEnum.values.map((behavior) {
+              final selected = behavior == selectedBehavior;
+              return ChoiceChip(
+                label: Text(
+                  behavior.label,
+                  style: GoogleFonts.inter(
+                    color:
+                        selected ? palette.textOnAccent : palette.textPrimary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                selected: selected,
+                selectedColor: palette.accent,
+                backgroundColor: palette.card,
+                side: BorderSide(
+                  color: selected ? palette.accent : palette.border,
+                ),
+                onSelected: (_) => onQueueEndBehaviorChanged(behavior),
+              );
+            }).toList(),
+          ),
+        ],
       ),
     );
   }
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// Sub-widgets
-// ═════════════════════════════════════════════════════════════════════════════
-
-// ── Top Bar ──────────────────────────────────────────────────────────────────
 class _LocalPreviewBanner extends StatelessWidget {
   const _LocalPreviewBanner({required this.palette});
 
@@ -841,7 +1144,7 @@ class _TopBar extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(4, 12, 4, 4),
       child: Row(
         children: [
-          // Minimize button — compact to give more room to title
+          // Minimize button â€” compact to give more room to title
           SizedBox(
             width: 40,
             height: 40,
@@ -899,7 +1202,7 @@ class _TopBar extends StatelessWidget {
               ),
             ),
           ),
-          // Menu button — compact
+          // Menu button â€” compact
           SizedBox(
             width: 40,
             height: 40,
@@ -917,7 +1220,7 @@ class _TopBar extends StatelessWidget {
   }
 }
 
-// ── Progress Bar ─────────────────────────────────────────────────────────────
+// â”€â”€ Progress Bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _ProgressBar extends StatelessWidget {
   const _ProgressBar(
       {required this.duration,
@@ -1005,7 +1308,7 @@ class _ProgressBar extends StatelessWidget {
   }
 }
 
-// ── Controls Row ─────────────────────────────────────────────────────────────
+// â”€â”€ Controls Row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _ControlsRow extends StatelessWidget {
   const _ControlsRow({
     required this.isPlaying,
@@ -1119,7 +1422,7 @@ class _ControlButton extends StatelessWidget {
   }
 }
 
-// ── Bottom Bar ───────────────────────────────────────────────────────────────
+// â”€â”€ Bottom Bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _BottomBar extends StatelessWidget {
   const _BottomBar({
     required this.deviceLabel,
@@ -1184,7 +1487,7 @@ class _BottomBar extends StatelessWidget {
   }
 }
 
-// ── Sheet Option ─────────────────────────────────────────────────────────────
+// â”€â”€ Sheet Option â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _SheetOption extends StatelessWidget {
   const _SheetOption(
       {required this.icon,
@@ -1219,7 +1522,7 @@ class _SheetOption extends StatelessWidget {
   }
 }
 
-// ── Queue Track Tile ─────────────────────────────────────────────────────────
+// â”€â”€ Queue Track Tile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _QueueTrackTile extends StatelessWidget {
   const _QueueTrackTile({
     required this.title,
@@ -1227,15 +1530,17 @@ class _QueueTrackTile extends StatelessWidget {
     this.artUrl,
     required this.isPlaying,
     this.isPending = false,
+    this.meta,
+    this.trailing,
     required this.palette,
-    this.onTap,
   });
   final String title, artist;
   final String? artUrl;
   final bool isPlaying;
   final bool isPending;
+  final String? meta;
+  final Widget? trailing;
   final _NPPalette palette;
-  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1292,10 +1597,25 @@ class _QueueTrackTile extends StatelessWidget {
                   style:
                       GoogleFonts.inter(color: palette.textMuted, fontSize: 12),
                 ),
+                if (meta != null && meta!.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    meta!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      color: isPending ? palette.accent : palette.textMuted,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
-          if (isPending)
+          if (trailing != null)
+            trailing!
+          else if (isPending)
             SizedBox(
               width: 18,
               height: 18,
@@ -1314,22 +1634,73 @@ class _QueueTrackTile extends StatelessWidget {
       ),
     );
 
-    if (onTap == null) return child;
+    return child;
+  }
+}
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: child,
-      ),
+class _QueueTrackActions extends StatelessWidget {
+  const _QueueTrackActions({
+    required this.palette,
+    required this.canMoveUp,
+    required this.canMoveDown,
+    required this.onMoveUp,
+    required this.onMoveDown,
+    required this.onRemove,
+  });
+
+  final _NPPalette palette;
+  final bool canMoveUp;
+  final bool canMoveDown;
+  final VoidCallback? onMoveUp;
+  final VoidCallback? onMoveDown;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          tooltip: 'Move up',
+          constraints: const BoxConstraints.tightFor(width: 28, height: 28),
+          padding: EdgeInsets.zero,
+          onPressed: canMoveUp ? onMoveUp : null,
+          icon: Icon(
+            LucideIcons.chevronUp,
+            size: 16,
+            color: canMoveUp ? palette.textMuted : palette.border,
+          ),
+        ),
+        IconButton(
+          tooltip: 'Move down',
+          constraints: const BoxConstraints.tightFor(width: 28, height: 28),
+          padding: EdgeInsets.zero,
+          onPressed: canMoveDown ? onMoveDown : null,
+          icon: Icon(
+            LucideIcons.chevronDown,
+            size: 16,
+            color: canMoveDown ? palette.textMuted : palette.border,
+          ),
+        ),
+        IconButton(
+          tooltip: 'Remove',
+          constraints: const BoxConstraints.tightFor(width: 28, height: 28),
+          padding: EdgeInsets.zero,
+          onPressed: onRemove,
+          icon: Icon(
+            LucideIcons.trash2,
+            size: 16,
+            color: palette.textMuted,
+          ),
+        ),
+      ],
     );
   }
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // Sensor Dashboard (kept from original)
-// ═════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 class _SensorDashboard extends StatelessWidget {
   const _SensorDashboard({required this.sensorData, required this.palette});
   final SensorData? sensorData;
@@ -1478,6 +1849,7 @@ class _OverrideMoodCTA extends StatefulWidget {
     required this.moods,
     required this.hasActiveOverride,
     required this.isOverriding,
+    required this.isPreparing,
     this.lastOverrideResponse,
   });
 
@@ -1487,6 +1859,7 @@ class _OverrideMoodCTA extends StatefulWidget {
   final List<Mood> moods;
   final bool hasActiveOverride;
   final bool isOverriding;
+  final bool isPreparing;
   final OverrideResponse? lastOverrideResponse;
 
   @override
@@ -1516,8 +1889,7 @@ class _OverrideMoodCTAState extends State<_OverrideMoodCTA> {
 
   @override
   Widget build(BuildContext context) {
-    final pendingTranscode = widget.lastOverrideResponse != null &&
-        !widget.lastOverrideResponse!.isStreamReady;
+    final pendingTranscode = widget.isPreparing;
 
     return Container(
       width: double.infinity,
@@ -1628,7 +2000,7 @@ class _OverrideMoodCTAState extends State<_OverrideMoodCTA> {
                   child: Text(
                     widget.isOverriding
                         ? 'Applying override...'
-                        : 'Accepted (202). Stream starts after transcode finishes.',
+                        : 'Preparing next stream. Playback will continue automatically.',
                     style: GoogleFonts.inter(
                       color: widget.palette.textMuted,
                       fontSize: 11,
@@ -1706,9 +2078,9 @@ class _OverrideMoodCTAState extends State<_OverrideMoodCTA> {
   }
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // Space Swap Sheet (kept from original)
-// ═════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 class _SpaceSwapSheet extends StatelessWidget {
   const _SpaceSwapSheet({required this.playerState, required this.palette});
   final ps.PlayerState playerState;
@@ -1848,9 +2220,9 @@ class _SpaceSwapSheet extends StatelessWidget {
   }
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // Palette (kept from original)
-// ═════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 class _NPPalette {
   const _NPPalette({
     required this.isDark,

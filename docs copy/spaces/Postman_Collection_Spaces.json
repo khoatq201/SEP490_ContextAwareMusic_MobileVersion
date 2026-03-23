@@ -1,0 +1,683 @@
+{
+  "info": {
+    "name": "Log.AI-CAMS — Spaces",
+    "_postman_id": "b3c4d5e6-f7a8-9012-cdef-234567890123",
+    "description": "Space Management API — CMS (React & Flutter)\n\nBase URL: {{baseUrl}}\nAuth: Bearer {{accessToken}} (user) hoặc {{deviceAccessToken}} (PlaybackDevice)\n\nEndpoints:\n  GET    /api/spaces           SA, BM, SM ✅ — PlaybackDevice ❌ (không được list spaces)\n  GET    /api/spaces/{id}      SA, BM, SM, PlaybackDevice ✅ (device: chỉ khi id = SpaceId session)\n  POST   /api/spaces           BM, SM only\n  PUT    /api/spaces/{id}      BM, SM only\n  DELETE /api/spaces/{id}      BM, SM only\n  PUT    /api/spaces/{id}/toggle-status  BM, SM only\n\nSpaceTypeEnum: Counter=1, Hall=2, Entrance=3, Outdoor=4, Kitchen=5, Restroom=6\n\nSee: docs/spaces/API_Spaces.md",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://localhost:7001",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "spaceId",
+      "value": "c1d2e3f4-a5b6-7890-cdef-012345678901",
+      "type": "string",
+      "description": "ID Space (dùng cho GET by id). PlaybackDevice: phải = SpaceId của session."
+    },
+    {
+      "key": "deviceAccessToken",
+      "value": "",
+      "type": "string",
+      "description": "JWT Bearer token (PlaybackDevice). Chỉ dùng cho GET /api/spaces/{id} với id = SpaceId của session."
+    }
+  ],
+  "item": [
+    {
+      "name": "Spaces",
+      "item": [
+        {
+          "name": "Get Spaces (Paginated)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "vi-VN",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/spaces?page=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "spaces"],
+              "query": [
+                { "key": "page", "value": "1", "description": "Current page (default: 1)" },
+                { "key": "pageSize", "value": "10", "description": "Items per page (default: 10, max: 500)" },
+                { "key": "search", "value": "", "description": "Search by name / description", "disabled": true },
+                { "key": "sortBy", "value": "", "description": "Field to sort by", "disabled": true },
+                { "key": "isAscending", "value": "true", "description": "Sort direction (default: true = ascending)", "disabled": true },
+                { "key": "status", "value": "1", "description": "Filter by status: 0=Inactive, 1=Active, 2=Pending, 3=Rejected", "disabled": true },
+                { "key": "storeId", "value": "", "description": "⚠️ SM: always overridden. BM: use brandId instead. SA: free filter", "disabled": true },
+                { "key": "brandId", "value": "", "description": "⚠️ BM: always overridden to their own brand. SA: filter by brand", "disabled": true },
+                { "key": "type", "value": "", "description": "Filter by SpaceTypeEnum: 1=Counter, 2=Hall, 3=Entrance, 4=Outdoor, 5=Kitchen, 6=Restroom", "disabled": true },
+                { "key": "createdFrom", "value": "", "description": "Filter spaces created from this date (ISO 8601)", "disabled": true },
+                { "key": "createdTo", "value": "", "description": "Filter spaces created up to this date (ISO 8601)", "disabled": true }
+              ]
+            },
+            "description": "Get paginated list of spaces.\n\nAuth: SystemAdmin ✅, BrandManager (own brand) ✅, StoreManager (own store) ✅. PlaybackDevice ❌ — tablet không được gọi GET list (mỗi Space gắn 1 device; dùng GET /api/spaces/{id} với id = SpaceId session).\n\nNotes:\n- BrandManager: brandId is always overridden to their own brand.\n- StoreManager: storeId is always overridden to their own store. SM with null storeId → 403.\n- SystemAdmin: can pass storeId or brandId to filter freely."
+          },
+          "response": [
+            {
+              "name": "200 OK — Space list",
+              "originalRequest": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "url": {
+                  "raw": "{{baseUrl}}/api/spaces?page=1&pageSize=10",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "spaces"],
+                  "query": [
+                    { "key": "page", "value": "1" },
+                    { "key": "pageSize", "value": "10" }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"currentPage\": 1,\n  \"pageSize\": 10,\n  \"totalItems\": 2,\n  \"totalPages\": 1,\n  \"hasPrevious\": false,\n  \"hasNext\": false,\n  \"items\": [\n    {\n      \"id\": \"c1d2e3f4-a5b6-7890-cdef-012345678901\",\n      \"storeId\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n      \"name\": \"Counter Area A\",\n      \"type\": 1,\n      \"description\": \"Main counter serving area\",\n      \"createdAt\": \"2025-03-01T08:00:00Z\",\n      \"updatedAt\": null,\n      \"createdBy\": \"00000000-0000-0000-0000-000000000001\",\n      \"updatedBy\": null,\n      \"status\": 1\n    },\n    {\n      \"id\": \"d2e3f4a5-b6c7-8901-defa-123456789012\",\n      \"storeId\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n      \"name\": \"Main Hall\",\n      \"type\": 2,\n      \"description\": \"Dining hall\",\n      \"createdAt\": \"2025-03-01T08:30:00Z\",\n      \"updatedAt\": null,\n      \"createdBy\": \"00000000-0000-0000-0000-000000000001\",\n      \"updatedBy\": null,\n      \"status\": 1\n    }\n  ],\n  \"isSuccess\": true,\n  \"message\": \"Space retrieved successfully\",\n  \"errors\": null,\n  \"errorCode\": null\n}"
+            },
+            {
+              "name": "401 Unauthorized",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/spaces", "host": ["{{baseUrl}}"], "path": ["api", "spaces"] }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Unauthorized\",\n  \"errors\": null,\n  \"errorCode\": \"Unauthorized\"\n}"
+            },
+            {
+              "name": "403 Forbidden (StoreManager with null storeId)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "url": { "raw": "{{baseUrl}}/api/spaces", "host": ["{{baseUrl}}"], "path": ["api", "spaces"] }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"You do not have permission to access this resource\",\n  \"errors\": null,\n  \"errorCode\": \"Forbidden\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Space By Id",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/spaces/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "spaces", ":id"],
+              "variable": [
+                { "key": "id", "value": "c1d2e3f4-a5b6-7890-cdef-012345678901", "description": "Space ID (Guid)" }
+              ]
+            },
+            "description": "Get space detail by ID.\n\nAuth: SystemAdmin ✅, BrandManager (own brand) ✅, StoreManager (own store) ✅, PlaybackDevice ✅ (chỉ khi id = SpaceId của session; dùng Bearer {{deviceAccessToken}}).\n\nAuthorization:\n- Space must exist (404 checked first)\n- BrandManager: 403 if store.BrandId != user.BrandId\n- StoreManager: 403 if space.StoreId != user.StoreId\n- PlaybackDevice: 403 if id != session.SpaceId"
+          },
+          "response": [
+            {
+              "name": "200 OK — Space detail",
+              "originalRequest": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "url": {
+                  "raw": "{{baseUrl}}/api/spaces/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "spaces", ":id"],
+                  "variable": [{ "key": "id", "value": "c1d2e3f4-a5b6-7890-cdef-012345678901" }]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Space retrieved successfully\",\n  \"data\": {\n    \"id\": \"c1d2e3f4-a5b6-7890-cdef-012345678901\",\n    \"storeId\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    \"name\": \"Counter Area A\",\n    \"type\": 1,\n    \"description\": \"Main counter serving area\",\n    \"cameraId\": \"CAM-001\",\n    \"roiCoordinates\": \"[[100,200],[300,200],[300,400],[100,400]]\",\n    \"maxOccupancy\": 30,\n    \"criticalQueueThreshold\": 20,\n    \"wiFiSensorId\": \"WIFI-001\",\n    \"currentPlaylistId\": null,\n    \"createdAt\": \"2025-03-01T08:00:00Z\",\n    \"updatedAt\": null,\n    \"createdBy\": \"00000000-0000-0000-0000-000000000001\",\n    \"updatedBy\": null,\n    \"status\": 1\n  },\n  \"errors\": null,\n  \"errorCode\": null\n}"
+            },
+            {
+              "name": "401 Unauthorized",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/spaces/:id", "host": ["{{baseUrl}}"], "path": ["api", "spaces", ":id"], "variable": [{ "key": "id", "value": "c1d2e3f4-a5b6-7890-cdef-012345678901" }] }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Unauthorized\",\n  \"errors\": null,\n  \"errorCode\": \"Unauthorized\"\n}"
+            },
+            {
+              "name": "403 Forbidden (wrong brand or store)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "url": { "raw": "{{baseUrl}}/api/spaces/:id", "host": ["{{baseUrl}}"], "path": ["api", "spaces", ":id"], "variable": [{ "key": "id", "value": "c1d2e3f4-a5b6-7890-cdef-012345678901" }] }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"You do not have permission to access this resource\",\n  \"errors\": null,\n  \"errorCode\": \"Forbidden\"\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "url": { "raw": "{{baseUrl}}/api/spaces/:id", "host": ["{{baseUrl}}"], "path": ["api", "spaces", ":id"], "variable": [{ "key": "id", "value": "00000000-0000-0000-0000-000000000000" }] }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Space not found\",\n  \"data\": null,\n  \"errors\": null,\n  \"errorCode\": \"NotFound\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Space By Id (PlaybackDevice)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{deviceAccessToken}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/spaces/{{spaceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "spaces", "{{spaceId}}"]
+            },
+            "description": "Cùng endpoint GET /api/spaces/{id}; dùng token PlaybackDevice. id phải = SpaceId của device session (403 nếu khác)."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Space",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"storeId\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n  \"name\": \"Counter Area B\",\n  \"type\": 1,\n  \"description\": \"Secondary counter area\",\n  \"maxOccupancy\": 25,\n  \"criticalQueueThreshold\": 15\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/spaces",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "spaces"]
+            },
+            "description": "Create a new space.\n\nAuth: BrandManager ✅, StoreManager ✅ (SystemAdmin ❌)\n\nNotes:\n- BrandManager: storeId is REQUIRED in body; store must belong to their brand.\n- StoreManager: storeId in body is IGNORED — always uses user.StoreId from session.\n- name must be unique within the same store.\n- type is required.\n\nSpaceTypeEnum: 1=Counter, 2=Hall, 3=Entrance, 4=Outdoor, 5=Kitchen, 6=Restroom"
+          },
+          "response": [
+            {
+              "name": "200 OK — Space created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+                  { "key": "Content-Type", "value": "application/json", "type": "text" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"storeId\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n  \"name\": \"Counter Area B\",\n  \"type\": 1,\n  \"description\": \"Secondary counter area\",\n  \"maxOccupancy\": 25,\n  \"criticalQueueThreshold\": 15\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": { "raw": "{{baseUrl}}/api/spaces", "host": ["{{baseUrl}}"], "path": ["api", "spaces"] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Space created successfully\",\n  \"errors\": null,\n  \"errorCode\": null\n}"
+            },
+            {
+              "name": "400 Validation Failed — name required",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+                  { "key": "Content-Type", "value": "application/json", "type": "text" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"storeId\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n  \"type\": 1\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": { "raw": "{{baseUrl}}/api/spaces", "host": ["{{baseUrl}}"], "path": ["api", "spaces"] }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Validation failed\",\n  \"errors\": [\n    {\n      \"field\": \"Name\",\n      \"message\": \"Name is required\"\n    }\n  ],\n  \"errorCode\": \"ValidationFailed\"\n}"
+            },
+            {
+              "name": "400 Validation Failed — type required",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+                  { "key": "Content-Type", "value": "application/json", "type": "text" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"storeId\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n  \"name\": \"Counter Area B\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": { "raw": "{{baseUrl}}/api/spaces", "host": ["{{baseUrl}}"], "path": ["api", "spaces"] }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Validation failed\",\n  \"errors\": [\n    {\n      \"field\": \"Type\",\n      \"message\": \"Space type is required\"\n    }\n  ],\n  \"errorCode\": \"ValidationFailed\"\n}"
+            },
+            {
+              "name": "400 Validation Failed — maxOccupancy <= 0",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+                  { "key": "Content-Type", "value": "application/json", "type": "text" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"storeId\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n  \"name\": \"Counter Area B\",\n  \"type\": 1,\n  \"maxOccupancy\": 0\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": { "raw": "{{baseUrl}}/api/spaces", "host": ["{{baseUrl}}"], "path": ["api", "spaces"] }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Validation failed\",\n  \"errors\": [\n    {\n      \"field\": \"MaxOccupancy\",\n      \"message\": \"'Max occupancy' must be greater than '0'.\"\n    }\n  ],\n  \"errorCode\": \"ValidationFailed\"\n}"
+            },
+            {
+              "name": "401 Unauthorized",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json", "type": "text" }],
+                "body": { "mode": "raw", "raw": "{\"name\": \"Test\", \"type\": 1}", "options": { "raw": { "language": "json" } } },
+                "url": { "raw": "{{baseUrl}}/api/spaces", "host": ["{{baseUrl}}"], "path": ["api", "spaces"] }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Unauthorized\",\n  \"errors\": null,\n  \"errorCode\": \"Unauthorized\"\n}"
+            },
+            {
+              "name": "403 Forbidden (SystemAdmin or SM with null storeId)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+                  { "key": "Content-Type", "value": "application/json", "type": "text" }
+                ],
+                "body": { "mode": "raw", "raw": "{\"name\": \"Test\", \"type\": 1}", "options": { "raw": { "language": "json" } } },
+                "url": { "raw": "{{baseUrl}}/api/spaces", "host": ["{{baseUrl}}"], "path": ["api", "spaces"] }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"You do not have permission to access this resource\",\n  \"errors\": null,\n  \"errorCode\": \"Forbidden\"\n}"
+            },
+            {
+              "name": "404 Not Found (Store not found — BrandManager)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+                  { "key": "Content-Type", "value": "application/json", "type": "text" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"storeId\": \"00000000-0000-0000-0000-000000000000\",\n  \"name\": \"Test Space\",\n  \"type\": 1\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": { "raw": "{{baseUrl}}/api/spaces", "host": ["{{baseUrl}}"], "path": ["api", "spaces"] }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Store not found\",\n  \"errors\": null,\n  \"errorCode\": \"NotFound\"\n}"
+            },
+            {
+              "name": "422 Business Rule — Name already exists in store",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+                  { "key": "Content-Type", "value": "application/json", "type": "text" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"storeId\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n  \"name\": \"Counter Area A\",\n  \"type\": 1\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": { "raw": "{{baseUrl}}/api/spaces", "host": ["{{baseUrl}}"], "path": ["api", "spaces"] }
+              },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Space already exists with this Name.\",\n  \"errors\": null,\n  \"errorCode\": \"BusinessRuleViolation\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Space",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"maxOccupancy\": 35,\n  \"criticalQueueThreshold\": 25\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/spaces/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "spaces", ":id"],
+              "variable": [
+                { "key": "id", "value": "c1d2e3f4-a5b6-7890-cdef-012345678901", "description": "Space ID (Guid)" }
+              ]
+            },
+            "description": "Update space fields (partial update / patch semantics).\n\nAuth: BrandManager ✅, StoreManager (own store) ✅ (SystemAdmin ❌)\n\nNotes:\n- Only send fields you want to change. Omitted/null fields keep their current value.\n- storeId in body is always ignored (cannot move a space to a different store).\n- Name uniqueness is checked only if name actually changes (self-collision excluded)."
+          },
+          "response": [
+            {
+              "name": "200 OK — Space updated",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+                  { "key": "Content-Type", "value": "application/json", "type": "text" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"maxOccupancy\": 35,\n  \"criticalQueueThreshold\": 25\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": { "raw": "{{baseUrl}}/api/spaces/:id", "host": ["{{baseUrl}}"], "path": ["api", "spaces", ":id"], "variable": [{ "key": "id", "value": "c1d2e3f4-a5b6-7890-cdef-012345678901" }] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Space updated successfully\",\n  \"errors\": null,\n  \"errorCode\": null\n}"
+            },
+            {
+              "name": "400 Validation Failed — name too long",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+                  { "key": "Content-Type", "value": "application/json", "type": "text" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": { "raw": "{{baseUrl}}/api/spaces/:id", "host": ["{{baseUrl}}"], "path": ["api", "spaces", ":id"], "variable": [{ "key": "id", "value": "c1d2e3f4-a5b6-7890-cdef-012345678901" }] }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Validation failed\",\n  \"errors\": [\n    {\n      \"field\": \"Name\",\n      \"message\": \"Name cannot exceed 200 characters\"\n    }\n  ],\n  \"errorCode\": \"ValidationFailed\"\n}"
+            },
+            {
+              "name": "401 Unauthorized",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [{ "key": "Content-Type", "value": "application/json", "type": "text" }],
+                "body": { "mode": "raw", "raw": "{}", "options": { "raw": { "language": "json" } } },
+                "url": { "raw": "{{baseUrl}}/api/spaces/:id", "host": ["{{baseUrl}}"], "path": ["api", "spaces", ":id"], "variable": [{ "key": "id", "value": "c1d2e3f4-a5b6-7890-cdef-012345678901" }] }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Unauthorized\",\n  \"errors\": null,\n  \"errorCode\": \"Unauthorized\"\n}"
+            },
+            {
+              "name": "403 Forbidden (wrong brand or store)",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+                  { "key": "Content-Type", "value": "application/json", "type": "text" }
+                ],
+                "body": { "mode": "raw", "raw": "{}", "options": { "raw": { "language": "json" } } },
+                "url": { "raw": "{{baseUrl}}/api/spaces/:id", "host": ["{{baseUrl}}"], "path": ["api", "spaces", ":id"], "variable": [{ "key": "id", "value": "c1d2e3f4-a5b6-7890-cdef-012345678901" }] }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"You do not have permission to access this resource\",\n  \"errors\": null,\n  \"errorCode\": \"Forbidden\"\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+                  { "key": "Content-Type", "value": "application/json", "type": "text" }
+                ],
+                "body": { "mode": "raw", "raw": "{}", "options": { "raw": { "language": "json" } } },
+                "url": { "raw": "{{baseUrl}}/api/spaces/:id", "host": ["{{baseUrl}}"], "path": ["api", "spaces", ":id"], "variable": [{ "key": "id", "value": "00000000-0000-0000-0000-000000000000" }] }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Space not found\",\n  \"errors\": null,\n  \"errorCode\": \"NotFound\"\n}"
+            },
+            {
+              "name": "422 Business Rule — Name conflict in store",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+                  { "key": "Content-Type", "value": "application/json", "type": "text" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Counter Area A\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": { "raw": "{{baseUrl}}/api/spaces/:id", "host": ["{{baseUrl}}"], "path": ["api", "spaces", ":id"], "variable": [{ "key": "id", "value": "c1d2e3f4-a5b6-7890-cdef-012345678901" }] }
+              },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Space already exists with this Name.\",\n  \"errors\": null,\n  \"errorCode\": \"BusinessRuleViolation\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Space",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/spaces/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "spaces", ":id"],
+              "variable": [
+                { "key": "id", "value": "c1d2e3f4-a5b6-7890-cdef-012345678901", "description": "Space ID (Guid)" }
+              ]
+            },
+            "description": "Soft-delete a space.\n\nAuth: BrandManager ✅, StoreManager (own store) ✅ (SystemAdmin ❌)\n\nBusiness Rules:\n- BrandManager: 403 if store.BrandId != user.BrandId\n- StoreManager: 403 if space.StoreId != user.StoreId"
+          },
+          "response": [
+            {
+              "name": "200 OK — Space deleted",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "url": { "raw": "{{baseUrl}}/api/spaces/:id", "host": ["{{baseUrl}}"], "path": ["api", "spaces", ":id"], "variable": [{ "key": "id", "value": "c1d2e3f4-a5b6-7890-cdef-012345678901" }] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Space deleted successfully\",\n  \"errors\": null,\n  \"errorCode\": null\n}"
+            },
+            {
+              "name": "401 Unauthorized",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/spaces/:id", "host": ["{{baseUrl}}"], "path": ["api", "spaces", ":id"], "variable": [{ "key": "id", "value": "c1d2e3f4-a5b6-7890-cdef-012345678901" }] }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Unauthorized\",\n  \"errors\": null,\n  \"errorCode\": \"Unauthorized\"\n}"
+            },
+            {
+              "name": "403 Forbidden (wrong brand or store)",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "url": { "raw": "{{baseUrl}}/api/spaces/:id", "host": ["{{baseUrl}}"], "path": ["api", "spaces", ":id"], "variable": [{ "key": "id", "value": "c1d2e3f4-a5b6-7890-cdef-012345678901" }] }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"You do not have permission to access this resource\",\n  \"errors\": null,\n  \"errorCode\": \"Forbidden\"\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "url": { "raw": "{{baseUrl}}/api/spaces/:id", "host": ["{{baseUrl}}"], "path": ["api", "spaces", ":id"], "variable": [{ "key": "id", "value": "00000000-0000-0000-0000-000000000000" }] }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Space not found\",\n  \"errors\": null,\n  \"errorCode\": \"NotFound\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Toggle Space Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }
+            ],
+            "body": {
+              "mode": "none"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/spaces/:id/toggle-status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "spaces", ":id", "toggle-status"],
+              "variable": [
+                { "key": "id", "value": "c1d2e3f4-a5b6-7890-cdef-012345678901", "description": "Space ID (Guid)" }
+              ]
+            },
+            "description": "Toggle space status: Active ↔ Inactive.\n\nAuth: BrandManager ✅, StoreManager (own store) ✅ (SystemAdmin ❌)\n\nNotes:\n- No request body required.\n- Active → Inactive, Inactive → Active.\n- BrandManager: 403 if store.BrandId != user.BrandId\n- StoreManager: 403 if space.StoreId != user.StoreId"
+          },
+          "response": [
+            {
+              "name": "200 OK — Status toggled",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "url": { "raw": "{{baseUrl}}/api/spaces/:id/toggle-status", "host": ["{{baseUrl}}"], "path": ["api", "spaces", ":id", "toggle-status"], "variable": [{ "key": "id", "value": "c1d2e3f4-a5b6-7890-cdef-012345678901" }] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Space status has been updated successfully\",\n  \"errors\": null,\n  \"errorCode\": null\n}"
+            },
+            {
+              "name": "401 Unauthorized",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/spaces/:id/toggle-status", "host": ["{{baseUrl}}"], "path": ["api", "spaces", ":id", "toggle-status"], "variable": [{ "key": "id", "value": "c1d2e3f4-a5b6-7890-cdef-012345678901" }] }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Unauthorized\",\n  \"errors\": null,\n  \"errorCode\": \"Unauthorized\"\n}"
+            },
+            {
+              "name": "403 Forbidden (wrong brand or store)",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "url": { "raw": "{{baseUrl}}/api/spaces/:id/toggle-status", "host": ["{{baseUrl}}"], "path": ["api", "spaces", ":id", "toggle-status"], "variable": [{ "key": "id", "value": "c1d2e3f4-a5b6-7890-cdef-012345678901" }] }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"You do not have permission to access this resource\",\n  \"errors\": null,\n  \"errorCode\": \"Forbidden\"\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "url": { "raw": "{{baseUrl}}/api/spaces/:id/toggle-status", "host": ["{{baseUrl}}"], "path": ["api", "spaces", ":id", "toggle-status"], "variable": [{ "key": "id", "value": "00000000-0000-0000-0000-000000000000" }] }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Space not found\",\n  \"errors\": null,\n  \"errorCode\": \"NotFound\"\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -14,7 +14,8 @@ class SettingsCompanyPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = _CompanyPalette.fromBrightness(Theme.of(context).brightness);
+    final palette =
+        _CompanyPalette.fromBrightness(Theme.of(context).brightness);
 
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
@@ -59,7 +60,8 @@ class SettingsCompanyPage extends StatelessWidget {
               );
             }
 
-            if (state.status == SettingsStatus.error || state.snapshot == null) {
+            if (state.status == SettingsStatus.error ||
+                state.snapshot == null) {
               return Center(
                 child: Text(
                   state.errorMessage ?? 'Cannot load company data.',
@@ -77,7 +79,8 @@ class SettingsCompanyPage extends StatelessWidget {
                   palette: palette,
                   rows: [
                     _InfoRow(label: 'Name', value: snapshot.companyName),
-                    _InfoRow(label: 'Business type', value: snapshot.businessType),
+                    _InfoRow(
+                        label: 'Business type', value: snapshot.businessType),
                     _InfoRow(label: 'Plan', value: snapshot.planName),
                   ],
                 ),
@@ -121,7 +124,8 @@ class SettingsCompanyPage extends StatelessWidget {
 
   void _showControlHint(BuildContext context, String title) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$title settings are managed by your admin panel.')),
+      SnackBar(
+          content: Text('$title settings are managed by your admin panel.')),
     );
   }
 }
@@ -209,7 +213,8 @@ class _ControlCard extends StatelessWidget {
             InkWell(
               onTap: () => onPressed(rows[i].title),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                 child: Row(
                   children: [
                     Container(
@@ -219,7 +224,8 @@ class _ControlCard extends StatelessWidget {
                         color: palette.iconBackground,
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: Icon(rows[i].icon, color: palette.iconColor, size: 16),
+                      child: Icon(rows[i].icon,
+                          color: palette.iconColor, size: 16),
                     ),
                     const SizedBox(width: 12),
                     Expanded(

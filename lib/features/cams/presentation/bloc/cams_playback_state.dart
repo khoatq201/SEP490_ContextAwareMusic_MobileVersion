@@ -58,14 +58,21 @@ class CamsPlaybackState extends Equatable {
   /// Whether any playlist is currently streaming.
   bool get isStreaming => playbackState?.isStreaming ?? false;
 
+  /// Whether CAMS is preparing a pending queue item.
+  bool get isPreparing => playbackState?.hasPendingPlayback ?? false;
+
   /// Whether override is currently active.
   bool get hasActiveOverride => playbackState?.hasActiveOverride ?? false;
 
   /// Current HLS URL (from playback state).
   String? get hlsUrl => playbackState?.hlsUrl;
 
-  /// Current playlist name.
-  String? get currentPlaylistName => playbackState?.currentPlaylistName;
+  /// Current track name (queue-first state).
+  String? get currentTrackName => playbackState?.currentTrackName;
+
+  /// Legacy UI getter kept for compatibility.
+  String? get currentPlaylistName =>
+      playbackState?.currentTrackName ?? playbackState?.currentPlaylistName;
 
   /// Current mood name.
   String? get currentMoodName => playbackState?.moodName;
@@ -114,8 +121,9 @@ class CamsPlaybackState extends Equatable {
       pendingTrackPlaylistId: clearPendingTrackJump
           ? null
           : (pendingTrackPlaylistId ?? this.pendingTrackPlaylistId),
-      pendingTrackId:
-          clearPendingTrackJump ? null : (pendingTrackId ?? this.pendingTrackId),
+      pendingTrackId: clearPendingTrackJump
+          ? null
+          : (pendingTrackId ?? this.pendingTrackId),
     );
   }
 

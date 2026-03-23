@@ -1,0 +1,117 @@
+{
+  "info": {
+    "name": "Log.AI-CAMS — Moods",
+    "_postman_id": "f1a2b3c4-d5e6-7890-abcd-ef1234567890",
+    "description": "Mood Reference API — CMS (React & Flutter)\n\nBase URL: {{baseUrl}}\nAuth: Bearer {{accessToken}}\n\nEndpoints:\n  GET /api/moods  — All active moods, sorted by Priority ASC then Name ASC (DB-level)\n\nMoodTypeEnum:    Calm=0, Focus=1, Energetic=2\nEntityStatusEnum: Inactive=0, Active=1\n\nSee: docs/moods/API_Moods.md",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://localhost:7001",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Moods",
+      "item": [
+        {
+          "name": "Get All Moods",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "vi-VN",
+                "type": "text",
+                "description": "Optional: en-US (default) or vi-VN"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/moods",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "moods"]
+            },
+            "description": "Get all active moods sorted by Priority ASC (nulls last), then Name ASC.\n\nAuth: SystemAdmin ✅, BrandManager ✅, StoreManager ✅\n\nNotes:\n- No pagination — mood list is always small (typically 3–10 items).\n- Moods are global reference data, not brand-scoped.\n- Typically used to populate dropdown when creating a Track or Override.\n- Sort is done at DB level: ORDER BY (priority IS NULL), priority, name."
+          },
+          "response": [
+            {
+              "name": "200 OK — Mood list",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/moods",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "moods"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Mood retrieved successfully\",\n  \"data\": [\n    {\n      \"id\": \"m0000000-0000-0000-0000-000000000001\",\n      \"moodType\": 1,\n      \"name\": \"Calm\",\n      \"minBpm\": 60,\n      \"maxBpm\": 80,\n      \"genre\": \"Lo-Fi, Ambient, Nature Sounds\",\n      \"energyLevel\": 0.2,\n      \"priority\": 1,\n      \"status\": 1,\n      \"createdAt\": \"2026-01-01T00:00:00Z\",\n      \"updatedAt\": null,\n      \"createdBy\": null,\n      \"updatedBy\": null\n    },\n    {\n      \"id\": \"m0000000-0000-0000-0000-000000000002\",\n      \"moodType\": 3,\n      \"name\": \"Focus\",\n      \"minBpm\": 85,\n      \"maxBpm\": 105,\n      \"genre\": \"Acoustic, Jazz, Instrumental\",\n      \"energyLevel\": 0.4,\n      \"priority\": 2,\n      \"status\": 1,\n      \"createdAt\": \"2026-01-01T00:00:00Z\",\n      \"updatedAt\": null,\n      \"createdBy\": null,\n      \"updatedBy\": null\n    },\n    {\n      \"id\": \"m0000000-0000-0000-0000-000000000003\",\n      \"moodType\": 2,\n      \"name\": \"Energetic\",\n      \"minBpm\": 120,\n      \"maxBpm\": 140,\n      \"genre\": \"Upbeat, Electronic, Dance\",\n      \"energyLevel\": 0.9,\n      \"priority\": 3,\n      \"status\": 1,\n      \"createdAt\": \"2026-01-01T00:00:00Z\",\n      \"updatedAt\": null,\n      \"createdBy\": null,\n      \"updatedBy\": null\n    }\n  ],\n  \"errors\": null,\n  \"errorCode\": null\n}"
+            },
+            {
+              "name": "401 Unauthorized",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/moods",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "moods"]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Unauthorized\",\n  \"errors\": null,\n  \"errorCode\": \"Unauthorized\"\n}"
+            },
+            {
+              "name": "403 Forbidden",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/moods",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "moods"]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"You do not have permission to access this resource\",\n  \"errors\": null,\n  \"errorCode\": \"Forbidden\"\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

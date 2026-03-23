@@ -77,8 +77,14 @@ class SpaceSettingsSheet extends StatelessWidget {
               palette: palette,
               children: [
                 _InfoRow(label: 'Name', value: space.name, palette: palette),
-                _InfoRow(label: 'Type', value: space.type.displayName, palette: palette),
-                _InfoRow(label: 'Status', value: space.status.displayName, palette: palette),
+                _InfoRow(
+                    label: 'Type',
+                    value: space.type.displayName,
+                    palette: palette),
+                _InfoRow(
+                    label: 'Status',
+                    value: space.status.displayName,
+                    palette: palette),
               ],
             ),
 
@@ -219,7 +225,8 @@ class _InfoGroup extends StatelessWidget {
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.label, required this.value, required this.palette});
+  const _InfoRow(
+      {required this.label, required this.value, required this.palette});
   final String label;
   final String value;
   final _SheetPalette palette;
@@ -328,7 +335,8 @@ class _NavTile extends StatelessWidget {
             ),
             if (trailing != null) trailing!,
             if (trailing != null) const SizedBox(width: 6),
-            Icon(Icons.chevron_right_rounded, color: palette.textMuted, size: 20),
+            Icon(Icons.chevron_right_rounded,
+                color: palette.textMuted, size: 20),
           ],
         ),
       ),

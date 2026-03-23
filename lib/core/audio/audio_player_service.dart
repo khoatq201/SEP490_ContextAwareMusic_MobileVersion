@@ -98,8 +98,7 @@ class AudioPlayerService {
       } on PlatformException catch (error) {
         final message = error.message ?? '';
         final details = '${error.details ?? ''}';
-        final isDuplicatePlatformPlayer =
-            message.contains('already exists') ||
+        final isDuplicatePlatformPlayer = message.contains('already exists') ||
             details.contains('already exists');
         if (isDuplicatePlatformPlayer && _loadedUrl == url) {
           completer.complete(_player.duration);

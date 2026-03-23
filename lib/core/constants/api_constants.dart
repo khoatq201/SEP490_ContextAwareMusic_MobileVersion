@@ -51,6 +51,27 @@ class ApiConstants {
       '/api/cams/spaces/$spaceId/playback';
   static String camsState(String spaceId) => '/api/cams/spaces/$spaceId/state';
   static const String camsCurrentDeviceState = '/api/cams/spaces/state';
+  static String camsAudioState(String spaceId) =>
+      '/api/cams/spaces/$spaceId/state/audio';
+  static const String camsCurrentDeviceAudioState =
+      '/api/cams/spaces/state/audio';
+  static String camsQueueTracks(String spaceId) =>
+      '/api/cams/spaces/$spaceId/queue/tracks';
+  static const String camsCurrentDeviceQueueTracks =
+      '/api/cams/spaces/queue/tracks';
+  static String camsQueuePlaylist(String spaceId) =>
+      '/api/cams/spaces/$spaceId/queue/playlist';
+  static const String camsCurrentDeviceQueuePlaylist =
+      '/api/cams/spaces/queue/playlist';
+  static String camsQueueReorder(String spaceId) =>
+      '/api/cams/spaces/$spaceId/queue/reorder';
+  static const String camsCurrentDeviceQueueReorder =
+      '/api/cams/spaces/queue/reorder';
+  static String camsQueue(String spaceId) => '/api/cams/spaces/$spaceId/queue';
+  static const String camsCurrentDeviceQueue = '/api/cams/spaces/queue';
+  static String camsQueueAll(String spaceId) =>
+      '/api/cams/spaces/$spaceId/queue/all';
+  static const String camsCurrentDeviceQueueAll = '/api/cams/spaces/queue/all';
   static String camsPairDevice(String spaceId) =>
       '/api/cams/spaces/$spaceId/pair-device';
   static const String camsCurrentPairDevice = '/api/cams/spaces/pair-device';

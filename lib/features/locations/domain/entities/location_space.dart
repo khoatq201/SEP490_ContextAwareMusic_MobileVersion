@@ -100,17 +100,20 @@ class LocationSpace extends Equatable {
       type: type ?? this.type,
       description: description ?? this.description,
       status: status ?? this.status,
-      currentPlaylistId:
-          clearCurrentPlaylistId ? null : (currentPlaylistId ?? this.currentPlaylistId),
+      currentPlaylistId: clearCurrentPlaylistId
+          ? null
+          : (currentPlaylistId ?? this.currentPlaylistId),
       storeName: storeName ?? this.storeName,
       isOnline: isOnline ?? this.isOnline,
       currentPlaylistName: clearCurrentPlaylistName
           ? null
           : (currentPlaylistName ?? this.currentPlaylistName),
-      currentMoodName:
-          clearCurrentMoodName ? null : (currentMoodName ?? this.currentMoodName),
-      currentTrackName:
-          clearCurrentTrackName ? null : (currentTrackName ?? this.currentTrackName),
+      currentMoodName: clearCurrentMoodName
+          ? null
+          : (currentMoodName ?? this.currentMoodName),
+      currentTrackName: clearCurrentTrackName
+          ? null
+          : (currentTrackName ?? this.currentTrackName),
       currentTrackArtist: clearCurrentTrackArtist
           ? null
           : (currentTrackArtist ?? this.currentTrackArtist),

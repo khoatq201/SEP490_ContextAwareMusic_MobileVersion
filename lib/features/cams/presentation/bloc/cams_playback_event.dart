@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+
 import '../../../../core/enums/playback_command_enum.dart';
 import '../../domain/entities/space_playback_state.dart';
 
@@ -9,7 +10,7 @@ abstract class CamsPlaybackEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-/// Initialize CAMS playback — connect SignalR, fetch state & moods.
+/// Initialize CAMS playback â€” connect SignalR, fetch state & moods.
 class CamsInitPlayback extends CamsPlaybackEvent {
   final String spaceId;
 
@@ -19,7 +20,7 @@ class CamsInitPlayback extends CamsPlaybackEvent {
   List<Object?> get props => [spaceId];
 }
 
-/// Dispose CAMS — disconnect SignalR, leave space.
+/// Dispose CAMS â€” disconnect SignalR, leave space.
 class CamsDisposePlayback extends CamsPlaybackEvent {
   const CamsDisposePlayback();
 }
@@ -35,37 +36,103 @@ class CamsOverrideMood extends CamsPlaybackEvent {
   List<Object?> get props => [moodId, reason];
 }
 
-/// Override space with a specific playlist.
-class CamsOverridePlaylist extends CamsPlaybackEvent {
+/// Queue-native: play a playlist now.
+class CamsPlayPlaylist extends CamsPlaybackEvent {
   final String playlistId;
   final String? reason;
+  final bool clearExistingQueue;
 
-  const CamsOverridePlaylist({required this.playlistId, this.reason});
-
-  @override
-  List<Object?> get props => [playlistId, reason];
-}
-
-/// Play a specific track from a playlist.
-///
-/// If the playlist is not active yet, the bloc will first override to that
-/// playlist and defer the track jump until the stream is ready.
-class CamsPlayPlaylistTrack extends CamsPlaybackEvent {
-  final String playlistId;
-  final String targetTrackId;
-  final String? reason;
-
-  const CamsPlayPlaylistTrack({
+  const CamsPlayPlaylist({
     required this.playlistId,
-    required this.targetTrackId,
     this.reason,
+    this.clearExistingQueue = false,
   });
 
   @override
-  List<Object?> get props => [playlistId, targetTrackId, reason];
+  List<Object?> get props => [playlistId, reason, clearExistingQueue];
 }
 
-/// Cancel active override — AI scheduling resumes.
+/// Queue-native: play a specific track now.
+class CamsPlayTrack extends CamsPlaybackEvent {
+  final String trackId;
+  final String? playlistId;
+  final String? reason;
+  final bool clearExistingQueue;
+
+  const CamsPlayTrack({
+    required this.trackId,
+    this.playlistId,
+    this.reason,
+    this.clearExistingQueue = false,
+  });
+
+  @override
+  List<Object?> get props => [trackId, playlistId, reason, clearExistingQueue];
+}
+
+/// Backward-compatible alias for old UI dispatchers.
+class CamsOverridePlaylist extends CamsPlayPlaylist {
+  const CamsOverridePlaylist({required super.playlistId, super.reason});
+}
+
+/// Backward-compatible alias for old UI dispatchers.
+class CamsPlayPlaylistTrack extends CamsPlayTrack {
+  const CamsPlayPlaylistTrack({
+    required String playlistId,
+    required String targetTrackId,
+    String? reason,
+  }) : super(trackId: targetTrackId, playlistId: playlistId, reason: reason);
+}
+
+/// Queue management: reorder queue items by their queue item ids.
+class CamsReorderQueue extends CamsPlaybackEvent {
+  final List<String> queueItemIds;
+
+  const CamsReorderQueue({
+    required this.queueItemIds,
+  });
+
+  @override
+  List<Object?> get props => [queueItemIds];
+}
+
+/// Queue management: remove one or more queue items.
+class CamsRemoveQueueItems extends CamsPlaybackEvent {
+  final List<String> queueItemIds;
+
+  const CamsRemoveQueueItems({
+    required this.queueItemIds,
+  });
+
+  @override
+  List<Object?> get props => [queueItemIds];
+}
+
+/// Queue management: clear all queue items.
+class CamsClearQueue extends CamsPlaybackEvent {
+  const CamsClearQueue();
+}
+
+/// Patch remote audio settings (volume/mute/queue-end behavior).
+class CamsUpdateAudioState extends CamsPlaybackEvent {
+  final int? volumePercent;
+  final bool? isMuted;
+  final int? queueEndBehavior;
+
+  const CamsUpdateAudioState({
+    this.volumePercent,
+    this.isMuted,
+    this.queueEndBehavior,
+  });
+
+  bool get hasAnyUpdate =>
+      volumePercent != null || isMuted != null || queueEndBehavior != null;
+
+  @override
+  List<Object?> get props => [volumePercent, isMuted, queueEndBehavior];
+}
+
+/// Cancel active override â€” AI scheduling resumes.
 class CamsCancelOverride extends CamsPlaybackEvent {
   const CamsCancelOverride();
 }
@@ -90,21 +157,35 @@ class CamsSendCommand extends CamsPlaybackEvent {
 class CamsPlayStreamReceived extends CamsPlaybackEvent {
   final String spaceId;
   final String hlsUrl;
-  final String playlistId;
+  final String? playlistId;
+  final String? currentQueueItemId;
+  final String? trackId;
+  final String? trackName;
   final bool isManualOverride;
   final DateTime? startedAtUtc;
 
   const CamsPlayStreamReceived({
     required this.spaceId,
     required this.hlsUrl,
-    required this.playlistId,
+    this.playlistId,
+    this.currentQueueItemId,
+    this.trackId,
+    this.trackName,
     this.isManualOverride = false,
     this.startedAtUtc,
   });
 
   @override
-  List<Object?> get props =>
-      [spaceId, hlsUrl, playlistId, isManualOverride, startedAtUtc];
+  List<Object?> get props => [
+        spaceId,
+        hlsUrl,
+        playlistId,
+        currentQueueItemId,
+        trackId,
+        trackName,
+        isManualOverride,
+        startedAtUtc,
+      ];
 }
 
 /// Internal: SignalR PlaybackStateChanged event received.

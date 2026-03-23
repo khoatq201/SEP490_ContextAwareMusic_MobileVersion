@@ -1,0 +1,988 @@
+{
+  "info": {
+    "_postman_id": "cams-manager-api-v1",
+    "name": "Log.AI-CAMS — CAMS Operations",
+    "description": "CAMS endpoints:\n- Override: POST/DELETE /override\n- Playback control: POST /playback (Pause/Resume/Seek/Skip*/TrackEnded)\n- Mixer & queue end: PATCH /state/audio\n- Queue management: POST /queue/tracks, POST /queue/playlist, PATCH /queue/reorder, DELETE /queue (remove), DELETE /queue/all (clear), GET /queue\n- Playback state: GET /state\n- Pair device: POST .../pair-code (generate), DELETE .../pair-code (revoke), DELETE .../unpair\n\nBase URL: {{baseUrl}}\nAuth: Bearer {{accessToken}} (manager) hoặc {{deviceAccessToken}} (tablet — cho GET state không spaceId, DELETE unpair).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://localhost:7001",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string",
+      "description": "JWT Bearer token (BrandManager hoặc StoreManager)"
+    },
+    {
+      "key": "spaceId",
+      "value": "00000000-0000-0000-0000-000000000001",
+      "type": "string",
+      "description": "ID của Space cần thao tác"
+    },
+    {
+      "key": "playlistId",
+      "value": "00000000-0000-0000-0000-000000000101",
+      "type": "string",
+      "description": "ID playlist dùng làm nguồn override"
+    },
+    {
+      "key": "moodId",
+      "value": "00000000-0000-0000-0000-000000000201",
+      "type": "string",
+      "description": "ID mood dùng làm nguồn override"
+    },
+    {
+      "key": "trackId2",
+      "value": "00000000-0000-0000-0000-000000000302",
+      "type": "string",
+      "description": "Track ID thứ 2 cho nguồn trackIds override"
+    },
+    {
+      "key": "isClearManagerSelectedQueues",
+      "value": "false",
+      "type": "string",
+      "description": "true: clear toàn bộ pending queue, false: chỉ clear pending AI"
+    },
+    {
+      "key": "trackId",
+      "value": "00000000-0000-0000-0000-000000000301",
+      "type": "string",
+      "description": "ID track dùng cho SkipToTrack command"
+    },
+    {
+      "key": "queueItemId1",
+      "value": "00000000-0000-0000-0000-000000000401",
+      "type": "string",
+      "description": "Queue item id #1 (space_queue_items)"
+    },
+    {
+      "key": "queueItemId2",
+      "value": "00000000-0000-0000-0000-000000000402",
+      "type": "string",
+      "description": "Queue item id #2 (space_queue_items)"
+    },
+    {
+      "key": "deviceAccessToken",
+      "value": "",
+      "type": "string",
+      "description": "JWT Bearer token (PlaybackDevice — tablet đã pair)"
+    }
+  ],
+  "item": [
+    {
+      "name": "CAMS",
+      "description": "Context-Aware Music System — Manager Playback Control",
+      "item": [
+        {
+          "name": "Override Space Music (Playlist Source)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "vi-VN"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cams/spaces/{{spaceId}}/override",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cams", "spaces", "{{spaceId}}", "override"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trackIds\": null,\n  \"playlistId\": \"{{playlistId}}\",\n  \"moodId\": null,\n  \"isClearManagerSelectedQueues\": {{isClearManagerSelectedQueues}},\n  \"reason\": \"Sự kiện đặc biệt tối nay\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Override bằng nguồn playlist theo queue-first flow.\nBắt buộc chọn đúng 1 nguồn trong trackIds/playlistId/moodId.\n\nRuntime hiện tại:\n- Luôn prepend danh sách track override lên đầu queue.\n- Luôn chuyển bài ngay (hard switch).\n- Response chỉ ACK spaceId; state chi tiết lấy qua GET state + SignalR.\n\nAuth: BrandManager/StoreManager dùng route /spaces/{spaceId}/override với spaceId rõ ràng.\nPlaybackDevice dùng route /spaces/override không cần spaceId (server lấy từ device session)."
+          },
+          "response": [
+            {
+              "name": "200 — Override accepted (ACK)",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Override applied successfully.\",\n  \"data\": {\n    \"spaceId\": \"00000000-0000-0000-0000-000000000001\"\n  }\n}"
+            },
+            {
+              "name": "400 — Cung cấp sai source selection",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Validation failed.\",\n  \"errors\": [\"Phải cung cấp đúng một nguồn: TrackIds hoặc PlaylistId hoặc MoodId.\"]\n}"
+            },
+            {
+              "name": "422 — Không resolve được track hợp lệ",
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"No valid override tracks found from the selected source.\",\n  \"errorCode\": \"InvalidInput\"\n}"
+            },
+            {
+              "name": "403 — Không có quyền trên Space này",
+              "status": "Forbidden",
+              "code": 403,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Access denied.\",\n  \"errorCode\": \"Forbidden\"\n}"
+            },
+            {
+              "name": "404 — Space không tồn tại",
+              "status": "Not Found",
+              "code": 404,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Space not found.\",\n  \"errorCode\": \"NotFound\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Override Space Music (Mood Source)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "vi-VN"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cams/spaces/{{spaceId}}/override",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cams", "spaces", "{{spaceId}}", "override"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trackIds\": null,\n  \"playlistId\": null,\n  \"moodId\": \"{{moodId}}\",\n  \"isClearManagerSelectedQueues\": {{isClearManagerSelectedQueues}},\n  \"reason\": \"Khách VIP cần không gian yên tĩnh\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Override bằng nguồn mood.\nBackend resolve danh sách track theo mood (limit 20 + cooldown filter), sau đó prepend và chuyển bài ngay.\nResponse là ACK spaceId.\n\nAuth: BrandManager/StoreManager dùng route /spaces/{spaceId}/override với spaceId rõ ràng.\nPlaybackDevice dùng route /spaces/override không cần spaceId (server lấy từ device session)."
+          },
+          "response": [
+            {
+              "name": "200 — Mood override accepted (ACK)",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Override applied successfully.\",\n  \"data\": {\n    \"spaceId\": \"00000000-0000-0000-0000-000000000001\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Cancel Space Override",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "vi-VN"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cams/spaces/{{spaceId}}/override",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cams", "spaces", "{{spaceId}}", "override"]
+            },
+            "description": "Hủy override thủ công đang active.\nSau khi hủy, Hangfire AI scheduling tự tiếp quản trong vòng ~60 giây.\n\nKhông có request body.\n\nAuth: BrandManager/StoreManager dùng route /spaces/{spaceId}/override với spaceId rõ ràng.\nPlaybackDevice dùng route /spaces/override **không cần spaceId** (server lấy SpaceId từ device session)."
+          },
+          "response": [
+            {
+              "name": "200 — Override đã hủy",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Manual override cancelled. AI scheduling resumes on the next Hangfire cycle.\"\n}"
+            },
+            {
+              "name": "403 — Không có quyền trên Space này",
+              "status": "Forbidden",
+              "code": 403,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Access denied.\",\n  \"errorCode\": \"Forbidden\"\n}"
+            },
+            {
+              "name": "404 — Space không tồn tại",
+              "status": "Not Found",
+              "code": 404,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Space not found.\",\n  \"errorCode\": \"NotFound\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Send Playback Command (Pause)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cams/spaces/{{spaceId}}/playback",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cams", "spaces", "{{spaceId}}", "playback"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"command\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Dừng phát nhạc (Pause = 1).\nServer ghi nhận PausePositionSeconds và broadcast SignalR tới tablet + manager tabs.\n\nAuth: BrandManager/StoreManager dùng route /spaces/{spaceId}/playback với spaceId rõ ràng.\nPlaybackDevice dùng route /spaces/playback **không cần spaceId** (server lấy SpaceId từ device session)."
+          },
+          "response": [
+            {
+              "name": "200 — Lệnh đã relay",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Playback command 'Pause' relayed to Space.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Send Playback Command (Resume)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cams/spaces/{{spaceId}}/playback",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cams", "spaces", "{{spaceId}}", "playback"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"command\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Tiếp tục phát nhạc từ vị trí đã dừng (Resume = 2).\nServer recalculate StartedAtUtc dựa trên PausePositionSeconds.\n\nAuth: BrandManager/StoreManager dùng route /spaces/{spaceId}/playback với spaceId rõ ràng.\nPlaybackDevice dùng route /spaces/playback **không cần spaceId** (server lấy SpaceId từ device session)."
+          },
+          "response": [
+            {
+              "name": "200 — Lệnh đã relay",
+              "status": "OK",
+              "code": 200,
+              "header": [],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Playback command 'Resume' relayed to Space.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Send Playback Command (SeekForward 15s)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cams/spaces/{{spaceId}}/playback",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cams", "spaces", "{{spaceId}}", "playback"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"command\": 4,\n  \"seekPositionSeconds\": 15\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Tua tới 15 giây (SeekForward = 4).\nseekPositionSeconds là delta (+15s). Server tính absolute position và relay.\n\nAuth: BrandManager/StoreManager dùng route /spaces/{spaceId}/playback với spaceId rõ ràng.\nPlaybackDevice dùng route /spaces/playback **không cần spaceId** (server lấy SpaceId từ device session)."
+          },
+          "response": [
+            {
+              "name": "200 — Lệnh đã relay",
+              "status": "OK",
+              "code": 200,
+              "header": [],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Playback command 'SeekForward' relayed to Space.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Send Playback Command (SkipNext)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cams/spaces/{{spaceId}}/playback",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cams", "spaces", "{{spaceId}}", "playback"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"command\": 6\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Chuyển sang track kế theo thứ tự tuần tự bằng `Position` (SkipNext = 6).\nKhông wrap về đầu; nếu không còn successor theo `Position` → 422 InvalidOperation.\n\nAuth: BrandManager/StoreManager dùng route /spaces/{spaceId}/playback với spaceId rõ ràng.\nPlaybackDevice dùng route /spaces/playback **không cần spaceId** (server lấy SpaceId từ device session)."
+          },
+          "response": [
+            {
+              "name": "200 — Lệnh đã relay",
+              "status": "OK",
+              "code": 200,
+              "header": [],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Playback command 'SkipNext' relayed to Space.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Send Playback Command (SkipToTrack)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cams/spaces/{{spaceId}}/playback",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cams", "spaces", "{{spaceId}}", "playback"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"command\": 8,\n  \"targetTrackId\": \"{{trackId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Nhảy tới một queue item bất kỳ (kể cả Played/Skipped) theo `TrackId` (SkipToTrack = 8).\ntargetTrackId là bắt buộc.\n\nServer không relay `command=3` (Seek) và không tính cumulative offset; client chuyển track dựa trên `SpaceStateSync.hlsUrl/startedAtUtc` và `targetTrackId`.\n\nAuth: BrandManager/StoreManager dùng route /spaces/{spaceId}/playback với spaceId rõ ràng.\nPlaybackDevice dùng route /spaces/playback **không cần spaceId** (server lấy SpaceId từ device session)."
+          },
+          "response": [
+            {
+              "name": "200 — Lệnh đã relay",
+              "status": "OK",
+              "code": 200,
+              "header": [],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Playback command 'SkipToTrack' relayed to Space.\"\n}"
+            },
+            {
+              "name": "400 — TargetTrackId không được cung cấp",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"TargetTrackId is required for SkipToTrack command.\",\n  \"errorCode\": \"InvalidInput\"\n}"
+            },
+            {
+              "name": "404 — Space chưa có playlist nào đang chạy",
+              "status": "Not Found",
+              "code": 404,
+              "header": [],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"No active playback state found for this Space.\",\n  \"errorCode\": \"NotFound\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Patch Space Audio Mixer (volume/mute/queueEndBehavior)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cams/spaces/{{spaceId}}/state/audio",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cams", "spaces", "{{spaceId}}", "state", "audio"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"volumePercent\": 75,\n  \"isMuted\": false,\n  \"queueEndBehavior\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Cập nhật mixer + tùy chọn behavior khi track kết thúc (Stop/RepeatAll/RepeatOne)."
+          },
+          "response": []
+        },
+        {
+          "name": "Send Playback Command (TrackEnded = 9)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cams/spaces/{{spaceId}}/playback",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cams", "spaces", "{{spaceId}}", "playback"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"command\": 9\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Báo server track đã kết thúc tự nhiên. Server sẽ advance tuần tự theo Position và áp dụng queueEndBehavior."
+          },
+          "response": []
+        },
+        {
+          "name": "Add Tracks To Queue (PlayNow = 1)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cams/spaces/{{spaceId}}/queue/tracks",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cams", "spaces", "{{spaceId}}", "queue", "tracks"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trackIds\": [\"{{trackId}}\", \"{{trackId2}}\"],\n  \"mode\": 1,\n  \"isClearExistingQueue\": false,\n  \"reason\": \"PlayNow from Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Chèn 2 track vào queue theo mode PlayNow."
+          },
+          "response": []
+        },
+        {
+          "name": "Add Playlist To Queue (PlayNow = 1)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cams/spaces/{{spaceId}}/queue/playlist",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cams", "spaces", "{{spaceId}}", "queue", "playlist"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"playlistId\": \"{{playlistId}}\",\n  \"mode\": 1,\n  \"isClearExistingQueue\": false,\n  \"reason\": \"Play playlist from Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Resolve playlist thành tracks và chèn vào queue theo mode PlayNow."
+          },
+          "response": []
+        },
+        {
+          "name": "Reorder Pending Queue",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cams/spaces/{{spaceId}}/queue/reorder",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cams", "spaces", "{{spaceId}}", "queue", "reorder"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"queueItemIds\": [\"{{queueItemId1}}\", \"{{queueItemId2}}\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Reorder các item Pending theo thứ tự queueItemIds."
+          },
+          "response": []
+        },
+        {
+          "name": "Remove Queue Items",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cams/spaces/{{spaceId}}/queue",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cams", "spaces", "{{spaceId}}", "queue"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"queueItemIds\": [\"{{queueItemId1}}\", \"{{queueItemId2}}\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Xoá các queue item theo queueItemIds."
+          },
+          "response": []
+        },
+        {
+          "name": "Clear Space Queue (delete all)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cams/spaces/{{spaceId}}/queue/all",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cams", "spaces", "{{spaceId}}", "queue", "all"]
+            },
+            "description": "Xoá toàn bộ queue và dừng phát."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Space Queue",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cams/spaces/{{spaceId}}/queue",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cams", "spaces", "{{spaceId}}", "queue"]
+            },
+            "description": "Lấy snapshot queue gồm Playing/Pending/Played/Skipped."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Space Playback State",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cams/spaces/{{spaceId}}/state",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cams", "spaces", "{{spaceId}}", "state"]
+            },
+            "description": "Lấy snapshot trạng thái phát nhạc hiện tại của một Space (route manager, cần SpaceId rõ ràng).\n\nDùng khi:\n- Manager dashboard load/reload trang.\n- Hoặc tablet muốn gọi kèm SpaceId (phải đúng SpaceId trong device session).\n\nKhông có request body."
+          },
+          "response": [
+            {
+              "name": "200 — Đang streaming",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Success\",\n  \"data\": {\n    \"spaceId\": \"00000000-0000-0000-0000-000000000001\",\n    \"storeId\": \"00000000-0000-0000-0000-000000000010\",\n    \"brandId\": \"00000000-0000-0000-0000-000000000020\",\n    \"currentQueueItemId\": \"00000000-0000-0000-0000-000000000101\",\n    \"currentTrackName\": \"Evening Chill\",\n    \"hlsUrl\": \"https://d123.cloudfront.net/audio/playlists/abc/master.m3u8\",\n    \"moodName\": \"Chill\",\n    \"isManualOverride\": true,\n    \"overrideMode\": 1,\n    \"startedAtUtc\": \"2026-03-08T10:00:00Z\",\n    \"expectedEndAtUtc\": \"2026-03-08T11:30:00Z\",\n    \"seekOffsetSeconds\": 342.5,\n    \"isPaused\": false,\n    \"pausePositionSeconds\": null,\n    \"pendingQueueItemId\": null,\n    \"pendingOverrideReason\": null,\n    \"volumePercent\": 100,\n    \"isMuted\": false,\n    \"queueEndBehavior\": 0,\n    \"spaceQueueItems\": [\n      {\n        \"queueItemId\": \"00000000-0000-0000-0000-000000000101\",\n        \"trackId\": \"00000000-0000-0000-0000-000000000201\",\n        \"trackName\": \"Evening Chill\",\n        \"position\": 1,\n        \"queueStatus\": 1,\n        \"source\": 1,\n        \"hlsUrl\": \"https://d123.cloudfront.net/audio/playlists/abc/master.m3u8\",\n        \"isReadyToStream\": true\n      }\n    ]\n  }\n}"
+            },
+            {
+              "name": "200 — Chưa có playlist nào",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"No playback state found. The space has not started streaming yet.\",\n  \"data\": {\n    \"spaceId\": \"00000000-0000-0000-0000-000000000001\",\n    \"storeId\": \"00000000-0000-0000-0000-000000000000\",\n    \"brandId\": \"00000000-0000-0000-0000-000000000000\",\n    \"currentQueueItemId\": null,\n    \"currentTrackName\": null,\n    \"hlsUrl\": null,\n    \"moodName\": null,\n    \"isManualOverride\": false,\n    \"overrideMode\": null,\n    \"startedAtUtc\": null,\n    \"expectedEndAtUtc\": null,\n    \"seekOffsetSeconds\": null,\n    \"isPaused\": false,\n    \"pausePositionSeconds\": null,\n    \"pendingQueueItemId\": null,\n    \"pendingOverrideReason\": null,\n    \"volumePercent\": 100,\n    \"isMuted\": false,\n    \"queueEndBehavior\": 0,\n    \"spaceQueueItems\": []\n  }\n}"
+            },
+            {
+              "name": "404 — Space không tồn tại",
+              "status": "Not Found",
+              "code": 404,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Space not found.\",\n  \"errorCode\": \"NotFound\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Space Playback State (PlaybackDevice, no SpaceId)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{deviceAccessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cams/spaces/state",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cams", "spaces", "state"]
+            },
+            "description": "Lấy snapshot trạng thái phát nhạc hiện tại cho playback device (tablet) **không cần truyền SpaceId**.\nServer dùng SpaceId từ device session; chỉ áp dụng cho role PlaybackDevice.\nTablet dùng endpoint này sau khi reconnect để gọi seekTo(seekOffsetSeconds) trên player."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Pair Device Info (PlaybackDevice)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{deviceAccessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cams/spaces/pair-device",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cams", "spaces", "pair-device"]
+            },
+            "description": "Lấy thông tin pair của **chính tablet hiện tại**.\nServer dùng SpaceId + DeviceSessionId từ device session (claims), không cho override spaceId.\nTrả về PairDeviceInfoDto: Space/Store/Brand + thông tin DeviceSession (nếu đang pair)."
+          },
+          "response": [
+            {
+              "name": "200 — Có device đang pair",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Paired Device retrieved successfully\",\n  \"data\": {\n    \"spaceId\": \"00000000-0000-0000-0000-000000000001\",\n    \"storeId\": \"00000000-0000-0000-0000-000000000010\",\n    \"brandId\": \"00000000-0000-0000-0000-000000000020\",\n    \"deviceSessionId\": \"11111111-1111-1111-1111-111111111111\",\n    \"isPlaybackDeviceCaller\": true,\n    \"manufacturer\": \"Samsung\",\n    \"model\": \"SM-T510\",\n    \"osVersion\": \"Android 14\",\n    \"appVersion\": \"1.0.0\",\n    \"deviceId\": \"android-id-from-device\",\n    \"pairedAtUtc\": \"2026-03-13T10:00:00Z\",\n    \"lastActiveAtUtc\": \"2026-03-13T10:15:30Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Pair Device Info (Manager)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cams/spaces/{{spaceId}}/pair-device",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cams", "spaces", "{{spaceId}}", "pair-device"]
+            },
+            "description": "Lấy thông tin pair device cho một Space bất kỳ trong scope Brand/Store của manager.\nAuth: BrandManager / StoreManager.\nTrả về PairDeviceInfoDto; nếu Space chưa có device pair thì deviceSessionId = null và các trường device = null."
+          },
+          "response": [
+            {
+              "name": "200 — Có device đang pair",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Paired Device retrieved successfully\",\n  \"data\": {\n    \"spaceId\": \"00000000-0000-0000-0000-000000000001\",\n    \"storeId\": \"00000000-0000-0000-0000-000000000010\",\n    \"brandId\": \"00000000-0000-0000-0000-000000000020\",\n    \"deviceSessionId\": \"11111111-1111-1111-1111-111111111111\",\n    \"isPlaybackDeviceCaller\": false,\n    \"manufacturer\": \"Samsung\",\n    \"model\": \"SM-T510\",\n    \"osVersion\": \"Android 14\",\n    \"appVersion\": \"1.0.0\",\n    \"deviceId\": \"android-id-from-device\",\n    \"pairedAtUtc\": \"2026-03-13T10:00:00Z\",\n    \"lastActiveAtUtc\": \"2026-03-13T10:15:30Z\"\n  }\n}"
+            },
+            {
+              "name": "200 — Chưa có device pair",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Paired Device retrieved successfully\",\n  \"data\": {\n    \"spaceId\": \"00000000-0000-0000-0000-000000000001\",\n    \"storeId\": \"00000000-0000-0000-0000-000000000010\",\n    \"brandId\": \"00000000-0000-0000-0000-000000000020\",\n    \"deviceSessionId\": null,\n    \"isPlaybackDeviceCaller\": false,\n    \"manufacturer\": null,\n    \"model\": null,\n    \"osVersion\": null,\n    \"appVersion\": null,\n    \"deviceId\": null,\n    \"pairedAtUtc\": null,\n    \"lastActiveAtUtc\": null\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Generate Pair Code",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Accept-Language", "value": "vi-VN", "disabled": true }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cams/spaces/{{spaceId}}/pair-code",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cams", "spaces", "{{spaceId}}", "pair-code"]
+            },
+            "description": "Tạo mã pair 6 ký tự cho Space. Mã hiển thị trên màn hình setup của manager; người vận hành tablet nhập mã này vào app để pair (gọi POST /api/auth/pair).\nMã hết hạn sau 15 phút (PairCode__ExpiryMinutes). Mã cũ chưa dùng (nếu có) bị vô hiệu hóa.\n\nAuth: BrandManager, StoreManager (ownership Space)."
+          },
+          "response": [
+            {
+              "name": "200 OK — Mã pair",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Pairing code generated successfully.\",\n  \"data\": {\n    \"code\": \"ABC123\",\n    \"displayCode\": \"ABC-123\",\n    \"spaceId\": \"00000000-0000-0000-0000-000000000001\",\n    \"spaceName\": \"Counter Area A\",\n    \"expiresAt\": \"2026-03-13T10:15:00Z\",\n    \"expiresInSeconds\": 900\n  }\n}"
+            },
+            {
+              "name": "403 — Không có quyền Space",
+              "status": "Forbidden",
+              "code": 403,
+              "header": [],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Access denied.\",\n  \"errorCode\": \"Forbidden\"\n}"
+            },
+            {
+              "name": "404 — Space không tồn tại",
+              "status": "Not Found",
+              "code": 404,
+              "header": [],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Space not found.\",\n  \"errorCode\": \"NotFound\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Revoke Pair Code",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cams/spaces/{{spaceId}}/pair-code",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cams", "spaces", "{{spaceId}}", "pair-code"]
+            },
+            "description": "Thu hồi mã pair đang active của Space (bảo mật: vô hiệu hóa trước khi hết hạn).\nKhông có request body.\n\nAuth: BrandManager, StoreManager."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Pairing code revoked successfully.\"\n}"
+            },
+            {
+              "name": "404 — Không có mã active",
+              "status": "Not Found",
+              "code": 404,
+              "header": [],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"SpacePairingCode not found\",\n  \"errorCode\": \"NotFound\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Unpair Device",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cams/spaces/{{spaceId}}/unpair",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cams", "spaces", "{{spaceId}}", "unpair"]
+            },
+            "description": "Hủy pair tablet với Space. Hai trường hợp:\n(1) Manager (BM/SM) thu hồi session của device tại Space — dùng Bearer {{accessToken}}.\n(2) Tablet tự unpair — dùng Bearer {{deviceAccessToken}}; spaceId phải = SpaceId của session.\nSau khi unpair, tablet refresh token sẽ nhận 401 và hiện màn hình re-pair.\n\n422 nếu Space không có device session nào active."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Device un-paired successfully. The tablet will be disconnected on its next token refresh.\"\n}"
+            },
+            {
+              "name": "403 — Device gọi với spaceId khác session",
+              "status": "Forbidden",
+              "code": 403,
+              "header": [],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Access denied.\",\n  \"errorCode\": \"Forbidden\"\n}"
+            },
+            {
+              "name": "422 — Không có device session",
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "header": [],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"No active device session found for this Space.\",\n  \"errorCode\": \"BusinessRuleViolation\"\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

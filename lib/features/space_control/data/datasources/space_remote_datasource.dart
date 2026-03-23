@@ -54,7 +54,9 @@ class SpaceRemoteDataSourceImpl implements SpaceRemoteDataSource {
       if (response.statusCode == 200) {
         final data = response.data;
         // Handle Result wrapper
-        final spaceData = data['data'] != null ? data['data'] as Map<String, dynamic> : data as Map<String, dynamic>;
+        final spaceData = data['data'] != null
+            ? data['data'] as Map<String, dynamic>
+            : data as Map<String, dynamic>;
         return SpaceModel.fromJson(spaceData);
       } else {
         throw ServerException('Failed to load space details');

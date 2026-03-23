@@ -148,7 +148,8 @@ class SpaceSchedulePage extends StatelessWidget {
           backgroundColor: Colors.transparent,
           builder: (_) => _SaveToLibrarySheet(
             palette: _SchedulePalette.of(context),
-            initialTitle: state.draftSchedule?.name ?? '${state.spaceName} copy',
+            initialTitle:
+                state.draftSchedule?.name ?? '${state.spaceName} copy',
           ),
         );
         if (!context.mounted || result == null) return;
@@ -624,7 +625,8 @@ class _SourceFilterChip extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(999),
           color: selected ? palette.cardMuted : Colors.transparent,
-          border: Border.all(color: selected ? Colors.transparent : palette.line),
+          border:
+              Border.all(color: selected ? Colors.transparent : palette.line),
         ),
         child: Text(
           label,
@@ -676,7 +678,9 @@ class _ScheduleSourceCard extends StatelessWidget {
             Icon(LucideIcons.calendarDays, color: palette.textMuted, size: 18),
             const SizedBox(height: 10),
             Text(
-              source.type == ScheduleSourceType.template ? 'READY-MADE' : 'LIBRARY',
+              source.type == ScheduleSourceType.template
+                  ? 'READY-MADE'
+                  : 'LIBRARY',
               style: GoogleFonts.inter(
                 color: palette.textMuted,
                 fontSize: 11,
@@ -777,7 +781,8 @@ class _ScheduleEditorView extends StatelessWidget {
     final allSlots = draft?.slots ?? const <ScheduleSlot>[];
     final daySlots = allSlots
         .where(
-          (slot) => slot.daysOfWeek.contains(_domainDayFromUi(state.selectedDay)),
+          (slot) =>
+              slot.daysOfWeek.contains(_domainDayFromUi(state.selectedDay)),
         )
         .toList()
       ..sort((a, b) => _minutesOfDay(a.startTime).compareTo(
@@ -827,7 +832,8 @@ class _ScheduleEditorView extends StatelessWidget {
                 onTap: () {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Playback preview will be connected later.'),
+                      content:
+                          Text('Playback preview will be connected later.'),
                       behavior: SnackBarBehavior.floating,
                     ),
                   );
@@ -1502,8 +1508,9 @@ class _SlotEditorSheetState extends State<_SlotEditorSheet> {
   @override
   Widget build(BuildContext context) {
     final palette = widget.palette;
-    final durationMinutes =
-        _toTime.hour * 60 + _toTime.minute - (_fromTime.hour * 60 + _fromTime.minute);
+    final durationMinutes = _toTime.hour * 60 +
+        _toTime.minute -
+        (_fromTime.hour * 60 + _fromTime.minute);
     final isLocallyValid = _selectedMusic != null && durationMinutes > 0;
 
     return SafeArea(
@@ -1685,7 +1692,8 @@ class _SlotEditorSheetState extends State<_SlotEditorSheet> {
                         ? Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.add, color: palette.textMuted, size: 40),
+                              Icon(Icons.add,
+                                  color: palette.textMuted, size: 40),
                               const SizedBox(height: 10),
                               Text(
                                 'Add music',
@@ -1743,10 +1751,10 @@ class _SlotEditorSheetState extends State<_SlotEditorSheet> {
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton(
-                  onPressed: isLocallyValid
-                      ? () {
-                          Navigator.pop(
-                            context,
+                    onPressed: isLocallyValid
+                        ? () {
+                            Navigator.pop(
+                              context,
                               ScheduleSlot(
                                 id: widget.slot?.id ??
                                     'slot-${DateTime.now().millisecondsSinceEpoch}',

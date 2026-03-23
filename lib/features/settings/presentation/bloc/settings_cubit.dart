@@ -9,7 +9,8 @@ class SettingsCubit extends Cubit<SettingsState> {
   SettingsCubit(this._getSettingsSnapshot) : super(const SettingsState());
 
   Future<void> load() async {
-    emit(state.copyWith(status: SettingsStatus.loading, clearErrorMessage: true));
+    emit(state.copyWith(
+        status: SettingsStatus.loading, clearErrorMessage: true));
 
     final result = await _getSettingsSnapshot();
 

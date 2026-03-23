@@ -1,24 +1,36 @@
 import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../../../core/enums/playback_command_enum.dart';
+import '../../../../core/enums/queue_insert_mode_enum.dart';
 import '../../../../core/session/session_cubit.dart';
+import '../../data/services/store_hub_service.dart';
 import '../../domain/entities/space_playback_state.dart';
+import '../../domain/entities/space_queue_state_item.dart';
+import '../../domain/usecases/cancel_override.dart';
 import '../../domain/usecases/get_space_state.dart';
 import '../../domain/usecases/override_space.dart';
-import '../../domain/usecases/cancel_override.dart';
+import '../../domain/usecases/queue_usecases.dart';
 import '../../domain/usecases/send_playback_command.dart';
-import '../../data/services/store_hub_service.dart';
+import '../../domain/usecases/update_audio_state.dart';
 import '../../../moods/domain/usecases/get_moods.dart';
 import 'cams_playback_event.dart';
 import 'cams_playback_state.dart';
 
 /// BLoC that manages CAMS playback state, SignalR integration,
-/// and exposes mood/override controls for the NowPlaying UI.
+/// and exposes queue-native playback controls for the UI.
 class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
   final GetSpaceState getSpaceState;
   final OverrideSpace overrideSpace;
   final CancelOverride cancelOverride;
   final SendPlaybackCommand sendPlaybackCommand;
+  final QueueTracks queueTracks;
+  final QueuePlaylist queuePlaylist;
+  final ReorderQueue reorderQueue;
+  final RemoveQueueItems removeQueueItems;
+  final ClearQueue clearQueue;
+  final UpdateAudioState updateAudioState;
   final GetMoods getMoods;
   final StoreHubService storeHubService;
   final SessionCubit sessionCubit;
@@ -35,6 +47,12 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     required this.overrideSpace,
     required this.cancelOverride,
     required this.sendPlaybackCommand,
+    required this.queueTracks,
+    required this.queuePlaylist,
+    required this.reorderQueue,
+    required this.removeQueueItems,
+    required this.clearQueue,
+    required this.updateAudioState,
     required this.getMoods,
     required this.storeHubService,
     required this.sessionCubit,
@@ -42,8 +60,12 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     on<CamsInitPlayback>(_onInit);
     on<CamsDisposePlayback>(_onDispose);
     on<CamsOverrideMood>(_onOverrideMood);
-    on<CamsOverridePlaylist>(_onOverridePlaylist);
-    on<CamsPlayPlaylistTrack>(_onPlayPlaylistTrack);
+    on<CamsPlayPlaylist>(_onPlayPlaylist);
+    on<CamsPlayTrack>(_onPlayTrack);
+    on<CamsReorderQueue>(_onReorderQueue);
+    on<CamsRemoveQueueItems>(_onRemoveQueueItems);
+    on<CamsClearQueue>(_onClearQueue);
+    on<CamsUpdateAudioState>(_onUpdateAudioState);
     on<CamsCancelOverride>(_onCancelOverride);
     on<CamsSendCommand>(_onSendCommand);
     on<CamsPlayStreamReceived>(_onPlayStream);
@@ -72,6 +94,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
       spaceId: event.spaceId,
       clearError: true,
       clearPendingTrackJump: true,
+      clearLastCommand: true,
     ));
 
     // 1. Connect SignalR + join space
@@ -85,8 +108,8 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
         await storeHubService.joinManagerRoom(managerStoreId);
       }
       emit(state.copyWith(isHubConnected: true));
-    } catch (e) {
-      // Non-fatal: continue without real-time updates
+    } catch (_) {
+      // Non-fatal: continue without real-time updates.
     }
 
     // 2. Subscribe to SignalR events
@@ -99,13 +122,11 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     );
     final moodsResult = await getMoods();
 
-    // Process moods
     moodsResult.fold(
       (_) {}, // Non-fatal
       (moods) => emit(state.copyWith(moods: moods)),
     );
 
-    // Process playback state
     stateResult.fold(
       (failure) => emit(state.copyWith(
         status: CamsStatus.error,
@@ -118,7 +139,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
         );
         emit(state.copyWith(
           status: (normalizedState.isStreaming ||
-                  normalizedState.hasPendingPlaylist)
+                  normalizedState.hasPendingPlayback)
               ? CamsStatus.active
               : CamsStatus.idle,
           playbackState: normalizedState,
@@ -139,6 +160,9 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
         spaceId: event.spaceId,
         hlsUrl: event.hlsUrl,
         playlistId: event.playlistId,
+        currentQueueItemId: event.currentQueueItemId,
+        trackId: event.trackId,
+        trackName: event.trackName,
         isManualOverride: event.isManualOverride,
         startedAtUtc: event.startedAtUtc,
       ));
@@ -204,40 +228,18 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
         errorMessage: 'Override failed: ${failure.message}',
       )),
       (response) {
-        final isPending = !response.isStreamReady;
-        // Update playback state from override response
-        final newPlaybackState = SpacePlaybackState(
-          spaceId: spaceId,
-          currentPlaylistId: isPending ? null : response.playlistId,
-          currentPlaylistName: isPending ? null : response.playlistName,
-          hlsUrl: response.hlsUrl,
-          moodName: response.moodName,
-          isManualOverride: response.isManualOverride,
-          overrideMode: response.overrideMode,
-          startedAtUtc: response.startedAtUtc,
-          expectedEndAtUtc: response.expectedEndAtUtc,
-          seekOffsetSeconds: null,
-          pendingPlaylistId: isPending ? response.playlistId : null,
-          pendingOverrideReason:
-              isPending ? (event.reason ?? 'Preparing stream') : null,
-        );
-
         emit(state.copyWith(
           isOverriding: false,
           lastOverrideResponse: response,
-          playbackState: newPlaybackState,
-          status: (newPlaybackState.isStreaming ||
-                  newPlaybackState.hasPendingPlaylist)
-              ? CamsStatus.active
-              : CamsStatus.idle,
           clearPendingTrackJump: true,
         ));
+        add(const CamsRefreshState(silent: true));
       },
     );
   }
 
-  Future<void> _onOverridePlaylist(
-    CamsOverridePlaylist event,
+  Future<void> _onPlayPlaylist(
+    CamsPlayPlaylist event,
     Emitter<CamsPlaybackState> emit,
   ) async {
     final spaceId = state.spaceId;
@@ -245,146 +247,259 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
 
     emit(state.copyWith(isOverriding: true, clearError: true));
 
-    final result = await overrideSpace(
-      spaceId: spaceId,
-      playlistId: event.playlistId,
-      reason: event.reason,
-      usePlaybackDeviceScope: sessionCubit.state.isPlaybackDevice,
+    final result = await queuePlaylist(
+      QueuePlaylistParams(
+        spaceId: spaceId,
+        playlistId: event.playlistId,
+        mode: QueueInsertModeEnum.playNow,
+        isClearExistingQueue: event.clearExistingQueue,
+        reason: event.reason ?? 'Play playlist now',
+        usePlaybackDeviceScope: sessionCubit.state.isPlaybackDevice,
+      ),
     );
 
     result.fold(
       (failure) => emit(state.copyWith(
         isOverriding: false,
-        errorMessage: 'Override failed: ${failure.message}',
-        clearPendingTrackJump: true,
+        errorMessage: 'Play playlist failed: ${failure.message}',
       )),
-      (response) {
-        final isPending = !response.isStreamReady;
-        final current = state.playbackState;
-        final newPlaybackState = SpacePlaybackState(
-          spaceId: spaceId,
-          currentPlaylistId: isPending ? null : response.playlistId,
-          currentPlaylistName: isPending ? null : response.playlistName,
-          hlsUrl: response.hlsUrl,
-          moodName: response.moodName,
-          isManualOverride: response.isManualOverride,
-          overrideMode: response.overrideMode,
-          startedAtUtc: response.startedAtUtc,
-          expectedEndAtUtc: response.expectedEndAtUtc,
-          seekOffsetSeconds: null,
-          storeId: current?.storeId,
-          brandId: current?.brandId,
-          pendingPlaylistId: isPending ? response.playlistId : null,
-          pendingOverrideReason:
-              isPending ? (event.reason ?? 'Preparing stream') : null,
-        );
-
+      (_) {
         emit(state.copyWith(
           isOverriding: false,
-          lastOverrideResponse: response,
-          playbackState: newPlaybackState,
-          status: (newPlaybackState.isStreaming ||
-                  newPlaybackState.hasPendingPlaylist)
-              ? CamsStatus.active
-              : CamsStatus.idle,
           clearPendingTrackJump: true,
         ));
+        add(const CamsRefreshState(silent: true));
       },
     );
   }
 
-  Future<void> _onPlayPlaylistTrack(
-    CamsPlayPlaylistTrack event,
+  Future<void> _onPlayTrack(
+    CamsPlayTrack event,
     Emitter<CamsPlaybackState> emit,
   ) async {
     final spaceId = state.spaceId;
     if (spaceId == null) return;
 
-    final current = state.playbackState;
-    final isCurrentPlaylist = current?.currentPlaylistId == event.playlistId;
-    final isPendingCurrentPlaylist =
-        current?.pendingPlaylistId == event.playlistId;
+    emit(state.copyWith(isOverriding: true, clearError: true));
 
-    if (isCurrentPlaylist && (current?.isStreaming ?? false)) {
-      emit(state.copyWith(
-        pendingTrackPlaylistId: event.playlistId,
-        pendingTrackId: event.targetTrackId,
-        clearError: true,
-      ));
-      _dispatchDeferredTrackJump(
-        playbackState: current!,
-        emit: emit,
-      );
-      return;
-    }
-
-    if (isPendingCurrentPlaylist) {
-      emit(state.copyWith(
-        pendingTrackPlaylistId: event.playlistId,
-        pendingTrackId: event.targetTrackId,
-        clearError: true,
-      ));
-      return;
-    }
-
-    emit(state.copyWith(
-      isOverriding: true,
-      clearError: true,
-      pendingTrackPlaylistId: event.playlistId,
-      pendingTrackId: event.targetTrackId,
-    ));
-
-    final result = await overrideSpace(
-      spaceId: spaceId,
-      playlistId: event.playlistId,
-      reason: event.reason ?? 'Play selected track',
-      usePlaybackDeviceScope: sessionCubit.state.isPlaybackDevice,
+    final result = await queueTracks(
+      QueueTracksParams(
+        spaceId: spaceId,
+        trackIds: [event.trackId],
+        mode: QueueInsertModeEnum.playNow,
+        isClearExistingQueue: event.clearExistingQueue,
+        reason: event.reason ?? 'Play track now',
+        usePlaybackDeviceScope: sessionCubit.state.isPlaybackDevice,
+      ),
     );
 
     result.fold(
       (failure) => emit(state.copyWith(
         isOverriding: false,
         errorMessage: 'Play track failed: ${failure.message}',
-        clearPendingTrackJump: true,
       )),
-      (response) {
-        final isPending = !response.isStreamReady;
-        final updatedState = SpacePlaybackState(
-          spaceId: spaceId,
-          storeId: current?.storeId,
-          brandId: current?.brandId,
-          currentPlaylistId: isPending ? null : response.playlistId,
-          currentPlaylistName: isPending ? null : response.playlistName,
-          hlsUrl: response.hlsUrl,
-          moodName: response.moodName,
-          isManualOverride: response.isManualOverride,
-          overrideMode: response.overrideMode,
-          startedAtUtc: response.startedAtUtc,
-          expectedEndAtUtc: response.expectedEndAtUtc,
-          isPaused: false,
-          pausePositionSeconds: null,
-          seekOffsetSeconds: null,
-          pendingPlaylistId: isPending ? response.playlistId : null,
-          pendingOverrideReason:
-              isPending ? (event.reason ?? 'Play selected track') : null,
-        );
-
+      (_) {
         emit(state.copyWith(
           isOverriding: false,
-          lastOverrideResponse: response,
-          playbackState: updatedState,
-          status: (updatedState.isStreaming || updatedState.hasPendingPlaylist)
-              ? CamsStatus.active
-              : CamsStatus.idle,
+          clearPendingTrackJump: true,
         ));
-
-        if (!isPending) {
-          _dispatchDeferredTrackJump(
-            playbackState: updatedState,
-            emit: emit,
-          );
-        }
+        add(const CamsRefreshState(silent: true));
       },
+    );
+  }
+
+  Future<void> _onReorderQueue(
+    CamsReorderQueue event,
+    Emitter<CamsPlaybackState> emit,
+  ) async {
+    final spaceId = state.spaceId;
+    if (spaceId == null || event.queueItemIds.length < 2) return;
+
+    final currentPlayback = state.playbackState;
+    if (currentPlayback != null && currentPlayback.spaceQueueItems.isNotEmpty) {
+      final reorderedQueue = _reorderQueueItemsLocally(
+        currentPlayback.spaceQueueItems,
+        event.queueItemIds,
+      );
+      final optimisticState = _copyPlaybackStateWithQueue(
+        source: currentPlayback,
+        queueItems: reorderedQueue,
+      );
+      emit(state.copyWith(
+        status:
+            (optimisticState.isStreaming || optimisticState.hasPendingPlayback)
+                ? CamsStatus.active
+                : CamsStatus.idle,
+        playbackState: optimisticState,
+        clearError: true,
+      ));
+    }
+
+    final result = await reorderQueue(
+      ReorderQueueParams(
+        spaceId: spaceId,
+        queueItemIds: event.queueItemIds,
+        usePlaybackDeviceScope: sessionCubit.state.isPlaybackDevice,
+      ),
+    );
+
+    result.fold(
+      (failure) {
+        emit(state.copyWith(
+          errorMessage: 'Reorder queue failed: ${failure.message}',
+        ));
+        add(const CamsRefreshState(silent: true));
+      },
+      (_) => add(const CamsRefreshState(silent: true)),
+    );
+  }
+
+  Future<void> _onRemoveQueueItems(
+    CamsRemoveQueueItems event,
+    Emitter<CamsPlaybackState> emit,
+  ) async {
+    final spaceId = state.spaceId;
+    if (spaceId == null || event.queueItemIds.isEmpty) return;
+
+    final currentPlayback = state.playbackState;
+    if (currentPlayback != null && currentPlayback.spaceQueueItems.isNotEmpty) {
+      final removedIds = event.queueItemIds.toSet();
+      final remainingQueue = currentPlayback.spaceQueueItems
+          .where((item) => !removedIds.contains(item.queueItemId))
+          .toList(growable: false);
+      final shouldClearPendingQueueItem =
+          currentPlayback.pendingQueueItemId != null &&
+              removedIds.contains(currentPlayback.pendingQueueItemId);
+
+      final optimisticState = _copyPlaybackStateWithQueue(
+        source: currentPlayback,
+        queueItems: _reindexQueueItems(remainingQueue),
+        clearPendingQueueItemId: shouldClearPendingQueueItem,
+      );
+      emit(state.copyWith(
+        status:
+            (optimisticState.isStreaming || optimisticState.hasPendingPlayback)
+                ? CamsStatus.active
+                : CamsStatus.idle,
+        playbackState: optimisticState,
+        clearError: true,
+      ));
+    }
+
+    final result = await removeQueueItems(
+      RemoveQueueItemsParams(
+        spaceId: spaceId,
+        queueItemIds: event.queueItemIds,
+        usePlaybackDeviceScope: sessionCubit.state.isPlaybackDevice,
+      ),
+    );
+
+    result.fold(
+      (failure) {
+        emit(state.copyWith(
+          errorMessage: 'Remove queue item failed: ${failure.message}',
+        ));
+        add(const CamsRefreshState(silent: true));
+      },
+      (_) => add(const CamsRefreshState(silent: true)),
+    );
+  }
+
+  Future<void> _onClearQueue(
+    CamsClearQueue event,
+    Emitter<CamsPlaybackState> emit,
+  ) async {
+    final spaceId = state.spaceId;
+    if (spaceId == null) return;
+
+    final currentPlayback = state.playbackState;
+    if (currentPlayback != null && currentPlayback.spaceQueueItems.isNotEmpty) {
+      final optimisticState = _copyPlaybackStateWithQueue(
+        source: currentPlayback,
+        queueItems: const [],
+        clearPendingQueueItemId: true,
+      );
+      emit(state.copyWith(
+        status:
+            (optimisticState.isStreaming || optimisticState.hasPendingPlayback)
+                ? CamsStatus.active
+                : CamsStatus.idle,
+        playbackState: optimisticState,
+        clearError: true,
+      ));
+    }
+
+    final result = await clearQueue(
+      QueueScopeParams(
+        spaceId: spaceId,
+        usePlaybackDeviceScope: sessionCubit.state.isPlaybackDevice,
+      ),
+    );
+
+    result.fold(
+      (failure) {
+        emit(state.copyWith(
+          errorMessage: 'Clear queue failed: ${failure.message}',
+        ));
+        add(const CamsRefreshState(silent: true));
+      },
+      (_) => add(const CamsRefreshState(silent: true)),
+    );
+  }
+
+  Future<void> _onUpdateAudioState(
+    CamsUpdateAudioState event,
+    Emitter<CamsPlaybackState> emit,
+  ) async {
+    final spaceId = state.spaceId;
+    if (spaceId == null || !event.hasAnyUpdate) return;
+
+    final currentPlayback = state.playbackState;
+    if (currentPlayback != null) {
+      final boundedVolume =
+          (event.volumePercent ?? currentPlayback.volumePercent)
+              .clamp(0, 100)
+              .toInt();
+      final nextIsMuted = event.isMuted ?? currentPlayback.isMuted;
+      final nextQueueEndBehavior =
+          (event.queueEndBehavior ?? currentPlayback.queueEndBehavior)
+              .clamp(0, 2)
+              .toInt();
+      final optimisticState = _copyPlaybackStateWithAudio(
+        source: currentPlayback,
+        volumePercent: boundedVolume,
+        isMuted: nextIsMuted,
+        queueEndBehavior: nextQueueEndBehavior,
+      );
+
+      emit(state.copyWith(
+        status:
+            (optimisticState.isStreaming || optimisticState.hasPendingPlayback)
+                ? CamsStatus.active
+                : CamsStatus.idle,
+        playbackState: optimisticState,
+        clearError: true,
+      ));
+    }
+
+    final result = await updateAudioState(
+      UpdateAudioStateParams(
+        spaceId: spaceId,
+        volumePercent: event.volumePercent,
+        isMuted: event.isMuted,
+        queueEndBehavior: event.queueEndBehavior,
+        usePlaybackDeviceScope: sessionCubit.state.isPlaybackDevice,
+      ),
+    );
+
+    result.fold(
+      (failure) {
+        emit(state.copyWith(
+          errorMessage: 'Update audio settings failed: ${failure.message}',
+        ));
+        add(const CamsRefreshState(silent: true));
+      },
+      (_) {},
     );
   }
 
@@ -406,15 +521,16 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
       (failure) => emit(state.copyWith(
         isOverriding: false,
         errorMessage: 'Cancel override failed: ${failure.message}',
-        clearPendingTrackJump: true,
       )),
-      (_) => emit(state.copyWith(
-        isOverriding: false,
-        clearOverrideResponse: true,
-        clearPendingTrackJump: true,
-      )),
+      (_) {
+        emit(state.copyWith(
+          isOverriding: false,
+          clearOverrideResponse: true,
+          clearPendingTrackJump: true,
+        ));
+        add(const CamsRefreshState(silent: true));
+      },
     );
-    // State will be updated via SpaceStateSync SignalR event
   }
 
   Future<void> _onSendCommand(
@@ -437,7 +553,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
         errorMessage: 'Command failed: ${failure.message}',
       )),
       (_) {
-        // Commands are relayed via SignalR — no local state update needed
+        // Commands are reconciled via SignalR state sync.
       },
     );
   }
@@ -447,43 +563,45 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     Emitter<CamsPlaybackState> emit,
   ) {
     if (!_isSameSpace(event.spaceId, state.spaceId)) return;
-    final spaceId = state.spaceId ?? '';
+
     final current = state.playbackState;
-    final resolvedPlaylistId = event.playlistId.isNotEmpty
-        ? event.playlistId
-        : current?.currentPlaylistId;
-    final resolvedPlaylistName = (resolvedPlaylistId != null &&
-            resolvedPlaylistId == current?.currentPlaylistId)
-        ? current?.currentPlaylistName
-        : null;
-    final nextPlaybackState = SpacePlaybackState(
+    final spaceId = state.spaceId ?? event.spaceId;
+    final startedAt = event.startedAtUtc ?? DateTime.now().toUtc();
+
+    final hintedState = SpacePlaybackState(
       spaceId: spaceId,
-      currentPlaylistId: resolvedPlaylistId,
-      currentPlaylistName: resolvedPlaylistName,
+      storeId: current?.storeId,
+      brandId: current?.brandId,
+      currentQueueItemId:
+          event.currentQueueItemId ?? current?.currentQueueItemId,
+      currentTrackName: event.trackName ?? current?.currentTrackName,
+      currentPlaylistId: event.playlistId ?? current?.currentPlaylistId,
+      currentPlaylistName: current?.currentPlaylistName,
       hlsUrl: event.hlsUrl,
       moodName: current?.moodName,
       isManualOverride: event.isManualOverride,
       overrideMode: current?.overrideMode,
-      startedAtUtc: DateTime.now().toUtc(),
+      startedAtUtc: startedAt,
       expectedEndAtUtc: current?.expectedEndAtUtc,
       isPaused: false,
       pausePositionSeconds: null,
       seekOffsetSeconds: null,
-      storeId: current?.storeId,
-      brandId: current?.brandId,
+      pendingQueueItemId: null,
       pendingPlaylistId: null,
       pendingOverrideReason: null,
+      volumePercent: current?.volumePercent ?? 100,
+      isMuted: current?.isMuted ?? false,
+      queueEndBehavior: current?.queueEndBehavior ?? 0,
+      spaceQueueItems: current?.spaceQueueItems ?? const [],
     );
 
     emit(state.copyWith(
       status: CamsStatus.active,
-      playbackState: nextPlaybackState,
+      playbackState: hintedState,
     ));
     _silentEmptyStateStreak = 0;
 
-    _dispatchDeferredTrackJump(playbackState: nextPlaybackState, emit: emit);
-    // Ensure we reconcile with authoritative state in case PlayStream payload is
-    // partial (e.g. missing playlistId on some server paths).
+    // PlayStream is transition hint only; reconcile with authoritative state.
     add(const CamsRefreshState(silent: true));
   }
 
@@ -492,6 +610,13 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     Emitter<CamsPlaybackState> emit,
   ) {
     if (!_isSameSpace(event.spaceId, state.spaceId)) return;
+
+    final shouldApplyLocally = _isOptimisticCommand(event.command);
+    if (!shouldApplyLocally) {
+      // Skip/TrackEnded identity should be finalized from SpaceStateSync.
+      return;
+    }
+
     final syncedPlaybackState = _applyPlaybackCommandToState(
       current: state.playbackState,
       command: event.command,
@@ -501,7 +626,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     final nextStatus = nextPlaybackState == null
         ? state.status
         : (nextPlaybackState.isStreaming ||
-                nextPlaybackState.hasPendingPlaylist)
+                nextPlaybackState.hasPendingPlayback)
             ? CamsStatus.active
             : CamsStatus.idle;
 
@@ -530,18 +655,17 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     );
 
     emit(state.copyWith(
-      status: (newState.isStreaming || newState.hasPendingPlaylist)
+      status: (newState.isStreaming || newState.hasPendingPlayback)
           ? CamsStatus.active
           : CamsStatus.idle,
       playbackState: newState,
       clearError: true,
       clearOverrideResponse: true,
+      clearLastCommand: true,
     ));
-    if (newState.isStreaming || newState.hasPendingPlaylist) {
+    if (newState.isStreaming || newState.hasPendingPlayback) {
       _silentEmptyStateStreak = 0;
     }
-
-    _dispatchDeferredTrackJump(playbackState: newState, emit: emit);
   }
 
   void _onStopPlayback(
@@ -554,6 +678,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
       playbackState: SpacePlaybackState(spaceId: spaceId),
       clearOverrideResponse: true,
       clearPendingTrackJump: true,
+      clearLastCommand: true,
     ));
   }
 
@@ -581,9 +706,9 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
           current: state.playbackState,
         );
         final hasIncomingStream =
-            normalizedState.isStreaming || normalizedState.hasPendingPlaylist;
+            normalizedState.isStreaming || normalizedState.hasPendingPlayback;
         final hadCurrentStream = (state.playbackState?.isStreaming ?? false) ||
-            (state.playbackState?.hasPendingPlaylist ?? false);
+            (state.playbackState?.hasPendingPlayback ?? false);
         final isSilentTransientEmpty =
             event.silent && !hasIncomingStream && hadCurrentStream;
         if (isSilentTransientEmpty) {
@@ -605,29 +730,8 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
           playbackState: normalizedState,
           clearError: true,
         ));
-        _dispatchDeferredTrackJump(playbackState: normalizedState, emit: emit);
       },
     );
-  }
-
-  void _dispatchDeferredTrackJump({
-    required SpacePlaybackState playbackState,
-    required Emitter<CamsPlaybackState> emit,
-  }) {
-    final pendingTrackId = state.pendingTrackId;
-    final pendingTrackPlaylistId = state.pendingTrackPlaylistId;
-    if (pendingTrackId == null ||
-        pendingTrackPlaylistId == null ||
-        !playbackState.isStreaming ||
-        playbackState.currentPlaylistId != pendingTrackPlaylistId) {
-      return;
-    }
-
-    emit(state.copyWith(clearPendingTrackJump: true));
-    add(CamsSendCommand(
-      command: PlaybackCommandEnum.skipToTrack,
-      targetTrackId: pendingTrackId,
-    ));
   }
 
   Future<void> _onReportPlaybackState(
@@ -663,6 +767,14 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
   bool _isSameSpace(String? left, String? right) {
     if (left == null || right == null) return false;
     return left.toLowerCase() == right.toLowerCase();
+  }
+
+  bool _isOptimisticCommand(PlaybackCommandEnum command) {
+    return command == PlaybackCommandEnum.pause ||
+        command == PlaybackCommandEnum.resume ||
+        command == PlaybackCommandEnum.seek ||
+        command == PlaybackCommandEnum.seekForward ||
+        command == PlaybackCommandEnum.seekBackward;
   }
 
   SpacePlaybackState? _applyPlaybackCommandToState({
@@ -707,6 +819,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
       case PlaybackCommandEnum.skipNext:
       case PlaybackCommandEnum.skipPrevious:
       case PlaybackCommandEnum.skipToTrack:
+      case PlaybackCommandEnum.trackEnded:
         if (resolvedSeek == null) {
           return current;
         }
@@ -746,6 +859,8 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
       spaceId: source.spaceId,
       storeId: source.storeId,
       brandId: source.brandId,
+      currentQueueItemId: source.currentQueueItemId,
+      currentTrackName: source.currentTrackName,
       currentPlaylistId: source.currentPlaylistId,
       currentPlaylistName: source.currentPlaylistName,
       hlsUrl: source.hlsUrl,
@@ -757,16 +872,126 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
       isPaused: isPaused,
       pausePositionSeconds: pausePositionSeconds,
       seekOffsetSeconds: seekOffsetSeconds,
+      pendingQueueItemId: source.pendingQueueItemId,
       pendingPlaylistId: source.pendingPlaylistId,
       pendingOverrideReason: source.pendingOverrideReason,
+      volumePercent: source.volumePercent,
+      isMuted: source.isMuted,
+      queueEndBehavior: source.queueEndBehavior,
+      spaceQueueItems: source.spaceQueueItems,
     );
   }
 
-  bool _hasStreamIdentity(String? playlistId, String? hlsUrl) {
-    return playlistId != null &&
-        playlistId.isNotEmpty &&
-        hlsUrl != null &&
-        hlsUrl.isNotEmpty;
+  SpacePlaybackState _copyPlaybackStateWithQueue({
+    required SpacePlaybackState source,
+    required List<SpaceQueueStateItem> queueItems,
+    bool clearPendingQueueItemId = false,
+  }) {
+    return SpacePlaybackState(
+      spaceId: source.spaceId,
+      storeId: source.storeId,
+      brandId: source.brandId,
+      currentQueueItemId: source.currentQueueItemId,
+      currentTrackName: source.currentTrackName,
+      currentPlaylistId: source.currentPlaylistId,
+      currentPlaylistName: source.currentPlaylistName,
+      hlsUrl: source.hlsUrl,
+      moodName: source.moodName,
+      isManualOverride: source.isManualOverride,
+      overrideMode: source.overrideMode,
+      startedAtUtc: source.startedAtUtc,
+      expectedEndAtUtc: source.expectedEndAtUtc,
+      isPaused: source.isPaused,
+      pausePositionSeconds: source.pausePositionSeconds,
+      seekOffsetSeconds: source.seekOffsetSeconds,
+      pendingQueueItemId:
+          clearPendingQueueItemId ? null : source.pendingQueueItemId,
+      pendingPlaylistId: source.pendingPlaylistId,
+      pendingOverrideReason: source.pendingOverrideReason,
+      volumePercent: source.volumePercent,
+      isMuted: source.isMuted,
+      queueEndBehavior: source.queueEndBehavior,
+      spaceQueueItems: queueItems,
+    );
+  }
+
+  SpacePlaybackState _copyPlaybackStateWithAudio({
+    required SpacePlaybackState source,
+    required int volumePercent,
+    required bool isMuted,
+    required int queueEndBehavior,
+  }) {
+    return SpacePlaybackState(
+      spaceId: source.spaceId,
+      storeId: source.storeId,
+      brandId: source.brandId,
+      currentQueueItemId: source.currentQueueItemId,
+      currentTrackName: source.currentTrackName,
+      currentPlaylistId: source.currentPlaylistId,
+      currentPlaylistName: source.currentPlaylistName,
+      hlsUrl: source.hlsUrl,
+      moodName: source.moodName,
+      isManualOverride: source.isManualOverride,
+      overrideMode: source.overrideMode,
+      startedAtUtc: source.startedAtUtc,
+      expectedEndAtUtc: source.expectedEndAtUtc,
+      isPaused: source.isPaused,
+      pausePositionSeconds: source.pausePositionSeconds,
+      seekOffsetSeconds: source.seekOffsetSeconds,
+      pendingQueueItemId: source.pendingQueueItemId,
+      pendingPlaylistId: source.pendingPlaylistId,
+      pendingOverrideReason: source.pendingOverrideReason,
+      volumePercent: volumePercent,
+      isMuted: isMuted,
+      queueEndBehavior: queueEndBehavior,
+      spaceQueueItems: source.spaceQueueItems,
+    );
+  }
+
+  List<SpaceQueueStateItem> _reorderQueueItemsLocally(
+    List<SpaceQueueStateItem> currentItems,
+    List<String> queueItemOrder,
+  ) {
+    if (currentItems.isEmpty || queueItemOrder.isEmpty) return currentItems;
+
+    final byId = <String, SpaceQueueStateItem>{
+      for (final item in currentItems) item.queueItemId: item,
+    };
+    final reordered = <SpaceQueueStateItem>[];
+    for (final queueItemId in queueItemOrder) {
+      final item = byId.remove(queueItemId);
+      if (item != null) reordered.add(item);
+    }
+    reordered.addAll(byId.values);
+    return _reindexQueueItems(reordered);
+  }
+
+  List<SpaceQueueStateItem> _reindexQueueItems(
+    List<SpaceQueueStateItem> items,
+  ) {
+    if (items.isEmpty) return const [];
+
+    return List<SpaceQueueStateItem>.generate(items.length, (index) {
+      final original = items[index];
+      return SpaceQueueStateItem(
+        queueItemId: original.queueItemId,
+        trackId: original.trackId,
+        trackName: original.trackName,
+        position: index + 1,
+        queueStatus: original.queueStatus,
+        source: original.source,
+        hlsUrl: original.hlsUrl,
+        isReadyToStream: original.isReadyToStream,
+      );
+    }, growable: false);
+  }
+
+  bool _hasStreamIdentity(SpacePlaybackState state) {
+    final identityId = state.currentQueueItemId ?? state.currentPlaylistId;
+    return identityId != null &&
+        identityId.isNotEmpty &&
+        state.hlsUrl != null &&
+        state.hlsUrl!.isNotEmpty;
   }
 
   SpacePlaybackState _mergePlaybackState({
@@ -775,12 +1000,8 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
   }) {
     if (current == null) return incoming;
 
-    final incomingPlaylistId = incoming.currentPlaylistId;
-    final incomingHlsUrl = incoming.hlsUrl;
-    final incomingHasIdentity =
-        _hasStreamIdentity(incomingPlaylistId, incomingHlsUrl);
-    final currentHasIdentity =
-        _hasStreamIdentity(current.currentPlaylistId, current.hlsUrl);
+    final incomingHasIdentity = _hasStreamIdentity(incoming);
+    final currentHasIdentity = _hasStreamIdentity(current);
     final incomingCarriesPlaybackSignals = incoming.startedAtUtc != null ||
         incoming.isPaused ||
         incoming.pausePositionSeconds != null ||
@@ -789,44 +1010,61 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
         currentHasIdentity &&
         incomingCarriesPlaybackSignals;
 
-    final resolvedPlaylistId =
-        incomingPlaylistId != null && incomingPlaylistId.isNotEmpty
-            ? incomingPlaylistId
-            : shouldPreserveIdentity
-                ? current.currentPlaylistId
-                : null;
-    final resolvedHlsUrl = incomingHlsUrl != null && incomingHlsUrl.isNotEmpty
-        ? incomingHlsUrl
+    final resolvedQueueItemId = incoming.currentQueueItemId != null &&
+            incoming.currentQueueItemId!.isNotEmpty
+        ? incoming.currentQueueItemId
         : shouldPreserveIdentity
-            ? current.hlsUrl
+            ? current.currentQueueItemId
             : null;
-    final resolvedPlaylistName = incoming.currentPlaylistName ??
-        (resolvedPlaylistId == current.currentPlaylistId
-            ? current.currentPlaylistName
-            : null);
+    final resolvedPlaylistId = incoming.currentPlaylistId != null &&
+            incoming.currentPlaylistId!.isNotEmpty
+        ? incoming.currentPlaylistId
+        : shouldPreserveIdentity
+            ? current.currentPlaylistId
+            : null;
+    final resolvedHlsUrl =
+        incoming.hlsUrl != null && incoming.hlsUrl!.isNotEmpty
+            ? incoming.hlsUrl
+            : shouldPreserveIdentity
+                ? current.hlsUrl
+                : null;
+
     final streamIdentityChanged =
-        resolvedPlaylistId != current.currentPlaylistId ||
+        resolvedQueueItemId != current.currentQueueItemId ||
+            resolvedPlaylistId != current.currentPlaylistId ||
             resolvedHlsUrl != current.hlsUrl;
-    final mergedStartedAt = incoming.startedAtUtc ??
-        (streamIdentityChanged ? null : current.startedAtUtc);
 
     final mergedState = SpacePlaybackState(
       spaceId: incoming.spaceId.isNotEmpty ? incoming.spaceId : current.spaceId,
       storeId: incoming.storeId ?? current.storeId,
       brandId: incoming.brandId ?? current.brandId,
+      currentQueueItemId: resolvedQueueItemId,
+      currentTrackName: incoming.currentTrackName ??
+          ((resolvedQueueItemId == current.currentQueueItemId)
+              ? current.currentTrackName
+              : null),
       currentPlaylistId: resolvedPlaylistId,
-      currentPlaylistName: resolvedPlaylistName,
+      currentPlaylistName: incoming.currentPlaylistName ??
+          ((resolvedPlaylistId == current.currentPlaylistId)
+              ? current.currentPlaylistName
+              : null),
       hlsUrl: resolvedHlsUrl,
       moodName: incoming.moodName ?? current.moodName,
       isManualOverride: incoming.isManualOverride,
       overrideMode: incoming.overrideMode ?? current.overrideMode,
-      startedAtUtc: mergedStartedAt,
+      startedAtUtc: incoming.startedAtUtc ??
+          (streamIdentityChanged ? null : current.startedAtUtc),
       expectedEndAtUtc: incoming.expectedEndAtUtc ?? current.expectedEndAtUtc,
       isPaused: incoming.isPaused,
       pausePositionSeconds: incoming.pausePositionSeconds,
       seekOffsetSeconds: incoming.seekOffsetSeconds,
+      pendingQueueItemId: incoming.pendingQueueItemId,
       pendingPlaylistId: incoming.pendingPlaylistId,
       pendingOverrideReason: incoming.pendingOverrideReason,
+      volumePercent: incoming.volumePercent,
+      isMuted: incoming.isMuted,
+      queueEndBehavior: incoming.queueEndBehavior,
+      spaceQueueItems: incoming.spaceQueueItems,
     );
 
     return _normalizePlaybackStateForClientClock(
@@ -839,7 +1077,11 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     SpacePlaybackState left,
     SpacePlaybackState right,
   ) {
-    return (left.currentPlaylistId ?? '') == (right.currentPlaylistId ?? '') &&
+    final leftIdentity =
+        left.currentQueueItemId ?? left.currentPlaylistId ?? '';
+    final rightIdentity =
+        right.currentQueueItemId ?? right.currentPlaylistId ?? '';
+    return leftIdentity == rightIdentity &&
         (left.hlsUrl ?? '') == (right.hlsUrl ?? '');
   }
 

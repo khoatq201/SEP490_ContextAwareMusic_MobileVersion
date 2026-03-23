@@ -376,7 +376,8 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
     LocationPlaybackStateSynced event,
     Emitter<LocationState> emit,
   ) async {
-    final currentStoreId = state.selectedStoreId ?? sessionCubit.state.currentStore?.id;
+    final currentStoreId =
+        state.selectedStoreId ?? sessionCubit.state.currentStore?.id;
     if (currentStoreId == null ||
         event.playbackState.storeId == null ||
         event.playbackState.storeId != currentStoreId) {
@@ -425,7 +426,9 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
   }
 
   Future<void> _syncManagerRoomForStore(String? storeId) async {
-    if (sessionCubit.state.isPlaybackDevice || storeId == null || storeId.isEmpty) {
+    if (sessionCubit.state.isPlaybackDevice ||
+        storeId == null ||
+        storeId.isEmpty) {
       return;
     }
 
@@ -447,7 +450,8 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
     Map<String, PaginationResult<LocationSpace>> brandSpacesMap, {
     Map<String, String> storeNamesById = const {},
   }) async {
-    final allSpaces = brandSpacesMap.values.expand((page) => page.items).toList();
+    final allSpaces =
+        brandSpacesMap.values.expand((page) => page.items).toList();
     final enrichedSpaces = await _enrichSpaces(
       allSpaces,
       storeNamesById: storeNamesById,
@@ -536,7 +540,8 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
   }
 
   Future<void> _warmPlaylistCache(Set<String> playlistIds) async {
-    final missingIds = playlistIds.where((id) => !_playlistCache.containsKey(id));
+    final missingIds =
+        playlistIds.where((id) => !_playlistCache.containsKey(id));
     final playlistEntries = await Future.wait(
       missingIds.map((playlistId) async {
         try {
@@ -561,13 +566,16 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
     Map<String, ApiPlaylist> playlistCache,
   ) {
     if (playbackState == null) return space;
-    if (!playbackState.isStreaming && !playbackState.hasPendingPlaylist) {
+    if (!playbackState.isStreaming && !playbackState.hasPendingPlayback) {
       return space.copyWith(
         currentPlaylistId: playbackState.currentPlaylistId,
-        currentPlaylistName: playbackState.currentPlaylistName,
+        currentPlaylistName:
+            playbackState.currentTrackName ?? playbackState.currentPlaylistName,
         currentMoodName: playbackState.moodName,
         clearCurrentPlaylistId: playbackState.currentPlaylistId == null,
-        clearCurrentPlaylistName: playbackState.currentPlaylistName == null,
+        clearCurrentPlaylistName: (playbackState.currentTrackName ??
+                playbackState.currentPlaylistName) ==
+            null,
         clearCurrentMoodName: playbackState.moodName == null,
         clearCurrentTrackName: true,
         clearCurrentTrackArtist: true,
@@ -583,13 +591,15 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
     );
 
     return space.copyWith(
-      currentPlaylistId: playbackState.currentPlaylistId ?? space.currentPlaylistId,
-      currentPlaylistName: playbackState.currentPlaylistName ??
+      currentPlaylistId:
+          playbackState.currentPlaylistId ?? space.currentPlaylistId,
+      currentPlaylistName: playbackState.currentTrackName ??
+          playbackState.currentPlaylistName ??
           playlist?.name ??
           space.currentPlaylistName,
       currentMoodName:
           playbackState.moodName ?? playlist?.moodName ?? space.currentMoodName,
-      currentTrackName: currentTrack?.title,
+      currentTrackName: playbackState.currentTrackName ?? currentTrack?.title,
       currentTrackArtist: currentTrack?.artist,
     );
   }

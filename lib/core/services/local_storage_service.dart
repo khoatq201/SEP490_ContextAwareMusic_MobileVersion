@@ -67,8 +67,8 @@ class LocalStorageService {
 
   String? getManagerAuthToken() {
     try {
-      return (_authBox.get(_managerTokenKey) ??
-          _authBox.get(_legacyTokenKey)) as String?;
+      return (_authBox.get(_managerTokenKey) ?? _authBox.get(_legacyTokenKey))
+          as String?;
     } catch (e) {
       throw CacheException('Failed to get manager token');
     }

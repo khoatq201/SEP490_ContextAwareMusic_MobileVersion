@@ -56,21 +56,26 @@ class SessionState extends Equatable {
 
   /// Whether the user can switch between spaces.
   /// Playback devices are locked to a single space.
-  bool get canSwitchSpace => !isPlaybackDevice && currentRole != UserRole.playbackDevice;
+  bool get canSwitchSpace =>
+      !isPlaybackDevice && currentRole != UserRole.playbackDevice;
 
   /// Whether the user can switch between stores.
   /// Only a brand manager oversees multiple stores.
-  bool get canSwitchStore => !isPlaybackDevice && currentRole == UserRole.brandManager;
+  bool get canSwitchStore =>
+      !isPlaybackDevice && currentRole == UserRole.brandManager;
 
   /// Whether the user can add / edit / remove devices (hubs, sensors).
   /// Playback devices have no hardware management rights.
-  bool get canEditDevices => !isPlaybackDevice && currentRole != UserRole.playbackDevice;
+  bool get canEditDevices =>
+      !isPlaybackDevice && currentRole != UserRole.playbackDevice;
 
   /// Whether the user can edit music context rules.
-  bool get canEditContextRules => !isPlaybackDevice && currentRole != UserRole.playbackDevice;
+  bool get canEditContextRules =>
+      !isPlaybackDevice && currentRole != UserRole.playbackDevice;
 
   /// Whether the user can access brand-level analytics.
-  bool get canViewBrandAnalytics => !isPlaybackDevice && currentRole == UserRole.brandManager;
+  bool get canViewBrandAnalytics =>
+      !isPlaybackDevice && currentRole == UserRole.brandManager;
 
   // ──────────────────────────── copyWith ────────────────────────────────────
 

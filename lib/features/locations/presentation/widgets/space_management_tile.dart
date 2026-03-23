@@ -39,9 +39,8 @@ class SpaceManagementTile extends StatelessWidget {
     final locationState = context.watch<LocationBloc>().state;
     final isTargeted = session.currentSpace?.id == space.id;
     final isPairActionBusy = locationState.busySpaceIds.contains(space.id);
-    final isTargetedLocalPreview = isTargeted &&
-        session.isPlaybackDevice &&
-        playerState.isLocalPreview;
+    final isTargetedLocalPreview =
+        isTargeted && session.isPlaybackDevice && playerState.isLocalPreview;
 
     final displayMood = _firstNonEmpty([
       if (isTargeted) camsState.currentMoodName,
@@ -61,8 +60,7 @@ class SpaceManagementTile extends StatelessWidget {
       if (isTargeted && playerState.isSyncedCamsPlayback)
         playerState.currentTrack?.artist,
       space.currentTrackArtist,
-      if (isTargetedLocalPreview)
-        'Playing locally on this device only',
+      if (isTargetedLocalPreview) 'Playing locally on this device only',
     ]);
     final isOnline = space.status.isActive || space.isOnline;
 
@@ -556,8 +554,10 @@ class _PairCodeCountdownState extends State<_PairCodeCountdown> {
 
   @override
   Widget build(BuildContext context) {
-    final minutes = _remaining.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final seconds = _remaining.inSeconds.remainder(60).toString().padLeft(2, '0');
+    final minutes =
+        _remaining.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds =
+        _remaining.inSeconds.remainder(60).toString().padLeft(2, '0');
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),

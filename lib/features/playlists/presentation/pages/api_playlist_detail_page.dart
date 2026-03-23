@@ -568,9 +568,9 @@ void _playTrackToCurrentSpace({
     return;
   }
 
-  context.read<CamsPlaybackBloc>().add(CamsPlayPlaylistTrack(
+  context.read<CamsPlaybackBloc>().add(CamsPlayTrack(
+        trackId: track.trackId,
         playlistId: playlist.id,
-        targetTrackId: track.trackId,
         reason: 'Manual track selection',
       ));
 }
@@ -616,7 +616,7 @@ void _handlePlayAction({
       if (camsBloc.state.spaceId != spaceId) {
         camsBloc.add(CamsInitPlayback(spaceId: spaceId));
       }
-      camsBloc.add(CamsOverridePlaylist(
+      camsBloc.add(CamsPlayPlaylist(
         playlistId: playlist.id,
         reason: 'Manual playlist selection',
       ));
@@ -816,7 +816,7 @@ class _SpacePickerSheetState extends State<_SpacePickerSheet> {
 
                       // Init CAMS for the newly selected space and override
                       widget.camsBloc.add(CamsInitPlayback(spaceId: space.id));
-                      widget.camsBloc.add(CamsOverridePlaylist(
+                      widget.camsBloc.add(CamsPlayPlaylist(
                         playlistId: widget.playlist.id,
                         reason: 'Manual playlist selection',
                       ));

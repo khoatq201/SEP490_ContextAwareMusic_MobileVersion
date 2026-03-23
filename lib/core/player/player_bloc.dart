@@ -53,6 +53,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     on<PlayerHlsStarted>(_onHlsStarted);
     on<PlayerHlsStopped>(_onHlsStopped);
     on<PlayerRemoteCommandApplied>(_onRemoteCommandApplied);
+    on<PlayerAudioSettingsApplied>(_onAudioSettingsApplied);
 
     _listenToAudioStreams();
   }
@@ -91,12 +92,14 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     final track = state.queue[index];
     emit(state.copyWith(
       currentTrack: track,
+      currentTrackId: track.id,
       isPlaying: true,
       currentPosition: 0,
       duration: track.duration ?? 0,
       currentIndex: index,
       isHlsMode: false,
       clearHlsUrl: true,
+      clearCurrentQueueItemId: true,
     ));
 
     if (!playLocally) return;
@@ -149,15 +152,21 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
         event.playlistId != null &&
         nextState.playlistId == event.playlistId &&
         event.tracks.isNotEmpty) {
-      final resolvedIndex = _resolveIndexForOffset(
-        nextState.currentPosition.toDouble(),
-        event.tracks,
+      var resolvedIndex = event.tracks.indexWhere(
+        (track) => track.id == nextState.currentTrackId,
       );
+      if (resolvedIndex < 0) {
+        resolvedIndex = _resolveIndexForOffset(
+          nextState.currentPosition.toDouble(),
+          event.tracks,
+        );
+      }
       if (resolvedIndex >= 0 && resolvedIndex < event.tracks.length) {
         final resolvedTrack = event.tracks[resolvedIndex];
         nextState = nextState.copyWith(
           currentIndex: resolvedIndex,
           currentTrack: resolvedTrack,
+          currentTrackId: resolvedTrack.id,
           duration: resolvedTrack.duration ?? nextState.duration,
         );
       }
@@ -176,9 +185,11 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
 
     emit(state.copyWith(
       currentTrack: event.track,
+      currentTrackId: event.track?.id,
       isPlaying: event.isPlaying,
       currentPosition: event.currentPosition,
       duration: event.duration,
+      clearCurrentQueueItemId: true,
     ));
 
     if (!event.playLocally) return;
@@ -272,6 +283,10 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
   void _onTrackCompleted(
       PlayerTrackCompleted event, Emitter<PlayerState> emit) async {
     if (state.isHlsMode && (state.hlsUrl?.isNotEmpty ?? false)) {
+      emit(state.copyWith(
+        isPlaying: false,
+        hlsCompletionSequence: state.hlsCompletionSequence + 1,
+      ));
       return;
     }
 
@@ -307,7 +322,9 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
 
   void _onPositionUpdated(
       PlayerPositionUpdated event, Emitter<PlayerState> emit) {
-    if (state.isHlsMode && state.queue.isNotEmpty) {
+    if (state.isHlsMode &&
+        state.queue.isNotEmpty &&
+        _queueTotalDuration() > 0) {
       final resolvedIndex =
           _resolveIndexForOffset(event.positionSeconds.toDouble());
       if (resolvedIndex >= 0 && resolvedIndex < state.queue.length) {
@@ -404,10 +421,14 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
   Track _buildSyntheticStreamTrack({
     String? playlistName,
     String? playlistId,
+    String? trackId,
+    String? trackName,
+    String? queueItemId,
   }) {
     return Track(
-      id: playlistId ?? state.activeSpaceId ?? 'cams-stream',
-      title: playlistName ?? 'Streaming music',
+      id: trackId ?? playlistId ?? state.activeSpaceId ?? 'cams-stream',
+      queueItemId: queueItemId,
+      title: trackName ?? playlistName ?? 'Streaming music',
       artist: state.activeSpaceName ?? 'CAMS',
       fileUrl: '',
       moodTags: const [],
@@ -420,14 +441,22 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     final hasSeededQueue = state.queue.isNotEmpty &&
         event.playlistId != null &&
         event.playlistId == state.playlistId;
-    final resolvedIndex =
-        hasSeededQueue ? _resolveIndexForOffset(event.seekOffsetSeconds) : -1;
+
+    var resolvedIndex =
+        event.trackId != null ? _findIndexForTrackId(event.trackId) : -1;
+    if (resolvedIndex < 0 && hasSeededQueue) {
+      resolvedIndex = _resolveIndexForOffset(event.seekOffsetSeconds);
+    }
+
     final resolvedTrack = resolvedIndex >= 0
         ? state.queue[resolvedIndex]
         : (state.currentTrack ??
             _buildSyntheticStreamTrack(
               playlistName: event.playlistName,
               playlistId: event.playlistId,
+              trackId: event.trackId,
+              trackName: event.trackName,
+              queueItemId: event.queueItemId,
             ));
 
     emit(state.copyWith(
@@ -435,6 +464,8 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       hlsUrl: event.hlsUrl,
       playlistName: event.playlistName,
       playlistId: event.playlistId ?? state.playlistId,
+      currentQueueItemId: event.queueItemId,
+      currentTrackId: event.trackId ?? resolvedTrack.id,
       isPlaying: !event.isPaused,
       currentPosition: event.seekOffsetSeconds.toInt(),
       currentTrack: resolvedTrack,
@@ -445,7 +476,8 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     if (!event.playLocally) return;
 
     try {
-      final shouldReloadSource = _audioService.loadedUrl != event.hlsUrl ||
+      final shouldReloadSource = event.forceReload ||
+          _audioService.loadedUrl != event.hlsUrl ||
           !state.isHlsMode ||
           state.hlsUrl != event.hlsUrl;
 
@@ -482,6 +514,8 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       clearTrack: true,
       clearPlaylistName: true,
       clearPlaylistId: true,
+      clearCurrentQueueItemId: true,
+      clearCurrentTrackId: true,
       queue: const [],
       currentIndex: -1,
       currentPosition: 0,
@@ -503,6 +537,14 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
             ? state.queue[resolvedIndex]
             : state.currentTrack;
 
+    final isSeekCommand = event.command == PlaybackCommandEnum.seek ||
+        event.command == PlaybackCommandEnum.seekForward ||
+        event.command == PlaybackCommandEnum.seekBackward;
+    final hasUsefulSeek =
+        absolutePosition != null && (isSeekCommand || absolutePosition > 0);
+    final fallbackTrackOffset =
+        resolvedIndex >= 0 ? _trackStartOffsetAt(resolvedIndex) : null;
+
     switch (event.command) {
       case PlaybackCommandEnum.pause:
         if (event.playLocally) {
@@ -522,7 +564,8 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       case PlaybackCommandEnum.skipNext:
       case PlaybackCommandEnum.skipPrevious:
       case PlaybackCommandEnum.skipToTrack:
-        if (absolutePosition != null &&
+      case PlaybackCommandEnum.trackEnded:
+        if (hasUsefulSeek &&
             event.playLocally &&
             state.isHlsMode &&
             state.hlsUrl != null &&
@@ -533,19 +576,33 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
             // Ignore seeks that arrive before the HLS source is fully loaded.
           }
         }
+
+        final nextIsPlaying = event.command == PlaybackCommandEnum.trackEnded
+            ? state.isPlaying
+            : isSeekCommand
+                ? state.isPlaying
+                : true;
+
         emit(state.copyWith(
-          currentPosition: absolutePosition ?? state.currentPosition,
+          currentPosition:
+              absolutePosition ?? fallbackTrackOffset ?? state.currentPosition,
           currentIndex: resolvedIndex >= 0 ? resolvedIndex : state.currentIndex,
           currentTrack: resolvedTrack,
+          currentTrackId: event.targetTrackId ?? resolvedTrack?.id,
           duration: resolvedTrack?.duration ?? state.duration,
-          isPlaying: event.command == PlaybackCommandEnum.seek ||
-                  event.command == PlaybackCommandEnum.seekForward ||
-                  event.command == PlaybackCommandEnum.seekBackward
-              ? state.isPlaying
-              : true,
+          isPlaying: nextIsPlaying,
         ));
         return;
     }
+  }
+
+  void _onAudioSettingsApplied(
+    PlayerAudioSettingsApplied event,
+    Emitter<PlayerState> emit,
+  ) {
+    final boundedVolume = event.volumePercent.clamp(0, 100) / 100.0;
+    final effectiveVolume = event.isMuted ? 0.0 : boundedVolume;
+    unawaited(_audioService.setVolume(effectiveVolume));
   }
 
   // -------------------------------------------------------------------------

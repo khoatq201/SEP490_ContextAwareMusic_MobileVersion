@@ -8,7 +8,8 @@ enum PlaybackCommandEnum {
   seekBackward(5),
   skipNext(6),
   skipPrevious(7),
-  skipToTrack(8);
+  skipToTrack(8),
+  trackEnded(9);
 
   const PlaybackCommandEnum(this.value);
   final int value;
@@ -44,6 +45,8 @@ enum PlaybackCommandEnum {
         return 'Skip Previous';
       case PlaybackCommandEnum.skipToTrack:
         return 'Skip To Track';
+      case PlaybackCommandEnum.trackEnded:
+        return 'Track Ended';
     }
   }
 }

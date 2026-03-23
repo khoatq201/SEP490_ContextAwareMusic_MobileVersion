@@ -136,7 +136,9 @@ import 'features/cams/domain/usecases/get_space_state.dart';
 import 'features/cams/domain/usecases/override_space.dart';
 import 'features/cams/domain/usecases/cancel_override.dart';
 import 'features/cams/domain/usecases/pairing_usecases.dart';
+import 'features/cams/domain/usecases/queue_usecases.dart';
 import 'features/cams/domain/usecases/send_playback_command.dart';
+import 'features/cams/domain/usecases/update_audio_state.dart';
 import 'features/cams/presentation/bloc/cams_playback_bloc.dart';
 
 // Moods Use Cases
@@ -583,6 +585,13 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(() => OverrideSpace(sl()));
   sl.registerLazySingleton(() => CancelOverride(sl()));
   sl.registerLazySingleton(() => SendPlaybackCommand(sl()));
+  sl.registerLazySingleton(() => UpdateAudioState(sl()));
+  sl.registerLazySingleton(() => QueueTracks(sl()));
+  sl.registerLazySingleton(() => QueuePlaylist(sl()));
+  sl.registerLazySingleton(() => ReorderQueue(sl()));
+  sl.registerLazySingleton(() => RemoveQueueItems(sl()));
+  sl.registerLazySingleton(() => ClearQueue(sl()));
+  sl.registerLazySingleton(() => GetSpaceQueue(sl()));
   sl.registerLazySingleton(() => GetPairDeviceInfoForManager(sl()));
   sl.registerLazySingleton(() => GetPairDeviceInfoForPlaybackDevice(sl()));
   sl.registerLazySingleton(() => GeneratePairCode(sl()));
@@ -596,6 +605,12 @@ Future<void> initializeDependencies() async {
       overrideSpace: sl(),
       cancelOverride: sl(),
       sendPlaybackCommand: sl(),
+      queueTracks: sl(),
+      queuePlaylist: sl(),
+      reorderQueue: sl(),
+      removeQueueItems: sl(),
+      clearQueue: sl(),
+      updateAudioState: sl(),
       getMoods: sl(),
       storeHubService: sl(),
       sessionCubit: sl(),

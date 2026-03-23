@@ -10,6 +10,7 @@ class PlaylistTrackItem extends Equatable {
   final int? orderIndex;
   final String? coverImageUrl;
   final int? actualDurationSec;
+  final String? hlsUrl;
 
   /// Cumulative offset (seconds) — server-calculated.
   /// Used for skip-to-track seeking in HLS stream.
@@ -23,6 +24,7 @@ class PlaylistTrackItem extends Equatable {
     this.orderIndex,
     this.coverImageUrl,
     this.actualDurationSec,
+    this.hlsUrl,
     this.seekOffsetSeconds = 0,
   });
 
@@ -46,6 +48,7 @@ class PlaylistTrackItem extends Equatable {
         orderIndex,
         coverImageUrl,
         actualDurationSec,
+        hlsUrl,
         seekOffsetSeconds,
       ];
 }

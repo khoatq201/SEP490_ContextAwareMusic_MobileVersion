@@ -29,7 +29,8 @@ class StoreSummary extends Equatable {
 
   /// Combines address parts for display.
   String get fullAddress {
-    final parts = [address, district, city].where((p) => p != null && p.isNotEmpty);
+    final parts =
+        [address, district, city].where((p) => p != null && p.isNotEmpty);
     return parts.join(', ');
   }
 

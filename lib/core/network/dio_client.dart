@@ -320,8 +320,8 @@ class DioClient {
           );
         }
 
-        final rotatedRefreshToken =
-            (payload['deviceRefreshToken'] ?? payload['refreshToken']) as String?;
+        final rotatedRefreshToken = (payload['deviceRefreshToken'] ??
+            payload['refreshToken']) as String?;
         final expiresRaw = payload['expiresAt'] ??
             payload['accessTokenExpiresAt'] ??
             payload['deviceAccessTokenExpiresAt'];

@@ -11,8 +11,7 @@ import '../../domain/usecases/space_schedule_usecases.dart';
 import 'space_schedule_event.dart';
 import 'space_schedule_state.dart';
 
-class SpaceScheduleBloc
-    extends Bloc<SpaceScheduleEvent, SpaceScheduleState> {
+class SpaceScheduleBloc extends Bloc<SpaceScheduleEvent, SpaceScheduleState> {
   final GetSpaceScheduleBootstrap getSpaceScheduleBootstrap;
   final ApplyScheduleSource applyScheduleSource;
   final SaveSpaceSchedule saveSpaceSchedule;

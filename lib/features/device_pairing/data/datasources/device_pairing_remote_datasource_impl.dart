@@ -29,8 +29,7 @@ class DevicePairingRemoteDataSourceImpl
           if (manufacturer != null && manufacturer.isNotEmpty)
             'manufacturer': manufacturer,
           if (model != null && model.isNotEmpty) 'model': model,
-          if (osVersion != null && osVersion.isNotEmpty)
-            'osVersion': osVersion,
+          if (osVersion != null && osVersion.isNotEmpty) 'osVersion': osVersion,
           if (appVersion != null && appVersion.isNotEmpty)
             'appVersion': appVersion,
           if (deviceId != null && deviceId.isNotEmpty) 'deviceId': deviceId,

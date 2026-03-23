@@ -19,8 +19,10 @@ class GetSpacesForStore {
 
   GetSpacesForStore(this.repository);
 
-  Future<Either<Failure, PaginationResult<LocationSpace>>> call(String storeId, {int page = 1, int pageSize = 10}) {
-    return repository.getSpacesForStore(storeId, page: page, pageSize: pageSize);
+  Future<Either<Failure, PaginationResult<LocationSpace>>> call(String storeId,
+      {int page = 1, int pageSize = 10}) {
+    return repository.getSpacesForStore(storeId,
+        page: page, pageSize: pageSize);
   }
 }
 
@@ -29,8 +31,11 @@ class GetSpacesForBrand {
 
   GetSpacesForBrand(this.repository);
 
-  Future<Either<Failure, Map<String, PaginationResult<LocationSpace>>>> call(List<String> storeIds, {int page = 1, int pageSize = 10}) {
-    return repository.getSpacesForBrand(storeIds, page: page, pageSize: pageSize);
+  Future<Either<Failure, Map<String, PaginationResult<LocationSpace>>>> call(
+      List<String> storeIds,
+      {int page = 1,
+      int pageSize = 10}) {
+    return repository.getSpacesForBrand(storeIds,
+        page: page, pageSize: pageSize);
   }
 }
-

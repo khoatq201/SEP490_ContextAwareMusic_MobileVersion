@@ -1,10 +1,16 @@
 import 'package:equatable/equatable.dart';
+
 import '../../../../core/enums/override_mode_enum.dart';
 import '../../../../core/enums/transition_type_enum.dart';
 
 /// Response from POST /api/cams/spaces/{spaceId}/override.
+///
+/// New contract is ACK-first (`data` may be only `spaceId` string).
+/// Legacy fields are still parsed for transition compatibility.
 class OverrideResponse extends Equatable {
   final String spaceId;
+
+  /// Legacy fields kept for parser compatibility.
   final String? playlistId;
   final String? playlistName;
   final String? hlsUrl;
@@ -28,7 +34,17 @@ class OverrideResponse extends Equatable {
     this.transitionType,
   });
 
-  /// Whether the HLS stream is ready (200) or pending transcode (202).
+  bool get isAckOnly =>
+      playlistId == null &&
+      playlistName == null &&
+      hlsUrl == null &&
+      moodName == null &&
+      overrideMode == null &&
+      startedAtUtc == null &&
+      expectedEndAtUtc == null &&
+      transitionType == null;
+
+  /// Legacy helper used by some existing UI flows.
   bool get isStreamReady =>
       hlsUrl != null &&
       hlsUrl!.isNotEmpty &&
@@ -65,27 +81,64 @@ class OverrideResponseModel extends OverrideResponse {
 
   factory OverrideResponseModel.fromJson(Map<String, dynamic> json) {
     return OverrideResponseModel(
-      spaceId: json['spaceId'] as String,
-      playlistId: json['playlistId'] as String?,
-      playlistName: json['playlistName'] as String?,
-      hlsUrl: json['hlsUrl'] as String?,
-      moodName: json['moodName'] as String?,
-      overrideMode: OverrideModeEnum.fromJson(json['overrideMode']),
-      isManualOverride: json['isManualOverride'] as bool? ?? true,
-      startedAtUtc: json['startedAtUtc'] != null
-          ? DateTime.tryParse(json['startedAtUtc'] as String)
-          : null,
-      expectedEndAtUtc: json['expectedEndAtUtc'] != null
-          ? DateTime.tryParse(json['expectedEndAtUtc'] as String)
-          : null,
-      transitionType: TransitionTypeEnum.fromJson(json['transitionType']),
+      spaceId: _readString(json, 'spaceId') ?? '',
+      playlistId: _readString(json, 'playlistId'),
+      playlistName: _readString(json, 'playlistName'),
+      hlsUrl: _readString(json, 'hlsUrl'),
+      moodName: _readString(json, 'moodName'),
+      overrideMode: OverrideModeEnum.fromJson(_readValue(json, 'overrideMode')),
+      isManualOverride: _readBool(json, 'isManualOverride') ?? true,
+      startedAtUtc: _readDateTime(json, 'startedAtUtc'),
+      expectedEndAtUtc: _readDateTime(json, 'expectedEndAtUtc'),
+      transitionType:
+          TransitionTypeEnum.fromJson(_readValue(json, 'transitionType')),
     );
   }
 
   /// Parse from API response wrapper.
+  /// Supported payload shapes:
+  /// 1) { data: { spaceId: "..." } } (new ACK-first contract)
+  /// 2) { data: "uuid-space-id" }      (some handlers)
+  /// 3) { data: { ...legacy fields... } }
   static OverrideResponseModel? fromApiResponse(Map<String, dynamic> json) {
-    final data = json['data'] as Map<String, dynamic>?;
-    if (data == null) return null;
-    return OverrideResponseModel.fromJson(data);
+    final data = json['data'];
+    if (data is String) {
+      return OverrideResponseModel(spaceId: data);
+    }
+    if (data is Map) {
+      return OverrideResponseModel.fromJson(Map<String, dynamic>.from(data));
+    }
+    return null;
+  }
+
+  static dynamic _readValue(Map<String, dynamic> json, String key) {
+    if (json.containsKey(key)) return json[key];
+    if (key.isEmpty) return null;
+    final pascalCaseKey = '${key[0].toUpperCase()}${key.substring(1)}';
+    return json[pascalCaseKey];
+  }
+
+  static String? _readString(Map<String, dynamic> json, String key) {
+    final value = _readValue(json, key);
+    if (value == null) return null;
+    if (value is String) return value;
+    return value.toString();
+  }
+
+  static bool? _readBool(Map<String, dynamic> json, String key) {
+    final value = _readValue(json, key);
+    if (value is bool) return value;
+    if (value is String) {
+      if (value.toLowerCase() == 'true') return true;
+      if (value.toLowerCase() == 'false') return false;
+    }
+    return null;
+  }
+
+  static DateTime? _readDateTime(Map<String, dynamic> json, String key) {
+    final value = _readValue(json, key);
+    if (value is DateTime) return value;
+    if (value is String) return DateTime.tryParse(value);
+    return null;
   }
 }

@@ -140,8 +140,8 @@ class _MyAppState extends State<MyApp> {
           type: SpaceTypeEnum.hall,
           status: EntityStatusEnum.active,
         ),
-        deviceId:
-            deviceSession['deviceId']?.toString() ?? deviceSession['spaceId'].toString(),
+        deviceId: deviceSession['deviceId']?.toString() ??
+            deviceSession['spaceId'].toString(),
       );
     } else {
       await localStorage.clearDeviceSession();
