@@ -24,6 +24,7 @@ class LocationSpace extends Equatable {
   final String? currentMoodName;
   final String? currentTrackName;
   final String? currentTrackArtist;
+  final bool hasActivePlayback;
   final double volume;
   final PairDeviceInfo? pairDeviceInfo;
   final PairCodeSnapshot? activePairCode;
@@ -42,14 +43,26 @@ class LocationSpace extends Equatable {
     this.currentMoodName,
     this.currentTrackName,
     this.currentTrackArtist,
+    this.hasActivePlayback = false,
     this.volume = 50.0,
     this.pairDeviceInfo,
     this.activePairCode,
   });
 
+  String? get currentPlaybackName {
+    if (currentTrackName != null && currentTrackName!.isNotEmpty) {
+      return currentTrackName;
+    }
+    if (currentPlaylistName != null && currentPlaylistName!.isNotEmpty) {
+      return currentPlaylistName;
+    }
+    return null;
+  }
+
   bool get hasLivePlayback =>
+      hasActivePlayback ||
       (currentPlaylistId != null && currentPlaylistId!.isNotEmpty) ||
-      (currentTrackName != null && currentTrackName!.isNotEmpty);
+      (currentPlaybackName != null && currentPlaybackName!.isNotEmpty);
 
   bool get hasPairedPlaybackDevice => pairDeviceInfo?.isPaired ?? false;
 
@@ -82,6 +95,7 @@ class LocationSpace extends Equatable {
     String? currentMoodName,
     String? currentTrackName,
     String? currentTrackArtist,
+    bool? hasActivePlayback,
     double? volume,
     PairDeviceInfo? pairDeviceInfo,
     PairCodeSnapshot? activePairCode,
@@ -117,6 +131,7 @@ class LocationSpace extends Equatable {
       currentTrackArtist: clearCurrentTrackArtist
           ? null
           : (currentTrackArtist ?? this.currentTrackArtist),
+      hasActivePlayback: hasActivePlayback ?? this.hasActivePlayback,
       volume: volume ?? this.volume,
       pairDeviceInfo:
           clearPairDeviceInfo ? null : (pairDeviceInfo ?? this.pairDeviceInfo),
@@ -140,6 +155,7 @@ class LocationSpace extends Equatable {
         currentMoodName,
         currentTrackName,
         currentTrackArtist,
+        hasActivePlayback,
         volume,
         pairDeviceInfo,
         activePairCode,

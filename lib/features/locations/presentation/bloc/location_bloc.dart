@@ -566,16 +566,16 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
     Map<String, ApiPlaylist> playlistCache,
   ) {
     if (playbackState == null) return space;
+    final queueTrackName = _resolveQueueTrackName(playbackState);
+
     if (!playbackState.isStreaming && !playbackState.hasPendingPlayback) {
       return space.copyWith(
         currentPlaylistId: playbackState.currentPlaylistId,
-        currentPlaylistName:
-            playbackState.currentTrackName ?? playbackState.currentPlaylistName,
+        currentPlaylistName: playbackState.currentDisplayName,
         currentMoodName: playbackState.moodName,
+        hasActivePlayback: false,
         clearCurrentPlaylistId: playbackState.currentPlaylistId == null,
-        clearCurrentPlaylistName: (playbackState.currentTrackName ??
-                playbackState.currentPlaylistName) ==
-            null,
+        clearCurrentPlaylistName: playbackState.currentDisplayName == null,
         clearCurrentMoodName: playbackState.moodName == null,
         clearCurrentTrackName: true,
         clearCurrentTrackArtist: true,
@@ -589,19 +589,49 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
       playlist,
       playbackState.effectiveSeekOffset,
     );
+    final resolvedTrackName =
+        playbackState.currentTrackName ?? queueTrackName ?? currentTrack?.title;
+    final resolvedPlaybackLabel = resolvedTrackName ??
+        playbackState.currentPlaylistName ??
+        playlist?.name ??
+        space.currentPlaybackName;
 
     return space.copyWith(
       currentPlaylistId:
           playbackState.currentPlaylistId ?? space.currentPlaylistId,
-      currentPlaylistName: playbackState.currentTrackName ??
-          playbackState.currentPlaylistName ??
-          playlist?.name ??
-          space.currentPlaylistName,
+      currentPlaylistName: resolvedPlaybackLabel,
       currentMoodName:
           playbackState.moodName ?? playlist?.moodName ?? space.currentMoodName,
-      currentTrackName: playbackState.currentTrackName ?? currentTrack?.title,
-      currentTrackArtist: currentTrack?.artist,
+      currentTrackName: resolvedTrackName,
+      currentTrackArtist: currentTrack?.artist ?? space.currentTrackArtist,
+      hasActivePlayback:
+          playbackState.isStreaming || playbackState.hasPendingPlayback,
     );
+  }
+
+  String? _resolveQueueTrackName(SpacePlaybackState playbackState) {
+    if (playbackState.spaceQueueItems.isEmpty) return null;
+
+    final currentQueueItemId = playbackState.currentQueueItemId;
+    if (currentQueueItemId != null && currentQueueItemId.isNotEmpty) {
+      for (final queueItem in playbackState.spaceQueueItems) {
+        if (queueItem.queueItemId != currentQueueItemId) continue;
+        final trackName = queueItem.trackName;
+        if (trackName != null && trackName.trim().isNotEmpty) {
+          return trackName;
+        }
+      }
+    }
+
+    for (final queueItem in playbackState.spaceQueueItems) {
+      if (queueItem.queueStatus != 1) continue;
+      final trackName = queueItem.trackName;
+      if (trackName != null && trackName.trim().isNotEmpty) {
+        return trackName;
+      }
+    }
+
+    return null;
   }
 
   PlaylistTrackItem? _resolveCurrentTrack(

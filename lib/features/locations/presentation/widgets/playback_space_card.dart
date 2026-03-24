@@ -86,8 +86,8 @@ class PlaybackSpaceCard extends StatelessWidget {
                 children: [
                   _InfoRow(
                     icon: LucideIcons.music4,
-                    label: 'PLAYLIST',
-                    value: space.currentTrackName ?? 'None',
+                    label: 'NOW PLAYING',
+                    value: space.currentPlaybackName ?? 'None',
                     palette: palette,
                   ),
                   const SizedBox(height: 6),

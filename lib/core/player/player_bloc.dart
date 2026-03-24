@@ -137,6 +137,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
   void _onQueueSeeded(PlayerQueueSeeded event, Emitter<PlayerState> emit) {
     if (!event.force &&
         state.isPlaying &&
+        !state.isSyncedCamsPlayback &&
         state.playlistId != null &&
         state.playlistId != event.playlistId) {
       return;
@@ -148,13 +149,14 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       playlistId: event.playlistId,
     );
 
-    if (nextState.isHlsMode &&
-        event.playlistId != null &&
-        nextState.playlistId == event.playlistId &&
-        event.tracks.isNotEmpty) {
-      var resolvedIndex = event.tracks.indexWhere(
-        (track) => track.id == nextState.currentTrackId,
-      );
+    if (nextState.isHlsMode && event.tracks.isNotEmpty) {
+      var resolvedIndex =
+          _findIndexForQueueItemId(nextState.currentQueueItemId, event.tracks);
+      if (resolvedIndex < 0) {
+        resolvedIndex = event.tracks.indexWhere(
+          (track) => track.id == nextState.currentTrackId,
+        );
+      }
       if (resolvedIndex < 0) {
         resolvedIndex = _resolveIndexForOffset(
           nextState.currentPosition.toDouble(),
@@ -363,6 +365,15 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     return state.queue.indexWhere((track) => track.id == trackId);
   }
 
+  int _findIndexForQueueItemId(
+    String? queueItemId, [
+    List<Track>? queueOverride,
+  ]) {
+    if (queueItemId == null || queueItemId.isEmpty) return -1;
+    final queue = queueOverride ?? state.queue;
+    return queue.indexWhere((track) => track.queueItemId == queueItemId);
+  }
+
   int _trackStartOffsetAt(int index, [List<Track>? queueOverride]) {
     final queue = queueOverride ?? state.queue;
     if (index < 0 || index >= queue.length) return 0;
@@ -426,7 +437,11 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     String? queueItemId,
   }) {
     return Track(
-      id: trackId ?? playlistId ?? state.activeSpaceId ?? 'cams-stream',
+      id: trackId ??
+          queueItemId ??
+          playlistId ??
+          state.activeSpaceId ??
+          'cams-stream',
       queueItemId: queueItemId,
       title: trackName ?? playlistName ?? 'Streaming music',
       artist: state.activeSpaceName ?? 'CAMS',
@@ -438,12 +453,13 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
 
   // ── HLS streaming from CAMS ────────────────────────────────────────────
   void _onHlsStarted(PlayerHlsStarted event, Emitter<PlayerState> emit) async {
-    final hasSeededQueue = state.queue.isNotEmpty &&
-        event.playlistId != null &&
-        event.playlistId == state.playlistId;
+    final hasSeededQueue = state.queue.isNotEmpty;
 
-    var resolvedIndex =
-        event.trackId != null ? _findIndexForTrackId(event.trackId) : -1;
+    var resolvedIndex = _findIndexForQueueItemId(event.queueItemId);
+    if (resolvedIndex < 0) {
+      resolvedIndex =
+          event.trackId != null ? _findIndexForTrackId(event.trackId) : -1;
+    }
     if (resolvedIndex < 0 && hasSeededQueue) {
       resolvedIndex = _resolveIndexForOffset(event.seekOffsetSeconds);
     }
@@ -464,7 +480,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       hlsUrl: event.hlsUrl,
       playlistName: event.playlistName,
       playlistId: event.playlistId ?? state.playlistId,
-      currentQueueItemId: event.queueItemId,
+      currentQueueItemId: event.queueItemId ?? resolvedTrack.queueItemId,
       currentTrackId: event.trackId ?? resolvedTrack.id,
       isPlaying: !event.isPaused,
       currentPosition: event.seekOffsetSeconds.toInt(),

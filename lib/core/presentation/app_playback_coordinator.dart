@@ -151,11 +151,14 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
     if (!camsState.isStreaming ||
         playbackState.hlsUrl == null ||
         playbackState.hlsUrl!.isEmpty) {
-      final hasIdentity =
+      final hasQueueIdentity =
           (playbackState.currentQueueItemId?.isNotEmpty ?? false) ||
-              (playbackState.currentPlaylistId?.isNotEmpty ?? false);
-      final shouldStopPlayer =
-          !playbackState.hasPendingPlayback && !hasIdentity;
+              ((_resolveCurrentTrackId(playbackState)?.isNotEmpty ?? false));
+      final hasLegacyPlaylistIdentity = playbackState.spaceQueueItems.isEmpty &&
+          (playbackState.currentPlaylistId?.isNotEmpty ?? false);
+      final shouldStopPlayer = !playbackState.hasPendingPlayback &&
+          !hasQueueIdentity &&
+          !hasLegacyPlaylistIdentity;
       if (!shouldStopPlayer) {
         return;
       }
@@ -167,9 +170,13 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
 
     unawaited(_hydrateQueueForPlayback(playbackState));
 
+    final legacyPlaylistId = playbackState.spaceQueueItems.isEmpty
+        ? playbackState.currentPlaylistId
+        : null;
+
     playerBloc.add(PlayerHlsStarted(
       hlsUrl: playbackState.hlsUrl!,
-      playlistId: playbackState.currentPlaylistId,
+      playlistId: legacyPlaylistId,
       playlistName: playbackState.currentDisplayName,
       queueItemId: playbackState.currentQueueItemId,
       trackId: _resolveCurrentTrackId(playbackState),
@@ -191,13 +198,20 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
 
   String? _resolveCurrentTrackId(SpacePlaybackState playbackState) {
     final queueItemId = playbackState.currentQueueItemId;
-    if (queueItemId == null || queueItemId.isEmpty) return null;
+    if (queueItemId != null && queueItemId.isNotEmpty) {
+      for (final queueItem in playbackState.spaceQueueItems) {
+        if (queueItem.queueItemId == queueItemId) {
+          return queueItem.trackId;
+        }
+      }
+    }
 
     for (final queueItem in playbackState.spaceQueueItems) {
-      if (queueItem.queueItemId == queueItemId) {
+      if (queueItem.queueStatus == 1) {
         return queueItem.trackId;
       }
     }
+
     return null;
   }
 
@@ -220,7 +234,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
         playerBloc.add(PlayerQueueSeeded(
           tracks: queue,
           playlistName: playbackState.currentDisplayName,
-          playlistId: playbackState.currentPlaylistId,
+          playlistId: null,
           force: true,
         ));
       }
@@ -608,9 +622,12 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
         canAttemptRecovery) {
       _lastHlsRecoveryAttemptAtUtc = nowUtc;
       _hlsRefreshIssuedForCurrentStall = false;
+      final legacyPlaylistId = playbackState.spaceQueueItems.isEmpty
+          ? playbackState.currentPlaylistId
+          : null;
       playerBloc.add(PlayerHlsStarted(
         hlsUrl: playbackState.hlsUrl!,
-        playlistId: playbackState.currentPlaylistId,
+        playlistId: legacyPlaylistId,
         playlistName: playbackState.currentDisplayName,
         queueItemId: playbackState.currentQueueItemId,
         trackId: _resolveCurrentTrackId(playbackState),
@@ -746,8 +763,6 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
                     currentPlayback?.currentQueueItemId ||
                 previousPlayback?.currentTrackName !=
                     currentPlayback?.currentTrackName ||
-                previousPlayback?.currentPlaylistId !=
-                    currentPlayback?.currentPlaylistId ||
                 previousPlayback?.isPaused != currentPlayback?.isPaused ||
                 previousPlayback?.pausePositionSeconds !=
                     currentPlayback?.pausePositionSeconds ||

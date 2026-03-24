@@ -610,6 +610,7 @@ Future<void> initializeDependencies() async {
       reorderQueue: sl(),
       removeQueueItems: sl(),
       clearQueue: sl(),
+      getSpaceQueue: sl(),
       updateAudioState: sl(),
       getMoods: sl(),
       storeHubService: sl(),

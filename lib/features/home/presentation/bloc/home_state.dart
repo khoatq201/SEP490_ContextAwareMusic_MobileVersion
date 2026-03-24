@@ -30,7 +30,8 @@ class HomeState extends Equatable {
   /// Current mood name from CAMS space state (e.g. "Chill", "Energetic").
   final String? currentMoodName;
 
-  /// Current playlist name from CAMS space state.
+  /// Current playback label from CAMS space state (track-first).
+  /// Kept as a legacy field name for compatibility with existing UI wiring.
   final String? currentPlaylistName;
 
   /// Whether the space is currently streaming.
@@ -62,6 +63,7 @@ class HomeState extends Equatable {
   bool get isManualMode => isManualOverride || isManualSelectionOpen;
   bool get autoModeEnabled => !isManualMode;
   bool get showMoodPicker => isManualSelectionOpen;
+  String? get currentPlaybackName => currentPlaylistName;
 
   HomeState copyWith({
     HomeStatus? status,

@@ -41,19 +41,22 @@ class SpaceManagementTile extends StatelessWidget {
     final isPairActionBusy = locationState.busySpaceIds.contains(space.id);
     final isTargetedLocalPreview =
         isTargeted && session.isPlaybackDevice && playerState.isLocalPreview;
+    final isTargetedPreparing = isTargeted && camsState.isPreparing;
 
     final displayMood = _firstNonEmpty([
       if (isTargeted) camsState.currentMoodName,
       space.currentMoodName,
     ]);
-    final displayPlaylist = _firstNonEmpty([
+    final displayPlaybackLabel = _firstNonEmpty([
+      if (isTargeted) camsState.currentTrackName,
       if (isTargeted) camsState.currentPlaylistName,
-      space.currentPlaylistName,
+      space.currentPlaybackName,
     ]);
     final displayTrackName = _firstNonEmpty([
       if (isTargeted && playerState.isSyncedCamsPlayback)
         playerState.currentTrack?.title,
       space.currentTrackName,
+      space.currentPlaybackName,
       if (isTargetedLocalPreview) playerState.currentTrack?.title,
     ]);
     final displayTrackArtist = _firstNonEmpty([
@@ -188,7 +191,8 @@ class SpaceManagementTile extends StatelessWidget {
                 ),
                 _MetaChip(
                   icon: LucideIcons.listMusic,
-                  label: displayPlaylist ?? 'Idle',
+                  label: displayPlaybackLabel ??
+                      (isTargetedPreparing ? 'Preparing stream' : 'Idle'),
                   palette: palette,
                 ),
               ],

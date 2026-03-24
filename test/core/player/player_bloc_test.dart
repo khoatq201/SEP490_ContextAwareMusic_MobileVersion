@@ -135,6 +135,52 @@ void main() {
       expect(audioService.seekCalls, isEmpty);
     });
 
+    test('resolves current track from queueItemId without playlistId',
+        () async {
+      final queue = [
+        const Track(
+          id: 'track-1',
+          queueItemId: 'queue-1',
+          title: 'Track 1',
+          artist: 'Artist',
+          fileUrl: '',
+          moodTags: [],
+          duration: 180,
+          seekOffsetSeconds: 0,
+        ),
+        const Track(
+          id: 'track-2',
+          queueItemId: 'queue-2',
+          title: 'Track 2',
+          artist: 'Artist',
+          fileUrl: '',
+          moodTags: [],
+          duration: 220,
+          seekOffsetSeconds: 180,
+        ),
+      ];
+
+      bloc.add(PlayerQueueSeeded(
+        tracks: queue,
+        force: true,
+      ));
+      await _tick();
+
+      bloc.add(const PlayerHlsStarted(
+        hlsUrl: 'https://stream.example.com/live.m3u8',
+        queueItemId: 'queue-2',
+        trackName: 'Track 2',
+        seekOffsetSeconds: 181,
+        playLocally: false,
+      ));
+      await _tick();
+
+      expect(bloc.state.currentIndex, 1);
+      expect(bloc.state.currentTrackId, 'track-2');
+      expect(bloc.state.currentTrack?.id, 'track-2');
+      expect(bloc.state.currentQueueItemId, 'queue-2');
+    });
+
     test('applies volumePercent/isMuted to audio service volume', () async {
       bloc.add(const PlayerAudioSettingsApplied(
         volumePercent: 70,

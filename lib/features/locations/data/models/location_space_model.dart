@@ -19,6 +19,7 @@ class LocationSpaceModel extends LocationSpace {
     super.currentMoodName,
     super.currentTrackName,
     super.currentTrackArtist,
+    super.hasActivePlayback,
     required super.volume,
     super.pairDeviceInfo,
     super.activePairCode,
@@ -46,6 +47,9 @@ class LocationSpaceModel extends LocationSpace {
       isOnline: json['isOnline'] as bool? ?? statusEnum.isActive,
       currentTrackName: json['currentTrackName'] as String?,
       currentTrackArtist: json['currentTrackArtist'] as String?,
+      hasActivePlayback: json['hasActivePlayback'] as bool? ??
+          json['isStreaming'] as bool? ??
+          false,
       volume: (json['volume'] as num?)?.toDouble() ?? 50.0,
       pairDeviceInfo: json['pairDeviceInfo'] is Map
           ? PairDeviceInfoModel.fromJson(
@@ -75,6 +79,7 @@ class LocationSpaceModel extends LocationSpace {
       'isOnline': isOnline,
       'currentTrackName': currentTrackName,
       'currentTrackArtist': currentTrackArtist,
+      'hasActivePlayback': hasActivePlayback,
       'volume': volume,
       'pairDeviceInfo': pairDeviceInfo == null
           ? null

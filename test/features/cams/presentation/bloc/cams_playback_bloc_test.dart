@@ -53,6 +53,7 @@ void main() {
         reorderQueue: ReorderQueue(repository),
         removeQueueItems: RemoveQueueItems(repository),
         clearQueue: ClearQueue(repository),
+        getSpaceQueue: GetSpaceQueue(repository),
         updateAudioState: UpdateAudioState(repository),
         getMoods: GetMoods(moodRepository),
         storeHubService: storeHubService,
@@ -141,6 +142,86 @@ void main() {
       expect(bloc.state.isPreparing, isTrue);
       expect(bloc.state.playbackState?.isStreaming, isFalse);
       expect(bloc.state.playbackState?.pendingQueueItemId, 'queue-pending-1');
+    });
+
+    test(
+        'hydrates queue snapshot from getQueue when init state has queue identity',
+        () async {
+      repository.getSpaceStateResult = const Right(
+        SpacePlaybackState(
+          spaceId: 'space-1',
+          currentQueueItemId: 'queue-2',
+          hlsUrl: 'https://stream.example.com/live.m3u8',
+        ),
+      );
+      repository.getQueueResult = const Right([
+        SpaceQueueStateItem(
+          queueItemId: 'queue-1',
+          trackId: 'track-1',
+          trackName: 'Track One',
+          position: 1,
+          queueStatus: 1,
+          source: 1,
+        ),
+        SpaceQueueStateItem(
+          queueItemId: 'queue-2',
+          trackId: 'track-2',
+          trackName: 'Track Two',
+          position: 2,
+          queueStatus: 1,
+          source: 1,
+        ),
+      ]);
+
+      bloc.add(const CamsInitPlayback(spaceId: 'space-1'));
+      await _waitUntil(
+        () =>
+            bloc.state.status != CamsStatus.initial &&
+            bloc.state.status != CamsStatus.loading,
+      );
+
+      expect(repository.getQueueCallCount, greaterThanOrEqualTo(1));
+      expect(bloc.state.playbackState?.spaceQueueItems, hasLength(2));
+      expect(
+        bloc.state.playbackState?.spaceQueueItems.last.queueItemId,
+        'queue-2',
+      );
+    });
+
+    test('hydrates queue snapshot on state sync when payload omits queue list',
+        () async {
+      await _initBloc(bloc);
+      repository.getQueueResult = const Right([
+        SpaceQueueStateItem(
+          queueItemId: 'queue-9',
+          trackId: 'track-9',
+          trackName: 'Track Nine',
+          position: 1,
+          queueStatus: 1,
+          source: 1,
+        ),
+      ]);
+
+      bloc.add(
+        const CamsStateSyncReceived(
+          playbackState: SpacePlaybackState(
+            spaceId: 'space-1',
+            currentQueueItemId: 'queue-9',
+            hlsUrl: 'https://stream.example.com/queue-9.m3u8',
+          ),
+        ),
+      );
+      await _waitUntil(
+        () =>
+            (bloc.state.playbackState?.spaceQueueItems.length ?? 0) == 1 &&
+            bloc.state.playbackState?.spaceQueueItems.first.queueItemId ==
+                'queue-9',
+      );
+
+      expect(repository.getQueueCallCount, greaterThanOrEqualTo(1));
+      expect(bloc.state.playbackState?.spaceQueueItems, hasLength(1));
+      expect(
+          bloc.state.playbackState?.spaceQueueItems.first.trackId, 'track-9');
     });
 
     test('does not optimistically mutate for skip command without seek',
@@ -407,6 +488,7 @@ class _FakeCamsRepository implements CamsRepository {
   Either<Failure, void> queueTracksResult = const Right(null);
   Either<Failure, void> sendCommandResult = const Right(null);
   Either<Failure, void> cancelOverrideResult = const Right(null);
+  Either<Failure, List<SpaceQueueStateItem>> getQueueResult = const Right([]);
   Either<Failure, OverrideResponse> overrideSpaceResult = const Right(
     OverrideResponse(spaceId: 'space-1'),
   );
@@ -417,6 +499,7 @@ class _FakeCamsRepository implements CamsRepository {
   _ReorderQueueRequest? lastReorderQueueRequest;
   _RemoveQueueItemsRequest? lastRemoveQueueItemsRequest;
   _UpdateAudioStateRequest? lastUpdateAudioStateRequest;
+  int getQueueCallCount = 0;
   int clearQueueCallCount = 0;
 
   @override
@@ -572,7 +655,8 @@ class _FakeCamsRepository implements CamsRepository {
     String spaceId, {
     bool usePlaybackDeviceScope = false,
   }) async {
-    return const Right([]);
+    getQueueCallCount += 1;
+    return getQueueResult;
   }
 
   @override

@@ -93,7 +93,7 @@ class _HomeDashboardView extends StatelessWidget {
                   SliverToBoxAdapter(
                     child: _CurrentMoodChip(
                       moodName: state.currentMoodName!,
-                      playlistName: state.currentPlaylistName,
+                      playbackLabel: state.currentPlaybackName,
                       isStreaming: state.isStreaming,
                       palette: palette,
                     ).animate().fadeIn(duration: 320.ms).slideY(begin: 0.04),
@@ -118,7 +118,7 @@ class _HomeDashboardView extends StatelessWidget {
                       hasSpaceSelected: state.activeSpaceId != null,
                       isApplying: state.isApplyingOverride,
                       isPendingTranscode: state.isPendingTranscode,
-                      currentPlaylistName: state.currentPlaylistName,
+                      currentPlaybackName: state.currentPlaybackName,
                       modeMessage: state.modeMessage,
                       palette: palette,
                       onSelectAuto: () =>
@@ -480,11 +480,11 @@ class _CurrentMoodChip extends StatelessWidget {
   const _CurrentMoodChip({
     required this.moodName,
     required this.palette,
-    this.playlistName,
+    this.playbackLabel,
     this.isStreaming = false,
   });
   final String moodName;
-  final String? playlistName;
+  final String? playbackLabel;
   final bool isStreaming;
   final _Palette palette;
 
@@ -553,10 +553,10 @@ class _CurrentMoodChip extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  if (playlistName != null) ...[
+                  if (playbackLabel != null) ...[
                     const SizedBox(height: 1),
                     Text(
-                      playlistName!,
+                      playbackLabel!,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
@@ -592,7 +592,7 @@ class _MasterControlCard extends StatelessWidget {
     required this.onSelectManual,
     required this.onCloseManualPicker,
     this.modeMessage,
-    this.currentPlaylistName,
+    this.currentPlaybackName,
   });
   final bool autoModeEnabled;
   final bool manualModeActive;
@@ -605,7 +605,7 @@ class _MasterControlCard extends StatelessWidget {
   final VoidCallback onSelectManual;
   final VoidCallback onCloseManualPicker;
   final String? modeMessage;
-  final String? currentPlaylistName;
+  final String? currentPlaybackName;
 
   @override
   Widget build(BuildContext context) {
@@ -619,10 +619,10 @@ class _MasterControlCard extends StatelessWidget {
     final modeDescription = !hasSpaceSelected
         ? 'Pick a space before changing playback mode.'
         : autoModeEnabled
-            ? 'AI analyzes context and picks mood or playlist for this space.'
+            ? 'AI analyzes context and picks mood and queue for this space.'
             : manualSelectionOpen
                 ? 'Select a mood below to replace AI decisions for this space.'
-                : 'A playlist, track, or mood was manually chosen. AI stays paused until you switch back.';
+                : 'A track, queue, or mood was manually chosen. AI stays paused until you switch back.';
     final gradientColors = palette.isDark
         ? [
             palette.accent.withOpacity(0.80),
@@ -710,7 +710,7 @@ class _MasterControlCard extends StatelessWidget {
                               const SizedBox(width: 5),
                               Expanded(
                                 child: Text(
-                                  currentPlaylistName ?? 'No playlist active',
+                                  currentPlaybackName ?? 'No track active',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: GoogleFonts.inter(
