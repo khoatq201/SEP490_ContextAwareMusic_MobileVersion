@@ -66,7 +66,7 @@ class HomeCubit extends Cubit<HomeState> {
   Future<void> syncForSpace(String? spaceId) async {
     if (spaceId == null || spaceId.isEmpty) {
       emit(state.copyWith(
-        activeSpaceId: null,
+        clearActiveSpace: true,
         isManualOverride: false,
         isManualSelectionOpen: false,
         isApplyingOverride: false,

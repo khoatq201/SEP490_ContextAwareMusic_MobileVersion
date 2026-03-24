@@ -81,6 +81,7 @@ class HomeState extends Equatable {
     bool? isPendingTranscode,
     String? modeMessage,
     bool clearError = false,
+    bool clearActiveSpace = false,
     bool clearMood = false,
     bool clearPlaylist = false,
     bool clearModeMessage = false,
@@ -90,7 +91,8 @@ class HomeState extends Equatable {
       sensors: sensors ?? this.sensors,
       categories: categories ?? this.categories,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
-      activeSpaceId: activeSpaceId ?? this.activeSpaceId,
+      activeSpaceId:
+          clearActiveSpace ? null : (activeSpaceId ?? this.activeSpaceId),
       isManualOverride: isManualOverride ?? this.isManualOverride,
       isManualSelectionOpen:
           isManualSelectionOpen ?? this.isManualSelectionOpen,
