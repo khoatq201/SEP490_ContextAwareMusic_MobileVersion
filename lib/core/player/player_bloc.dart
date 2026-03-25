@@ -162,7 +162,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
           (track) => track.id == nextState.currentTrackId,
         );
       }
-      if (resolvedIndex < 0) {
+      if (resolvedIndex < 0 && _canResolveIndexFromOffset(event.tracks)) {
         resolvedIndex = _resolveIndexForOffset(
           nextState.currentPosition.toDouble(),
           event.tracks,
@@ -333,7 +333,8 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       PlayerPositionUpdated event, Emitter<PlayerState> emit) {
     if (state.isHlsMode &&
         state.queue.isNotEmpty &&
-        _queueTotalDuration() > 0) {
+        _queueTotalDuration() > 0 &&
+        _canResolveIndexFromOffset()) {
       final resolvedIndex = _resolveIndexForOffset(event.positionSeconds);
       if (resolvedIndex >= 0 && resolvedIndex < state.queue.length) {
         final resolvedTrack = state.queue[resolvedIndex];
@@ -442,6 +443,22 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     return queue.length - 1;
   }
 
+  bool _canResolveIndexFromOffset([List<Track>? queueOverride]) {
+    final queue = queueOverride ?? state.queue;
+    if (queue.isEmpty) return false;
+    if (queue.length == 1) return true;
+
+    var previousStartOffset = _trackStartOffsetAt(0, queue);
+    for (var index = 1; index < queue.length; index++) {
+      final startOffset = _trackStartOffsetAt(index, queue);
+      if (startOffset > previousStartOffset) {
+        return true;
+      }
+      previousStartOffset = startOffset;
+    }
+    return false;
+  }
+
   Track _buildSyntheticStreamTrack({
     String? playlistName,
     String? trackId,
@@ -468,7 +485,9 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       resolvedIndex =
           event.trackId != null ? _findIndexForTrackId(event.trackId) : -1;
     }
-    if (resolvedIndex < 0 && hasSeededQueue) {
+    if (resolvedIndex < 0 &&
+        hasSeededQueue &&
+        _canResolveIndexFromOffset()) {
       resolvedIndex = _resolveIndexForOffset(event.seekOffsetSeconds);
     }
 
@@ -564,7 +583,9 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     var resolvedIndex = shouldResolveFromTargetTrack
         ? _findIndexForTrackId(event.targetTrackId)
         : -1;
-    if (resolvedIndex < 0 && absolutePosition != null) {
+    if (resolvedIndex < 0 &&
+        absolutePosition != null &&
+        _canResolveIndexFromOffset()) {
       resolvedIndex = _resolveIndexForOffset(absolutePosition);
     }
     final resolvedTrack =

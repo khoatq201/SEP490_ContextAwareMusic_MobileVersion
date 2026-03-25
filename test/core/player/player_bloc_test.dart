@@ -191,6 +191,62 @@ void main() {
       expect(bloc.state.currentPosition, 70);
     });
 
+    test('does not remap track by offset when queue timeline metadata is absent',
+        () async {
+      final queue = [
+        const Track(
+          id: 'track-1',
+          queueItemId: 'queue-1',
+          title: 'Track 1',
+          artist: 'Artist',
+          fileUrl: '',
+          moodTags: [],
+          duration: null,
+          seekOffsetSeconds: null,
+        ),
+        const Track(
+          id: 'track-2',
+          queueItemId: 'queue-2',
+          title: 'Track 2',
+          artist: 'Artist',
+          fileUrl: '',
+          moodTags: [],
+          duration: null,
+          seekOffsetSeconds: null,
+        ),
+      ];
+
+      bloc.add(PlayerQueueSeeded(
+        tracks: queue,
+        playlistId: 'playlist-1',
+        force: true,
+      ));
+      await _tick();
+
+      bloc.add(const PlayerHlsStarted(
+        hlsUrl: 'https://stream.example.com/live.m3u8',
+        playlistId: 'playlist-1',
+        queueItemId: 'queue-1',
+        trackId: 'track-1',
+        trackName: 'Track 1',
+        seekOffsetSeconds: 10,
+        playLocally: false,
+      ));
+      await _tick();
+
+      bloc.add(const PlayerRemoteCommandApplied(
+        command: PlaybackCommandEnum.seek,
+        positionSeconds: 90,
+        playLocally: false,
+      ));
+      await _tick();
+
+      expect(bloc.state.currentTrackId, 'track-1');
+      expect(bloc.state.currentIndex, 0);
+      expect(bloc.state.currentTrack?.id, 'track-1');
+      expect(bloc.state.currentPosition, 90);
+    });
+
     test('resolves current track from queueItemId without playlistId',
         () async {
       final queue = [
