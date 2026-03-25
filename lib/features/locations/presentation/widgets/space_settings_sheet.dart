@@ -1,9 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/enums/space_type_enum.dart';
+import '../../../../core/enums/user_role.dart';
+import '../../../../core/session/session_cubit.dart';
+import '../../../../injection_container.dart';
+import '../../data/datasources/location_remote_datasource.dart';
+import '../../domain/usecases/location_usecases.dart';
+import '../bloc/location_bloc.dart';
+import '../bloc/location_event.dart';
 import '../../domain/entities/location_space.dart';
 
 /// Bottom sheet showing settings for a single space.
@@ -18,10 +27,195 @@ class SpaceSettingsSheet extends StatelessWidget {
     required this.isPlaybackDevice,
   });
 
+  bool _canManageSpace(BuildContext context) {
+    final session = context.read<SessionCubit>().state;
+    return !isPlaybackDevice &&
+        (session.currentRole == UserRole.brandManager ||
+            session.currentRole == UserRole.storeManager);
+  }
+
+  Future<void> _editSpace(BuildContext context) async {
+    final nameController = TextEditingController(text: space.name);
+    final descriptionController =
+        TextEditingController(text: space.description ?? '');
+    var selectedType = space.type;
+
+    final request = await showDialog<SpaceMutationRequest>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            return AlertDialog(
+              title: const Text('Edit Space'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: nameController,
+                      autofocus: true,
+                      decoration:
+                          const InputDecoration(labelText: 'Space name'),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<SpaceTypeEnum>(
+                      initialValue: selectedType,
+                      items: SpaceTypeEnum.values
+                          .map(
+                            (type) => DropdownMenuItem(
+                              value: type,
+                              child: Text(type.displayName),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setDialogState(() => selectedType = value);
+                      },
+                      decoration:
+                          const InputDecoration(labelText: 'Space type'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: descriptionController,
+                      maxLines: 3,
+                      decoration: const InputDecoration(
+                        labelText: 'Description (optional)',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    final name = nameController.text.trim();
+                    if (name.isEmpty) {
+                      _showSnackBar(
+                        context,
+                        'Space name is required.',
+                        isError: true,
+                      );
+                      return;
+                    }
+                    Navigator.pop(
+                      dialogContext,
+                      SpaceMutationRequest(
+                        name: name,
+                        type: selectedType.value,
+                        description: descriptionController.text.trim().isEmpty
+                            ? null
+                            : descriptionController.text.trim(),
+                      ),
+                    );
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (request == null) return;
+
+    final result = await sl<UpdateSpace>()(space.id, request);
+    if (!context.mounted) return;
+
+    result.fold(
+      (failure) => _showSnackBar(context, failure.message, isError: true),
+      (success) {
+        _reloadLocations(context);
+        _showSnackBar(
+            context, success.message ?? 'Space updated successfully.');
+      },
+    );
+  }
+
+  Future<void> _toggleSpaceStatus(BuildContext context) async {
+    final result = await sl<ToggleSpaceStatus>()(space.id);
+    if (!context.mounted) return;
+
+    result.fold(
+      (failure) => _showSnackBar(context, failure.message, isError: true),
+      (success) {
+        _reloadLocations(context);
+        _showSnackBar(
+          context,
+          success.message ?? 'Space status updated successfully.',
+        );
+      },
+    );
+  }
+
+  Future<void> _deleteSpace(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete space?'),
+        content: Text(
+          'This will remove "${space.name}" from the selected store.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    final result = await sl<DeleteSpace>()(space.id);
+    if (!context.mounted) return;
+
+    result.fold(
+      (failure) => _showSnackBar(context, failure.message, isError: true),
+      (success) {
+        _reloadLocations(context);
+        Navigator.pop(context);
+        _showSnackBar(
+            context, success.message ?? 'Space deleted successfully.');
+      },
+    );
+  }
+
+  void _reloadLocations(BuildContext context) {
+    try {
+      context.read<LocationBloc>().add(const LoadLocationsRequested());
+    } catch (_) {
+      // The sheet can be opened from places without LocationBloc in scope.
+    }
+  }
+
+  void _showSnackBar(
+    BuildContext context,
+    String message, {
+    bool isError = false,
+  }) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? AppColors.error : null,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final palette = _SheetPalette.of(context);
     final router = GoRouter.of(context);
+    final canManageSpace = _canManageSpace(context);
 
     return SafeArea(
       bottom: true,
@@ -127,6 +321,54 @@ class SpaceSettingsSheet extends StatelessWidget {
                 ),
               ],
             ),
+
+            if (canManageSpace) ...[
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'SPACE MANAGEMENT',
+                  style: GoogleFonts.inter(
+                    color: palette.textMuted,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.6,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              _TileGroup(
+                palette: palette,
+                children: [
+                  _NavTile(
+                    icon: Icons.edit_rounded,
+                    iconColor: palette.accent,
+                    label: 'Edit space',
+                    palette: palette,
+                    onTap: () => _editSpace(context),
+                  ),
+                  _NavTile(
+                    icon: space.status.isActive
+                        ? LucideIcons.toggleRight
+                        : LucideIcons.toggleLeft,
+                    iconColor: space.status.isActive
+                        ? AppColors.warning
+                        : AppColors.success,
+                    label:
+                        space.status.isActive ? 'Set inactive' : 'Set active',
+                    palette: palette,
+                    onTap: () => _toggleSpaceStatus(context),
+                  ),
+                  _NavTile(
+                    icon: LucideIcons.trash2,
+                    iconColor: AppColors.error,
+                    label: 'Delete space',
+                    palette: palette,
+                    onTap: () => _deleteSpace(context),
+                  ),
+                ],
+              ),
+            ],
 
             // ── Soundtrack Remote (only for remote control mode) ──────
             if (!isPlaybackDevice) ...[

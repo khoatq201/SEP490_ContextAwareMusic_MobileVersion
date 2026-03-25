@@ -3,9 +3,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/enums/space_type_enum.dart';
+import '../../../../core/enums/user_role.dart';
 import '../../../../core/session/session_cubit.dart';
 import '../../../../injection_container.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../data/datasources/location_remote_datasource.dart';
+import '../../domain/usecases/location_usecases.dart';
 import '../bloc/location_bloc.dart';
 import '../bloc/location_event.dart';
 import '../bloc/location_state.dart';
@@ -15,6 +19,148 @@ import '../widgets/brand_locations_view.dart';
 
 class LocationsTabPage extends StatelessWidget {
   const LocationsTabPage({super.key});
+
+  Future<void> _showCreateSpaceDialog(BuildContext context) async {
+    final session = context.read<SessionCubit>().state;
+    final canManageSpaces = !session.isPlaybackDevice &&
+        (session.currentRole == UserRole.brandManager ||
+            session.currentRole == UserRole.storeManager);
+    if (!canManageSpaces) {
+      _showSnackBar(context, 'Your role cannot create spaces.', isError: true);
+      return;
+    }
+
+    final locationState = context.read<LocationBloc>().state;
+    final storeId = locationState.selectedStoreId ?? session.currentStore?.id;
+    if (storeId == null || storeId.isEmpty) {
+      _showSnackBar(
+        context,
+        'Select a store before creating a space.',
+        isError: true,
+      );
+      return;
+    }
+
+    final nameController = TextEditingController();
+    final descriptionController = TextEditingController();
+    var selectedType = SpaceTypeEnum.hall;
+
+    final request = await showDialog<SpaceMutationRequest>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            return AlertDialog(
+              title: const Text('Create Space'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: nameController,
+                      autofocus: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Space name',
+                        hintText: 'Eg. Counter Area A',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<SpaceTypeEnum>(
+                      initialValue: selectedType,
+                      items: SpaceTypeEnum.values
+                          .map(
+                            (type) => DropdownMenuItem(
+                              value: type,
+                              child: Text(type.displayName),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setDialogState(() => selectedType = value);
+                      },
+                      decoration: const InputDecoration(
+                        labelText: 'Space type',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: descriptionController,
+                      maxLines: 3,
+                      decoration: const InputDecoration(
+                        labelText: 'Description (optional)',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    final name = nameController.text.trim();
+                    if (name.isEmpty) {
+                      _showSnackBar(
+                        context,
+                        'Space name is required.',
+                        isError: true,
+                      );
+                      return;
+                    }
+                    Navigator.pop(
+                      dialogContext,
+                      SpaceMutationRequest(
+                        storeId: storeId,
+                        name: name,
+                        type: selectedType.value,
+                        description: descriptionController.text.trim().isEmpty
+                            ? null
+                            : descriptionController.text.trim(),
+                      ),
+                    );
+                  },
+                  child: const Text('Create'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (request == null) return;
+
+    final result = await sl<CreateSpace>()(request);
+    if (!context.mounted) return;
+
+    result.fold(
+      (failure) => _showSnackBar(context, failure.message, isError: true),
+      (success) {
+        context.read<LocationBloc>().add(const LoadLocationsRequested());
+        _showSnackBar(
+          context,
+          success.message ?? 'Space created successfully.',
+        );
+      },
+    );
+  }
+
+  void _showSnackBar(
+    BuildContext context,
+    String message, {
+    bool isError = false,
+  }) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? AppColors.error : null,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,6 +177,9 @@ class LocationsTabPage extends StatelessWidget {
     // Determine header title and optional subtitle
     final storeName = session.currentStore?.name;
     final isPlayback = session.isPlaybackDevice;
+    final canManageSpaces = !isPlayback &&
+        (session.currentRole == UserRole.brandManager ||
+            session.currentRole == UserRole.storeManager);
     final String title;
     final String? subtitle;
 
@@ -82,6 +231,16 @@ class LocationsTabPage extends StatelessWidget {
             ],
           ),
           centerTitle: true,
+          actions: [
+            if (canManageSpaces)
+              Builder(
+                builder: (scopedContext) => IconButton(
+                  tooltip: 'Create space',
+                  icon: const Icon(Icons.add_business_rounded),
+                  onPressed: () => _showCreateSpaceDialog(scopedContext),
+                ),
+              ),
+          ],
         ),
         body: BlocBuilder<LocationBloc, LocationState>(
           builder: (context, state) {

@@ -6,15 +6,23 @@ import '../../domain/entities/store.dart';
 
 class StoreInfoCard extends StatelessWidget {
   final Store store;
+  final VoidCallback? onEdit;
+  final VoidCallback? onToggleStatus;
+  final VoidCallback? onDelete;
 
   const StoreInfoCard({
     super.key,
     required this.store,
+    this.onEdit,
+    this.onToggleStatus,
+    this.onDelete,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final hasActions =
+        onEdit != null || onToggleStatus != null || onDelete != null;
     return Card(
       elevation: AppDimensions.elevationMd,
       child: Padding(
@@ -77,6 +85,41 @@ class StoreInfoCard extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (hasActions)
+                  PopupMenuButton<String>(
+                    onSelected: (value) {
+                      switch (value) {
+                        case 'edit':
+                          onEdit?.call();
+                          break;
+                        case 'toggle':
+                          onToggleStatus?.call();
+                          break;
+                        case 'delete':
+                          onDelete?.call();
+                          break;
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      if (onEdit != null)
+                        const PopupMenuItem<String>(
+                          value: 'edit',
+                          child: Text('Edit store'),
+                        ),
+                      if (onToggleStatus != null)
+                        PopupMenuItem<String>(
+                          value: 'toggle',
+                          child: Text(
+                            store.isActive ? 'Set inactive' : 'Set active',
+                          ),
+                        ),
+                      if (onDelete != null)
+                        const PopupMenuItem<String>(
+                          value: 'delete',
+                          child: Text('Delete store'),
+                        ),
+                    ],
+                  ),
               ],
             ),
             const SizedBox(height: AppDimensions.spacingMd),

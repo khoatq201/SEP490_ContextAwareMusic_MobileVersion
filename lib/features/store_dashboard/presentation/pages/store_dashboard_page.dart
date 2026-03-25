@@ -10,6 +10,7 @@ import '../../../../core/enums/space_type_enum.dart';
 import '../../../../core/player/player_bloc.dart';
 import '../../../../core/player/player_event.dart';
 import '../../../../core/player/space_info.dart';
+import '../../../../injection_container.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
@@ -19,6 +20,9 @@ import '../../../space_control/presentation/bloc/music_control_bloc.dart';
 import '../../../space_control/presentation/bloc/music_control_event.dart';
 import '../../../space_control/presentation/bloc/space_monitoring_bloc.dart';
 import '../../../space_control/presentation/bloc/space_monitoring_event.dart';
+import '../../data/datasources/store_remote_datasource.dart';
+import '../../domain/entities/store.dart';
+import '../../domain/usecases/store_mutation_usecases.dart';
 import '../bloc/store_dashboard_bloc.dart';
 import '../bloc/store_dashboard_event.dart';
 import '../bloc/store_dashboard_state.dart';
@@ -231,6 +235,180 @@ class StoreDashboardPage extends StatelessWidget {
     return name[0].toUpperCase();
   }
 
+  void _showStoreSnackBar(
+    BuildContext context,
+    String message, {
+    bool isError = false,
+  }) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? AppColors.error : null,
+      ),
+    );
+  }
+
+  Future<void> _showEditStoreDialog(
+    BuildContext context,
+    Store store,
+  ) async {
+    final nameController = TextEditingController(text: store.name);
+    final contactController = TextEditingController(text: store.contactNumber);
+    final addressController = TextEditingController(text: store.address);
+    final cityController = TextEditingController(text: store.city);
+    final districtController = TextEditingController(text: store.district);
+
+    final request = await showDialog<StoreMutationRequest>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Edit Store'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(labelText: 'Store name'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: contactController,
+                decoration: const InputDecoration(labelText: 'Contact number'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: addressController,
+                decoration: const InputDecoration(labelText: 'Address'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: cityController,
+                decoration: const InputDecoration(labelText: 'City'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: districtController,
+                decoration: const InputDecoration(labelText: 'District'),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final name = nameController.text.trim();
+              if (name.isEmpty) {
+                _showStoreSnackBar(
+                  context,
+                  'Store name is required.',
+                  isError: true,
+                );
+                return;
+              }
+              Navigator.pop(
+                dialogContext,
+                StoreMutationRequest(
+                  name: name,
+                  contactNumber: contactController.text.trim().isEmpty
+                      ? null
+                      : contactController.text.trim(),
+                  address: addressController.text.trim().isEmpty
+                      ? null
+                      : addressController.text.trim(),
+                  city: cityController.text.trim().isEmpty
+                      ? null
+                      : cityController.text.trim(),
+                  district: districtController.text.trim().isEmpty
+                      ? null
+                      : districtController.text.trim(),
+                ),
+              );
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    if (request == null) return;
+
+    final result = await sl<UpdateStore>()(store.id, request);
+    if (!context.mounted) return;
+
+    result.fold(
+      (failure) => _showStoreSnackBar(context, failure.message, isError: true),
+      (success) {
+        context
+            .read<StoreDashboardBloc>()
+            .add(LoadStoreDashboard(storeId: storeId));
+        _showStoreSnackBar(
+          context,
+          success.message ?? 'Store updated successfully.',
+        );
+      },
+    );
+  }
+
+  Future<void> _toggleStoreStatus(BuildContext context, Store store) async {
+    final result = await sl<ToggleStoreStatus>()(store.id);
+    if (!context.mounted) return;
+
+    result.fold(
+      (failure) => _showStoreSnackBar(context, failure.message, isError: true),
+      (success) {
+        context
+            .read<StoreDashboardBloc>()
+            .add(LoadStoreDashboard(storeId: storeId));
+        _showStoreSnackBar(
+          context,
+          success.message ?? 'Store status updated successfully.',
+        );
+      },
+    );
+  }
+
+  Future<void> _deleteStore(BuildContext context, Store store) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete store?'),
+        content: Text(
+          'This will remove "${store.name}" if backend business rules allow it.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    final result = await sl<DeleteStore>()(store.id);
+    if (!context.mounted) return;
+
+    result.fold(
+      (failure) => _showStoreSnackBar(context, failure.message, isError: true),
+      (success) {
+        _showStoreSnackBar(
+          context,
+          success.message ?? 'Store deleted successfully.',
+        );
+        context.go('/store-selection');
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -239,6 +417,7 @@ class StoreDashboardPage extends StatelessWidget {
     // BrandManager / SystemAdmin can switch stores; StoreManager cannot.
     final canSwitchStore =
         user != null && (user.isBrandManager || user.isSystemAdmin);
+    final canManageStore = user?.isBrandManager == true;
 
     return PopScope(
       canPop: false,
@@ -386,7 +565,18 @@ class StoreDashboardPage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Store Info Card
-                    StoreInfoCard(store: state.store!),
+                    StoreInfoCard(
+                      store: state.store!,
+                      onEdit: canManageStore
+                          ? () => _showEditStoreDialog(context, state.store!)
+                          : null,
+                      onToggleStatus: canManageStore
+                          ? () => _toggleStoreStatus(context, state.store!)
+                          : null,
+                      onDelete: canManageStore
+                          ? () => _deleteStore(context, state.store!)
+                          : null,
+                    ),
 
                     const SizedBox(height: AppDimensions.spacingLg),
 
