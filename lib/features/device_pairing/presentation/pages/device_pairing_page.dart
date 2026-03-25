@@ -113,7 +113,7 @@ class _DevicePairingPageState extends State<DevicePairingPage> {
               store: Store(
                 id: result.storeId,
                 name: result.storeName,
-                brandId: 'brand-1',
+                brandId: result.brandId,
                 address: 'Paired Location Route',
               ),
               space: Space(

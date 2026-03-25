@@ -62,7 +62,11 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
   void _listenToAudioStreams() {
     _positionSub = _audioService.positionStream.listen((pos) {
       if (!isClosed) {
-        add(PlayerPositionUpdated(positionSeconds: pos.inSeconds));
+        add(
+          PlayerPositionUpdated(
+            positionSeconds: pos.inMilliseconds / 1000.0,
+          ),
+        );
       }
     });
 
@@ -95,6 +99,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       currentTrackId: track.id,
       isPlaying: true,
       currentPosition: 0,
+      currentPositionPrecise: 0,
       duration: track.duration ?? 0,
       currentIndex: index,
       isHlsMode: false,
@@ -190,6 +195,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       currentTrackId: event.track?.id,
       isPlaying: event.isPlaying,
       currentPosition: event.currentPosition,
+      currentPositionPrecise: event.currentPosition.toDouble(),
       duration: event.duration,
       clearCurrentQueueItemId: true,
     ));
@@ -266,7 +272,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     // If more than 3 seconds into the track, restart current track
     if (state.currentPosition > 3) {
       await _audioService.seek(Duration.zero);
-      emit(state.copyWith(currentPosition: 0));
+      emit(state.copyWith(currentPosition: 0, currentPositionPrecise: 0));
       return;
     }
 
@@ -278,7 +284,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
 
     // If at the beginning of the first track, just restart
     await _audioService.seek(Duration.zero);
-    emit(state.copyWith(currentPosition: 0));
+    emit(state.copyWith(currentPosition: 0, currentPositionPrecise: 0));
   }
 
   // ── Auto-advance when track completes ─────────────────────────────────
@@ -302,6 +308,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     emit(state.copyWith(
       isPlaying: false,
       currentPosition: 0,
+      currentPositionPrecise: 0,
     ));
   }
 
@@ -327,12 +334,12 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     if (state.isHlsMode &&
         state.queue.isNotEmpty &&
         _queueTotalDuration() > 0) {
-      final resolvedIndex =
-          _resolveIndexForOffset(event.positionSeconds.toDouble());
+      final resolvedIndex = _resolveIndexForOffset(event.positionSeconds);
       if (resolvedIndex >= 0 && resolvedIndex < state.queue.length) {
         final resolvedTrack = state.queue[resolvedIndex];
         emit(state.copyWith(
-          currentPosition: event.positionSeconds,
+          currentPosition: event.positionSeconds.floor(),
+          currentPositionPrecise: event.positionSeconds,
           currentIndex: resolvedIndex,
           currentTrack: resolvedTrack,
           duration: resolvedTrack.duration ?? state.duration,
@@ -341,7 +348,10 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       }
     }
 
-    emit(state.copyWith(currentPosition: event.positionSeconds));
+    emit(state.copyWith(
+      currentPosition: event.positionSeconds.floor(),
+      currentPositionPrecise: event.positionSeconds,
+    ));
   }
 
   void _onSeekRequested(
@@ -352,7 +362,10 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       // Manager devices can optimistically update UI before SignalR confirms
       // the new position even though they do not hold a local audio source.
     }
-    emit(state.copyWith(currentPosition: event.positionSeconds));
+    emit(state.copyWith(
+      currentPosition: event.positionSeconds,
+      currentPositionPrecise: event.positionSeconds.toDouble(),
+    ));
   }
 
   void _onDurationUpdated(
@@ -431,17 +444,12 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
 
   Track _buildSyntheticStreamTrack({
     String? playlistName,
-    String? playlistId,
     String? trackId,
     String? trackName,
     String? queueItemId,
   }) {
     return Track(
-      id: trackId ??
-          queueItemId ??
-          playlistId ??
-          state.activeSpaceId ??
-          'cams-stream',
+      id: trackId ?? queueItemId ?? state.activeSpaceId ?? 'cams-stream',
       queueItemId: queueItemId,
       title: trackName ?? playlistName ?? 'Streaming music',
       artist: state.activeSpaceName ?? 'CAMS',
@@ -469,7 +477,6 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
         : (state.currentTrack ??
             _buildSyntheticStreamTrack(
               playlistName: event.playlistName,
-              playlistId: event.playlistId,
               trackId: event.trackId,
               trackName: event.trackName,
               queueItemId: event.queueItemId,
@@ -479,14 +486,18 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       isHlsMode: true,
       hlsUrl: event.hlsUrl,
       playlistName: event.playlistName,
-      playlistId: event.playlistId ?? state.playlistId,
+      playlistId: event.playlistId,
       currentQueueItemId: event.queueItemId ?? resolvedTrack.queueItemId,
       currentTrackId: event.trackId ?? resolvedTrack.id,
       isPlaying: !event.isPaused,
-      currentPosition: event.seekOffsetSeconds.toInt(),
+      currentPosition: event.seekOffsetSeconds.floor(),
+      currentPositionPrecise: event.seekOffsetSeconds,
       currentTrack: resolvedTrack,
       currentIndex: resolvedIndex >= 0 ? resolvedIndex : state.currentIndex,
       duration: resolvedTrack.duration ?? state.duration,
+      clearPlaylistName:
+          event.playlistName == null || event.playlistName!.isEmpty,
+      clearPlaylistId: event.playlistId == null || event.playlistId!.isEmpty,
     ));
 
     if (!event.playLocally) return;
@@ -502,11 +513,12 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       }
 
       if (event.seekOffsetSeconds > 0) {
-        final targetPosition =
-            Duration(seconds: event.seekOffsetSeconds.toInt());
+        final targetPosition = Duration(
+          milliseconds: (event.seekOffsetSeconds * 1000).round(),
+        );
         final currentPosition = _audioService.position;
         final positionDrift =
-            (currentPosition - targetPosition).inSeconds.abs();
+            (currentPosition - targetPosition).inMilliseconds.abs() / 1000.0;
         if (shouldReloadSource || positionDrift > 2) {
           await _audioService.seek(targetPosition);
         }
@@ -543,10 +555,10 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     PlayerRemoteCommandApplied event,
     Emitter<PlayerState> emit,
   ) async {
-    final absolutePosition = event.positionSeconds?.toInt();
+    final absolutePosition = event.positionSeconds;
     var resolvedIndex = _findIndexForTrackId(event.targetTrackId);
     if (resolvedIndex < 0 && absolutePosition != null) {
-      resolvedIndex = _resolveIndexForOffset(absolutePosition.toDouble());
+      resolvedIndex = _resolveIndexForOffset(absolutePosition);
     }
     final resolvedTrack =
         resolvedIndex >= 0 && resolvedIndex < state.queue.length
@@ -587,7 +599,9 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
             state.hlsUrl != null &&
             state.hlsUrl!.isNotEmpty) {
           try {
-            await _audioService.seek(Duration(seconds: absolutePosition));
+            await _audioService.seek(
+              Duration(milliseconds: (absolutePosition * 1000).round()),
+            );
           } catch (_) {
             // Ignore seeks that arrive before the HLS source is fully loaded.
           }
@@ -600,8 +614,13 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
                 : true;
 
         emit(state.copyWith(
-          currentPosition:
-              absolutePosition ?? fallbackTrackOffset ?? state.currentPosition,
+          currentPosition: (absolutePosition ??
+                  fallbackTrackOffset?.toDouble() ??
+                  state.currentPositionPrecise)
+              .floor(),
+          currentPositionPrecise: absolutePosition ??
+              fallbackTrackOffset?.toDouble() ??
+              state.currentPositionPrecise,
           currentIndex: resolvedIndex >= 0 ? resolvedIndex : state.currentIndex,
           currentTrack: resolvedTrack,
           currentTrackId: event.targetTrackId ?? resolvedTrack?.id,

@@ -93,18 +93,17 @@ class HomeCubit extends Cubit<HomeState> {
     result.fold(
       (_) {}, // Non-fatal - fallback UI still works
       (pbState) {
+        final resolvedPlaybackName = pbState.currentDisplayName;
         emit(state.copyWith(
           activeSpaceId: spaceId,
           isManualOverride: pbState.isManualOverride,
           isManualSelectionOpen: false,
           currentMoodName: pbState.moodName,
-          currentPlaylistName:
-              pbState.currentTrackName ?? pbState.currentPlaylistName,
+          currentPlaybackName: resolvedPlaybackName,
           isStreaming: pbState.isStreaming,
           isPendingTranscode: pbState.hasPendingPlayback,
           clearMood: pbState.moodName == null,
-          clearPlaylist:
-              (pbState.currentTrackName ?? pbState.currentPlaylistName) == null,
+          clearPlaylist: resolvedPlaybackName == null,
         ));
       },
     );

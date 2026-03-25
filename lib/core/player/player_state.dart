@@ -6,6 +6,7 @@ class PlayerState extends Equatable {
   final Track? currentTrack;
   final bool isPlaying;
   final int currentPosition; // seconds
+  final double currentPositionPrecise; // seconds
   final int duration; // seconds
 
   /// The active space context (needed to dispatch commands back to MusicControlBloc).
@@ -48,6 +49,7 @@ class PlayerState extends Equatable {
     this.currentTrack,
     this.isPlaying = false,
     this.currentPosition = 0,
+    this.currentPositionPrecise = 0,
     this.duration = 0,
     this.activeStoreId,
     this.activeSpaceId,
@@ -88,22 +90,28 @@ class PlayerState extends Equatable {
   }
 
   int get normalizedPlaylistPosition {
+    return normalizedPlaylistPositionPrecise.floor();
+  }
+
+  double get normalizedPlaylistPositionPrecise {
     if (!isSyncedCamsPlayback) {
-      final boundedPosition =
-          duration > 0 ? currentPosition.clamp(0, duration) : currentPosition;
-      return boundedPosition.toInt();
+      if (duration > 0) {
+        return currentPositionPrecise
+            .clamp(0.0, duration.toDouble())
+            .toDouble();
+      }
+      return currentPositionPrecise < 0 ? 0 : currentPositionPrecise;
     }
 
-    final queueDuration = totalQueueDuration;
+    final queueDuration = totalQueueDuration.toDouble();
     if (queueDuration <= 0) {
-      return currentPosition < 0 ? 0 : currentPosition;
+      return currentPositionPrecise < 0 ? 0 : currentPositionPrecise;
     }
 
-    final normalizedPosition = currentPosition % queueDuration;
-    return (normalizedPosition < 0
-            ? normalizedPosition + queueDuration
-            : normalizedPosition)
-        .toInt();
+    final normalizedPosition = currentPositionPrecise % queueDuration;
+    return normalizedPosition < 0
+        ? normalizedPosition + queueDuration
+        : normalizedPosition;
   }
 
   int offsetForIndex(int index) {
@@ -131,14 +139,18 @@ class PlayerState extends Equatable {
   }
 
   int get displayPosition {
+    return displayPositionPrecise.floor();
+  }
+
+  double get displayPositionPrecise {
     if (!isSyncedCamsPlayback) {
-      return normalizedPlaylistPosition;
+      return normalizedPlaylistPositionPrecise;
     }
 
     final relativePosition =
-        normalizedPlaylistPosition - currentTrackStartOffset;
+        normalizedPlaylistPositionPrecise - currentTrackStartOffset;
     if (duration <= 0) return relativePosition < 0 ? 0 : relativePosition;
-    return relativePosition.clamp(0, duration).toInt();
+    return relativePosition.clamp(0.0, duration.toDouble()).toDouble();
   }
 
   int get remainingDuration {
@@ -146,13 +158,15 @@ class PlayerState extends Equatable {
     return (duration - displayPosition).clamp(0, duration).toInt();
   }
 
-  double get progress =>
-      (duration > 0) ? (displayPosition / duration).clamp(0.0, 1.0) : 0.0;
+  double get progress => (duration > 0)
+      ? (displayPositionPrecise / duration).clamp(0.0, 1.0)
+      : 0.0;
 
   PlayerState copyWith({
     Track? currentTrack,
     bool? isPlaying,
     int? currentPosition,
+    double? currentPositionPrecise,
     int? duration,
     String? activeStoreId,
     String? activeSpaceId,
@@ -174,10 +188,17 @@ class PlayerState extends Equatable {
     bool clearCurrentQueueItemId = false,
     bool clearCurrentTrackId = false,
   }) {
+    final resolvedCurrentPosition = currentPosition ?? this.currentPosition;
+    final resolvedCurrentPositionPrecise = currentPositionPrecise ??
+        (currentPosition != null
+            ? currentPosition.toDouble()
+            : this.currentPositionPrecise);
+
     return PlayerState(
       currentTrack: clearTrack ? null : (currentTrack ?? this.currentTrack),
       isPlaying: isPlaying ?? this.isPlaying,
-      currentPosition: currentPosition ?? this.currentPosition,
+      currentPosition: resolvedCurrentPosition,
+      currentPositionPrecise: resolvedCurrentPositionPrecise,
       duration: duration ?? this.duration,
       activeStoreId: activeStoreId ?? this.activeStoreId,
       activeSpaceId: activeSpaceId ?? this.activeSpaceId,
@@ -205,6 +226,7 @@ class PlayerState extends Equatable {
         currentTrack,
         isPlaying,
         currentPosition,
+        currentPositionPrecise,
         duration,
         activeStoreId,
         activeSpaceId,

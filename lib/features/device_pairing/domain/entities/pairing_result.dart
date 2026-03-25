@@ -5,6 +5,7 @@ class DeviceAuthSession extends Equatable {
   final String deviceAccessToken;
   final String deviceRefreshToken;
   final DateTime accessTokenExpiresAt;
+  final String brandId;
   final String storeId;
   final String spaceId;
   final String storeName;
@@ -19,6 +20,7 @@ class DeviceAuthSession extends Equatable {
     required this.deviceAccessToken,
     required this.deviceRefreshToken,
     required this.accessTokenExpiresAt,
+    required this.brandId,
     required this.storeId,
     required this.spaceId,
     required this.storeName,
@@ -37,6 +39,7 @@ class DeviceAuthSession extends Equatable {
         deviceAccessToken,
         deviceRefreshToken,
         accessTokenExpiresAt,
+        brandId,
         storeId,
         spaceId,
         storeName,

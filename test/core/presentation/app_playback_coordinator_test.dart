@@ -303,6 +303,36 @@ void main() {
       expect(playerBloc.state.isSyncedCamsPlayback, isTrue);
       expect(playerBloc.state.hlsUrl, hlsBeforePending);
     });
+
+    testWidgets(
+        'derives manager seek position from startedAtUtc when seekOffsetSeconds is null',
+        (tester) async {
+      addTearDown(() async {
+        await _disposeHarness(tester);
+      });
+      final playbackState = SpacePlaybackState(
+        spaceId: 'space-1',
+        storeId: 'store-1',
+        hlsUrl: 'https://stream.example.com/live.m3u8',
+        startedAtUtc: DateTime.now().toUtc().subtract(
+              const Duration(seconds: 30),
+            ),
+        seekOffsetSeconds: null,
+      );
+
+      await _pumpCoordinator(
+          tester, notificationService, sessionCubit, playerBloc, camsBloc);
+      camsBloc.seed(playbackState);
+      await tester.pump();
+
+      await _waitUntil(
+        tester,
+        () => playerBloc.state.isSyncedCamsPlayback,
+      );
+
+      expect(playerBloc.state.currentPosition, greaterThanOrEqualTo(25));
+      expect(playerBloc.state.currentPositionPrecise, greaterThanOrEqualTo(25));
+    });
   });
 }
 

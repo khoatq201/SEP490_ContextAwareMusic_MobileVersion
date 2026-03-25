@@ -23,6 +23,7 @@ class DevicePairingMockDataSource implements DevicePairingRemoteDataSource {
         accessTokenExpiresAt: DateTime.now().toUtc().add(
               const Duration(minutes: 15),
             ),
+        brandId: 'brand-1',
         storeId: 'store-1',
         spaceId: 'space-1',
         storeName: 'Highlands Coffee',
@@ -42,6 +43,7 @@ class DevicePairingMockDataSource implements DevicePairingRemoteDataSource {
         accessTokenExpiresAt: DateTime.now().toUtc().add(
               const Duration(minutes: 15),
             ),
+        brandId: 'brand-2',
         storeId: 'store-2',
         spaceId: 'space-2',
         storeName: 'The Coffee House',

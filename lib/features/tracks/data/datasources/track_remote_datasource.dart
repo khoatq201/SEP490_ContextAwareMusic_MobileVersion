@@ -4,6 +4,7 @@ import '../models/api_track_model.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/error/exceptions.dart';
+import '../../domain/entities/track_filter.dart';
 import 'package:dio/dio.dart';
 
 abstract class TrackRemoteDataSource {
@@ -17,13 +18,25 @@ abstract class TrackRemoteDataSource {
     String? search,
     String? moodId,
     String? genre,
+    TrackFilter? filter,
   });
 
   /// Fetch single track detail by ID.
   Future<ApiTrackModel> getTrackById(String trackId);
 
   /// Create a new manual-upload track.
-  Future<void> createTrack(CreateTrackRequest request);
+  Future<TrackMutationResult> createTrack(CreateTrackRequest request);
+
+  Future<TrackMutationResult> updateTrack(
+    String trackId,
+    UpdateTrackRequest request,
+  );
+
+  Future<TrackMutationResult> deleteTrack(String trackId);
+
+  Future<TrackMutationResult> toggleTrackStatus(String trackId);
+
+  Future<TrackMutationResult> retranscodeTrack(String trackId);
 }
 
 /// Wrapper for paginated track list response.
@@ -96,6 +109,54 @@ class CreateTrackRequest {
   });
 }
 
+class UpdateTrackRequest {
+  final String? title;
+  final String? artist;
+  final String? moodId;
+  final int? durationSec;
+  final int? bpm;
+  final String? genre;
+  final double? energyLevel;
+  final double? valence;
+  final int? provider;
+  final TrackUploadFile? audioFile;
+  final TrackUploadFile? coverImageFile;
+
+  const UpdateTrackRequest({
+    this.title,
+    this.artist,
+    this.moodId,
+    this.durationSec,
+    this.bpm,
+    this.genre,
+    this.energyLevel,
+    this.valence,
+    this.provider,
+    this.audioFile,
+    this.coverImageFile,
+  });
+}
+
+class TrackMutationResult {
+  final bool isSuccess;
+  final String? message;
+  final String? errorCode;
+
+  const TrackMutationResult({
+    required this.isSuccess,
+    this.message,
+    this.errorCode,
+  });
+
+  factory TrackMutationResult.fromJson(Map<String, dynamic> json) {
+    return TrackMutationResult(
+      isSuccess: json['isSuccess'] as bool? ?? false,
+      message: json['message']?.toString(),
+      errorCode: json['errorCode']?.toString(),
+    );
+  }
+}
+
 class TrackRemoteDataSourceImpl implements TrackRemoteDataSource {
   final DioClient dioClient;
 
@@ -108,19 +169,21 @@ class TrackRemoteDataSourceImpl implements TrackRemoteDataSource {
     String? search,
     String? moodId,
     String? genre,
+    TrackFilter? filter,
   }) async {
     try {
-      final queryParams = <String, dynamic>{
-        'page': page,
-        'pageSize': pageSize,
-        if (search != null && search.isNotEmpty) 'search': search,
-        if (moodId != null) 'moodId': moodId,
-        if (genre != null && genre.isNotEmpty) 'genre': genre,
-      };
+      final effectiveFilter = filter ??
+          TrackFilter(
+            page: page,
+            pageSize: pageSize,
+            search: search,
+            moodId: moodId,
+            genre: genre,
+          );
 
       final response = await dioClient.get(
         ApiConstants.getTracks,
-        queryParameters: queryParams,
+        queryParameters: effectiveFilter.toQueryParameters(),
       );
 
       final data = response.data;
@@ -158,29 +221,21 @@ class TrackRemoteDataSourceImpl implements TrackRemoteDataSource {
   }
 
   @override
-  Future<void> createTrack(CreateTrackRequest request) async {
+  Future<TrackMutationResult> createTrack(CreateTrackRequest request) async {
     try {
-      final audioMultipart = await _toMultipartFile(request.audioFile);
-      final coverMultipart = request.coverImageFile != null
-          ? await _toMultipartFile(request.coverImageFile!)
-          : null;
-
-      final formData = FormData.fromMap({
-        'title': request.title,
-        if (request.artist != null && request.artist!.isNotEmpty)
-          'artist': request.artist,
-        if (request.moodId != null && request.moodId!.isNotEmpty)
-          'moodId': request.moodId,
-        if (request.durationSec != null) 'durationSec': request.durationSec,
-        if (request.bpm != null) 'bpm': request.bpm,
-        if (request.genre != null && request.genre!.isNotEmpty)
-          'genre': request.genre,
-        if (request.energyLevel != null) 'energyLevel': request.energyLevel,
-        if (request.valence != null) 'valence': request.valence,
-        if (request.provider != null) 'provider': request.provider,
-        'audioFile': audioMultipart,
-        if (coverMultipart != null) 'coverImageFile': coverMultipart,
-      });
+      final formData = await _buildTrackFormData(
+        title: request.title,
+        artist: request.artist,
+        moodId: request.moodId,
+        durationSec: request.durationSec,
+        bpm: request.bpm,
+        genre: request.genre,
+        energyLevel: request.energyLevel,
+        valence: request.valence,
+        provider: request.provider,
+        audioFile: request.audioFile,
+        coverImageFile: request.coverImageFile,
+      );
 
       final response = await dioClient.post(
         ApiConstants.getTracks,
@@ -197,6 +252,9 @@ class TrackRemoteDataSourceImpl implements TrackRemoteDataSource {
       if (data is Map<String, dynamic> && data['isSuccess'] == false) {
         throw ServerException(_extractErrorMessage(data));
       }
+      return data is Map<String, dynamic>
+          ? TrackMutationResult.fromJson(data)
+          : const TrackMutationResult(isSuccess: true);
     } on DioException catch (e) {
       final payload = e.response?.data;
       if (payload is Map<String, dynamic>) {
@@ -206,6 +264,158 @@ class TrackRemoteDataSourceImpl implements TrackRemoteDataSource {
     } catch (e) {
       throw ServerException('Failed to upload track: $e');
     }
+  }
+
+  @override
+  Future<TrackMutationResult> updateTrack(
+    String trackId,
+    UpdateTrackRequest request,
+  ) async {
+    try {
+      final formData = await _buildTrackFormData(
+        title: request.title,
+        artist: request.artist,
+        moodId: request.moodId,
+        durationSec: request.durationSec,
+        bpm: request.bpm,
+        genre: request.genre,
+        energyLevel: request.energyLevel,
+        valence: request.valence,
+        provider: request.provider,
+        audioFile: request.audioFile,
+        coverImageFile: request.coverImageFile,
+      );
+
+      final response = await dioClient.put(
+        ApiConstants.updateTrack(trackId),
+        data: formData,
+        options: Options(
+          contentType: 'multipart/form-data',
+          headers: const {
+            'Accept': 'application/json',
+          },
+        ),
+      );
+
+      final data = response.data;
+      if (data is Map<String, dynamic> && data['isSuccess'] == false) {
+        throw ServerException(_extractErrorMessage(data));
+      }
+
+      return data is Map<String, dynamic>
+          ? TrackMutationResult.fromJson(data)
+          : const TrackMutationResult(isSuccess: true);
+    } on DioException catch (e) {
+      final payload = e.response?.data;
+      if (payload is Map<String, dynamic>) {
+        throw ServerException(_extractErrorMessage(payload));
+      }
+      throw ServerException('Failed to update track: ${e.message}');
+    } catch (e) {
+      throw ServerException('Failed to update track: $e');
+    }
+  }
+
+  @override
+  Future<TrackMutationResult> deleteTrack(String trackId) async {
+    try {
+      final response =
+          await dioClient.delete(ApiConstants.deleteTrack(trackId));
+      final data = response.data;
+      if (data is Map<String, dynamic> && data['isSuccess'] == false) {
+        throw ServerException(_extractErrorMessage(data));
+      }
+      return data is Map<String, dynamic>
+          ? TrackMutationResult.fromJson(data)
+          : const TrackMutationResult(isSuccess: true);
+    } on DioException catch (e) {
+      final payload = e.response?.data;
+      if (payload is Map<String, dynamic>) {
+        throw ServerException(_extractErrorMessage(payload));
+      }
+      throw ServerException('Failed to delete track: ${e.message}');
+    } catch (e) {
+      throw ServerException('Failed to delete track: $e');
+    }
+  }
+
+  @override
+  Future<TrackMutationResult> toggleTrackStatus(String trackId) async {
+    try {
+      final response =
+          await dioClient.put(ApiConstants.toggleTrackStatus(trackId));
+      final data = response.data;
+      if (data is Map<String, dynamic> && data['isSuccess'] == false) {
+        throw ServerException(_extractErrorMessage(data));
+      }
+      return data is Map<String, dynamic>
+          ? TrackMutationResult.fromJson(data)
+          : const TrackMutationResult(isSuccess: true);
+    } on DioException catch (e) {
+      final payload = e.response?.data;
+      if (payload is Map<String, dynamic>) {
+        throw ServerException(_extractErrorMessage(payload));
+      }
+      throw ServerException('Failed to toggle track status: ${e.message}');
+    } catch (e) {
+      throw ServerException('Failed to toggle track status: $e');
+    }
+  }
+
+  @override
+  Future<TrackMutationResult> retranscodeTrack(String trackId) async {
+    try {
+      final response =
+          await dioClient.post(ApiConstants.retranscodeTrack(trackId));
+      final data = response.data;
+      if (data is Map<String, dynamic> && data['isSuccess'] == false) {
+        throw ServerException(_extractErrorMessage(data));
+      }
+      return data is Map<String, dynamic>
+          ? TrackMutationResult.fromJson(data)
+          : const TrackMutationResult(isSuccess: true);
+    } on DioException catch (e) {
+      final payload = e.response?.data;
+      if (payload is Map<String, dynamic>) {
+        throw ServerException(_extractErrorMessage(payload));
+      }
+      throw ServerException('Failed to retranscode track: ${e.message}');
+    } catch (e) {
+      throw ServerException('Failed to retranscode track: $e');
+    }
+  }
+
+  Future<FormData> _buildTrackFormData({
+    String? title,
+    String? artist,
+    String? moodId,
+    int? durationSec,
+    int? bpm,
+    String? genre,
+    double? energyLevel,
+    double? valence,
+    int? provider,
+    TrackUploadFile? audioFile,
+    TrackUploadFile? coverImageFile,
+  }) async {
+    final audioMultipart =
+        audioFile != null ? await _toMultipartFile(audioFile) : null;
+    final coverMultipart =
+        coverImageFile != null ? await _toMultipartFile(coverImageFile) : null;
+
+    return FormData.fromMap({
+      if (title != null && title.trim().isNotEmpty) 'title': title.trim(),
+      if (artist != null && artist.trim().isNotEmpty) 'artist': artist.trim(),
+      if (moodId != null && moodId.trim().isNotEmpty) 'moodId': moodId.trim(),
+      if (durationSec != null) 'durationSec': durationSec,
+      if (bpm != null) 'bpm': bpm,
+      if (genre != null && genre.trim().isNotEmpty) 'genre': genre.trim(),
+      if (energyLevel != null) 'energyLevel': energyLevel,
+      if (valence != null) 'valence': valence,
+      if (provider != null) 'provider': provider,
+      if (audioMultipart != null) 'audioFile': audioMultipart,
+      if (coverMultipart != null) 'coverImageFile': coverMultipart,
+    });
   }
 
   Future<MultipartFile> _toMultipartFile(TrackUploadFile file) async {

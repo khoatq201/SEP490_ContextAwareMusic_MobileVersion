@@ -388,11 +388,7 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
     if (currentSpace == null) return;
 
     await _warmPlaylistCache(
-      {
-        if (event.playbackState.currentPlaylistId != null &&
-            event.playbackState.currentPlaylistId!.isNotEmpty)
-          event.playbackState.currentPlaylistId!,
-      },
+      _collectLegacyPlaylistIds([event.playbackState]),
     );
 
     final updatedSpace = _applyPlaybackSnapshot(
@@ -518,12 +514,9 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
     };
 
     await _warmPlaylistCache(
-      playbackBySpaceId.values
-          .whereType<SpacePlaybackState>()
-          .map((state) => state.currentPlaylistId)
-          .whereType<String>()
-          .where((id) => id.isNotEmpty)
-          .toSet(),
+      _collectLegacyPlaylistIds(
+        playbackBySpaceId.values.whereType<SpacePlaybackState>(),
+      ),
     );
 
     return spaces.map((space) {
@@ -570,11 +563,11 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
 
     if (!playbackState.isStreaming && !playbackState.hasPendingPlayback) {
       return space.copyWith(
-        currentPlaylistId: playbackState.currentPlaylistId,
+        currentPlaylistId: null,
         currentPlaylistName: playbackState.currentDisplayName,
         currentMoodName: playbackState.moodName,
         hasActivePlayback: false,
-        clearCurrentPlaylistId: playbackState.currentPlaylistId == null,
+        clearCurrentPlaylistId: true,
         clearCurrentPlaylistName: playbackState.currentDisplayName == null,
         clearCurrentMoodName: playbackState.moodName == null,
         clearCurrentTrackName: true,
@@ -582,9 +575,12 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
       );
     }
 
-    final playlist = playbackState.currentPlaylistId != null
-        ? playlistCache[playbackState.currentPlaylistId!]
-        : null;
+    final shouldUseLegacyPlaylist =
+        _shouldUseLegacyPlaylistMetadata(playbackState);
+    final playlist =
+        shouldUseLegacyPlaylist && playbackState.currentPlaylistId != null
+            ? playlistCache[playbackState.currentPlaylistId!]
+            : null;
     final currentTrack = _resolveCurrentTrack(
       playlist,
       playbackState.effectiveSeekOffset,
@@ -598,7 +594,7 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
 
     return space.copyWith(
       currentPlaylistId:
-          playbackState.currentPlaylistId ?? space.currentPlaylistId,
+          shouldUseLegacyPlaylist ? playbackState.currentPlaylistId : null,
       currentPlaylistName: resolvedPlaybackLabel,
       currentMoodName:
           playbackState.moodName ?? playlist?.moodName ?? space.currentMoodName,
@@ -606,7 +602,41 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
       currentTrackArtist: currentTrack?.artist ?? space.currentTrackArtist,
       hasActivePlayback:
           playbackState.isStreaming || playbackState.hasPendingPlayback,
+      clearCurrentPlaylistId: !shouldUseLegacyPlaylist,
     );
+  }
+
+  Set<String> _collectLegacyPlaylistIds(
+    Iterable<SpacePlaybackState?> playbackStates,
+  ) {
+    final playlistIds = <String>{};
+    for (final playbackState in playbackStates) {
+      if (playbackState == null) continue;
+      if (!_shouldUseLegacyPlaylistMetadata(playbackState)) continue;
+      final playlistId = playbackState.currentPlaylistId;
+      if (playlistId != null && playlistId.isNotEmpty) {
+        playlistIds.add(playlistId);
+      }
+    }
+    return playlistIds;
+  }
+
+  bool _shouldUseLegacyPlaylistMetadata(SpacePlaybackState playbackState) {
+    final playlistId = playbackState.currentPlaylistId;
+    if (playlistId == null || playlistId.isEmpty) return false;
+
+    // Queue-first snapshots carry per-track identity already; avoid legacy
+    // playlist hydration in this path.
+    if (playbackState.spaceQueueItems.isNotEmpty) return false;
+
+    // When current track identity is provided directly, no playlist fallback
+    // is required for display in Location cards.
+    final currentTrackName = playbackState.currentTrackName;
+    if (currentTrackName != null && currentTrackName.trim().isNotEmpty) {
+      return false;
+    }
+
+    return true;
   }
 
   String? _resolveQueueTrackName(SpacePlaybackState playbackState) {

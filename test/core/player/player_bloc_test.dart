@@ -181,6 +181,46 @@ void main() {
       expect(bloc.state.currentQueueItemId, 'queue-2');
     });
 
+    test('clears stale playlist metadata on queue-first HLS start', () async {
+      final queue = [
+        const Track(
+          id: 'track-1',
+          queueItemId: 'queue-1',
+          title: 'Track 1',
+          artist: 'Artist',
+          fileUrl: '',
+          moodTags: [],
+          duration: 180,
+          seekOffsetSeconds: 0,
+        ),
+      ];
+
+      bloc.add(PlayerQueueSeeded(
+        tracks: queue,
+        playlistId: 'playlist-legacy',
+        playlistName: 'Legacy Playlist',
+        force: true,
+      ));
+      await _tick();
+
+      expect(bloc.state.playlistId, 'playlist-legacy');
+      expect(bloc.state.playlistName, 'Legacy Playlist');
+
+      bloc.add(const PlayerHlsStarted(
+        hlsUrl: 'https://stream.example.com/live.m3u8',
+        queueItemId: 'queue-1',
+        trackId: 'track-1',
+        trackName: 'Track 1',
+        playLocally: false,
+      ));
+      await _tick();
+
+      expect(bloc.state.playlistId, isNull);
+      expect(bloc.state.playlistName, isNull);
+      expect(bloc.state.currentTrackId, 'track-1');
+      expect(bloc.state.currentQueueItemId, 'queue-1');
+    });
+
     test('applies volumePercent/isMuted to audio service volume', () async {
       bloc.add(const PlayerAudioSettingsApplied(
         volumePercent: 70,

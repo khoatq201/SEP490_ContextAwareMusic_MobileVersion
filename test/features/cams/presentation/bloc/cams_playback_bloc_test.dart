@@ -16,6 +16,7 @@ import 'package:cams_store_manager/features/cams/domain/entities/pair_code_snaps
 import 'package:cams_store_manager/features/cams/domain/entities/pair_device_info.dart';
 import 'package:cams_store_manager/features/cams/domain/entities/space_playback_state.dart';
 import 'package:cams_store_manager/features/cams/domain/entities/space_queue_state_item.dart';
+import 'package:cams_store_manager/features/cams/domain/services/cams_playback_capability_provider.dart';
 import 'package:cams_store_manager/features/cams/domain/usecases/cancel_override.dart';
 import 'package:cams_store_manager/features/cams/domain/usecases/get_space_state.dart';
 import 'package:cams_store_manager/features/cams/domain/usecases/override_space.dart';
@@ -67,13 +68,13 @@ void main() {
       storeHubService.dispose();
     });
 
-    test('uses queue/playlist PlayNow flow for CamsPlayPlaylist', () async {
+    test('uses queue/playlist add-to-queue flow for CamsPlayPlaylist',
+        () async {
       await _initBloc(bloc);
 
       bloc.add(const CamsPlayPlaylist(
         playlistId: 'playlist-42',
-        clearExistingQueue: true,
-        reason: 'Play all from detail',
+        reason: 'Manual playlist queue request',
       ));
 
       await _waitUntil(() => repository.lastQueuePlaylistRequest != null);
@@ -81,18 +82,17 @@ void main() {
       final request = repository.lastQueuePlaylistRequest!;
       expect(request.spaceId, 'space-1');
       expect(request.playlistId, 'playlist-42');
-      expect(request.mode, QueueInsertModeEnum.playNow);
-      expect(request.isClearExistingQueue, isTrue);
-      expect(request.reason, 'Play all from detail');
+      expect(request.mode, QueueInsertModeEnum.addToQueue);
+      expect(request.isClearExistingQueue, isFalse);
+      expect(request.reason, 'Manual playlist queue request');
       expect(bloc.state.isOverriding, isFalse);
     });
 
-    test('uses queue/tracks PlayNow flow for CamsPlayTrack', () async {
+    test('uses queue/tracks add-to-queue flow for CamsPlayTrack', () async {
       await _initBloc(bloc);
 
       bloc.add(const CamsPlayTrack(
         trackId: 'track-99',
-        clearExistingQueue: true,
       ));
 
       await _waitUntil(() => repository.lastQueueTracksRequest != null);
@@ -100,10 +100,70 @@ void main() {
       final request = repository.lastQueueTracksRequest!;
       expect(request.spaceId, 'space-1');
       expect(request.trackIds, ['track-99']);
+      expect(request.mode, QueueInsertModeEnum.addToQueue);
+      expect(request.isClearExistingQueue, isFalse);
+      expect(request.reason, 'Add track to queue');
+      expect(bloc.state.isOverriding, isFalse);
+    });
+
+    test('downgrades requested PlayNow to add-to-queue until capability exists',
+        () async {
+      await _initBloc(bloc);
+
+      bloc.add(const CamsPlayPlaylist(
+        playlistId: 'playlist-42',
+        requestedMode: QueueInsertModeEnum.playNow,
+        clearExistingQueue: true,
+        reason: 'Manual playlist play request',
+      ));
+
+      await _waitUntil(() => repository.lastQueuePlaylistRequest != null);
+
+      final request = repository.lastQueuePlaylistRequest!;
+      expect(request.mode, QueueInsertModeEnum.addToQueue);
+      expect(request.isClearExistingQueue, isFalse);
+      expect(request.reason, 'Manual playlist play request');
+    });
+
+    test('honors requested PlayNow when immediate takeover capability is on',
+        () async {
+      final capableBloc = CamsPlaybackBloc(
+        getSpaceState: GetSpaceState(repository),
+        overrideSpace: OverrideSpace(repository),
+        cancelOverride: CancelOverride(repository),
+        sendPlaybackCommand: SendPlaybackCommand(repository),
+        queueTracks: QueueTracks(repository),
+        queuePlaylist: QueuePlaylist(repository),
+        reorderQueue: ReorderQueue(repository),
+        removeQueueItems: RemoveQueueItems(repository),
+        clearQueue: ClearQueue(repository),
+        getSpaceQueue: GetSpaceQueue(repository),
+        updateAudioState: UpdateAudioState(repository),
+        getMoods: GetMoods(moodRepository),
+        storeHubService: storeHubService,
+        sessionCubit: sessionCubit,
+        capabilityProvider: const StaticCamsPlaybackCapabilityProvider(
+          CamsPlaybackCapabilities(
+            supportsImmediateManualQueueTakeover: true,
+          ),
+        ),
+      );
+      addTearDown(capableBloc.close);
+
+      await _initBloc(capableBloc);
+
+      capableBloc.add(const CamsPlayTrack(
+        trackId: 'track-100',
+        requestedMode: QueueInsertModeEnum.playNow,
+        clearExistingQueue: true,
+      ));
+
+      await _waitUntil(() => repository.lastQueueTracksRequest != null);
+
+      final request = repository.lastQueueTracksRequest!;
       expect(request.mode, QueueInsertModeEnum.playNow);
       expect(request.isClearExistingQueue, isTrue);
       expect(request.reason, 'Play track now');
-      expect(bloc.state.isOverriding, isFalse);
     });
 
     test('keeps mood override on overrideSpace with moodId only', () async {
@@ -256,6 +316,36 @@ void main() {
       expect(bloc.state.playbackState?.currentTrackName, 'Track A');
     });
 
+    test('play stream hint clears stale legacy playlist identity', () async {
+      await _initBloc(bloc);
+
+      bloc.add(
+        const CamsStateSyncReceived(
+          playbackState: SpacePlaybackState(
+            spaceId: 'space-1',
+            currentPlaylistId: 'playlist-legacy',
+            currentPlaylistName: 'Legacy Playlist',
+          ),
+        ),
+      );
+      await _nextTick();
+
+      bloc.add(
+        const CamsPlayStreamReceived(
+          spaceId: 'space-1',
+          hlsUrl: 'https://stream.example.com/live.m3u8',
+          currentQueueItemId: 'queue-1',
+          trackName: 'Track One',
+        ),
+      );
+      await _nextTick();
+
+      expect(bloc.state.playbackState?.currentQueueItemId, 'queue-1');
+      expect(bloc.state.playbackState?.currentTrackName, 'Track One');
+      expect(bloc.state.playbackState?.currentPlaylistId, isNull);
+      expect(bloc.state.playbackState?.currentPlaylistName, isNull);
+    });
+
     test('reorders queue through queue management event', () async {
       await _initBloc(bloc);
 
@@ -390,6 +480,41 @@ void main() {
       expect(bloc.state.playbackState?.isMuted, isTrue);
       expect(bloc.state.playbackState?.queueEndBehavior, 2);
     });
+
+    test('refreshes playback state after SignalR reconnect', () async {
+      repository.getSpaceStateResult = const Right(
+        SpacePlaybackState(
+          spaceId: 'space-1',
+          currentTrackName: 'Before reconnect',
+        ),
+      );
+      await _initBloc(bloc);
+
+      expect(repository.getSpaceStateCallCount, 1);
+      expect(bloc.state.playbackState?.currentTrackName, 'Before reconnect');
+
+      repository.getSpaceStateResult = const Right(
+        SpacePlaybackState(
+          spaceId: 'space-1',
+          currentTrackName: 'After reconnect',
+          hlsUrl: 'https://stream.example.com/reconnected.m3u8',
+        ),
+      );
+
+      await storeHubService.disconnect();
+      await _nextTick();
+      await storeHubService.connect();
+
+      await _waitUntil(
+        () =>
+            repository.getSpaceStateCallCount >= 2 &&
+            bloc.state.playbackState?.currentTrackName == 'After reconnect',
+      );
+
+      expect(bloc.state.playbackState?.hlsUrl,
+          'https://stream.example.com/reconnected.m3u8');
+      expect(bloc.state.status, CamsStatus.active);
+    });
   });
 }
 
@@ -420,6 +545,7 @@ class _FakeStoreHubService extends StoreHubService {
       StreamController<SpacePlaybackStateModel>.broadcast();
   final _stopPlaybackController = StreamController<void>.broadcast();
   final _connectionController = StreamController<ConnectionStatus>.broadcast();
+  ConnectionStatus _status = ConnectionStatus.disconnected;
 
   @override
   Stream<PlayStreamEvent> get onPlayStream => _playStreamController.stream;
@@ -441,7 +567,20 @@ class _FakeStoreHubService extends StoreHubService {
 
   @override
   Future<void> connect() async {
+    if (_status == ConnectionStatus.connected) {
+      return;
+    }
+    _status = ConnectionStatus.connected;
     _connectionController.add(ConnectionStatus.connected);
+  }
+
+  @override
+  Future<void> disconnect() async {
+    if (_status == ConnectionStatus.disconnected) {
+      return;
+    }
+    _status = ConnectionStatus.disconnected;
+    _connectionController.add(ConnectionStatus.disconnected);
   }
 
   @override
@@ -499,6 +638,7 @@ class _FakeCamsRepository implements CamsRepository {
   _ReorderQueueRequest? lastReorderQueueRequest;
   _RemoveQueueItemsRequest? lastRemoveQueueItemsRequest;
   _UpdateAudioStateRequest? lastUpdateAudioStateRequest;
+  int getSpaceStateCallCount = 0;
   int getQueueCallCount = 0;
   int clearQueueCallCount = 0;
 
@@ -569,6 +709,7 @@ class _FakeCamsRepository implements CamsRepository {
     String spaceId, {
     bool usePlaybackDeviceScope = false,
   }) async {
+    getSpaceStateCallCount += 1;
     return getSpaceStateResult.fold(
       Left.new,
       (state) => Right(

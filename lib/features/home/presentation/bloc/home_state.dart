@@ -31,8 +31,7 @@ class HomeState extends Equatable {
   final String? currentMoodName;
 
   /// Current playback label from CAMS space state (track-first).
-  /// Kept as a legacy field name for compatibility with existing UI wiring.
-  final String? currentPlaylistName;
+  final String? currentPlaybackName;
 
   /// Whether the space is currently streaming.
   final bool isStreaming;
@@ -54,7 +53,7 @@ class HomeState extends Equatable {
     this.isApplyingOverride = false,
     this.moods = const [],
     this.currentMoodName,
-    this.currentPlaylistName,
+    this.currentPlaybackName,
     this.isStreaming = false,
     this.isPendingTranscode = false,
     this.modeMessage,
@@ -63,7 +62,9 @@ class HomeState extends Equatable {
   bool get isManualMode => isManualOverride || isManualSelectionOpen;
   bool get autoModeEnabled => !isManualMode;
   bool get showMoodPicker => isManualSelectionOpen;
-  String? get currentPlaybackName => currentPlaylistName;
+
+  /// Legacy alias kept for backward-compatible UI bindings.
+  String? get currentPlaylistName => currentPlaybackName;
 
   HomeState copyWith({
     HomeStatus? status,
@@ -76,6 +77,7 @@ class HomeState extends Equatable {
     bool? isApplyingOverride,
     List<Mood>? moods,
     String? currentMoodName,
+    String? currentPlaybackName,
     String? currentPlaylistName,
     bool? isStreaming,
     bool? isPendingTranscode,
@@ -100,9 +102,11 @@ class HomeState extends Equatable {
       moods: moods ?? this.moods,
       currentMoodName:
           clearMood ? null : (currentMoodName ?? this.currentMoodName),
-      currentPlaylistName: clearPlaylist
+      currentPlaybackName: clearPlaylist
           ? null
-          : (currentPlaylistName ?? this.currentPlaylistName),
+          : (currentPlaybackName ??
+              currentPlaylistName ??
+              this.currentPlaybackName),
       isStreaming: isStreaming ?? this.isStreaming,
       isPendingTranscode: isPendingTranscode ?? this.isPendingTranscode,
       modeMessage: clearModeMessage ? null : (modeMessage ?? this.modeMessage),
@@ -121,7 +125,7 @@ class HomeState extends Equatable {
         isApplyingOverride,
         moods,
         currentMoodName,
-        currentPlaylistName,
+        currentPlaybackName,
         isStreaming,
         isPendingTranscode,
         modeMessage,

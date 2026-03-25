@@ -38,6 +38,19 @@ void main() {
       expect(state.effectiveSeekOffset, 88.5);
     });
 
+    test('uses startedAtUtc when seekOffsetSeconds is null', () {
+      final startedAtUtc = DateTime.now().toUtc().subtract(
+            const Duration(seconds: 7),
+          );
+      final state = SpacePlaybackState(
+        spaceId: 'space-1',
+        startedAtUtc: startedAtUtc,
+        seekOffsetSeconds: null,
+      );
+
+      expect(state.effectiveSeekOffset, inInclusiveRange(5.0, 9.0));
+    });
+
     test('never returns negative when startedAtUtc is in the future', () {
       final state = SpacePlaybackState(
         spaceId: 'space-1',

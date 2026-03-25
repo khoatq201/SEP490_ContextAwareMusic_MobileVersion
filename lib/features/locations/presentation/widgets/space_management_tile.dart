@@ -48,8 +48,7 @@ class SpaceManagementTile extends StatelessWidget {
       space.currentMoodName,
     ]);
     final displayPlaybackLabel = _firstNonEmpty([
-      if (isTargeted) camsState.currentTrackName,
-      if (isTargeted) camsState.currentPlaylistName,
+      if (isTargeted) camsState.currentPlaybackName,
       space.currentPlaybackName,
     ]);
     final displayTrackName = _firstNonEmpty([

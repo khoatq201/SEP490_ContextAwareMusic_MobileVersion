@@ -7,18 +7,21 @@ import '../../../../core/error/failures.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/network/network_info.dart';
 import '../../../../core/services/local_storage_service.dart';
+import '../../../cams/data/datasources/cams_remote_datasource.dart';
 
 class DevicePairingRepositoryImpl implements DevicePairingRepository {
   final DevicePairingRemoteDataSource remoteDataSource;
   final NetworkInfo networkInfo;
   final LocalStorageService localStorage;
   final DioClient dioClient;
+  final CamsRemoteDataSource camsRemoteDataSource;
 
   DevicePairingRepositoryImpl({
     required this.remoteDataSource,
     required this.networkInfo,
     required this.localStorage,
     required this.dioClient,
+    required this.camsRemoteDataSource,
   });
 
   @override
@@ -32,7 +35,7 @@ class DevicePairingRepositoryImpl implements DevicePairingRepository {
   }) async {
     if (await networkInfo.isConnected) {
       try {
-        final result = await remoteDataSource.pairDevice(
+        var result = await remoteDataSource.pairDevice(
           code: code,
           manufacturer: manufacturer,
           model: model,
@@ -46,6 +49,28 @@ class DevicePairingRepositoryImpl implements DevicePairingRepository {
         await localStorage.saveActiveSessionMode(
           LocalStorageService.sessionModePlaybackDevice,
         );
+
+        try {
+          final pairInfo =
+              await camsRemoteDataSource.getPairDeviceInfoForPlaybackDevice();
+          result = result.copyWith(
+            brandId: pairInfo.brandId,
+            storeId: pairInfo.storeId,
+            spaceId: pairInfo.spaceId,
+            deviceId: pairInfo.deviceId ?? result.deviceId,
+          );
+          await localStorage.updateDeviceSession({
+            'brandId': pairInfo.brandId,
+            'storeId': pairInfo.storeId,
+            'spaceId': pairInfo.spaceId,
+            if ((pairInfo.deviceId ?? '').isNotEmpty)
+              'deviceId': pairInfo.deviceId,
+          });
+        } catch (_) {
+          // Pairing has already succeeded. Keep the session usable even when
+          // pair-device enrichment is temporarily unavailable.
+        }
+
         return Right(result);
       } on ServerException catch (e) {
         return Left(ServerFailure(e.message));

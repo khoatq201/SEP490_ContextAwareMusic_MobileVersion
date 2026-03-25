@@ -70,9 +70,11 @@ class CamsPlaybackState extends Equatable {
   /// Current track name (queue-first state).
   String? get currentTrackName => playbackState?.currentTrackName;
 
+  /// Current playback label for UI (track -> playlist -> mood).
+  String? get currentPlaybackName => playbackState?.currentDisplayName;
+
   /// Legacy UI getter kept for compatibility.
-  String? get currentPlaylistName =>
-      playbackState?.currentTrackName ?? playbackState?.currentPlaylistName;
+  String? get currentPlaylistName => currentPlaybackName;
 
   /// Current mood name.
   String? get currentMoodName => playbackState?.moodName;

@@ -4,7 +4,8 @@ import '../../../../core/enums/override_mode_enum.dart';
 import 'space_queue_state_item.dart';
 
 /// Represents the live playback state of a Space.
-/// Supports both legacy playlist-centric payload and queue-first payload.
+/// Queue-first fields are authoritative; legacy playlist fields remain for
+/// parser compatibility during migration only.
 class SpacePlaybackState extends Equatable {
   final String spaceId;
   final String? storeId;
@@ -82,28 +83,52 @@ class SpacePlaybackState extends Equatable {
   bool get hasPendingPlaylist =>
       pendingPlaylistId != null && pendingPlaylistId!.isNotEmpty;
 
-  bool get hasPendingPlayback => hasPendingQueueItem || hasPendingPlaylist;
+  bool get hasPendingPlayback => hasPendingQueueItem;
 
   /// Whether override is currently active.
   bool get hasActiveOverride => isManualOverride && overrideMode != null;
 
-  /// Resolved identity used by compat layers during migration.
-  String? get currentIdentityId => currentQueueItemId ?? currentPlaylistId;
+  /// Queue-first identity used by runtime playback orchestration.
+  String? get currentIdentityId => currentQueueItemId;
 
   String? get currentDisplayName =>
-      currentTrackName ?? currentPlaylistName ?? moodName;
+      currentTrackName ?? moodName ?? currentPlaylistName;
 
   double get effectiveSeekOffset {
     if (isPaused) {
-      return pausePositionSeconds?.toDouble() ?? seekOffsetSeconds ?? 0;
+      final pausedOffset =
+          pausePositionSeconds?.toDouble() ?? seekOffsetSeconds ?? 0;
+      return _clampOffsetToExpectedDuration(pausedOffset);
     }
     if (startedAtUtc != null) {
       final elapsedSeconds =
           DateTime.now().toUtc().difference(startedAtUtc!).inMilliseconds /
               1000.0;
-      return elapsedSeconds < 0 ? 0 : elapsedSeconds;
+      return _clampOffsetToExpectedDuration(
+        elapsedSeconds < 0 ? 0 : elapsedSeconds,
+      );
     }
-    return seekOffsetSeconds ?? 0;
+    return _clampOffsetToExpectedDuration(seekOffsetSeconds ?? 0);
+  }
+
+  double _clampOffsetToExpectedDuration(double offsetSeconds) {
+    final safeOffset = offsetSeconds < 0 ? 0.0 : offsetSeconds;
+    if (startedAtUtc == null || expectedEndAtUtc == null) {
+      return safeOffset;
+    }
+
+    final totalDurationSeconds = expectedEndAtUtc!
+            .toUtc()
+            .difference(startedAtUtc!.toUtc())
+            .inMilliseconds /
+        1000.0;
+    if (totalDurationSeconds <= 0) {
+      return 0.0;
+    }
+    if (safeOffset > totalDurationSeconds) {
+      return totalDurationSeconds;
+    }
+    return safeOffset;
   }
 
   @override

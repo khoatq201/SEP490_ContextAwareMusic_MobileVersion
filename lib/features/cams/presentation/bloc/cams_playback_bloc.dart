@@ -8,6 +8,7 @@ import '../../../../core/session/session_cubit.dart';
 import '../../data/services/store_hub_service.dart';
 import '../../domain/entities/space_playback_state.dart';
 import '../../domain/entities/space_queue_state_item.dart';
+import '../../domain/services/cams_playback_capability_provider.dart';
 import '../../domain/usecases/cancel_override.dart';
 import '../../domain/usecases/get_space_state.dart';
 import '../../domain/usecases/override_space.dart';
@@ -35,6 +36,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
   final GetMoods getMoods;
   final StoreHubService storeHubService;
   final SessionCubit sessionCubit;
+  final CamsPlaybackCapabilityProvider capabilityProvider;
 
   StreamSubscription? _playStreamSub;
   StreamSubscription? _playbackCommandSub;
@@ -58,6 +60,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     required this.getMoods,
     required this.storeHubService,
     required this.sessionCubit,
+    this.capabilityProvider = const StaticCamsPlaybackCapabilityProvider(),
   }) : super(const CamsPlaybackState()) {
     on<CamsInitPlayback>(_onInit);
     on<CamsDisposePlayback>(_onDispose);
@@ -77,6 +80,11 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     on<CamsRefreshState>(_onRefreshState);
     on<CamsReportPlaybackState>(_onReportPlaybackState);
   }
+
+  // Temporary capability gate: until backend exposes a takeover config,
+  // manual playlist/track taps are downgraded to queue append behavior.
+  bool get supportsImmediateManualQueueTakeover =>
+      capabilityProvider.current.supportsImmediateManualQueueTakeover;
 
   Future<void> _onInit(
     CamsInitPlayback event,
@@ -250,6 +258,11 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
   ) async {
     final spaceId = state.spaceId;
     if (spaceId == null) return;
+    final resolvedMode = _resolveManualQueueMode(event.requestedMode);
+    final shouldClearExistingQueue = _resolveClearExistingQueue(
+      resolvedMode: resolvedMode,
+      requestedClearExistingQueue: event.clearExistingQueue,
+    );
 
     emit(state.copyWith(isOverriding: true, clearError: true));
 
@@ -257,9 +270,12 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
       QueuePlaylistParams(
         spaceId: spaceId,
         playlistId: event.playlistId,
-        mode: QueueInsertModeEnum.playNow,
-        isClearExistingQueue: event.clearExistingQueue,
-        reason: event.reason ?? 'Play playlist now',
+        mode: resolvedMode,
+        isClearExistingQueue: shouldClearExistingQueue,
+        reason: _resolvePlaylistQueueReason(
+          event,
+          resolvedMode: resolvedMode,
+        ),
         usePlaybackDeviceScope: sessionCubit.state.isPlaybackDevice,
       ),
     );
@@ -285,6 +301,11 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
   ) async {
     final spaceId = state.spaceId;
     if (spaceId == null) return;
+    final resolvedMode = _resolveManualQueueMode(event.requestedMode);
+    final shouldClearExistingQueue = _resolveClearExistingQueue(
+      resolvedMode: resolvedMode,
+      requestedClearExistingQueue: event.clearExistingQueue,
+    );
 
     emit(state.copyWith(isOverriding: true, clearError: true));
 
@@ -292,9 +313,12 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
       QueueTracksParams(
         spaceId: spaceId,
         trackIds: [event.trackId],
-        mode: QueueInsertModeEnum.playNow,
-        isClearExistingQueue: event.clearExistingQueue,
-        reason: event.reason ?? 'Play track now',
+        mode: resolvedMode,
+        isClearExistingQueue: shouldClearExistingQueue,
+        reason: _resolveTrackQueueReason(
+          event,
+          resolvedMode: resolvedMode,
+        ),
         usePlaybackDeviceScope: sessionCubit.state.isPlaybackDevice,
       ),
     );
@@ -581,8 +605,8 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
       currentQueueItemId:
           event.currentQueueItemId ?? current?.currentQueueItemId,
       currentTrackName: event.trackName ?? current?.currentTrackName,
-      currentPlaylistId: event.playlistId ?? current?.currentPlaylistId,
-      currentPlaylistName: current?.currentPlaylistName,
+      currentPlaylistId: null,
+      currentPlaylistName: null,
       hlsUrl: event.hlsUrl,
       moodName: current?.moodName,
       isManualOverride: event.isManualOverride,
@@ -776,6 +800,51 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
   bool _isSameSpace(String? left, String? right) {
     if (left == null || right == null) return false;
     return left.toLowerCase() == right.toLowerCase();
+  }
+
+  QueueInsertModeEnum _resolveManualQueueMode(
+    QueueInsertModeEnum requestedMode,
+  ) {
+    if (supportsImmediateManualQueueTakeover) {
+      return requestedMode;
+    }
+
+    if (requestedMode == QueueInsertModeEnum.playNow) {
+      return QueueInsertModeEnum.addToQueue;
+    }
+
+    return requestedMode;
+  }
+
+  bool _resolveClearExistingQueue({
+    required QueueInsertModeEnum resolvedMode,
+    required bool requestedClearExistingQueue,
+  }) {
+    if (resolvedMode == QueueInsertModeEnum.addToQueue) {
+      return false;
+    }
+
+    return requestedClearExistingQueue;
+  }
+
+  String _resolvePlaylistQueueReason(
+    CamsPlayPlaylist event, {
+    required QueueInsertModeEnum resolvedMode,
+  }) {
+    return event.reason ??
+        (resolvedMode == QueueInsertModeEnum.addToQueue
+            ? 'Add playlist to queue'
+            : 'Play playlist now');
+  }
+
+  String _resolveTrackQueueReason(
+    CamsPlayTrack event, {
+    required QueueInsertModeEnum resolvedMode,
+  }) {
+    return event.reason ??
+        (resolvedMode == QueueInsertModeEnum.addToQueue
+            ? 'Add track to queue'
+            : 'Play track now');
   }
 
   bool _isOptimisticCommand(PlaybackCommandEnum command) {
@@ -1003,7 +1072,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     if (hasQueueIdentity) return true;
 
     final hasHls = state.hlsUrl != null && state.hlsUrl!.isNotEmpty;
-    return hasHls && !_hasLegacyPlaylistIdentity(state);
+    return hasHls;
   }
 
   Future<SpacePlaybackState> _hydrateQueueSnapshotIfNeeded(
@@ -1036,12 +1105,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
 
     final hasQueueIdentity = (state.currentQueueItemId?.isNotEmpty ?? false) ||
         ((_resolveTrackIdFromQueueSnapshot(state)?.isNotEmpty ?? false));
-    return hasQueueIdentity || _hasLegacyPlaylistIdentity(state);
-  }
-
-  bool _hasLegacyPlaylistIdentity(SpacePlaybackState state) {
-    return state.spaceQueueItems.isEmpty &&
-        (state.currentPlaylistId?.isNotEmpty ?? false);
+    return hasQueueIdentity;
   }
 
   String? _resolveTrackIdFromQueueSnapshot(
@@ -1069,11 +1133,8 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
   String _streamIdentityKey(SpacePlaybackState state) {
     final queueItemId = state.currentQueueItemId ?? '';
     final trackId = _resolveTrackIdFromQueueSnapshot(state) ?? '';
-    final legacyPlaylistId = _hasLegacyPlaylistIdentity(state)
-        ? (state.currentPlaylistId ?? '')
-        : '';
     final hlsUrl = state.hlsUrl ?? '';
-    return [queueItemId, trackId, legacyPlaylistId, hlsUrl].join('|');
+    return [queueItemId, trackId, hlsUrl].join('|');
   }
 
   SpacePlaybackState _mergePlaybackState({
@@ -1099,16 +1160,6 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
             ? current.currentQueueItemId
             : null;
 
-    final incomingLegacyPlaylistId = incoming.currentPlaylistId != null &&
-            incoming.currentPlaylistId!.isNotEmpty &&
-            incoming.spaceQueueItems.isEmpty
-        ? incoming.currentPlaylistId
-        : null;
-    final currentLegacyPlaylistId =
-        _hasLegacyPlaylistIdentity(current) ? current.currentPlaylistId : null;
-    final resolvedPlaylistId = incomingLegacyPlaylistId ??
-        (shouldPreserveIdentity ? currentLegacyPlaylistId : null);
-
     final resolvedHlsUrl =
         incoming.hlsUrl != null && incoming.hlsUrl!.isNotEmpty
             ? incoming.hlsUrl
@@ -1127,8 +1178,14 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     final streamIdentityChanged =
         resolvedQueueItemId != current.currentQueueItemId ||
             resolvedTrackId != currentResolvedTrackId ||
-            resolvedPlaylistId != currentLegacyPlaylistId ||
             resolvedHlsUrl != current.hlsUrl;
+
+    final resolvedPlaylistId = incoming.currentPlaylistId != null &&
+            incoming.currentPlaylistId!.isNotEmpty
+        ? incoming.currentPlaylistId
+        : null;
+    final shouldPreserveLegacyPlaylistName = resolvedPlaylistId != null &&
+        resolvedPlaylistId == current.currentPlaylistId;
 
     final mergedState = SpacePlaybackState(
       spaceId: incoming.spaceId.isNotEmpty ? incoming.spaceId : current.spaceId,
@@ -1142,7 +1199,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
               : null),
       currentPlaylistId: resolvedPlaylistId,
       currentPlaylistName: incoming.currentPlaylistName ??
-          ((resolvedPlaylistId == currentLegacyPlaylistId)
+          (shouldPreserveLegacyPlaylistName
               ? current.currentPlaylistName
               : null),
       hlsUrl: resolvedHlsUrl,

@@ -6,9 +6,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/enums/queue_insert_mode_enum.dart';
 import '../../../../core/player/player_bloc.dart';
-import '../../../../core/player/player_event.dart';
-import '../../../../core/player/playlist_queue_builder.dart';
 import '../../../../core/presentation/shell_layout_metrics.dart';
 import '../../../../core/session/session_cubit.dart';
 import '../../../../core/widgets/select_playlist_bottom_sheet.dart';
@@ -23,7 +22,7 @@ import '../../../space_control/domain/entities/space.dart';
 import '../../domain/entities/api_playlist.dart';
 import '../../domain/entities/playlist_track_item.dart';
 
-/// Detail page for a backend ApiPlaylist (with HLS streaming & CAMS override).
+/// Detail page for a backend ApiPlaylist with CAMS queue actions.
 class ApiPlaylistDetailPage extends StatelessWidget {
   final ApiPlaylist playlist;
 
@@ -250,6 +249,10 @@ class _PlaylistHeader extends StatelessWidget {
               final isPlaybackDevice = session.isPlaybackDevice;
               final isOverriding = camsState.isOverriding;
               final hasSpace = session.currentSpace != null;
+              final canTakeOverQueue = context.select(
+                (CamsPlaybackBloc bloc) =>
+                    bloc.supportsImmediateManualQueueTakeover,
+              );
 
               return Column(
                 children: [
@@ -271,11 +274,12 @@ class _PlaylistHeader extends StatelessWidget {
                             )
                           : const Icon(LucideIcons.play, size: 18),
                       label: Text(
-                        isPlaybackDevice
-                            ? 'Play on This Device'
-                            : hasSpace
-                                ? 'Play to ${session.currentSpace!.name}'
-                                : 'Select Space & Play',
+                        _primaryActionLabel(
+                          isPlaybackDevice: isPlaybackDevice,
+                          hasSpace: hasSpace,
+                          spaceName: session.currentSpace?.name,
+                          canTakeOverQueue: canTakeOverQueue,
+                        ),
                         style: GoogleFonts.inter(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
@@ -294,7 +298,8 @@ class _PlaylistHeader extends StatelessWidget {
                   if (isPlaybackDevice && hasSpace) ...[
                     const SizedBox(height: 6),
                     Text(
-                      'Playing on: ${session.currentSpace!.name}',
+                      '${canTakeOverQueue ? 'Playback target' : 'Queue target'}: '
+                      '${session.currentSpace!.name}',
                       style: GoogleFonts.inter(
                         color: palette.textMuted,
                         fontSize: 11,
@@ -308,6 +313,8 @@ class _PlaylistHeader extends StatelessWidget {
                         context: context,
                         playlist: playlist,
                         palette: palette,
+                        requestedMode: _primaryPlaylistActionMode(
+                            context.read<CamsPlaybackBloc>()),
                       ),
                       child: Text(
                         'Change space',
@@ -490,12 +497,20 @@ class _TrackTile extends StatelessWidget {
               ),
               splashRadius: 20,
               onPressed: () async {
+                final canTakeOverQueue = context
+                    .read<CamsPlaybackBloc>()
+                    .supportsImmediateManualQueueTakeover;
                 final option = await showModalBottomSheet<SongOption>(
                   context: context,
                   useRootNavigator: true,
                   isScrollControlled: true,
                   backgroundColor: Colors.transparent,
-                  builder: (_) => SongOptionsBottomSheet(song: mappedSong),
+                  builder: (_) => SongOptionsBottomSheet(
+                    song: mappedSong,
+                    showPlayNow: canTakeOverQueue,
+                    enableAddToQueue: true,
+                    addToQueueLabel: 'Add to space queue',
+                  ),
                 );
                 if (!context.mounted || option == null) return;
 
@@ -518,9 +533,20 @@ class _TrackTile extends StatelessWidget {
                       palette: _Palette.fromBrightness(
                         Theme.of(context).brightness,
                       ),
+                      requestedMode: QueueInsertModeEnum.playNow,
                     );
                     break;
                   case SongOption.addToQueue:
+                    _playTrackToCurrentSpace(
+                      context: context,
+                      playlist: playlist,
+                      track: track,
+                      palette: _Palette.fromBrightness(
+                        Theme.of(context).brightness,
+                      ),
+                      requestedMode: QueueInsertModeEnum.addToQueue,
+                    );
+                    break;
                   case SongOption.goToAlbum:
                   case SongOption.goToArtist:
                   case SongOption.block:
@@ -548,22 +574,71 @@ class _TrackTile extends StatelessWidget {
   }
 }
 
+String _primaryActionLabel({
+  required bool isPlaybackDevice,
+  required bool hasSpace,
+  required String? spaceName,
+  required bool canTakeOverQueue,
+}) {
+  if (canTakeOverQueue) {
+    if (isPlaybackDevice) {
+      return 'Play on This Device';
+    }
+    if (hasSpace) {
+      return 'Play to ${spaceName ?? 'Selected Space'}';
+    }
+    return 'Select Space & Play';
+  }
+
+  if (isPlaybackDevice) {
+    return 'Add to This Device Queue';
+  }
+  if (hasSpace) {
+    return 'Add to ${spaceName ?? 'Selected Space'} Queue';
+  }
+  return 'Select Space & Queue';
+}
+
+QueueInsertModeEnum _primaryPlaylistActionMode(CamsPlaybackBloc bloc) {
+  return bloc.supportsImmediateManualQueueTakeover
+      ? QueueInsertModeEnum.playNow
+      : QueueInsertModeEnum.addToQueue;
+}
+
+QueueInsertModeEnum _primaryTrackTapMode(CamsPlaybackBloc bloc) {
+  return _primaryPlaylistActionMode(bloc);
+}
+
+String _playlistActionReason(QueueInsertModeEnum requestedMode) {
+  return requestedMode == QueueInsertModeEnum.playNow
+      ? 'Manual playlist play request'
+      : 'Manual playlist queue request';
+}
+
+String _trackActionReason(QueueInsertModeEnum requestedMode) {
+  return requestedMode == QueueInsertModeEnum.playNow
+      ? 'Manual track play request'
+      : 'Manual track queue request';
+}
+
 void _playTrackToCurrentSpace({
   required BuildContext context,
   required ApiPlaylist playlist,
   required PlaylistTrackItem track,
   required _Palette palette,
+  QueueInsertModeEnum? requestedMode,
 }) {
-  _seedPlaylistQueue(context, playlist, force: true);
-
   final session = context.read<SessionCubit>().state;
   final hasSpace = session.currentSpace != null;
+  final resolvedRequestedMode =
+      requestedMode ?? _primaryTrackTapMode(context.read<CamsPlaybackBloc>());
 
   if (!hasSpace) {
     _showSpacePickerSheet(
       context: context,
       playlist: playlist,
       palette: palette,
+      requestedMode: resolvedRequestedMode,
     );
     return;
   }
@@ -571,22 +646,10 @@ void _playTrackToCurrentSpace({
   context.read<CamsPlaybackBloc>().add(CamsPlayTrack(
         trackId: track.trackId,
         playlistId: playlist.id,
-        reason: 'Manual track selection',
-      ));
-}
-
-void _seedPlaylistQueue(
-  BuildContext context,
-  ApiPlaylist playlist, {
-  bool force = false,
-}) {
-  final queue = buildPlaylistQueue(playlist);
-
-  context.read<PlayerBloc>().add(PlayerQueueSeeded(
-        tracks: queue,
-        playlistName: playlist.name,
-        playlistId: playlist.id,
-        force: force,
+        reason: _trackActionReason(resolvedRequestedMode),
+        clearExistingQueue:
+            resolvedRequestedMode == QueueInsertModeEnum.playNow,
+        requestedMode: resolvedRequestedMode,
       ));
 }
 
@@ -594,22 +657,22 @@ void _seedPlaylistQueue(
 // Play action helpers — shared by header and track tile
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Called when the user taps the main "Play" button.
-/// • Playback device → init CAMS for its own space (already set).
-/// • Manager with space → override playlist to current space.
-/// • Manager without space → show space picker sheet first.
+/// Called when the user taps the primary playlist action.
+/// • Playback device -> target its own space queue.
+/// • Manager with space -> send playlist action to current space.
+/// • Manager without space -> show space picker sheet first.
 void _handlePlayAction({
   required BuildContext context,
   required ApiPlaylist playlist,
   required dynamic session,
   required _Palette palette,
 }) {
-  _seedPlaylistQueue(context, playlist, force: true);
-
+  final requestedMode =
+      _primaryPlaylistActionMode(context.read<CamsPlaybackBloc>());
   final hasSpace = session.currentSpace != null;
 
   if (session.isPlaybackDevice || hasSpace) {
-    // Ensure CAMS is inited for this space and override playlist
+    // Ensure CAMS is initialized for this space before sending the queue action.
     final spaceId = session.currentSpace?.id;
     if (spaceId != null) {
       final camsBloc = context.read<CamsPlaybackBloc>();
@@ -618,25 +681,29 @@ void _handlePlayAction({
       }
       camsBloc.add(CamsPlayPlaylist(
         playlistId: playlist.id,
-        reason: 'Manual playlist selection',
+        reason: _playlistActionReason(requestedMode),
+        clearExistingQueue: requestedMode == QueueInsertModeEnum.playNow,
+        requestedMode: requestedMode,
       ));
     }
   } else {
-    // No space selected — show picker
+    // No space selected -> show picker.
     _showSpacePickerSheet(
       context: context,
       playlist: playlist,
       palette: palette,
+      requestedMode: requestedMode,
     );
   }
 }
 
 /// Shows a bottom sheet for the user to pick a space, then
-/// updates [SessionCubit] and triggers the CAMS override.
+/// updates [SessionCubit] and triggers the CAMS queue action.
 void _showSpacePickerSheet({
   required BuildContext context,
   required ApiPlaylist playlist,
   required _Palette palette,
+  required QueueInsertModeEnum requestedMode,
 }) {
   final session = context.read<SessionCubit>().state;
   final storeId = session.currentStore?.id;
@@ -657,6 +724,7 @@ void _showSpacePickerSheet({
       storeId: storeId,
       playlist: playlist,
       palette: palette,
+      requestedMode: requestedMode,
       camsBloc: context.read<CamsPlaybackBloc>(),
       sessionCubit: context.read<SessionCubit>(),
     ),
@@ -669,12 +737,14 @@ class _SpacePickerSheet extends StatefulWidget {
     required this.storeId,
     required this.playlist,
     required this.palette,
+    required this.requestedMode,
     required this.camsBloc,
     required this.sessionCubit,
   });
   final String storeId;
   final ApiPlaylist playlist;
   final _Palette palette;
+  final QueueInsertModeEnum requestedMode;
   final CamsPlaybackBloc camsBloc;
   final SessionCubit sessionCubit;
 
@@ -712,7 +782,9 @@ class _SpacePickerSheetState extends State<_SpacePickerSheet> {
           ),
           const SizedBox(height: 20),
           Text(
-            'Select a Space to Play',
+            widget.requestedMode == QueueInsertModeEnum.playNow
+                ? 'Select a Space to Play'
+                : 'Select a Space Queue',
             style: GoogleFonts.poppins(
               color: palette.textPrimary,
               fontSize: 17,
@@ -721,7 +793,10 @@ class _SpacePickerSheetState extends State<_SpacePickerSheet> {
           ),
           const SizedBox(height: 4),
           Text(
-            '"${widget.playlist.name}" will play on the selected space.',
+            widget.requestedMode == QueueInsertModeEnum.playNow
+                ? '"${widget.playlist.name}" will play on the selected space.'
+                : '"${widget.playlist.name}" will be added to the selected '
+                    'space queue.',
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(
               color: palette.textMuted,
@@ -814,11 +889,15 @@ class _SpacePickerSheetState extends State<_SpacePickerSheet> {
                       widget.sessionCubit.changeSpace(space);
                       Navigator.pop(context);
 
-                      // Init CAMS for the newly selected space and override
+                      // Init CAMS for the newly selected space and send
+                      // the requested queue action.
                       widget.camsBloc.add(CamsInitPlayback(spaceId: space.id));
                       widget.camsBloc.add(CamsPlayPlaylist(
                         playlistId: widget.playlist.id,
-                        reason: 'Manual playlist selection',
+                        reason: _playlistActionReason(widget.requestedMode),
+                        clearExistingQueue:
+                            widget.requestedMode == QueueInsertModeEnum.playNow,
+                        requestedMode: widget.requestedMode,
                       ));
                     },
                   );

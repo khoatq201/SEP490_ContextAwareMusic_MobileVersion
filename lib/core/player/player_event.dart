@@ -127,7 +127,7 @@ class PlayerContextCleared extends PlayerEvent {
 
 /// Fired periodically by the audio engine to update playback position.
 class PlayerPositionUpdated extends PlayerEvent {
-  final int positionSeconds;
+  final double positionSeconds;
   const PlayerPositionUpdated({required this.positionSeconds});
 
   @override

@@ -17,9 +17,11 @@ import 'core/enums/space_type_enum.dart';
 import 'core/player/player_bloc.dart';
 import 'core/audio/audio_player_service.dart';
 import 'core/audio/playback_notification_service.dart';
+import 'features/cams/data/datasources/cams_remote_datasource.dart';
 import 'features/cams/presentation/bloc/cams_playback_bloc.dart';
 import 'features/space_control/presentation/bloc/music_control_bloc.dart';
 import 'features/space_control/presentation/bloc/space_monitoring_bloc.dart';
+import 'features/space_control/data/datasources/space_remote_datasource.dart';
 import 'features/space_control/domain/entities/space.dart';
 import 'features/store_dashboard/domain/entities/store.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
@@ -69,6 +71,54 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   bool _isInitialized = false;
 
+  Future<Map<String, dynamic>?> _hydratePlaybackDeviceSession({
+    required LocalStorageService localStorage,
+  }) async {
+    final currentSession = localStorage.getDeviceSession();
+    if (currentSession == null || localStorage.isDeviceTokenExpired()) {
+      return null;
+    }
+
+    final hydrated = Map<String, dynamic>.from(currentSession);
+
+    try {
+      final pairInfo =
+          await sl<CamsRemoteDataSource>().getPairDeviceInfoForPlaybackDevice();
+      hydrated['storeId'] = pairInfo.storeId;
+      hydrated['spaceId'] = pairInfo.spaceId;
+      hydrated['brandId'] = pairInfo.brandId;
+      if ((pairInfo.deviceId ?? '').isNotEmpty) {
+        hydrated['deviceId'] = pairInfo.deviceId;
+      }
+    } catch (_) {
+      // Best effort only. Existing local scope can still be restored.
+    }
+
+    final spaceId = hydrated['spaceId']?.toString();
+    if (spaceId != null &&
+        spaceId.isNotEmpty &&
+        (hydrated['spaceName']?.toString().trim().isEmpty ?? true)) {
+      try {
+        final space = await sl<SpaceRemoteDataSource>().getSpaceById(spaceId);
+        hydrated['spaceName'] = space.name;
+      } catch (_) {
+        hydrated['spaceName'] = 'Paired Space';
+      }
+    }
+
+    final storeName = hydrated['storeName']?.toString();
+    if (storeName == null || storeName.trim().isEmpty) {
+      hydrated['storeName'] = 'Paired Store';
+    }
+
+    final spaceName = hydrated['spaceName']?.toString();
+    if (spaceName == null || spaceName.trim().isEmpty) {
+      hydrated['spaceName'] = 'Paired Space';
+    }
+
+    return hydrated;
+  }
+
   Future<void> _resetAuthSessionIfBaseUrlChanged({
     required LocalStorageService localStorage,
     required DioClient dioClient,
@@ -115,27 +165,27 @@ class _MyAppState extends State<MyApp> {
     );
 
     final sessionCubit = sl<SessionCubit>();
-    final deviceSession = localStorage.getDeviceSession();
+    final deviceSession = await _hydratePlaybackDeviceSession(
+      localStorage: localStorage,
+    );
     final hasRestorablePlaybackSession = deviceSession != null &&
         deviceSession['storeId'] != null &&
-        deviceSession['spaceId'] != null &&
-        deviceSession['storeName'] != null &&
-        deviceSession['spaceName'] != null &&
-        !localStorage.isDeviceTokenExpired();
+        deviceSession['spaceId'] != null;
 
     if (hasRestorablePlaybackSession) {
+      await localStorage.saveDeviceSession(deviceSession);
       await localStorage.saveActiveSessionMode(
         LocalStorageService.sessionModePlaybackDevice,
       );
       sessionCubit.setPlaybackMode(
         store: Store(
           id: deviceSession['storeId'].toString(),
-          name: deviceSession['storeName'].toString(),
+          name: deviceSession['storeName']?.toString() ?? 'Paired Store',
           brandId: deviceSession['brandId']?.toString() ?? '',
         ),
         space: Space(
           id: deviceSession['spaceId'].toString(),
-          name: deviceSession['spaceName'].toString(),
+          name: deviceSession['spaceName']?.toString() ?? 'Paired Space',
           storeId: deviceSession['storeId'].toString(),
           type: SpaceTypeEnum.hall,
           status: EntityStatusEnum.active,

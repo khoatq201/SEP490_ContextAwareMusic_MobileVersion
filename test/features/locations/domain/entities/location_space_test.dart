@@ -35,7 +35,9 @@ void main() {
       expect(space.hasLivePlayback, isTrue);
     });
 
-    test('hasLivePlayback keeps legacy fallback from currentPlaylistId', () {
+    test(
+        'hasLivePlayback ignores legacy currentPlaylistId without active state',
+        () {
       const space = LocationSpace(
         id: 'space-1',
         name: 'Main Hall',
@@ -45,7 +47,7 @@ void main() {
         currentPlaylistId: 'playlist-legacy',
       );
 
-      expect(space.hasLivePlayback, isTrue);
+      expect(space.hasLivePlayback, isFalse);
     });
   });
 }

@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import '../../../../core/enums/playback_command_enum.dart';
+import '../../../../core/enums/queue_insert_mode_enum.dart';
 import '../../domain/entities/space_playback_state.dart';
 
 abstract class CamsPlaybackEvent extends Equatable {
@@ -36,52 +37,62 @@ class CamsOverrideMood extends CamsPlaybackEvent {
   List<Object?> get props => [moodId, reason];
 }
 
-/// Queue-native: play a playlist now.
+/// Queue-native playlist request.
 class CamsPlayPlaylist extends CamsPlaybackEvent {
   final String playlistId;
   final String? reason;
   final bool clearExistingQueue;
+  final QueueInsertModeEnum requestedMode;
 
   const CamsPlayPlaylist({
     required this.playlistId,
     this.reason,
     this.clearExistingQueue = false,
+    this.requestedMode = QueueInsertModeEnum.addToQueue,
   });
 
   @override
-  List<Object?> get props => [playlistId, reason, clearExistingQueue];
+  List<Object?> get props =>
+      [playlistId, reason, clearExistingQueue, requestedMode];
 }
 
-/// Queue-native: play a specific track now.
+/// Queue-native track request.
 class CamsPlayTrack extends CamsPlaybackEvent {
   final String trackId;
   final String? playlistId;
   final String? reason;
   final bool clearExistingQueue;
+  final QueueInsertModeEnum requestedMode;
 
   const CamsPlayTrack({
     required this.trackId,
     this.playlistId,
     this.reason,
     this.clearExistingQueue = false,
+    this.requestedMode = QueueInsertModeEnum.addToQueue,
   });
 
   @override
-  List<Object?> get props => [trackId, playlistId, reason, clearExistingQueue];
+  List<Object?> get props =>
+      [trackId, playlistId, reason, clearExistingQueue, requestedMode];
 }
 
 /// Backward-compatible alias for old UI dispatchers.
 class CamsOverridePlaylist extends CamsPlayPlaylist {
-  const CamsOverridePlaylist({required super.playlistId, super.reason});
+  const CamsOverridePlaylist({required super.playlistId, super.reason})
+      : super(requestedMode: QueueInsertModeEnum.playNow);
 }
 
 /// Backward-compatible alias for old UI dispatchers.
 class CamsPlayPlaylistTrack extends CamsPlayTrack {
   const CamsPlayPlaylistTrack({
-    required String playlistId,
+    required super.playlistId,
     required String targetTrackId,
-    String? reason,
-  }) : super(trackId: targetTrackId, playlistId: playlistId, reason: reason);
+    super.reason,
+  }) : super(
+          trackId: targetTrackId,
+          requestedMode: QueueInsertModeEnum.playNow,
+        );
 }
 
 /// Queue management: reorder queue items by their queue item ids.

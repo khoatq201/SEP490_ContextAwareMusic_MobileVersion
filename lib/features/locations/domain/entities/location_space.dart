@@ -61,7 +61,6 @@ class LocationSpace extends Equatable {
 
   bool get hasLivePlayback =>
       hasActivePlayback ||
-      (currentPlaylistId != null && currentPlaylistId!.isNotEmpty) ||
       (currentPlaybackName != null && currentPlaybackName!.isNotEmpty);
 
   bool get hasPairedPlaybackDevice => pairDeviceInfo?.isPaired ?? false;

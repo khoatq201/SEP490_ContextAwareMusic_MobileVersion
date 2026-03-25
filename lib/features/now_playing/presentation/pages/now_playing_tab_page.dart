@@ -75,7 +75,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
             camsBloc.add(CamsReportPlaybackState(
               spaceId: spaceId,
               isPlaying: playerState.isPlaying,
-              positionSeconds: playerState.currentPosition.toDouble(),
+              positionSeconds: playerState.currentPositionPrecise,
               currentHlsUrl: hlsUrl,
             ));
           },
@@ -141,6 +141,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
             : spaceState.space?.currentMood);
     final duration = playerState.duration;
     final displayPosition = playerState.displayPosition;
+    final displayPositionPrecise = playerState.displayPositionPrecise;
     final isPlaying = playerState.isPlaying;
     final useRemoteControls =
         playerState.isSyncedCamsPlayback || camsState.isStreaming;
@@ -158,8 +159,8 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
         spaceState.space?.name ?? playerState.activeSpaceName ?? 'No Space';
     final effectiveSpaceId = playerState.activeSpaceId ??
         context.read<SessionCubit>().state.currentSpace?.id;
-    // Show CAMS playlist name or mood
-    final playlistName = camsState.currentPlaylistName?.toUpperCase() ??
+    // Show CAMS playback label (track-first), then fallback to mood.
+    final playbackLabel = camsState.currentPlaybackName?.toUpperCase() ??
         mood?.toUpperCase() ??
         'MUSIC';
     final hasQueueIndex = playerState.currentIndex >= 0 &&
@@ -193,7 +194,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
         // â”€â”€ Top bar: â†“  title  â‹® â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         _TopBar(
           spaceName: spaceName,
-          playlistName: playlistName,
+          playlistName: playbackLabel,
           palette: palette,
           canSwap: !isPlayback && playerState.availableSpaces.length > 1,
           onMinimize: () {
@@ -309,7 +310,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                 // â”€â”€ Progress bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 _ProgressBar(
                   duration: duration,
-                  currentPosition: displayPosition,
+                  currentPosition: displayPositionPrecise,
                   remainingDuration: playerState.remainingDuration,
                   seekBaseOffsetSeconds: playerState.currentTrackStartOffset,
                   useAbsoluteSeek: playerState.isSyncedCamsPlayback,
@@ -712,241 +713,255 @@ class _QueueSheet extends StatelessWidget {
             final upNext = queueData.upNext;
 
             return SafeArea(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 8),
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: palette.border,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                    child: Row(
+              child: CustomScrollView(
+                controller: controller,
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Queue',
-                            style: GoogleFonts.poppins(
-                              color: palette.textPrimary,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w700,
-                            )),
-                        const Spacer(),
-                        if (queueData.isFromCams && queueData.items.isNotEmpty)
-                          TextButton.icon(
-                            onPressed: () => _confirmAndClearQueue(context),
-                            icon: const Icon(Icons.clear_all, size: 16),
-                            label: const Text('Clear'),
-                            style: TextButton.styleFrom(
-                              foregroundColor: palette.textMuted,
-                              textStyle: GoogleFonts.inter(
-                                fontSize: 13,
+                        const SizedBox(height: 8),
+                        Center(
+                          child: Container(
+                            width: 40,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: palette.border,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                          child: Row(
+                            children: [
+                              Text('Queue',
+                                  style: GoogleFonts.poppins(
+                                    color: palette.textPrimary,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                  )),
+                              const Spacer(),
+                              if (queueData.isFromCams &&
+                                  queueData.items.isNotEmpty)
+                                TextButton.icon(
+                                  onPressed: () =>
+                                      _confirmAndClearQueue(context),
+                                  icon: const Icon(Icons.clear_all, size: 16),
+                                  label: const Text('Clear'),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: palette.textMuted,
+                                    textStyle: GoogleFonts.inter(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: Text('Close',
+                                    style: GoogleFonts.inter(
+                                      color: palette.textMuted,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    )),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                          child: Text(
+                            queueData.summaryLabel,
+                            style: GoogleFonts.inter(
+                              color: palette.textMuted,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        if (queueData.isFromCams && playback != null)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+                            child: _QueueAudioControls(
+                              palette: palette,
+                              volumePercent: playback.volumePercent,
+                              isMuted: playback.isMuted,
+                              queueEndBehavior: playback.queueEndBehavior,
+                              onToggleMute: (nextMuted) {
+                                _dispatchAudioStatePatch(
+                                  context,
+                                  volumePercent: playback.volumePercent,
+                                  isMuted: nextMuted,
+                                );
+                              },
+                              onVolumeChanged: (volumePercent) {
+                                final bounded =
+                                    volumePercent.clamp(0, 100).toInt();
+                                _dispatchAudioStatePatch(
+                                  context,
+                                  volumePercent: bounded,
+                                  isMuted: bounded == 0,
+                                );
+                              },
+                              onQueueEndBehaviorChanged: (behavior) {
+                                _dispatchAudioStatePatch(
+                                  context,
+                                  queueEndBehavior: behavior.value,
+                                );
+                              },
+                            ),
+                          ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                          child: Text('Now playing',
+                              style: GoogleFonts.inter(
+                                color: palette.textMuted,
+                                fontSize: 12,
                                 fontWeight: FontWeight.w600,
+                              )),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: _QueueTrackTile(
+                            title: currentTrack?.title ?? 'No track',
+                            artist: currentTrack?.artist ?? '',
+                            artUrl: currentTrack?.artUrl,
+                            isPlaying: true,
+                            isPending: currentTrack?.isPending ?? false,
+                            meta: currentTrack?.metaLabel,
+                            palette: palette,
+                          ),
+                        ),
+                        if (queueData.pendingNotInQueueLabel != null)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: palette.overlay,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: palette.border),
+                              ),
+                              child: Row(
+                                children: [
+                                  SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: palette.accent,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      queueData.pendingNotInQueueLabel!,
+                                      style: GoogleFonts.inter(
+                                        color: palette.textMuted,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: Text('Close',
-                              style: GoogleFonts.inter(
-                                color: palette.textMuted,
-                                fontSize: 14,
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                          child: Text('Up next',
+                              style: GoogleFonts.poppins(
+                                color: palette.textPrimary,
+                                fontSize: 16,
                                 fontWeight: FontWeight.w600,
                               )),
                         ),
                       ],
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-                    child: Text(
-                      queueData.summaryLabel,
-                      style: GoogleFonts.inter(
-                        color: palette.textMuted,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  if (queueData.isFromCams && playback != null)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
-                      child: _QueueAudioControls(
-                        palette: palette,
-                        volumePercent: playback.volumePercent,
-                        isMuted: playback.isMuted,
-                        queueEndBehavior: playback.queueEndBehavior,
-                        onToggleMute: (nextMuted) {
-                          _dispatchAudioStatePatch(
-                            context,
-                            volumePercent: playback.volumePercent,
-                            isMuted: nextMuted,
-                          );
-                        },
-                        onVolumeChanged: (volumePercent) {
-                          final bounded = volumePercent.clamp(0, 100).toInt();
-                          _dispatchAudioStatePatch(
-                            context,
-                            volumePercent: bounded,
-                            isMuted: bounded == 0,
-                          );
-                        },
-                        onQueueEndBehaviorChanged: (behavior) {
-                          _dispatchAudioStatePatch(
-                            context,
-                            queueEndBehavior: behavior.value,
-                          );
-                        },
-                      ),
-                    ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-                    child: Text('Now playing',
-                        style: GoogleFonts.inter(
-                          color: palette.textMuted,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        )),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: _QueueTrackTile(
-                      title: currentTrack?.title ?? 'No track',
-                      artist: currentTrack?.artist ?? '',
-                      artUrl: currentTrack?.artUrl,
-                      isPlaying: true,
-                      isPending: currentTrack?.isPending ?? false,
-                      meta: currentTrack?.metaLabel,
-                      palette: palette,
-                    ),
-                  ),
-                  if (queueData.pendingNotInQueueLabel != null)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: palette.overlay,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: palette.border),
-                        ),
-                        child: Row(
-                          children: [
-                            SizedBox(
-                              width: 14,
-                              height: 14,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: palette.accent,
-                              ),
+                  if (upNext.isEmpty)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 32),
+                          child: Text(
+                            queueData.emptyMessage,
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.inter(
+                              color: palette.textMuted,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
                             ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                queueData.pendingNotInQueueLabel!,
-                                style: GoogleFonts.inter(
-                                  color: palette.textMuted,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                    child: Text('Up next',
-                        style: GoogleFonts.poppins(
-                          color: palette.textPrimary,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        )),
-                  ),
-                  Expanded(
-                    child: upNext.isEmpty
-                        ? Center(
-                            child: Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 32),
-                              child: Text(
-                                queueData.emptyMessage,
-                                textAlign: TextAlign.center,
-                                style: GoogleFonts.inter(
-                                  color: palette.textMuted,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          )
-                        : ListView.builder(
-                            controller: controller,
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
-                            itemCount: upNext.length,
-                            itemBuilder: (_, i) {
-                              final queuedTrack = upNext[i];
-                              final fullQueueIndex = queueData.currentIndex >= 0
-                                  ? queueData.currentIndex + i + 1
-                                  : i;
-                              final minMovableIndex =
-                                  queueData.currentIndex >= 0
-                                      ? queueData.currentIndex + 1
-                                      : 0;
-                              final canMoveUp =
-                                  fullQueueIndex > minMovableIndex;
-                              final canMoveDown =
-                                  fullQueueIndex < queueData.items.length - 1;
-                              final canManageQueue = queueData.isFromCams &&
-                                  queuedTrack.queueItemId != null &&
-                                  queuedTrack.queueItemId!.isNotEmpty;
-
-                              return _QueueTrackTile(
-                                title: queuedTrack.title,
-                                artist: queuedTrack.artist,
-                                artUrl: queuedTrack.artUrl,
-                                isPlaying: false,
-                                isPending: queuedTrack.isPending,
-                                meta: queuedTrack.metaLabel,
-                                palette: palette,
-                                trailing: canManageQueue
-                                    ? _QueueTrackActions(
-                                        palette: palette,
-                                        canMoveUp: canMoveUp,
-                                        canMoveDown: canMoveDown,
-                                        onMoveUp: canMoveUp
-                                            ? () => _dispatchQueueReorder(
-                                                  context,
-                                                  queueData,
-                                                  fullQueueIndex,
-                                                  fullQueueIndex - 1,
-                                                )
-                                            : null,
-                                        onMoveDown: canMoveDown
-                                            ? () => _dispatchQueueReorder(
-                                                  context,
-                                                  queueData,
-                                                  fullQueueIndex,
-                                                  fullQueueIndex + 1,
-                                                )
-                                            : null,
-                                        onRemove: () =>
-                                            _dispatchRemoveQueueItem(
-                                          context,
-                                          queuedTrack,
-                                        ),
-                                      )
-                                    : null,
-                              );
-                            },
                           ),
+                        ),
+                      ),
+                    )
+                  else
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (_, i) {
+                            final queuedTrack = upNext[i];
+                            final fullQueueIndex = queueData.currentIndex >= 0
+                                ? queueData.currentIndex + i + 1
+                                : i;
+                            final minMovableIndex = queueData.currentIndex >= 0
+                                ? queueData.currentIndex + 1
+                                : 0;
+                            final canMoveUp = fullQueueIndex > minMovableIndex;
+                            final canMoveDown =
+                                fullQueueIndex < queueData.items.length - 1;
+                            final canManageQueue = queueData.isFromCams &&
+                                queuedTrack.queueItemId != null &&
+                                queuedTrack.queueItemId!.isNotEmpty;
+
+                            return _QueueTrackTile(
+                              title: queuedTrack.title,
+                              artist: queuedTrack.artist,
+                              artUrl: queuedTrack.artUrl,
+                              isPlaying: false,
+                              isPending: queuedTrack.isPending,
+                              meta: queuedTrack.metaLabel,
+                              palette: palette,
+                              trailing: canManageQueue
+                                  ? _QueueTrackActions(
+                                      palette: palette,
+                                      canMoveUp: canMoveUp,
+                                      canMoveDown: canMoveDown,
+                                      onMoveUp: canMoveUp
+                                          ? () => _dispatchQueueReorder(
+                                                context,
+                                                queueData,
+                                                fullQueueIndex,
+                                                fullQueueIndex - 1,
+                                              )
+                                          : null,
+                                      onMoveDown: canMoveDown
+                                          ? () => _dispatchQueueReorder(
+                                                context,
+                                                queueData,
+                                                fullQueueIndex,
+                                                fullQueueIndex + 1,
+                                              )
+                                          : null,
+                                      onRemove: () => _dispatchRemoveQueueItem(
+                                        context,
+                                        queuedTrack,
+                                      ),
+                                    )
+                                  : null,
+                            );
+                          },
+                          childCount: upNext.length,
+                        ),
+                      ),
+                    ),
+                  const SliverToBoxAdapter(
+                    child: SizedBox(height: 12),
                   ),
                 ],
               ),
@@ -1231,7 +1246,7 @@ class _ProgressBar extends StatelessWidget {
       required this.useRemoteControls,
       required this.palette});
   final int duration;
-  final int currentPosition;
+  final double currentPosition;
   final int remainingDuration;
   final int seekBaseOffsetSeconds;
   final bool useAbsoluteSeek;
@@ -1246,8 +1261,9 @@ class _ProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final clampedPosition =
-        duration > 0 ? currentPosition.clamp(0, duration).toInt() : 0;
+    final clampedPosition = duration > 0
+        ? currentPosition.clamp(0.0, duration.toDouble()).toDouble()
+        : 0.0;
 
     return Column(
       children: [
@@ -1262,7 +1278,7 @@ class _ProgressBar extends StatelessWidget {
             overlayColor: palette.textPrimary.withOpacity(0.15),
           ),
           child: Slider(
-            value: duration > 0 ? clampedPosition.toDouble() : 0,
+            value: duration > 0 ? clampedPosition : 0,
             min: 0,
             max: duration > 0 ? duration.toDouble() : 1,
             onChanged: (value) {
@@ -1294,7 +1310,7 @@ class _ProgressBar extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(_fmt(clampedPosition),
+              Text(_fmt(clampedPosition.floor()),
                   style: GoogleFonts.inter(
                       color: palette.textMuted, fontSize: 12)),
               Text(duration > 0 ? '-${_fmt(remainingDuration)}' : '--:--',

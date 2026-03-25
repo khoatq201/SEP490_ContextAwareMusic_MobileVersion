@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/enums/playback_command_enum.dart';
 import '../../../../core/enums/transition_type_enum.dart';
+import '../../../suno/domain/entities/suno_generation_status.dart';
 import '../models/space_playback_state_model.dart';
 
 /// Service for real-time communication with CAMS StoreHub via SignalR.
@@ -23,6 +25,7 @@ class StoreHubService {
   HubConnection? _connection;
   String? _currentSpaceId;
   String? _currentManagerStoreId;
+  String? _currentManagerBrandId;
 
   StoreHubService({required String Function() accessTokenFactory})
       : _accessTokenFactory = accessTokenFactory;
@@ -35,6 +38,8 @@ class StoreHubService {
   final _statesSyncController =
       StreamController<SpacePlaybackStateModel>.broadcast();
   final _stopPlaybackController = StreamController<void>.broadcast();
+  final _sunoGenerationStatusController =
+      StreamController<SunoGenerationStatusChangedEvent>.broadcast();
   final _connectionController = StreamController<ConnectionStatus>.broadcast();
 
   /// Stream of PlayStream events (playlist changes).
@@ -50,6 +55,10 @@ class StoreHubService {
 
   /// Stream of stop playback events.
   Stream<void> get onStopPlayback => _stopPlaybackController.stream;
+
+  /// Stream of Suno async generation status changes.
+  Stream<SunoGenerationStatusChangedEvent> get onSunoGenerationStatusChanged =>
+      _sunoGenerationStatusController.stream;
 
   /// Stream of connection status changes.
   Stream<ConnectionStatus> get onConnectionStatus =>
@@ -94,6 +103,9 @@ class StoreHubService {
     if (_currentManagerStoreId != null) {
       await leaveManagerRoom(_currentManagerStoreId!);
     }
+    if (_currentManagerBrandId != null) {
+      await leaveBrandManagerRoom(_currentManagerBrandId!);
+    }
     await _connection?.stop();
     _connection = null;
     _connectionController.add(ConnectionStatus.disconnected);
@@ -131,6 +143,22 @@ class StoreHubService {
     }
   }
 
+  Future<void> joinBrandManagerRoom(String brandId) async {
+    _currentManagerBrandId = brandId;
+    await _connection?.invoke('JoinBrandManagerRoomAsync', args: [brandId]);
+  }
+
+  Future<void> leaveBrandManagerRoom(String brandId) async {
+    try {
+      await _connection?.invoke('LeaveBrandManagerRoomAsync', args: [brandId]);
+    } catch (_) {
+      // Some environments may not expose LeaveBrandManagerRoomAsync yet.
+    }
+    if (_currentManagerBrandId == brandId) {
+      _currentManagerBrandId = null;
+    }
+  }
+
   /// Report playback state for analytics/health monitoring.
   Future<void> reportPlaybackState({
     required String spaceId,
@@ -158,7 +186,7 @@ class StoreHubService {
     conn.on('ConnectionConfirmed', (args) {
       final data = _asMap(args?[0]);
       if (data != null) {
-        print(
+        debugPrint(
           '[StoreHub] Connected to group: ${_readString(data, 'spaceId') ?? _readString(data, 'storeId')}',
         );
       }
@@ -223,20 +251,39 @@ class StoreHubService {
       _stopPlaybackController.add(null);
     });
 
+    conn.on('SunoGenerationStatusChanged', (args) {
+      final payload = _asMap(args?[0]);
+      if (payload == null) return;
+
+      _sunoGenerationStatusController.add(
+        SunoGenerationStatusChangedEvent(
+          id: _readString(payload, 'id') ?? '',
+          brandId: _readString(payload, 'brandId') ?? '',
+          generationStatus:
+              SunoGenerationStatus.fromJson(
+                _readValue(payload, 'generationStatus'),
+              ),
+          progressPercent: _readNum(payload, 'progressPercent')?.toInt(),
+          errorMessage: _readString(payload, 'errorMessage'),
+          generatedTrackId: _readString(payload, 'generatedTrackId'),
+        ),
+      );
+    });
+
     // Error from hub
     conn.on('Error', (args) {
       final message = args?[0] as String?;
-      print('[StoreHub] Server error: $message');
+      debugPrint('[StoreHub] Server error: $message');
     });
 
     // Reconnect lifecycle
     conn.onreconnecting(({error}) {
-      print('[StoreHub] Reconnecting... $error');
+      debugPrint('[StoreHub] Reconnecting... $error');
       _connectionController.add(ConnectionStatus.reconnecting);
     });
 
     conn.onreconnected(({connectionId}) {
-      print('[StoreHub] Reconnected: $connectionId');
+      debugPrint('[StoreHub] Reconnected: $connectionId');
       _connectionController.add(ConnectionStatus.connected);
       // Re-join Space after reconnect
       if (_currentSpaceId != null) {
@@ -245,10 +292,13 @@ class StoreHubService {
       if (_currentManagerStoreId != null) {
         unawaited(joinManagerRoom(_currentManagerStoreId!));
       }
+      if (_currentManagerBrandId != null) {
+        unawaited(joinBrandManagerRoom(_currentManagerBrandId!));
+      }
     });
 
     conn.onclose(({error}) {
-      print('[StoreHub] Connection closed: $error');
+      debugPrint('[StoreHub] Connection closed: $error');
       _connectionController.add(ConnectionStatus.disconnected);
     });
   }
@@ -261,6 +311,7 @@ class StoreHubService {
     _playbackCommandController.close();
     _statesSyncController.close();
     _stopPlaybackController.close();
+    _sunoGenerationStatusController.close();
     _connectionController.close();
   }
 
@@ -359,6 +410,24 @@ class PlaybackCommandEvent {
     required this.command,
     this.seekPositionSeconds,
     this.targetTrackId,
+  });
+}
+
+class SunoGenerationStatusChangedEvent {
+  final String id;
+  final String brandId;
+  final SunoGenerationStatus generationStatus;
+  final int? progressPercent;
+  final String? errorMessage;
+  final String? generatedTrackId;
+
+  const SunoGenerationStatusChangedEvent({
+    required this.id,
+    required this.brandId,
+    required this.generationStatus,
+    this.progressPercent,
+    this.errorMessage,
+    this.generatedTrackId,
   });
 }
 

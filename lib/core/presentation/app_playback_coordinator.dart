@@ -6,7 +6,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../audio/playback_notification_service.dart';
 import '../enums/playback_command_enum.dart';
 import '../player/playlist_queue_builder.dart';
-import '../../features/playlists/data/datasources/playlist_remote_datasource.dart';
 import '../../features/cams/presentation/bloc/cams_playback_bloc.dart';
 import '../../features/cams/presentation/bloc/cams_playback_event.dart';
 import '../../features/cams/presentation/bloc/cams_playback_state.dart';
@@ -16,7 +15,6 @@ import '../player/player_event.dart';
 import '../player/player_state.dart';
 import '../session/session_cubit.dart';
 import '../session/session_state.dart';
-import '../../injection_container.dart';
 
 /// Keeps Session, CAMS and the global PlayerBloc synchronized app-wide.
 class AppPlaybackCoordinator extends StatefulWidget {
@@ -41,10 +39,12 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
   DateTime? _lastHealthyHlsAtUtc;
   DateTime? _hlsStallGraceUntilUtc;
   DateTime? _lastHlsRecoveryAttemptAtUtc;
-  int? _lastHealthyHlsPositionSeconds;
+  double? _lastHealthyHlsPositionSeconds;
   bool _hlsRefreshIssuedForCurrentStall = false;
   static const Duration _managerWarmupDuration = Duration(seconds: 4);
   static const double _managerWarmupCompensationSeconds = 2;
+  static const Duration _managerProgressTickInterval =
+      Duration(milliseconds: 250);
   static const Duration _playbackHealthTickInterval = Duration(seconds: 2);
   static const Duration _hlsStallThreshold = Duration(seconds: 8);
   static const Duration _hlsReloadThreshold = Duration(seconds: 16);
@@ -125,6 +125,20 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
         );
   }
 
+  void _addPlayerEvent(PlayerEvent event) {
+    if (!mounted) return;
+    final playerBloc = context.read<PlayerBloc>();
+    if (playerBloc.isClosed) return;
+    playerBloc.add(event);
+  }
+
+  void _addCamsEvent(CamsPlaybackEvent event) {
+    if (!mounted) return;
+    final camsBloc = context.read<CamsPlaybackBloc>();
+    if (camsBloc.isClosed) return;
+    camsBloc.add(event);
+  }
+
   void _syncCamsState(CamsPlaybackState camsState) {
     final playbackState = camsState.playbackState;
     final playerBloc = context.read<PlayerBloc>();
@@ -154,29 +168,21 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
       final hasQueueIdentity =
           (playbackState.currentQueueItemId?.isNotEmpty ?? false) ||
               ((_resolveCurrentTrackId(playbackState)?.isNotEmpty ?? false));
-      final hasLegacyPlaylistIdentity = playbackState.spaceQueueItems.isEmpty &&
-          (playbackState.currentPlaylistId?.isNotEmpty ?? false);
-      final shouldStopPlayer = !playbackState.hasPendingPlayback &&
-          !hasQueueIdentity &&
-          !hasLegacyPlaylistIdentity;
+      final shouldStopPlayer =
+          !playbackState.hasPendingPlayback && !hasQueueIdentity;
       if (!shouldStopPlayer) {
         return;
       }
       _hydratedPlaylistId = null;
       _stopPlaybackHealthTicker();
-      playerBloc.add(const PlayerHlsStopped());
+      _addPlayerEvent(const PlayerHlsStopped());
       return;
     }
 
     unawaited(_hydrateQueueForPlayback(playbackState));
 
-    final legacyPlaylistId = playbackState.spaceQueueItems.isEmpty
-        ? playbackState.currentPlaylistId
-        : null;
-
-    playerBloc.add(PlayerHlsStarted(
+    _addPlayerEvent(PlayerHlsStarted(
       hlsUrl: playbackState.hlsUrl!,
-      playlistId: legacyPlaylistId,
       playlistName: playbackState.currentDisplayName,
       queueItemId: playbackState.currentQueueItemId,
       trackId: _resolveCurrentTrackId(playbackState),
@@ -186,7 +192,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
       playLocally: session.isPlaybackDevice,
     ));
 
-    playerBloc.add(PlayerAudioSettingsApplied(
+    _addPlayerEvent(PlayerAudioSettingsApplied(
       volumePercent: playbackState.volumePercent,
       isMuted: playbackState.isMuted,
     ));
@@ -220,70 +226,35 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
     if (!mounted) return;
 
     final queueItems = playbackState.spaceQueueItems;
-    if (queueItems.isNotEmpty) {
-      final signature = [
-        playbackState.spaceId,
-        playbackState.currentQueueItemId ?? '',
-        ...queueItems.map((item) => item.queueItemId),
-      ].join('|');
-
-      if (_hydratedPlaylistId != signature) {
-        _hydratedPlaylistId = signature;
-        final playerBloc = context.read<PlayerBloc>();
-        final queue = buildSpaceQueue(queueItems);
-        playerBloc.add(PlayerQueueSeeded(
-          tracks: queue,
-          playlistName: playbackState.currentDisplayName,
-          playlistId: null,
-          force: true,
-        ));
-      }
-
-      final currentTrackId = _resolveCurrentTrackId(playbackState);
-      if (currentTrackId != null) {
-        context.read<PlayerBloc>().add(PlayerRemoteCommandApplied(
-              command: PlaybackCommandEnum.skipToTrack,
-              targetTrackId: currentTrackId,
-              playLocally: false,
-            ));
-      }
-
+    if (queueItems.isEmpty) {
+      _hydratedPlaylistId = null;
       return;
     }
 
-    final playlistId = playbackState.currentPlaylistId;
-    if (playlistId == null || playlistId.isEmpty) return;
-    final legacySignature = 'playlist:$playlistId';
-    if (_hydratedPlaylistId == legacySignature) return;
+    final signature = [
+      playbackState.spaceId,
+      playbackState.currentQueueItemId ?? '',
+      ...queueItems.map((item) => item.queueItemId),
+    ].join('|');
 
-    try {
-      final playlist =
-          await sl<PlaylistRemoteDataSource>().getPlaylistById(playlistId);
-      if (!mounted) return;
-
-      final queue = buildPlaylistQueue(playlist);
-
-      _hydratedPlaylistId = legacySignature;
-      final playerBloc = context.read<PlayerBloc>();
-      playerBloc.add(PlayerQueueSeeded(
+    if (_hydratedPlaylistId != signature) {
+      _hydratedPlaylistId = signature;
+      final queue = buildSpaceQueue(queueItems);
+      _addPlayerEvent(PlayerQueueSeeded(
         tracks: queue,
-        playlistName: playlist.name,
-        playlistId: playlist.id,
+        playlistName: playbackState.currentDisplayName,
+        playlistId: null,
         force: true,
       ));
-      final currentPlaybackState =
-          context.read<CamsPlaybackBloc>().state.playbackState;
-      if (currentPlaybackState != null &&
-          currentPlaybackState.currentPlaylistId == playlistId) {
-        playerBloc.add(PlayerPositionUpdated(
-          positionSeconds: _snapshotPositionSeconds(currentPlaybackState),
-        ));
-      }
-    } catch (error) {
-      debugPrint(
-        '[AppPlaybackCoordinator] Failed to hydrate playlist $playlistId: $error',
-      );
-      // Keep synthetic fallback if hydration fails.
+    }
+
+    final currentTrackId = _resolveCurrentTrackId(playbackState);
+    if (currentTrackId != null) {
+      _addPlayerEvent(PlayerRemoteCommandApplied(
+        command: PlaybackCommandEnum.skipToTrack,
+        targetTrackId: currentTrackId,
+        playLocally: false,
+      ));
     }
   }
 
@@ -309,8 +280,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
     }
 
     _managerProgressTicker?.cancel();
-    _managerProgressTicker =
-        Timer.periodic(const Duration(milliseconds: 500), (_) {
+    _managerProgressTicker = Timer.periodic(_managerProgressTickInterval, (_) {
       if (!mounted) return;
 
       final currentSession = context.read<SessionCubit>().state;
@@ -331,21 +301,21 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
   void _pushManagerPositionSnapshot(SpacePlaybackState playbackState) {
     if (!mounted) return;
 
-    context.read<PlayerBloc>().add(
-          PlayerPositionUpdated(
-            positionSeconds: _snapshotPositionSeconds(playbackState),
-          ),
-        );
+    _addPlayerEvent(
+      PlayerPositionUpdated(
+        positionSeconds: _snapshotPositionSeconds(playbackState),
+      ),
+    );
   }
 
-  int _snapshotPositionSeconds(SpacePlaybackState playbackState) {
+  double _snapshotPositionSeconds(SpacePlaybackState playbackState) {
     var effectiveSeekOffset = playbackState.effectiveSeekOffset;
     if (!playbackState.isPaused && _isManagerWarmupActive(playbackState)) {
       effectiveSeekOffset =
           (effectiveSeekOffset - _managerWarmupCompensationSeconds)
               .clamp(0.0, double.infinity);
     }
-    return effectiveSeekOffset.floor();
+    return effectiveSeekOffset;
   }
 
   void _stopManagerProgressTicker() {
@@ -488,7 +458,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
 
     // Do not force-stop local player from the timer alone because backend
     // ExpectedEndAtUtc can drift around pause/resume. Reconcile from server state.
-    camsBloc.add(const CamsRefreshState(silent: true));
+    _addCamsEvent(const CamsRefreshState(silent: true));
     _stopExpectedEndWatcher();
   }
 
@@ -544,7 +514,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
     final signature = _playbackHealthSignatureFor(playbackState);
     if (_playbackHealthSignature != signature) {
       _playbackHealthSignature = signature;
-      _lastHealthyHlsPositionSeconds = playerState.currentPosition;
+      _lastHealthyHlsPositionSeconds = playerState.currentPositionPrecise;
       _lastHealthyHlsAtUtc = nowUtc;
       _hlsStallGraceUntilUtc = nowUtc.add(_hlsStartupGrace);
       _hlsRefreshIssuedForCurrentStall = false;
@@ -591,7 +561,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
     final nowUtc = DateTime.now().toUtc();
     final graceUntilUtc = _hlsStallGraceUntilUtc;
     if (graceUntilUtc != null && nowUtc.isBefore(graceUntilUtc)) {
-      _lastHealthyHlsPositionSeconds = playerState.currentPosition;
+      _lastHealthyHlsPositionSeconds = playerState.currentPositionPrecise;
       _lastHealthyHlsAtUtc = nowUtc;
       return;
     }
@@ -602,7 +572,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
       return;
     }
 
-    final currentPosition = playerState.currentPosition;
+    final currentPosition = playerState.currentPositionPrecise;
     final previousPosition = _lastHealthyHlsPositionSeconds;
     if (previousPosition == null || currentPosition > previousPosition) {
       _lastHealthyHlsPositionSeconds = currentPosition;
@@ -622,12 +592,8 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
         canAttemptRecovery) {
       _lastHlsRecoveryAttemptAtUtc = nowUtc;
       _hlsRefreshIssuedForCurrentStall = false;
-      final legacyPlaylistId = playbackState.spaceQueueItems.isEmpty
-          ? playbackState.currentPlaylistId
-          : null;
-      playerBloc.add(PlayerHlsStarted(
+      _addPlayerEvent(PlayerHlsStarted(
         hlsUrl: playbackState.hlsUrl!,
-        playlistId: legacyPlaylistId,
         playlistName: playbackState.currentDisplayName,
         queueItemId: playbackState.currentQueueItemId,
         trackId: _resolveCurrentTrackId(playbackState),
@@ -637,7 +603,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
         playLocally: true,
         forceReload: true,
       ));
-      camsBloc.add(const CamsRefreshState(silent: true));
+      _addCamsEvent(const CamsRefreshState(silent: true));
       return;
     }
 
@@ -646,7 +612,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
         canAttemptRecovery) {
       _lastHlsRecoveryAttemptAtUtc = nowUtc;
       _hlsRefreshIssuedForCurrentStall = true;
-      camsBloc.add(const CamsRefreshState(silent: true));
+      _addCamsEvent(const CamsRefreshState(silent: true));
     }
   }
 
@@ -658,7 +624,6 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
 
     final playerBloc = context.read<PlayerBloc>();
     final playerState = playerBloc.state;
-    final camsBloc = context.read<CamsPlaybackBloc>();
     final canRouteToCams =
         playerState.isHlsMode && session.currentSpace != null;
 
@@ -666,22 +631,22 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
       switch (command) {
         case PlaybackNotificationCommand.play:
           if (!playerState.isPlaying) {
-            playerBloc.add(const PlayerRemoteCommandApplied(
+            _addPlayerEvent(const PlayerRemoteCommandApplied(
               command: PlaybackCommandEnum.resume,
               playLocally: true,
             ));
-            camsBloc.add(const CamsSendCommand(
+            _addCamsEvent(const CamsSendCommand(
               command: PlaybackCommandEnum.resume,
             ));
           }
           return;
         case PlaybackNotificationCommand.pause:
           if (playerState.isPlaying) {
-            playerBloc.add(const PlayerRemoteCommandApplied(
+            _addPlayerEvent(const PlayerRemoteCommandApplied(
               command: PlaybackCommandEnum.pause,
               playLocally: true,
             ));
-            camsBloc.add(const CamsSendCommand(
+            _addCamsEvent(const CamsSendCommand(
               command: PlaybackCommandEnum.pause,
             ));
           }
@@ -689,7 +654,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
         case PlaybackNotificationCommand.skipNext:
           if (session.isPlaybackDevice && playerState.hasNext) {
             final nextTrackIndex = playerState.currentIndex + 1;
-            playerBloc.add(PlayerRemoteCommandApplied(
+            _addPlayerEvent(PlayerRemoteCommandApplied(
               command: PlaybackCommandEnum.skipNext,
               positionSeconds:
                   playerState.offsetForIndex(nextTrackIndex).toDouble(),
@@ -697,7 +662,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
               playLocally: true,
             ));
           }
-          camsBloc.add(const CamsSendCommand(
+          _addCamsEvent(const CamsSendCommand(
             command: PlaybackCommandEnum.skipNext,
           ));
           return;
@@ -707,16 +672,16 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
     switch (command) {
       case PlaybackNotificationCommand.play:
         if (!playerState.isPlaying) {
-          playerBloc.add(const PlayerPlayPauseToggled());
+          _addPlayerEvent(const PlayerPlayPauseToggled());
         }
         return;
       case PlaybackNotificationCommand.pause:
         if (playerState.isPlaying) {
-          playerBloc.add(const PlayerPlayPauseToggled());
+          _addPlayerEvent(const PlayerPlayPauseToggled());
         }
         return;
       case PlaybackNotificationCommand.skipNext:
-        playerBloc.add(const PlayerSkipRequested());
+        _addPlayerEvent(const PlayerSkipRequested());
         return;
     }
   }
@@ -785,12 +750,12 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
               current.lastPlaybackCommand != null,
           listener: (context, camsState) {
             final session = context.read<SessionCubit>().state;
-            context.read<PlayerBloc>().add(PlayerRemoteCommandApplied(
-                  command: camsState.lastPlaybackCommand!,
-                  positionSeconds: camsState.lastSeekPositionSeconds,
-                  targetTrackId: camsState.lastTargetTrackId,
-                  playLocally: session.isPlaybackDevice,
-                ));
+            _addPlayerEvent(PlayerRemoteCommandApplied(
+              command: camsState.lastPlaybackCommand!,
+              positionSeconds: camsState.lastSeekPositionSeconds,
+              targetTrackId: camsState.lastTargetTrackId,
+              playLocally: session.isPlaybackDevice,
+            ));
           },
         ),
         BlocListener<PlayerBloc, PlayerState>(
@@ -804,11 +769,11 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
                 !camsState.isStreaming) {
               return;
             }
-            context.read<CamsPlaybackBloc>().add(
-                  const CamsSendCommand(
-                    command: PlaybackCommandEnum.trackEnded,
-                  ),
-                );
+            _addCamsEvent(
+              const CamsSendCommand(
+                command: PlaybackCommandEnum.trackEnded,
+              ),
+            );
           },
         ),
         BlocListener<PlayerBloc, PlayerState>(

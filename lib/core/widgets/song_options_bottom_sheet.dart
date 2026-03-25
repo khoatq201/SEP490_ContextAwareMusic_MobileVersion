@@ -36,13 +36,19 @@ class SongOptionsBottomSheet extends StatelessWidget {
   const SongOptionsBottomSheet({
     super.key,
     required this.song,
+    this.showPlayNow = true,
+    this.playNowLabel = 'Play now',
     this.enableAddToQueue = false,
+    this.addToQueueLabel = 'Add to queue',
     this.enableGoToAlbum = false,
     this.enableGoToArtist = false,
   });
 
   final SongEntity song;
+  final bool showPlayNow;
+  final String playNowLabel;
   final bool enableAddToQueue;
+  final String addToQueueLabel;
   final bool enableGoToAlbum;
   final bool enableGoToArtist;
 
@@ -169,18 +175,19 @@ class SongOptionsBottomSheet extends StatelessWidget {
                 textMuted: textMuted,
                 onTap: () => Navigator.pop(context, SongOption.addToPlaylist),
               ),
-            _OptionTile(
-              icon: Icons.play_circle_outline,
-              label: 'Play now',
-              enabled: true,
-              isDark: isDark,
-              textPrimary: textPrimary,
-              textMuted: textMuted,
-              onTap: () => Navigator.pop(context, SongOption.playNow),
-            ),
+            if (showPlayNow)
+              _OptionTile(
+                icon: Icons.play_circle_outline,
+                label: playNowLabel,
+                enabled: true,
+                isDark: isDark,
+                textPrimary: textPrimary,
+                textMuted: textMuted,
+                onTap: () => Navigator.pop(context, SongOption.playNow),
+              ),
             _OptionTile(
               icon: Icons.queue_music_outlined,
-              label: 'Add to queue',
+              label: addToQueueLabel,
               enabled: enableAddToQueue,
               isDark: isDark,
               textPrimary: textPrimary,
