@@ -53,10 +53,14 @@ class ApiPlaylist extends Equatable {
 
   /// Whether this playlist has a ready HLS stream
   bool get isStreamReady {
-    if (hlsUrl != null && hlsUrl!.isNotEmpty) return true;
     final playlistTracks = tracks;
-    if (playlistTracks == null || playlistTracks.isEmpty) return false;
-    return playlistTracks.any((item) => (item.hlsUrl ?? '').isNotEmpty);
+    if (playlistTracks != null && playlistTracks.isNotEmpty) {
+      // Queue-first contract: prefer per-track readiness whenever tracks exist.
+      return playlistTracks.any((item) => item.isStreamReady);
+    }
+
+    // Legacy fallback for older list/detail payloads without track items.
+    return (hlsUrl?.trim().isNotEmpty ?? false);
   }
 
   int? get resolvedTotalDurationSeconds {

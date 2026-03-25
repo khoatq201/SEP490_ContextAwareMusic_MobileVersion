@@ -31,6 +31,9 @@ class PlaylistTrackItem extends Equatable {
   /// Effective duration: prefer actual (from transcode) over metadata.
   int get effectiveDuration => actualDurationSec ?? durationSec ?? 0;
 
+  /// Track-level stream readiness based on per-track HLS URL.
+  bool get isStreamReady => (hlsUrl?.trim().isNotEmpty ?? false);
+
   /// Formatted duration string (e.g., "3:30")
   String get formattedDuration {
     final dur = effectiveDuration;
