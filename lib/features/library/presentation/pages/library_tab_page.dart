@@ -17,6 +17,7 @@ import '../../../../injection_container.dart';
 import '../../../cams/data/services/store_hub_service.dart';
 import '../../../home/domain/entities/playlist_entity.dart';
 import '../../../home/domain/entities/song_entity.dart';
+import '../../domain/playlist_creation_guard.dart';
 import '../../../playlists/data/datasources/playlist_remote_datasource.dart';
 import '../../../suno/data/datasources/suno_remote_datasource.dart';
 import '../../../suno/domain/entities/suno_config.dart';
@@ -458,28 +459,15 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
       final name = controller.text.trim();
       if (name.isEmpty) return;
       final session = context.read<SessionCubit>().state;
-      if (session.isPlaybackDevice) {
-        _showSnackBar(
-          'Playback device cannot create playlists.',
-          isError: true,
-        );
-        return;
-      }
-      if (session.currentRole != UserRole.brandManager &&
-          session.currentRole != UserRole.storeManager) {
-        _showSnackBar(
-          'Your role cannot create playlists.',
-          isError: true,
-        );
-        return;
-      }
-
       final storeId = session.currentStore?.id;
-      if (storeId == null || storeId.isEmpty) {
-        _showSnackBar(
-          'Select a store before creating a playlist.',
-          isError: true,
-        );
+      final guardResult = evaluatePlaylistCreationGuard(
+        isPlaybackDevice: session.isPlaybackDevice,
+        currentRole: session.currentRole,
+        currentStoreId: storeId,
+      );
+      if (!guardResult.isAllowed) {
+        _showSnackBar(guardResult.errorMessage ?? 'Cannot create playlist.',
+            isError: true);
         return;
       }
 
