@@ -89,4 +89,73 @@ class LocationRepositoryImpl implements LocationRepository {
     }
     return const Left(NetworkFailure('No internet connection'));
   }
+
+  @override
+  Future<Either<Failure, SpaceMutationResult>> createSpace(
+    SpaceMutationRequest request,
+  ) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final result = await remoteDataSource.createSpace(request);
+        return Right(result);
+      } on ServerException catch (e) {
+        return Left(ServerFailure(e.message));
+      } catch (e) {
+        return Left(ServerFailure('Unexpected error: $e'));
+      }
+    }
+    return const Left(NetworkFailure('No internet connection'));
+  }
+
+  @override
+  Future<Either<Failure, SpaceMutationResult>> updateSpace(
+    String spaceId,
+    SpaceMutationRequest request,
+  ) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final result = await remoteDataSource.updateSpace(spaceId, request);
+        return Right(result);
+      } on ServerException catch (e) {
+        return Left(ServerFailure(e.message));
+      } catch (e) {
+        return Left(ServerFailure('Unexpected error: $e'));
+      }
+    }
+    return const Left(NetworkFailure('No internet connection'));
+  }
+
+  @override
+  Future<Either<Failure, SpaceMutationResult>> deleteSpace(
+    String spaceId,
+  ) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final result = await remoteDataSource.deleteSpace(spaceId);
+        return Right(result);
+      } on ServerException catch (e) {
+        return Left(ServerFailure(e.message));
+      } catch (e) {
+        return Left(ServerFailure('Unexpected error: $e'));
+      }
+    }
+    return const Left(NetworkFailure('No internet connection'));
+  }
+
+  @override
+  Future<Either<Failure, SpaceMutationResult>> toggleSpaceStatus(
+    String spaceId,
+  ) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final result = await remoteDataSource.toggleSpaceStatus(spaceId);
+        return Right(result);
+      } on ServerException catch (e) {
+        return Left(ServerFailure(e.message));
+      } catch (e) {
+        return Left(ServerFailure('Unexpected error: $e'));
+      }
+    }
+    return const Left(NetworkFailure('No internet connection'));
+  }
 }

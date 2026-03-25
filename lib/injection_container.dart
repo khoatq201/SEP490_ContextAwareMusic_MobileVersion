@@ -123,10 +123,17 @@ import 'features/moods/data/repositories/mood_repository_impl.dart';
 // Tracks Feature
 import 'features/tracks/data/datasources/track_remote_datasource.dart';
 import 'features/tracks/data/repositories/track_repository_impl.dart';
+import 'features/tracks/domain/usecases/track_usecases.dart';
 
 // Playlists Feature
 import 'features/playlists/data/datasources/playlist_remote_datasource.dart';
 import 'features/playlists/data/repositories/playlist_repository_impl.dart';
+
+// Suno Feature
+import 'features/suno/data/datasources/suno_remote_datasource.dart';
+import 'features/suno/data/repositories/suno_repository_impl.dart';
+import 'features/suno/domain/services/suno_playback_orchestrator.dart';
+import 'features/suno/domain/usecases/suno_usecases.dart';
 
 // CAMS Feature
 import 'features/cams/data/datasources/cams_remote_datasource.dart';
@@ -136,6 +143,7 @@ import 'features/cams/domain/usecases/get_space_state.dart';
 import 'features/cams/domain/usecases/override_space.dart';
 import 'features/cams/domain/usecases/cancel_override.dart';
 import 'features/cams/domain/usecases/pairing_usecases.dart';
+import 'features/cams/domain/services/cams_playback_capability_provider.dart';
 import 'features/cams/domain/usecases/queue_usecases.dart';
 import 'features/cams/domain/usecases/send_playback_command.dart';
 import 'features/cams/domain/usecases/update_audio_state.dart';
@@ -178,6 +186,13 @@ Future<void> initializeDependencies() async {
 
   // Session
   sl.registerLazySingleton(() => SessionCubit(localStorage: sl()));
+  sl.registerLazySingleton<CamsPlaybackCapabilityProvider>(
+    () => const StaticCamsPlaybackCapabilityProvider(
+      CamsPlaybackCapabilities(
+        supportsImmediateManualQueueTakeover: false,
+      ),
+    ),
+  );
 
   // =============================================
   // Auth Feature
@@ -235,6 +250,7 @@ Future<void> initializeDependencies() async {
       networkInfo: sl(),
       localStorage: sl(),
       dioClient: sl(),
+      camsRemoteDataSource: sl(),
     ),
   );
 
@@ -271,6 +287,10 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(() => GetPairedSpace(sl()));
   sl.registerLazySingleton(() => GetSpacesForStore(sl()));
   sl.registerLazySingleton(() => GetSpacesForBrand(sl()));
+  sl.registerLazySingleton(() => CreateSpace(sl()));
+  sl.registerLazySingleton(() => UpdateSpace(sl()));
+  sl.registerLazySingleton(() => DeleteSpace(sl()));
+  sl.registerLazySingleton(() => ToggleSpaceStatus(sl()));
 
   // BLoCs
   sl.registerFactory(
@@ -545,6 +565,14 @@ Future<void> initializeDependencies() async {
     () => TrackRepositoryImpl(remoteDataSource: sl()),
   );
 
+  sl.registerLazySingleton(() => GetTracks(sl()));
+  sl.registerLazySingleton(() => GetTrackById(sl()));
+  sl.registerLazySingleton(() => CreateTrack(sl()));
+  sl.registerLazySingleton(() => UpdateTrack(sl()));
+  sl.registerLazySingleton(() => DeleteTrack(sl()));
+  sl.registerLazySingleton(() => ToggleTrackStatus(sl()));
+  sl.registerLazySingleton(() => RetranscodeTrack(sl()));
+
   // =============================================
   // Playlists Feature
   // =============================================
@@ -555,6 +583,33 @@ Future<void> initializeDependencies() async {
 
   sl.registerLazySingleton<PlaylistRepository>(
     () => PlaylistRepositoryImpl(remoteDataSource: sl()),
+  );
+
+  // =============================================
+  // Suno Feature
+  // =============================================
+
+  sl.registerLazySingleton<SunoRemoteDataSource>(
+    () => SunoRemoteDataSourceImpl(dioClient: sl()),
+  );
+
+  sl.registerLazySingleton<SunoRepository>(
+    () => SunoRepositoryImpl(remoteDataSource: sl()),
+  );
+
+  sl.registerLazySingleton(() => CreateSunoGeneration(sl()));
+  sl.registerLazySingleton(() => GetSunoGeneration(sl()));
+  sl.registerLazySingleton(() => CancelSunoGeneration(sl()));
+  sl.registerLazySingleton(() => GetSunoConfig(sl()));
+  sl.registerLazySingleton(() => UpdateSunoConfig(sl()));
+  sl.registerLazySingleton(
+    () => SunoPlaybackOrchestrator(
+      createSunoGeneration: sl(),
+      getSunoGeneration: sl(),
+      getTrackById: sl(),
+      getSpaceState: sl(),
+      queueTracks: sl(),
+    ),
   );
 
   // =============================================
@@ -615,6 +670,7 @@ Future<void> initializeDependencies() async {
       getMoods: sl(),
       storeHubService: sl(),
       sessionCubit: sl(),
+      capabilityProvider: sl(),
     ),
   );
 

@@ -31,6 +31,7 @@ import 'package:cams_store_manager/features/cams/domain/usecases/pairing_usecase
 import 'package:cams_store_manager/features/locations/domain/entities/location_space.dart';
 import 'package:cams_store_manager/features/locations/domain/repositories/location_repository.dart';
 import 'package:cams_store_manager/features/locations/domain/usecases/location_usecases.dart';
+import 'package:cams_store_manager/features/locations/data/datasources/location_remote_datasource.dart';
 import 'package:cams_store_manager/features/locations/presentation/bloc/location_bloc.dart';
 import 'package:cams_store_manager/features/locations/presentation/bloc/location_event.dart';
 import 'package:cams_store_manager/features/locations/presentation/bloc/location_state.dart';
@@ -155,6 +156,7 @@ void main() {
       expect(updated.currentPlaylistName, 'Queue Track');
       expect(updated.hasActivePlayback, isTrue);
       expect(updated.hasLivePlayback, isTrue);
+      expect(playlistDataSource.getPlaylistByIdCallCount, 0);
     });
 
     test('falls back to queueStatus=playing when currentQueueItemId is missing',
@@ -190,6 +192,69 @@ void main() {
       expect(updated.currentTrackName, 'Fallback Queue Track');
       expect(updated.currentPlaylistName, 'Fallback Queue Track');
       expect(updated.hasActivePlayback, isTrue);
+      expect(playlistDataSource.getPlaylistByIdCallCount, 0);
+    });
+
+    test(
+        'hydrates legacy playlist metadata only when queue-first data is absent',
+        () async {
+      camsRepository.spaceStateBySpaceId['space-1'] = const SpacePlaybackState(
+        spaceId: 'space-1',
+        storeId: 'store-1',
+        currentPlaylistId: 'playlist-legacy',
+        currentPlaylistName: 'Legacy Playlist',
+        hlsUrl: 'https://stream.example.com/legacy.m3u8',
+        seekOffsetSeconds: 12,
+      );
+
+      bloc.add(const LoadLocationsRequested());
+      await _waitUntil(() => bloc.state.status == LocationStatus.success);
+
+      expect(
+          playlistDataSource.getPlaylistByIdCallCount, greaterThanOrEqualTo(1));
+    });
+
+    test('reloads locations after manager room reconnect', () async {
+      bloc.add(const LoadLocationsRequested());
+      await _waitUntil(
+        () =>
+            bloc.state.status == LocationStatus.success &&
+            storeHubService.joinManagerRoomCallCount >= 1,
+      );
+
+      expect(locationRepository.getSpacesForStoreCallCount, 1);
+
+      locationRepository.spacesByStoreId['store-1'] = const [
+        LocationSpace(
+          id: 'space-1',
+          name: 'Space One',
+          storeId: 'store-1',
+          type: SpaceTypeEnum.hall,
+          status: EntityStatusEnum.active,
+        ),
+        LocationSpace(
+          id: 'space-2',
+          name: 'Space Two',
+          storeId: 'store-1',
+          type: SpaceTypeEnum.hall,
+          status: EntityStatusEnum.active,
+        ),
+      ];
+
+      await storeHubService.disconnect();
+      await _nextTick();
+      await storeHubService.connect();
+
+      await _waitUntil(
+        () =>
+            locationRepository.getSpacesForStoreCallCount >= 2 &&
+            (bloc.state.storeSpaces?.items.length ?? 0) == 2,
+      );
+
+      expect(
+        bloc.state.storeSpaces?.items.map((space) => space.id).toList(),
+        ['space-1', 'space-2'],
+      );
     });
   });
 }
@@ -281,6 +346,7 @@ class _FakeLocationRepository implements LocationRepository {
   });
 
   final Map<String, List<LocationSpace>> spacesByStoreId;
+  int getSpacesForStoreCallCount = 0;
 
   @override
   Future<Either<Failure, LocationSpace>> getPairedSpace(
@@ -323,6 +389,7 @@ class _FakeLocationRepository implements LocationRepository {
     int page = 1,
     int pageSize = 10,
   }) async {
+    getSpacesForStoreCallCount += 1;
     final spaces = spacesByStoreId[storeId] ?? const [];
     return Right(
       PaginationResult<LocationSpace>(
@@ -336,6 +403,35 @@ class _FakeLocationRepository implements LocationRepository {
       ),
     );
   }
+
+  @override
+  Future<Either<Failure, SpaceMutationResult>> createSpace(
+    SpaceMutationRequest request,
+  ) async {
+    return const Right(SpaceMutationResult(isSuccess: true));
+  }
+
+  @override
+  Future<Either<Failure, SpaceMutationResult>> updateSpace(
+    String spaceId,
+    SpaceMutationRequest request,
+  ) async {
+    return const Right(SpaceMutationResult(isSuccess: true));
+  }
+
+  @override
+  Future<Either<Failure, SpaceMutationResult>> deleteSpace(
+    String spaceId,
+  ) async {
+    return const Right(SpaceMutationResult(isSuccess: true));
+  }
+
+  @override
+  Future<Either<Failure, SpaceMutationResult>> toggleSpaceStatus(
+    String spaceId,
+  ) async {
+    return const Right(SpaceMutationResult(isSuccess: true));
+  }
 }
 
 class _FakeStoreSelectionRepository implements StoreSelectionRepository {
@@ -346,14 +442,19 @@ class _FakeStoreSelectionRepository implements StoreSelectionRepository {
 }
 
 class _FakePlaylistRemoteDataSource implements PlaylistRemoteDataSource {
+  int getPlaylistByIdCallCount = 0;
+
   @override
-  Future<void> addTracksToPlaylist({
+  Future<PlaylistMutationResult> addTracksToPlaylist({
     required String playlistId,
     required List<String> trackIds,
-  }) async {}
+  }) async {
+    return const PlaylistMutationResult(isSuccess: true);
+  }
 
   @override
   Future<ApiPlaylistModel> getPlaylistById(String playlistId) async {
+    getPlaylistByIdCallCount += 1;
     final now = DateTime.now().toUtc().toIso8601String();
     return ApiPlaylistModel.fromDetailJson({
       'id': playlistId,
@@ -370,10 +471,16 @@ class _FakePlaylistRemoteDataSource implements PlaylistRemoteDataSource {
     int page = 1,
     int pageSize = 10,
     String? search,
+    String? sortBy,
+    bool? isAscending,
+    int? status,
+    String? brandId,
     String? storeId,
     String? moodId,
     bool? isDynamic,
     bool? isDefault,
+    DateTime? createdFrom,
+    DateTime? createdTo,
   }) async {
     return PlaylistListResponse(
       items: const [],
@@ -383,6 +490,44 @@ class _FakePlaylistRemoteDataSource implements PlaylistRemoteDataSource {
       hasNext: false,
       hasPrevious: false,
     );
+  }
+
+  @override
+  Future<PlaylistMutationResult> createPlaylist(
+    PlaylistMutationRequest request,
+  ) async {
+    return const PlaylistMutationResult(isSuccess: true);
+  }
+
+  @override
+  Future<PlaylistMutationResult> updatePlaylist(
+    String playlistId,
+    PlaylistMutationRequest request,
+  ) async {
+    return const PlaylistMutationResult(isSuccess: true);
+  }
+
+  @override
+  Future<PlaylistMutationResult> deletePlaylist(String playlistId) async {
+    return const PlaylistMutationResult(isSuccess: true);
+  }
+
+  @override
+  Future<PlaylistMutationResult> togglePlaylistStatus(String playlistId) async {
+    return const PlaylistMutationResult(isSuccess: true);
+  }
+
+  @override
+  Future<PlaylistMutationResult> removeTrackFromPlaylist({
+    required String playlistId,
+    required String trackId,
+  }) async {
+    return const PlaylistMutationResult(isSuccess: true);
+  }
+
+  @override
+  Future<PlaylistMutationResult> retranscodePlaylist(String playlistId) async {
+    return const PlaylistMutationResult(isSuccess: true);
   }
 }
 
@@ -396,6 +541,8 @@ class _FakeStoreHubService extends StoreHubService {
       StreamController<SpacePlaybackStateModel>.broadcast();
   final _stopPlaybackController = StreamController<void>.broadcast();
   final _connectionController = StreamController<ConnectionStatus>.broadcast();
+  ConnectionStatus _status = ConnectionStatus.disconnected;
+  int joinManagerRoomCallCount = 0;
 
   @override
   Stream<PlayStreamEvent> get onPlayStream => _playStreamController.stream;
@@ -417,16 +564,26 @@ class _FakeStoreHubService extends StoreHubService {
 
   @override
   Future<void> connect() async {
+    if (_status == ConnectionStatus.connected) {
+      return;
+    }
+    _status = ConnectionStatus.connected;
     _connectionController.add(ConnectionStatus.connected);
   }
 
   @override
   Future<void> disconnect() async {
+    if (_status == ConnectionStatus.disconnected) {
+      return;
+    }
+    _status = ConnectionStatus.disconnected;
     _connectionController.add(ConnectionStatus.disconnected);
   }
 
   @override
-  Future<void> joinManagerRoom(String storeId) async {}
+  Future<void> joinManagerRoom(String storeId) async {
+    joinManagerRoomCallCount += 1;
+  }
 
   @override
   Future<void> leaveManagerRoom(String storeId) async {}

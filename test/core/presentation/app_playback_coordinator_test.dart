@@ -169,7 +169,7 @@ void main() {
     });
 
     testWidgets(
-        'falls back to legacy playlist hydration when queue payload is empty',
+        'keeps queue-first HLS playback synthetic when queue snapshot is empty',
         (tester) async {
       addTearDown(() async {
         await _disposeHarness(tester);
@@ -182,8 +182,6 @@ void main() {
         hlsUrl: 'https://stream.example.com/legacy.m3u8',
         seekOffsetSeconds: 45,
       );
-      playlistDataSource.playlistById['playlist-legacy'] =
-          _buildLegacyPlaylist('playlist-legacy');
 
       await _pumpCoordinator(
           tester, notificationService, sessionCubit, playerBloc, camsBloc);
@@ -193,14 +191,14 @@ void main() {
       await _waitUntil(
           tester,
           () =>
-              playlistDataSource.getPlaylistByIdCallCount > 0 &&
-              playerBloc.state.queue.length == 2);
+              playerBloc.state.isSyncedCamsPlayback &&
+              playerBloc.state.currentTrack != null);
 
-      expect(
-          playlistDataSource.getPlaylistByIdCallCount, greaterThanOrEqualTo(1));
-      expect(playerBloc.state.playlistId, 'playlist-legacy');
-      expect(playerBloc.state.queue.first.id, 'track-legacy-1');
-      expect(playerBloc.state.queue.last.id, 'track-legacy-2');
+      expect(playlistDataSource.getPlaylistByIdCallCount, 0);
+      expect(playerBloc.state.playlistId, isNull);
+      expect(playerBloc.state.queue, isEmpty);
+      expect(playerBloc.state.currentTrack?.id, 'space-1');
+      expect(playerBloc.state.currentTrack?.title, 'Legacy Playlist');
     });
 
     testWidgets(
@@ -592,10 +590,12 @@ class _FakePlaylistRemoteDataSource implements PlaylistRemoteDataSource {
   int getPlaylistByIdCallCount = 0;
 
   @override
-  Future<void> addTracksToPlaylist({
+  Future<PlaylistMutationResult> addTracksToPlaylist({
     required String playlistId,
     required List<String> trackIds,
-  }) async {}
+  }) async {
+    return const PlaylistMutationResult(isSuccess: true);
+  }
 
   @override
   Future<ApiPlaylistModel> getPlaylistById(String playlistId) async {
@@ -611,10 +611,16 @@ class _FakePlaylistRemoteDataSource implements PlaylistRemoteDataSource {
     int page = 1,
     int pageSize = 10,
     String? search,
+    String? sortBy,
+    bool? isAscending,
+    int? status,
+    String? brandId,
     String? storeId,
     String? moodId,
     bool? isDynamic,
     bool? isDefault,
+    DateTime? createdFrom,
+    DateTime? createdTo,
   }) async {
     return PlaylistListResponse(
       items: const [],
@@ -624,6 +630,44 @@ class _FakePlaylistRemoteDataSource implements PlaylistRemoteDataSource {
       hasNext: false,
       hasPrevious: false,
     );
+  }
+
+  @override
+  Future<PlaylistMutationResult> createPlaylist(
+    PlaylistMutationRequest request,
+  ) async {
+    return const PlaylistMutationResult(isSuccess: true);
+  }
+
+  @override
+  Future<PlaylistMutationResult> updatePlaylist(
+    String playlistId,
+    PlaylistMutationRequest request,
+  ) async {
+    return const PlaylistMutationResult(isSuccess: true);
+  }
+
+  @override
+  Future<PlaylistMutationResult> deletePlaylist(String playlistId) async {
+    return const PlaylistMutationResult(isSuccess: true);
+  }
+
+  @override
+  Future<PlaylistMutationResult> togglePlaylistStatus(String playlistId) async {
+    return const PlaylistMutationResult(isSuccess: true);
+  }
+
+  @override
+  Future<PlaylistMutationResult> removeTrackFromPlaylist({
+    required String playlistId,
+    required String trackId,
+  }) async {
+    return const PlaylistMutationResult(isSuccess: true);
+  }
+
+  @override
+  Future<PlaylistMutationResult> retranscodePlaylist(String playlistId) async {
+    return const PlaylistMutationResult(isSuccess: true);
   }
 }
 

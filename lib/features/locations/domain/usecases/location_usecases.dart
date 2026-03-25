@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/models/pagination_result.dart';
+import '../../data/datasources/location_remote_datasource.dart';
 import '../entities/location_space.dart';
 import '../repositories/location_repository.dart';
 
@@ -37,5 +38,50 @@ class GetSpacesForBrand {
       int pageSize = 10}) {
     return repository.getSpacesForBrand(storeIds,
         page: page, pageSize: pageSize);
+  }
+}
+
+class CreateSpace {
+  final LocationRepository repository;
+
+  CreateSpace(this.repository);
+
+  Future<Either<Failure, SpaceMutationResult>> call(
+    SpaceMutationRequest request,
+  ) {
+    return repository.createSpace(request);
+  }
+}
+
+class UpdateSpace {
+  final LocationRepository repository;
+
+  UpdateSpace(this.repository);
+
+  Future<Either<Failure, SpaceMutationResult>> call(
+    String spaceId,
+    SpaceMutationRequest request,
+  ) {
+    return repository.updateSpace(spaceId, request);
+  }
+}
+
+class DeleteSpace {
+  final LocationRepository repository;
+
+  DeleteSpace(this.repository);
+
+  Future<Either<Failure, SpaceMutationResult>> call(String spaceId) {
+    return repository.deleteSpace(spaceId);
+  }
+}
+
+class ToggleSpaceStatus {
+  final LocationRepository repository;
+
+  ToggleSpaceStatus(this.repository);
+
+  Future<Either<Failure, SpaceMutationResult>> call(String spaceId) {
+    return repository.toggleSpaceStatus(spaceId);
   }
 }
