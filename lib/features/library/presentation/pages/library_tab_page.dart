@@ -17,6 +17,7 @@ import '../../../../injection_container.dart';
 import '../../../cams/data/services/store_hub_service.dart';
 import '../../../home/domain/entities/playlist_entity.dart';
 import '../../../home/domain/entities/song_entity.dart';
+import '../../domain/create_library_playlist_usecase.dart';
 import '../../domain/playlist_creation_guard.dart';
 import '../../../playlists/data/datasources/playlist_remote_datasource.dart';
 import '../../../suno/data/datasources/suno_remote_datasource.dart';
@@ -470,28 +471,19 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
             isError: true);
         return;
       }
+      final resolvedStoreId = storeId!;
 
       try {
-        await sl<PlaylistRemoteDataSource>().createPlaylist(
-          PlaylistMutationRequest(
-            name: name,
-            storeId: storeId,
-          ),
+        final createdPlaylistId = await createLibraryPlaylist(
+          playlistDataSource: sl<PlaylistRemoteDataSource>(),
+          name: name,
+          storeId: resolvedStoreId,
         );
 
         await _loadPlaylists();
         if (!mounted) return;
 
         _showSnackBar('Playlist created.');
-
-        String? createdPlaylistId;
-        final normalizedName = name.toLowerCase();
-        for (final playlist in _savedPlaylists) {
-          if (playlist.title.trim().toLowerCase() == normalizedName) {
-            createdPlaylistId = playlist.id;
-            break;
-          }
-        }
 
         if (createdPlaylistId != null && createdPlaylistId.isNotEmpty) {
           context.push('/home/playlist-detail', extra: createdPlaylistId);
