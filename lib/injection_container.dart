@@ -76,6 +76,7 @@ import 'features/store_dashboard/data/repositories/store_repository_impl.dart';
 import 'features/store_dashboard/domain/repositories/store_repository.dart';
 import 'features/store_dashboard/domain/usecases/get_store_details.dart';
 import 'features/store_dashboard/domain/usecases/get_space_summaries.dart';
+import 'features/store_dashboard/domain/usecases/store_mutation_usecases.dart';
 import 'features/store_dashboard/presentation/bloc/store_dashboard_bloc.dart';
 
 // Store Selection Feature
@@ -469,6 +470,10 @@ Future<void> initializeDependencies() async {
   // Use cases
   sl.registerLazySingleton(() => GetStoreDetails(sl()));
   sl.registerLazySingleton(() => GetSpaceSummaries(sl()));
+  sl.registerLazySingleton(() => CreateStore(sl()));
+  sl.registerLazySingleton(() => UpdateStore(sl()));
+  sl.registerLazySingleton(() => DeleteStore(sl()));
+  sl.registerLazySingleton(() => ToggleStoreStatus(sl()));
 
   // BLoCs
   sl.registerFactory(

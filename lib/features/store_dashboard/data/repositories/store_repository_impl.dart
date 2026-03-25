@@ -37,4 +37,62 @@ class StoreRepositoryImpl implements StoreRepository {
           ServerFailure('Failed to get space summaries: ${e.toString()}'));
     }
   }
+
+  @override
+  Future<Either<Failure, StoreMutationResult>> createStore(
+    StoreMutationRequest request,
+  ) async {
+    try {
+      final result = await remoteDataSource.createStore(request);
+      return Right(result);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure('Failed to create store: ${e.toString()}'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, StoreMutationResult>> updateStore(
+    String storeId,
+    StoreMutationRequest request,
+  ) async {
+    try {
+      final result = await remoteDataSource.updateStore(storeId, request);
+      return Right(result);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure('Failed to update store: ${e.toString()}'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, StoreMutationResult>> deleteStore(
+    String storeId,
+  ) async {
+    try {
+      final result = await remoteDataSource.deleteStore(storeId);
+      return Right(result);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure('Failed to delete store: ${e.toString()}'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, StoreMutationResult>> toggleStoreStatus(
+    String storeId,
+  ) async {
+    try {
+      final result = await remoteDataSource.toggleStoreStatus(storeId);
+      return Right(result);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(
+          ServerFailure('Failed to toggle store status: ${e.toString()}'));
+    }
+  }
 }

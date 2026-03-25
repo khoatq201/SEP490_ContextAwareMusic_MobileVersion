@@ -100,4 +100,43 @@ class StoreMockDataSource implements StoreRemoteDataSource {
       ),
     ];
   }
+
+  @override
+  Future<StoreMutationResult> createStore(StoreMutationRequest request) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    return const StoreMutationResult(
+      isSuccess: true,
+      message: 'Store created successfully',
+    );
+  }
+
+  @override
+  Future<StoreMutationResult> updateStore(
+    String storeId,
+    StoreMutationRequest request,
+  ) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    return const StoreMutationResult(
+      isSuccess: true,
+      message: 'Store updated successfully',
+    );
+  }
+
+  @override
+  Future<StoreMutationResult> deleteStore(String storeId) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    return const StoreMutationResult(
+      isSuccess: true,
+      message: 'Store deleted successfully',
+    );
+  }
+
+  @override
+  Future<StoreMutationResult> toggleStoreStatus(String storeId) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    return const StoreMutationResult(
+      isSuccess: true,
+      message: 'Store status updated successfully',
+    );
+  }
 }
