@@ -10,7 +10,14 @@ class ApiConstants {
 
   // Base URLs
   // Android emulator can use 10.0.2.2 (host localhost); real devices should use LAN IP.
-  static const String baseUrl = 'https://logcams.cloud';
+  static const String baseUrl = 'https://7942-118-69-70-166.ngrok-free.app';
+
+  // Default request headers
+  static const Map<String, String> defaultHeaders = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    'x-ngrok-skip-browser-warning': '1',
+  };
   static const String mqttBrokerUrl = 'mqtt.cams.example.com';
   static const int mqttPort = 1883;
 
@@ -25,10 +32,20 @@ class ApiConstants {
 
   // Stores & Spaces
   static const String getStoresEndpoint = '/api/stores';
+  static String getStoreDetail(String storeId) => '/api/stores/$storeId';
+  static String updateStore(String storeId) => '/api/stores/$storeId';
+  static String deleteStore(String storeId) => '/api/stores/$storeId';
+  static String toggleStoreStatus(String storeId) =>
+      '/api/stores/$storeId/toggle-status';
   static const String getSpacesEndpoint = '/api/spaces';
   static const String getSpaceDetailEndpoint = '/api/spaces/{spaceId}';
+  static String getSpaceDetail(String spaceId) => '/api/spaces/$spaceId';
+  static String updateSpace(String spaceId) => '/api/spaces/$spaceId';
+  static String deleteSpace(String spaceId) => '/api/spaces/$spaceId';
   static const String toggleSpaceStatusEndpoint =
       '/api/spaces/{spaceId}/toggle-status';
+  static String toggleSpaceStatus(String spaceId) =>
+      '/api/spaces/$spaceId/toggle-status';
 
   // Moods
   static const String getMoods = '/api/moods';
@@ -36,11 +53,32 @@ class ApiConstants {
   // Tracks
   static const String getTracks = '/api/tracks';
   static String getTrackDetail(String id) => '/api/tracks/$id';
+  static String updateTrack(String id) => '/api/tracks/$id';
+  static String deleteTrack(String id) => '/api/tracks/$id';
+  static String toggleTrackStatus(String id) => '/api/tracks/$id/toggle-status';
+  static String retranscodeTrack(String id) => '/api/tracks/$id/retranscode';
+
+  // Suno
+  static const String sunoBase = '/api/cms/suno';
+  static const String sunoGenerations = '$sunoBase/generations';
+  static String sunoGenerationDetail(String id) => '$sunoGenerations/$id';
+  static String sunoGenerationCancel(String id) =>
+      '$sunoGenerations/$id/cancel';
+  static const String sunoConfig = '$sunoBase/config';
 
   // Playlists
   static const String getPlaylists = '/api/playlists';
+  static const String createPlaylist = getPlaylists;
   static String getPlaylistDetail(String id) => '/api/playlists/$id';
+  static String updatePlaylist(String id) => '/api/playlists/$id';
+  static String deletePlaylist(String id) => '/api/playlists/$id';
+  static String togglePlaylistStatus(String id) =>
+      '/api/playlists/$id/toggle-status';
   static String addTracksToPlaylist(String id) => '/api/playlists/$id/tracks';
+  static String removeTrackFromPlaylist(String playlistId, String trackId) =>
+      '/api/playlists/$playlistId/tracks/$trackId';
+  static String retranscodePlaylist(String id) =>
+      '/api/playlists/$id/retranscode';
 
   // CAMS — Context-Aware Music System
   static String camsOverride(String spaceId) =>
