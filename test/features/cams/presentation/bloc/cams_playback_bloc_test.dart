@@ -316,6 +316,25 @@ void main() {
       expect(bloc.state.playbackState?.currentTrackName, 'Track A');
     });
 
+    test('seek command clears stale targetTrackId from command relay',
+        () async {
+      await _initBloc(bloc);
+
+      bloc.add(
+        const CamsPlaybackCommandReceived(
+          spaceId: 'space-1',
+          command: PlaybackCommandEnum.seek,
+          seekPositionSeconds: 128,
+          targetTrackId: 'track-should-not-forward',
+        ),
+      );
+      await _nextTick();
+
+      expect(bloc.state.lastPlaybackCommand, PlaybackCommandEnum.seek);
+      expect(bloc.state.lastSeekPositionSeconds, 128);
+      expect(bloc.state.lastTargetTrackId, isNull);
+    });
+
     test('play stream hint clears stale legacy playlist identity', () async {
       await _initBloc(bloc);
 

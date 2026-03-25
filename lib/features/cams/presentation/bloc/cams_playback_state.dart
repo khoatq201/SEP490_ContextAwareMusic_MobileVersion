@@ -97,6 +97,8 @@ class CamsPlaybackState extends Equatable {
     bool clearError = false,
     bool clearOverrideResponse = false,
     bool clearLastCommand = false,
+    bool clearLastSeekPosition = false,
+    bool clearLastTargetTrackId = false,
     bool clearPendingTrackJump = false,
   }) {
     return CamsPlaybackState(
@@ -113,10 +115,10 @@ class CamsPlaybackState extends Equatable {
       lastPlaybackCommand: clearLastCommand
           ? null
           : (lastPlaybackCommand ?? this.lastPlaybackCommand),
-      lastSeekPositionSeconds: clearLastCommand
+      lastSeekPositionSeconds: (clearLastCommand || clearLastSeekPosition)
           ? null
           : (lastSeekPositionSeconds ?? this.lastSeekPositionSeconds),
-      lastTargetTrackId: clearLastCommand
+      lastTargetTrackId: (clearLastCommand || clearLastTargetTrackId)
           ? null
           : (lastTargetTrackId ?? this.lastTargetTrackId),
       commandSequence: commandSequence ?? this.commandSequence,

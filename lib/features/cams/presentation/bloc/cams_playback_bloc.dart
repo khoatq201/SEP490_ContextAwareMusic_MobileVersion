@@ -659,13 +659,20 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
                 nextPlaybackState.hasPendingPlayback)
             ? CamsStatus.active
             : CamsStatus.idle;
+    final shouldPersistSeekPosition = _shouldPersistSeekPosition(event.command);
+    final shouldPersistTargetTrackId =
+        _shouldPersistTargetTrackId(event.command);
 
     emit(state.copyWith(
       status: nextStatus,
       playbackState: nextPlaybackState,
       lastPlaybackCommand: event.command,
-      lastSeekPositionSeconds: event.seekPositionSeconds,
-      lastTargetTrackId: event.targetTrackId,
+      lastSeekPositionSeconds:
+          shouldPersistSeekPosition ? event.seekPositionSeconds : null,
+      clearLastSeekPosition: !shouldPersistSeekPosition,
+      lastTargetTrackId:
+          shouldPersistTargetTrackId ? event.targetTrackId : null,
+      clearLastTargetTrackId: !shouldPersistTargetTrackId,
       commandSequence: state.commandSequence + 1,
     ));
     if (nextPlaybackState?.isStreaming ?? false) {
@@ -853,6 +860,19 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
         command == PlaybackCommandEnum.seek ||
         command == PlaybackCommandEnum.seekForward ||
         command == PlaybackCommandEnum.seekBackward;
+  }
+
+  bool _shouldPersistSeekPosition(PlaybackCommandEnum command) {
+    return command == PlaybackCommandEnum.seek ||
+        command == PlaybackCommandEnum.seekForward ||
+        command == PlaybackCommandEnum.seekBackward;
+  }
+
+  bool _shouldPersistTargetTrackId(PlaybackCommandEnum command) {
+    return command == PlaybackCommandEnum.skipNext ||
+        command == PlaybackCommandEnum.skipPrevious ||
+        command == PlaybackCommandEnum.skipToTrack ||
+        command == PlaybackCommandEnum.trackEnded;
   }
 
   SpacePlaybackState? _applyPlaybackCommandToState({

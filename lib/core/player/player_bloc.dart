@@ -556,7 +556,14 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     Emitter<PlayerState> emit,
   ) async {
     final absolutePosition = event.positionSeconds;
-    var resolvedIndex = _findIndexForTrackId(event.targetTrackId);
+    final shouldResolveFromTargetTrack =
+        event.command == PlaybackCommandEnum.skipNext ||
+            event.command == PlaybackCommandEnum.skipPrevious ||
+            event.command == PlaybackCommandEnum.skipToTrack ||
+            event.command == PlaybackCommandEnum.trackEnded;
+    var resolvedIndex = shouldResolveFromTargetTrack
+        ? _findIndexForTrackId(event.targetTrackId)
+        : -1;
     if (resolvedIndex < 0 && absolutePosition != null) {
       resolvedIndex = _resolveIndexForOffset(absolutePosition);
     }
@@ -564,6 +571,9 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
         resolvedIndex >= 0 && resolvedIndex < state.queue.length
             ? state.queue[resolvedIndex]
             : state.currentTrack;
+    final resolvedTrackId = shouldResolveFromTargetTrack
+        ? (event.targetTrackId ?? resolvedTrack?.id)
+        : resolvedTrack?.id;
 
     final isSeekCommand = event.command == PlaybackCommandEnum.seek ||
         event.command == PlaybackCommandEnum.seekForward ||
@@ -623,7 +633,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
               state.currentPositionPrecise,
           currentIndex: resolvedIndex >= 0 ? resolvedIndex : state.currentIndex,
           currentTrack: resolvedTrack,
-          currentTrackId: event.targetTrackId ?? resolvedTrack?.id,
+          currentTrackId: resolvedTrackId,
           duration: resolvedTrack?.duration ?? state.duration,
           isPlaying: nextIsPlaying,
         ));

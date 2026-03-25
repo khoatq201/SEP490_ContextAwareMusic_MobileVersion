@@ -686,6 +686,19 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
     }
   }
 
+  bool _shouldForwardSeekPosition(PlaybackCommandEnum command) {
+    return command == PlaybackCommandEnum.seek ||
+        command == PlaybackCommandEnum.seekForward ||
+        command == PlaybackCommandEnum.seekBackward;
+  }
+
+  bool _shouldForwardTargetTrackId(PlaybackCommandEnum command) {
+    return command == PlaybackCommandEnum.skipNext ||
+        command == PlaybackCommandEnum.skipPrevious ||
+        command == PlaybackCommandEnum.skipToTrack ||
+        command == PlaybackCommandEnum.trackEnded;
+  }
+
   @override
   void dispose() {
     _notificationCommandSub?.cancel();
@@ -750,10 +763,15 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator> {
               current.lastPlaybackCommand != null,
           listener: (context, camsState) {
             final session = context.read<SessionCubit>().state;
+            final command = camsState.lastPlaybackCommand!;
             _addPlayerEvent(PlayerRemoteCommandApplied(
-              command: camsState.lastPlaybackCommand!,
-              positionSeconds: camsState.lastSeekPositionSeconds,
-              targetTrackId: camsState.lastTargetTrackId,
+              command: command,
+              positionSeconds: _shouldForwardSeekPosition(command)
+                  ? camsState.lastSeekPositionSeconds
+                  : null,
+              targetTrackId: _shouldForwardTargetTrackId(command)
+                  ? camsState.lastTargetTrackId
+                  : null,
               playLocally: session.isPlaybackDevice,
             ));
           },

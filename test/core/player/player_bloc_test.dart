@@ -135,6 +135,62 @@ void main() {
       expect(audioService.seekCalls, isEmpty);
     });
 
+    test('ignores targetTrackId on seek to prevent wrong title jumps', () async {
+      final queue = [
+        const Track(
+          id: 'track-1',
+          queueItemId: 'queue-1',
+          title: 'Track 1',
+          artist: 'Artist',
+          fileUrl: '',
+          moodTags: [],
+          duration: 180,
+          seekOffsetSeconds: 0,
+        ),
+        const Track(
+          id: 'track-2',
+          queueItemId: 'queue-2',
+          title: 'Track 2',
+          artist: 'Artist',
+          fileUrl: '',
+          moodTags: [],
+          duration: 220,
+          seekOffsetSeconds: 180,
+        ),
+      ];
+
+      bloc.add(PlayerQueueSeeded(
+        tracks: queue,
+        playlistId: 'playlist-1',
+        force: true,
+      ));
+      await _tick();
+
+      bloc.add(const PlayerHlsStarted(
+        hlsUrl: 'https://stream.example.com/live.m3u8',
+        playlistId: 'playlist-1',
+        queueItemId: 'queue-1',
+        trackId: 'track-1',
+        trackName: 'Track 1',
+        seekOffsetSeconds: 60,
+        playLocally: false,
+      ));
+      await _tick();
+
+      bloc.add(const PlayerRemoteCommandApplied(
+        command: PlaybackCommandEnum.seek,
+        positionSeconds: 70,
+        targetTrackId: 'track-2',
+        playLocally: false,
+      ));
+      await _tick();
+
+      expect(bloc.state.currentTrackId, 'track-1');
+      expect(bloc.state.currentIndex, 0);
+      expect(bloc.state.currentTrack?.id, 'track-1');
+      expect(bloc.state.currentPosition, 70);
+    });
+
     test('resolves current track from queueItemId without playlistId',
         () async {
       final queue = [
