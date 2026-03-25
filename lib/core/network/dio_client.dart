@@ -23,6 +23,37 @@ class DioClient {
         path == ApiConstants.authDeviceRefreshToken;
   }
 
+  String _normalizePath(String path) {
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      final uri = Uri.tryParse(path);
+      return uri?.path ?? path;
+    }
+    return path;
+  }
+
+  bool _isPlaybackDeviceScopedPath(String path) {
+    final normalizedPath = _normalizePath(path).toLowerCase();
+    return normalizedPath == '/api/cams/spaces/playback' ||
+        normalizedPath == '/api/cams/spaces/override' ||
+        normalizedPath == ApiConstants.camsCurrentDeviceState.toLowerCase() ||
+        normalizedPath ==
+            ApiConstants.camsCurrentDeviceAudioState.toLowerCase() ||
+        normalizedPath ==
+            ApiConstants.camsCurrentDeviceQueueTracks.toLowerCase() ||
+        normalizedPath ==
+            ApiConstants.camsCurrentDeviceQueuePlaylist.toLowerCase() ||
+        normalizedPath ==
+            ApiConstants.camsCurrentDeviceQueueReorder.toLowerCase() ||
+        normalizedPath == ApiConstants.camsCurrentDeviceQueue.toLowerCase() ||
+        normalizedPath == ApiConstants.camsCurrentDeviceQueueAll.toLowerCase() ||
+        normalizedPath == ApiConstants.camsCurrentPairDevice.toLowerCase();
+  }
+
+  bool _hasDeviceRefreshContext() {
+    final refreshToken = _localStorage.getDeviceRefreshToken();
+    return refreshToken != null && refreshToken.isNotEmpty;
+  }
+
   void _log(String message) {
     developer.log(message, name: 'DioClient');
     debugPrint('[DioClient] $message');
@@ -108,7 +139,9 @@ class DioClient {
               final refreshCompleter = Completer<String?>();
               _refreshCompleter = refreshCompleter;
               try {
-                refreshedToken = await _refreshActiveSessionToken();
+                refreshedToken = await _refreshActiveSessionToken(
+                  failedRequestOptions: error.requestOptions,
+                );
                 if (!refreshCompleter.isCompleted) {
                   refreshCompleter.complete(refreshedToken);
                 }
@@ -144,11 +177,12 @@ class DioClient {
     await _cookieJar?.deleteAll();
   }
 
-  Future<void> _clearLocalSessionAfterRefreshFailure(String reason) async {
+  Future<void> _clearLocalSessionAfterRefreshFailure(
+    String reason, {
+    required bool playbackSession,
+  }) async {
     try {
-      final isPlaybackMode = _localStorage.getActiveSessionMode() ==
-          LocalStorageService.sessionModePlaybackDevice;
-      if (isPlaybackMode) {
+      if (playbackSession) {
         await _localStorage.clearDeviceSession();
       } else {
         await _localStorage.clearManagerSession();
@@ -197,12 +231,66 @@ class DioClient {
     }
   }
 
-  Future<String?> _refreshActiveSessionToken() async {
+  Future<String?> _refreshActiveSessionToken({
+    required RequestOptions failedRequestOptions,
+  }) async {
     final mode = _localStorage.getActiveSessionMode();
+    final failedPath = failedRequestOptions.path;
+    final isPlaybackScopedPath = _isPlaybackDeviceScopedPath(failedPath);
+    final managerToken = _localStorage.getManagerAuthToken();
+    final hasManagerToken = managerToken != null && managerToken.isNotEmpty;
+    final hasDeviceRefreshContext = _hasDeviceRefreshContext();
+
     if (mode == LocalStorageService.sessionModePlaybackDevice) {
+      _log('Refreshing playback-device token (active mode: playback_device)');
       return _refreshDeviceToken();
     }
-    return _refreshManagerToken();
+
+    if (mode == LocalStorageService.sessionModeManager) {
+      if (!hasManagerToken && hasDeviceRefreshContext) {
+        _log(
+          'Active mode is manager but manager token is empty; '
+          'falling back to playback-device refresh.',
+        );
+        return _refreshDeviceToken();
+      }
+      if (isPlaybackScopedPath && hasDeviceRefreshContext) {
+        _log(
+          'Request path "$failedPath" is playback-device scoped while active '
+          'mode is manager; using playback-device refresh.',
+        );
+        return _refreshDeviceToken();
+      }
+      _log('Refreshing manager token (active mode: manager)');
+      return _refreshManagerToken();
+    }
+
+    if (isPlaybackScopedPath && hasDeviceRefreshContext) {
+      _log(
+        'Active session mode is unset; playback-device scoped request '
+        'detected for "$failedPath", using playback-device refresh.',
+      );
+      return _refreshDeviceToken();
+    }
+
+    if (hasManagerToken) {
+      _log(
+        'Active session mode is unset; manager token present, '
+        'using manager refresh.',
+      );
+      return _refreshManagerToken();
+    }
+
+    if (hasDeviceRefreshContext) {
+      _log(
+        'Active session mode is unset; playback-device refresh token present, '
+        'using playback-device refresh.',
+      );
+      return _refreshDeviceToken();
+    }
+
+    _log('No refresh context available for failed request "$failedPath".');
+    return null;
   }
 
   /// Attempt to refresh the manager access token using the HttpOnly cookie.
@@ -265,7 +353,10 @@ class DioClient {
 
       throw AuthenticationException('Refresh token failed');
     } on AuthenticationException {
-      await _clearLocalSessionAfterRefreshFailure('invalid refresh response');
+      await _clearLocalSessionAfterRefreshFailure(
+        'invalid refresh response',
+        playbackSession: false,
+      );
       rethrow;
     } on DioException catch (e) {
       _log(
@@ -275,6 +366,7 @@ class DioClient {
       if (statusCode == 401 || statusCode == 403) {
         await _clearLocalSessionAfterRefreshFailure(
           'refresh endpoint returned $statusCode',
+          playbackSession: false,
         );
       }
       throw AuthenticationException(
@@ -345,7 +437,10 @@ class DioClient {
 
       throw AuthenticationException('Device refresh token failed.');
     } on AuthenticationException {
-      await _clearLocalSessionAfterRefreshFailure('invalid device refresh');
+      await _clearLocalSessionAfterRefreshFailure(
+        'invalid device refresh',
+        playbackSession: true,
+      );
       rethrow;
     } on DioException catch (e) {
       _log(
@@ -355,6 +450,7 @@ class DioClient {
       if (statusCode == 401 || statusCode == 403) {
         await _clearLocalSessionAfterRefreshFailure(
           'device refresh endpoint returned $statusCode',
+          playbackSession: true,
         );
       }
       throw AuthenticationException(
