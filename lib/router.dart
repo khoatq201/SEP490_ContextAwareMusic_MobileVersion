@@ -50,16 +50,20 @@ import 'injection_container.dart';
 /// Converts a [Stream] into a [Listenable] so GoRouter re-evaluates
 /// its redirect whenever the stream emits a new value.
 class GoRouterRefreshStream extends ChangeNotifier {
-  GoRouterRefreshStream(Stream<dynamic> stream) {
+  GoRouterRefreshStream(Iterable<Stream<dynamic>> streams) {
     notifyListeners(); // initial evaluation
-    _subscription = stream.asBroadcastStream().listen((_) => notifyListeners());
+    _subscriptions = streams
+        .map((stream) => stream.asBroadcastStream().listen((_) => notifyListeners()))
+        .toList(growable: false);
   }
 
-  late final StreamSubscription<dynamic> _subscription;
+  late final List<StreamSubscription<dynamic>> _subscriptions;
 
   @override
   void dispose() {
-    _subscription.cancel();
+    for (final subscription in _subscriptions) {
+      subscription.cancel();
+    }
     super.dispose();
   }
 }
@@ -68,10 +72,15 @@ class AppRouter {
   static final GlobalKey<NavigatorState> _rootNavigatorKey =
       GlobalKey<NavigatorState>(debugLabel: 'root');
 
+  static GlobalKey<NavigatorState> get rootNavigatorKey => _rootNavigatorKey;
+
   static GoRouter router = GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/welcome',
-    refreshListenable: GoRouterRefreshStream(sl<AuthBloc>().stream),
+    refreshListenable: GoRouterRefreshStream([
+      sl<AuthBloc>().stream,
+      sl<SessionCubit>().stream,
+    ]),
     redirect: (BuildContext context, GoRouterState state) {
       final authBloc = sl<AuthBloc>();
       final sessionCubit = sl<SessionCubit>();

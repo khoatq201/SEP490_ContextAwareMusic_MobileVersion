@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../moods/data/datasources/mood_remote_datasource.dart';
+import '../../../moods/data/models/mood_model.dart';
 import '../../../playlists/data/datasources/playlist_remote_datasource.dart';
 import '../../domain/entities/category_entity.dart';
 import '../../domain/entities/playlist_entity.dart';
@@ -65,10 +66,7 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
   @override
   Future<List<CategoryEntity>> getCategories() async {
     try {
-      // 1. Fetch moods to use as category headings
-      final moods = await moodDataSource.getMoods();
-
-      // 2. Fetch first page of playlists (enough for the home dashboard)
+      // 1. Fetch first page of playlists (enough for the home dashboard)
       final playlistResponse = await playlistDataSource.getPlaylists(
         page: 1,
         pageSize: 50,
@@ -76,8 +74,18 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
 
       final allPlaylists = playlistResponse.items;
       final categories = <CategoryEntity>[];
+      List<MoodModel> moods = const [];
 
-      // 3. Group playlists by mood
+      // 2. Moods are optional for Home. Playback-device sessions may not be
+      // authorized to read /api/moods, so we gracefully fall back to generic
+      // playlist buckets instead of hiding the entire catalog.
+      try {
+        moods = await moodDataSource.getMoods();
+      } catch (_) {
+        moods = const [];
+      }
+
+      // 3. Group playlists by mood when reference data is available
       for (final mood in moods) {
         final moodPlaylists =
             allPlaylists.where((p) => p.moodId == mood.id).toList();

@@ -15,6 +15,8 @@ class DioClient {
   final LocalStorageService _localStorage;
   PersistCookieJar? _cookieJar;
   Completer<String?>? _refreshCompleter;
+  final StreamController<void> _sessionInvalidatedController =
+      StreamController<void>.broadcast();
 
   bool _shouldSkipAuthorization(String path) {
     return path == ApiConstants.login ||
@@ -33,6 +35,9 @@ class DioClient {
 
   bool _isPlaybackDeviceScopedPath(String path) {
     final normalizedPath = _normalizePath(path).toLowerCase();
+    final managerScopedPlaybackPattern = RegExp(
+      r'^/api/cams/spaces/[^/]+/(playback|override|state|state/audio|queue|queue/tracks|queue/playlist|queue/reorder|queue/all|pair-device)$',
+    );
     return normalizedPath == '/api/cams/spaces/playback' ||
         normalizedPath == '/api/cams/spaces/override' ||
         normalizedPath == ApiConstants.camsCurrentDeviceState.toLowerCase() ||
@@ -45,8 +50,10 @@ class DioClient {
         normalizedPath ==
             ApiConstants.camsCurrentDeviceQueueReorder.toLowerCase() ||
         normalizedPath == ApiConstants.camsCurrentDeviceQueue.toLowerCase() ||
-        normalizedPath == ApiConstants.camsCurrentDeviceQueueAll.toLowerCase() ||
-        normalizedPath == ApiConstants.camsCurrentPairDevice.toLowerCase();
+        normalizedPath ==
+            ApiConstants.camsCurrentDeviceQueueAll.toLowerCase() ||
+        normalizedPath == ApiConstants.camsCurrentPairDevice.toLowerCase() ||
+        managerScopedPlaybackPattern.hasMatch(normalizedPath);
   }
 
   bool _hasDeviceRefreshContext() {
@@ -54,9 +61,83 @@ class DioClient {
     return refreshToken != null && refreshToken.isNotEmpty;
   }
 
+  bool _hasDeviceAccessContext() {
+    final accessToken = _localStorage.getDeviceAccessToken();
+    return accessToken != null && accessToken.isNotEmpty;
+  }
+
+  String _deviceExpiryDebugValue() {
+    final expiry = _localStorage.getDeviceAccessTokenExpiry();
+    if (expiry == null) return 'null';
+    return expiry.toUtc().toIso8601String();
+  }
+
+  String _managerExpiryDebugValue() {
+    final expiry = _localStorage.getManagerAccessTokenExpiry();
+    if (expiry == null) return 'null';
+    return expiry.toUtc().toIso8601String();
+  }
+
+  void _logAuthSnapshot(String label, {String? path}) {
+    final managerToken = _localStorage.getManagerAuthToken();
+    final deviceToken = _localStorage.getDeviceAccessToken();
+    final deviceRefreshToken = _localStorage.getDeviceRefreshToken();
+    final deviceSession = _localStorage.getDeviceSession();
+    _log(
+      '[$label] '
+      'path=${path ?? '-'} '
+      'activeMode=${_localStorage.getActiveSessionMode()} '
+      'hasManagerToken=${managerToken != null && managerToken.isNotEmpty} '
+      'managerExpiry=${_managerExpiryDebugValue()} '
+      'hasDeviceAccessToken=${deviceToken != null && deviceToken.isNotEmpty} '
+      'deviceAccessExpiry=${_deviceExpiryDebugValue()} '
+      'hasDeviceRefreshToken=${deviceRefreshToken != null && deviceRefreshToken.isNotEmpty} '
+      'deviceSessionKeys=${deviceSession?.keys.join(',') ?? '(none)'}',
+    );
+  }
+
+  String? _resolveAuthorizationTokenForRequest(String path) {
+    final mode = _localStorage.getActiveSessionMode();
+    final managerToken = _localStorage.getManagerAuthToken();
+    final deviceToken = _localStorage.getDeviceAccessToken();
+    final hasManagerToken = managerToken != null && managerToken.isNotEmpty;
+    final hasDeviceToken = deviceToken != null && deviceToken.isNotEmpty;
+    final isPlaybackScopedPath = _isPlaybackDeviceScopedPath(path);
+
+    if (mode == LocalStorageService.sessionModePlaybackDevice) {
+      if (hasDeviceToken) return deviceToken;
+      return managerToken;
+    }
+
+    if (mode == LocalStorageService.sessionModeManager) {
+      if (hasManagerToken) return managerToken;
+      if (isPlaybackScopedPath && hasDeviceToken) return deviceToken;
+      return null;
+    }
+
+    if (isPlaybackScopedPath && hasDeviceToken) {
+      return deviceToken;
+    }
+
+    if (hasManagerToken) return managerToken;
+    if (hasDeviceToken) return deviceToken;
+    return null;
+  }
+
+  void _notifySessionInvalidated() {
+    if (_sessionInvalidatedController.isClosed) return;
+    _sessionInvalidatedController.add(null);
+  }
+
   void _log(String message) {
     developer.log(message, name: 'DioClient');
     debugPrint('[DioClient] $message');
+  }
+
+  String _tokenPreview(String token) {
+    if (token.isEmpty) return '(empty)';
+    final previewLength = token.length < 12 ? token.length : 12;
+    return '${token.substring(0, previewLength)}...';
   }
 
   DioClient({required LocalStorageService localStorage})
@@ -121,7 +202,14 @@ class DioClient {
             return handler.next(options);
           }
 
-          final token = _localStorage.getToken();
+          final token = _resolveAuthorizationTokenForRequest(path);
+          final isPlaybackScopedPath = _isPlaybackDeviceScopedPath(path);
+          _log(
+            'Preparing auth header for "$path": '
+            'playbackScoped=$isPlaybackScopedPath '
+            'selectedToken=${token == null ? 'none' : _tokenPreview(token)}',
+          );
+          _logAuthSnapshot('request-auth', path: path);
           if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
           }
@@ -131,6 +219,10 @@ class DioClient {
           final path = error.requestOptions.path;
           if (error.response?.statusCode == 401 &&
               !_shouldSkipAuthorization(path)) {
+            _log(
+              '401 on "$path" -> attempting token refresh '
+              '(activeMode=${_localStorage.getActiveSessionMode()})',
+            );
             String? refreshedToken;
             final inFlightRefresh = _refreshCompleter;
             if (inFlightRefresh != null) {
@@ -162,6 +254,10 @@ class DioClient {
               final opts = error.requestOptions;
               opts.headers['Authorization'] = 'Bearer $refreshedToken';
               final response = await _dio.fetch(opts);
+              _log(
+                'Retry succeeded for "$path" after refresh '
+                '(status=${response.statusCode})',
+              );
               return handler.resolve(response);
             }
             return handler.next(error);
@@ -177,6 +273,53 @@ class DioClient {
     await _cookieJar?.deleteAll();
   }
 
+  Stream<void> get onSessionInvalidated => _sessionInvalidatedController.stream;
+
+  Future<String?> refreshPlaybackDeviceTokenIfNeeded({
+    Duration threshold = const Duration(minutes: 2),
+    bool force = false,
+  }) async {
+    final refreshToken = _localStorage.getDeviceRefreshToken();
+    if (refreshToken == null || refreshToken.isEmpty) {
+      return null;
+    }
+
+    final expiry = _localStorage.getDeviceAccessTokenExpiry();
+    final now = DateTime.now().toUtc();
+    final shouldRefresh =
+        force || expiry == null || !expiry.isAfter(now.add(threshold));
+    if (!shouldRefresh) {
+      return _localStorage.getDeviceAccessToken();
+    }
+
+    final inFlightRefresh = _refreshCompleter;
+    if (inFlightRefresh != null) {
+      return inFlightRefresh.future;
+    }
+
+    final refreshCompleter = Completer<String?>();
+    _refreshCompleter = refreshCompleter;
+    try {
+      final refreshedToken = await _refreshDeviceToken();
+      if (!refreshCompleter.isCompleted) {
+        refreshCompleter.complete(refreshedToken);
+      }
+      return refreshedToken;
+    } on AuthenticationException {
+      if (!refreshCompleter.isCompleted) {
+        refreshCompleter.complete(null);
+      }
+      return null;
+    } catch (_) {
+      if (!refreshCompleter.isCompleted) {
+        refreshCompleter.complete(null);
+      }
+      return null;
+    } finally {
+      _refreshCompleter = null;
+    }
+  }
+
   Future<void> _clearLocalSessionAfterRefreshFailure(
     String reason, {
     required bool playbackSession,
@@ -189,6 +332,7 @@ class DioClient {
         await clearCookies();
       }
       _log('Cleared local auth session after refresh failure ($reason)');
+      _notifySessionInvalidated();
     } catch (e) {
       _log('Failed to clear local auth session after refresh failure: $e');
     }
@@ -239,7 +383,16 @@ class DioClient {
     final isPlaybackScopedPath = _isPlaybackDeviceScopedPath(failedPath);
     final managerToken = _localStorage.getManagerAuthToken();
     final hasManagerToken = managerToken != null && managerToken.isNotEmpty;
+    final hasDeviceAccessContext = _hasDeviceAccessContext();
     final hasDeviceRefreshContext = _hasDeviceRefreshContext();
+    _log(
+      'Refresh decision for "$failedPath": '
+      'mode=$mode, playbackScoped=$isPlaybackScopedPath, '
+      'hasManagerToken=$hasManagerToken, '
+      'hasDeviceAccessContext=$hasDeviceAccessContext, '
+      'hasDeviceRefreshContext=$hasDeviceRefreshContext',
+    );
+    _logAuthSnapshot('refresh-decision', path: failedPath);
 
     if (mode == LocalStorageService.sessionModePlaybackDevice) {
       _log('Refreshing playback-device token (active mode: playback_device)');
@@ -289,7 +442,12 @@ class DioClient {
       return _refreshDeviceToken();
     }
 
-    _log('No refresh context available for failed request "$failedPath".');
+    _log(
+      'No refresh context available for failed request "$failedPath" '
+      '(mode=$mode, hasManagerToken=$hasManagerToken, '
+      'hasDeviceRefreshContext=$hasDeviceRefreshContext).',
+    );
+    _notifySessionInvalidated();
     return null;
   }
 
@@ -383,6 +541,14 @@ class DioClient {
         throw AuthenticationException('Missing device refresh token.');
       }
 
+      _log(
+        'Calling device refresh endpoint "${ApiConstants.authDeviceRefreshToken}" '
+        '(hasExpiredAccessToken=${expiredToken != null && expiredToken.isNotEmpty}, '
+        'refreshTokenPreview=${_tokenPreview(refreshToken)})',
+      );
+      _logAuthSnapshot('device-refresh-before-call',
+          path: ApiConstants.authDeviceRefreshToken);
+
       final response = await _dio.post(
         ApiConstants.authDeviceRefreshToken,
         data: {
@@ -431,7 +597,13 @@ class DioClient {
           LocalStorageService.sessionModePlaybackDevice,
         );
 
-        _log('Device token refreshed successfully');
+        _log(
+          'Device token refreshed successfully '
+          '(accessTokenPreview=${_tokenPreview(newToken)}, '
+          'expiresAt=${expiresAt.toIso8601String()})',
+        );
+        _logAuthSnapshot('device-refresh-success',
+            path: ApiConstants.authDeviceRefreshToken);
         return newToken;
       }
 
@@ -517,5 +689,9 @@ class DioClient {
       queryParameters: queryParameters,
       options: options,
     );
+  }
+
+  Future<void> dispose() async {
+    await _sessionInvalidatedController.close();
   }
 }

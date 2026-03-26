@@ -14,6 +14,7 @@ import 'package:cams_store_manager/core/enums/queue_insert_mode_enum.dart';
 import 'package:cams_store_manager/core/enums/space_type_enum.dart';
 import 'package:cams_store_manager/core/error/failures.dart';
 import 'package:cams_store_manager/core/player/player_bloc.dart';
+import 'package:cams_store_manager/core/player/player_event.dart';
 import 'package:cams_store_manager/core/player/player_state.dart' as ps;
 import 'package:cams_store_manager/core/presentation/app_playback_coordinator.dart';
 import 'package:cams_store_manager/core/services/local_storage_service.dart';
@@ -21,6 +22,7 @@ import 'package:cams_store_manager/core/session/session_cubit.dart';
 import 'package:cams_store_manager/features/cams/data/models/override_response_model.dart';
 import 'package:cams_store_manager/features/cams/data/models/space_playback_state_model.dart';
 import 'package:cams_store_manager/features/cams/data/repositories/cams_repository_impl.dart';
+import 'package:cams_store_manager/features/cams/data/services/queue_first_playback_runtime.dart';
 import 'package:cams_store_manager/features/cams/data/services/store_hub_service.dart';
 import 'package:cams_store_manager/features/cams/domain/entities/pair_code_snapshot.dart';
 import 'package:cams_store_manager/features/cams/domain/entities/pair_device_info.dart';
@@ -41,6 +43,11 @@ import 'package:cams_store_manager/features/playlists/data/datasources/playlist_
 import 'package:cams_store_manager/features/playlists/data/models/api_playlist_model.dart';
 import 'package:cams_store_manager/features/space_control/domain/entities/space.dart';
 import 'package:cams_store_manager/features/store_dashboard/domain/entities/store.dart';
+import 'package:cams_store_manager/features/tracks/data/repositories/track_repository_impl.dart';
+import 'package:cams_store_manager/features/tracks/data/datasources/track_remote_datasource.dart';
+import 'package:cams_store_manager/features/tracks/domain/entities/api_track.dart';
+import 'package:cams_store_manager/features/tracks/domain/entities/track_filter.dart';
+import 'package:cams_store_manager/features/tracks/domain/usecases/track_usecases.dart';
 import 'package:cams_store_manager/injection_container.dart';
 
 void main() {
@@ -54,7 +61,9 @@ void main() {
     late _FakeMoodRepository moodRepository;
     late _FakeStoreHubService storeHubService;
     late _FakePlaylistRemoteDataSource playlistDataSource;
+    late _FakeTrackRepository trackRepository;
     late PlayerBloc playerBloc;
+    late QueueFirstPlaybackRuntime runtime;
     late _ManualCamsPlaybackBloc camsBloc;
 
     setUp(() {
@@ -65,28 +74,37 @@ void main() {
       moodRepository = _FakeMoodRepository();
       storeHubService = _FakeStoreHubService();
       playlistDataSource = _FakePlaylistRemoteDataSource();
+      trackRepository = _FakeTrackRepository();
       playerBloc = PlayerBloc(audioPlayerService: audioService);
-      camsBloc = _ManualCamsPlaybackBloc(
+      runtime = QueueFirstPlaybackRuntime(
         getSpaceState: GetSpaceState(camsRepository),
-        overrideSpace: OverrideSpace(camsRepository),
-        cancelOverride: CancelOverride(camsRepository),
-        sendPlaybackCommand: SendPlaybackCommand(camsRepository),
         queueTracks: QueueTracks(camsRepository),
         queuePlaylist: QueuePlaylist(camsRepository),
         reorderQueue: ReorderQueue(camsRepository),
         removeQueueItems: RemoveQueueItems(camsRepository),
         clearQueue: ClearQueue(camsRepository),
         getSpaceQueue: GetSpaceQueue(camsRepository),
+        sendPlaybackCommand: SendPlaybackCommand(camsRepository),
         updateAudioState: UpdateAudioState(camsRepository),
+        storeHubService: storeHubService,
+      );
+      camsBloc = _ManualCamsPlaybackBloc(
+        overrideSpace: OverrideSpace(camsRepository),
+        cancelOverride: CancelOverride(camsRepository),
         getMoods: GetMoods(moodRepository),
         storeHubService: storeHubService,
         sessionCubit: sessionCubit,
+        runtime: runtime,
       );
 
       if (sl.isRegistered<PlaylistRemoteDataSource>()) {
         sl.unregister<PlaylistRemoteDataSource>();
       }
       sl.registerSingleton<PlaylistRemoteDataSource>(playlistDataSource);
+      if (sl.isRegistered<GetTrackById>()) {
+        sl.unregister<GetTrackById>();
+      }
+      sl.registerSingleton<GetTrackById>(GetTrackById(trackRepository));
 
       sessionCubit.changeStore(const Store(
         id: 'store-1',
@@ -106,8 +124,12 @@ void main() {
       if (sl.isRegistered<PlaylistRemoteDataSource>()) {
         sl.unregister<PlaylistRemoteDataSource>();
       }
+      if (sl.isRegistered<GetTrackById>()) {
+        sl.unregister<GetTrackById>();
+      }
       await playerBloc.close();
       await camsBloc.close();
+      await runtime.dispose();
       await sessionCubit.close();
       await audioService.dispose();
       notificationService.dispose();
@@ -166,6 +188,291 @@ void main() {
       expect(playerBloc.state.queue.first.id, 'track-1');
       expect(playerBloc.state.queue.last.id, 'track-2');
       expect(audioService.lastSetVolume, closeTo(0.7, 0.0001));
+    });
+
+    testWidgets(
+        'shows queue preview without starting HLS when top-level hlsUrl is null',
+        (tester) async {
+      addTearDown(() async {
+        await _disposeHarness(tester);
+      });
+      const playbackState = SpacePlaybackState(
+        spaceId: 'space-1',
+        storeId: 'store-1',
+        hlsUrl: null,
+        currentQueueItemId: null,
+        currentTrackName: null,
+        volumePercent: 55,
+        isMuted: false,
+        spaceQueueItems: [
+          SpaceQueueStateItem(
+            queueItemId: 'queue-1',
+            trackId: 'track-1',
+            trackName: 'Track One',
+            position: 1,
+            queueStatus: 0,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/t1.m3u8',
+            isReadyToStream: true,
+          ),
+          SpaceQueueStateItem(
+            queueItemId: 'queue-2',
+            trackId: 'track-2',
+            trackName: 'Track Two',
+            position: 2,
+            queueStatus: 0,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/t2.m3u8',
+            isReadyToStream: true,
+          ),
+        ],
+      );
+
+      await _pumpCoordinator(
+          tester, notificationService, sessionCubit, playerBloc, camsBloc);
+      camsBloc.seed(playbackState);
+      await tester.pump();
+
+      await _waitUntil(
+          tester,
+          () =>
+              !playerBloc.state.isSyncedCamsPlayback &&
+              playerBloc.state.currentTrackId == 'track-1');
+
+      expect(playerBloc.state.hlsUrl, isNull);
+      expect(playerBloc.state.currentQueueItemId, 'queue-1');
+      expect(playerBloc.state.currentTrack?.title, 'Track One');
+      expect(playerBloc.state.isPlaying, isFalse);
+      expect(playerBloc.state.queue.length, 2);
+    });
+
+    testWidgets('does not restart identical remote HLS snapshot',
+        (tester) async {
+      addTearDown(() async {
+        await _disposeHarness(tester);
+      });
+      final startedAtUtc =
+          DateTime.now().toUtc().subtract(const Duration(seconds: 113));
+      final playbackState = SpacePlaybackState(
+        spaceId: 'space-1',
+        storeId: 'store-1',
+        currentQueueItemId: 'queue-1',
+        currentTrackName: 'Track One',
+        hlsUrl: 'https://stream.example.com/t1.m3u8',
+        startedAtUtc: startedAtUtc,
+        isPaused: false,
+        spaceQueueItems: const [
+          SpaceQueueStateItem(
+            queueItemId: 'queue-1',
+            trackId: 'track-1',
+            trackName: 'Track One',
+            position: 1,
+            queueStatus: 1,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/t1.m3u8',
+            isReadyToStream: true,
+          ),
+        ],
+      );
+
+      await _pumpCoordinator(
+          tester, notificationService, sessionCubit, playerBloc, camsBloc);
+      camsBloc.seed(playbackState);
+      await tester.pump();
+      await _waitUntil(
+        tester,
+        () => playerBloc.state.isSyncedCamsPlayback,
+      );
+
+      final loadCallCount = audioService.loadCallCount;
+      final playCallCount = audioService.playCallCount;
+      final seekCallCount = audioService.seekCallCount;
+
+      camsBloc.seed(
+        SpacePlaybackState(
+          spaceId: 'space-1',
+          storeId: 'store-1',
+          currentQueueItemId: 'queue-1',
+          currentTrackName: 'Track One',
+          hlsUrl: 'https://stream.example.com/t1.m3u8',
+          startedAtUtc: startedAtUtc.add(const Duration(milliseconds: 400)),
+          isPaused: false,
+          spaceQueueItems: const [
+            SpaceQueueStateItem(
+              queueItemId: 'queue-1',
+              trackId: 'track-1',
+              trackName: 'Track One',
+              position: 1,
+              queueStatus: 1,
+              source: 1,
+              hlsUrl: 'https://stream.example.com/t1.m3u8',
+              isReadyToStream: true,
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      expect(audioService.loadCallCount, loadCallCount);
+      expect(audioService.playCallCount, playCallCount);
+      expect(audioService.seekCallCount, seekCallCount);
+    });
+
+    testWidgets(
+        'holds expired current HLS until server switches identity or HLS url',
+        (tester) async {
+      addTearDown(() async {
+        await _disposeHarness(tester);
+      });
+      sessionCubit.setPlaybackMode(
+        store: const Store(
+          id: 'store-1',
+          name: 'Store 1',
+          brandId: 'brand-1',
+        ),
+        space: const Space(
+          id: 'space-1',
+          name: 'Space 1',
+          storeId: 'store-1',
+          type: SpaceTypeEnum.hall,
+          status: EntityStatusEnum.active,
+        ),
+        deviceId: 'device-1',
+      );
+
+      final activePlaybackState = SpacePlaybackState(
+        spaceId: 'space-1',
+        storeId: 'store-1',
+        currentQueueItemId: 'queue-1',
+        currentTrackName: 'Track One',
+        hlsUrl: 'https://stream.example.com/t1.m3u8',
+        startedAtUtc: DateTime.now().toUtc().subtract(const Duration(seconds: 5)),
+        expectedEndAtUtc: DateTime.now().toUtc().add(const Duration(seconds: 30)),
+        isPaused: false,
+        volumePercent: 80,
+        spaceQueueItems: const [
+          SpaceQueueStateItem(
+            queueItemId: 'queue-1',
+            trackId: 'track-1',
+            trackName: 'Track One',
+            position: 1,
+            queueStatus: 1,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/t1.m3u8',
+            isReadyToStream: true,
+          ),
+        ],
+      );
+
+      await _pumpCoordinator(
+          tester, notificationService, sessionCubit, playerBloc, camsBloc);
+      playerBloc.add(const PlayerHlsStarted(
+        hlsUrl: 'https://stream.example.com/t1.m3u8',
+        queueItemId: 'queue-1',
+        trackId: 'track-1',
+        trackName: 'Track One',
+        playLocally: false,
+      ));
+      await tester.pump();
+      await _waitUntil(
+        tester,
+        () => playerBloc.state.isSyncedCamsPlayback && playerBloc.state.isPlaying,
+      );
+      camsBloc.seed(activePlaybackState);
+      await tester.pump();
+
+      camsBloc.seed(
+        SpacePlaybackState(
+          spaceId: 'space-1',
+          storeId: 'store-1',
+          currentQueueItemId: 'queue-1',
+          currentTrackName: 'Track One',
+          hlsUrl: 'https://stream.example.com/t1.m3u8',
+          startedAtUtc:
+              DateTime.now().toUtc().subtract(const Duration(seconds: 40)),
+          expectedEndAtUtc:
+              DateTime.now().toUtc().subtract(const Duration(seconds: 1)),
+          isPaused: false,
+          volumePercent: 70,
+          spaceQueueItems: const [
+            SpaceQueueStateItem(
+              queueItemId: 'queue-1',
+              trackId: 'track-1',
+              trackName: 'Track One',
+              position: 1,
+              queueStatus: 1,
+              source: 1,
+              hlsUrl: 'https://stream.example.com/t1.m3u8',
+              isReadyToStream: true,
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await _waitUntil(tester, () => playerBloc.state.isPlaying == false);
+
+      expect(playerBloc.state.hlsUrl, 'https://stream.example.com/t1.m3u8');
+      expect(audioService.pauseCallCount, 1);
+    });
+
+    testWidgets(
+        'hydrates queue-first artist and artwork from track detail metadata',
+        (tester) async {
+      addTearDown(() async {
+        await _disposeHarness(tester);
+      });
+      trackRepository.tracksById['track-1'] = ApiTrack(
+        id: 'track-1',
+        title: 'Track One',
+        artist: 'Artist One',
+        hlsUrl: 'https://stream.example.com/t1.m3u8',
+        coverImageUrl: 'https://img.example.com/track-1.jpg',
+        durationSec: 181,
+        createdAt: DateTime.utc(2026, 1, 1),
+      );
+
+      const playbackState = SpacePlaybackState(
+        spaceId: 'space-1',
+        storeId: 'store-1',
+        hlsUrl: 'https://stream.example.com/t1.m3u8',
+        currentQueueItemId: 'queue-1',
+        currentTrackName: 'Track One',
+        volumePercent: 55,
+        isMuted: false,
+        spaceQueueItems: [
+          SpaceQueueStateItem(
+            queueItemId: 'queue-1',
+            trackId: 'track-1',
+            trackName: 'Track One',
+            position: 1,
+            queueStatus: 1,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/t1.m3u8',
+            isReadyToStream: true,
+          ),
+        ],
+      );
+
+      await _pumpCoordinator(
+          tester, notificationService, sessionCubit, playerBloc, camsBloc);
+      camsBloc.seed(playbackState);
+      await tester.pump();
+
+      await _waitUntil(
+        tester,
+        () => playerBloc.state.currentTrack?.artist == 'Artist One',
+      );
+
+      expect(playerBloc.state.queue.single.artist, 'Artist One');
+      expect(
+        playerBloc.state.queue.single.albumArt,
+        'https://img.example.com/track-1.jpg',
+      );
+      expect(playerBloc.state.currentTrack?.artist, 'Artist One');
+      expect(
+        playerBloc.state.currentTrack?.albumArt,
+        'https://img.example.com/track-1.jpg',
+      );
     });
 
     testWidgets(
@@ -305,6 +612,56 @@ void main() {
     });
 
     testWidgets(
+        'shows pending queue preview when queue exists but HLS has not started',
+        (tester) async {
+      addTearDown(() async {
+        await _disposeHarness(tester);
+      });
+      const pendingPlaybackState = SpacePlaybackState(
+        spaceId: 'space-1',
+        storeId: 'store-1',
+        pendingQueueItemId: 'queue-2',
+        volumePercent: 55,
+        isMuted: false,
+        spaceQueueItems: [
+          SpaceQueueStateItem(
+            queueItemId: 'queue-1',
+            trackId: 'track-1',
+            trackName: 'Track One',
+            position: 1,
+            queueStatus: 0,
+            source: 1,
+          ),
+          SpaceQueueStateItem(
+            queueItemId: 'queue-2',
+            trackId: 'track-2',
+            trackName: 'Track Two',
+            position: 2,
+            queueStatus: 0,
+            source: 1,
+          ),
+        ],
+      );
+
+      await _pumpCoordinator(
+          tester, notificationService, sessionCubit, playerBloc, camsBloc);
+      camsBloc.seed(pendingPlaybackState);
+      await tester.pump();
+
+      await _waitUntil(
+        tester,
+        () => playerBloc.state.hasTrack && playerBloc.state.queue.length == 2,
+      );
+
+      expect(playerBloc.state.currentTrack?.id, 'track-2');
+      expect(playerBloc.state.currentTrackId, 'track-2');
+      expect(playerBloc.state.currentQueueItemId, 'queue-2');
+      expect(playerBloc.state.isPlaying, isFalse);
+      expect(playerBloc.state.isSyncedCamsPlayback, isFalse);
+      expect(audioService.lastSetVolume, closeTo(0.55, 0.0001));
+    });
+
+    testWidgets(
         'derives manager seek position from startedAtUtc when seekOffsetSeconds is null',
         (tester) async {
       addTearDown(() async {
@@ -333,6 +690,7 @@ void main() {
       expect(playerBloc.state.currentPosition, greaterThanOrEqualTo(25));
       expect(playerBloc.state.currentPositionPrecise, greaterThanOrEqualTo(25));
     });
+
   });
 }
 
@@ -475,6 +833,11 @@ class _FakeAudioPlayerService extends AudioPlayerService {
   Duration _position = Duration.zero;
   ProcessingState _processingState = ProcessingState.idle;
   double? lastSetVolume;
+  int loadCallCount = 0;
+  int playCallCount = 0;
+  int pauseCallCount = 0;
+  int seekCallCount = 0;
+  int stopCallCount = 0;
 
   @override
   Stream<Duration> get positionStream => _positionController.stream;
@@ -503,25 +866,32 @@ class _FakeAudioPlayerService extends AudioPlayerService {
 
   @override
   Future<Duration?> loadUrl(String url) async {
+    loadCallCount += 1;
     _loadedUrl = url;
     _processingState = ProcessingState.ready;
     return null;
   }
 
   @override
-  Future<void> play() async {}
+  Future<void> play() async {
+    playCallCount += 1;
+  }
 
   @override
-  Future<void> pause() async {}
+  Future<void> pause() async {
+    pauseCallCount += 1;
+  }
 
   @override
   Future<void> stop() async {
+    stopCallCount += 1;
     _loadedUrl = null;
     _position = Duration.zero;
   }
 
   @override
   Future<void> seek(Duration position) async {
+    seekCallCount += 1;
     _position = position;
   }
 
@@ -543,6 +913,67 @@ class _FakeMoodRepository implements MoodRepository {
   @override
   Future<Either<Failure, List<Mood>>> getMoods() async {
     return const Right([]);
+  }
+}
+
+class _FakeTrackRepository implements TrackRepository {
+  final Map<String, ApiTrack> tracksById = <String, ApiTrack>{};
+
+  @override
+  Future<Either<Failure, TrackListResponse>> getTracks({
+    int page = 1,
+    int pageSize = 10,
+    String? search,
+    String? moodId,
+    String? genre,
+    TrackFilter? filter,
+  }) async {
+    return const Left(ServerFailure('not used in this test'));
+  }
+
+  @override
+  Future<Either<Failure, ApiTrack>> getTrackById(String trackId) async {
+    final track = tracksById[trackId];
+    if (track == null) {
+      return Left(ServerFailure('Track $trackId not found'));
+    }
+    return Right(track);
+  }
+
+  @override
+  Future<Either<Failure, TrackMutationResult>> createTrack(
+    CreateTrackRequest request,
+  ) async {
+    return const Left(ServerFailure('not used in this test'));
+  }
+
+  @override
+  Future<Either<Failure, TrackMutationResult>> updateTrack(
+    String trackId,
+    UpdateTrackRequest request,
+  ) async {
+    return const Left(ServerFailure('not used in this test'));
+  }
+
+  @override
+  Future<Either<Failure, TrackMutationResult>> deleteTrack(
+    String trackId,
+  ) async {
+    return const Left(ServerFailure('not used in this test'));
+  }
+
+  @override
+  Future<Either<Failure, TrackMutationResult>> toggleTrackStatus(
+    String trackId,
+  ) async {
+    return const Left(ServerFailure('not used in this test'));
+  }
+
+  @override
+  Future<Either<Failure, TrackMutationResult>> retranscodeTrack(
+    String trackId,
+  ) async {
+    return const Left(ServerFailure('not used in this test'));
   }
 }
 
@@ -703,20 +1134,12 @@ class _FakePlaylistRemoteDataSource implements PlaylistRemoteDataSource {
 
 class _ManualCamsPlaybackBloc extends CamsPlaybackBloc {
   _ManualCamsPlaybackBloc({
-    required super.getSpaceState,
     required super.overrideSpace,
     required super.cancelOverride,
-    required super.sendPlaybackCommand,
-    required super.queueTracks,
-    required super.queuePlaylist,
-    required super.reorderQueue,
-    required super.removeQueueItems,
-    required super.clearQueue,
-    required super.getSpaceQueue,
-    required super.updateAudioState,
     required super.getMoods,
     required super.storeHubService,
     required super.sessionCubit,
+    required super.runtime,
   });
 
   void seed(SpacePlaybackState playbackState) {

@@ -10,13 +10,12 @@ class ApiConstants {
 
   // Base URLs
   // Android emulator can use 10.0.2.2 (host localhost); real devices should use LAN IP.
-  static const String baseUrl = 'https://7942-118-69-70-166.ngrok-free.app';
+  static const String baseUrl = 'http://192.168.1.4:7001';
 
   // Default request headers
   static const Map<String, String> defaultHeaders = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
-    'x-ngrok-skip-browser-warning': '1',
   };
   static const String mqttBrokerUrl = 'mqtt.cams.example.com';
   static const int mqttPort = 1883;

@@ -94,6 +94,23 @@ class PlayerQueueSeeded extends PlayerEvent {
   List<Object?> get props => [tracks, playlistName, playlistId, force];
 }
 
+/// Focuses a queue item/track from a remote CAMS queue snapshot without
+/// requiring an active HLS stream yet.
+class PlayerQueueFocusApplied extends PlayerEvent {
+  final String? queueItemId;
+  final String? trackId;
+  final bool isPlaying;
+
+  const PlayerQueueFocusApplied({
+    this.queueItemId,
+    this.trackId,
+    this.isPlaying = false,
+  });
+
+  @override
+  List<Object?> get props => [queueItemId, trackId, isPlaying];
+}
+
 /// Internal: fired when the audio engine reports playback completed.
 class PlayerTrackCompleted extends PlayerEvent {
   const PlayerTrackCompleted();
@@ -128,10 +145,14 @@ class PlayerContextCleared extends PlayerEvent {
 /// Fired periodically by the audio engine to update playback position.
 class PlayerPositionUpdated extends PlayerEvent {
   final double positionSeconds;
-  const PlayerPositionUpdated({required this.positionSeconds});
+  final bool isAbsolutePosition;
+  const PlayerPositionUpdated({
+    required this.positionSeconds,
+    this.isAbsolutePosition = false,
+  });
 
   @override
-  List<Object?> get props => [positionSeconds];
+  List<Object?> get props => [positionSeconds, isAbsolutePosition];
 }
 
 /// Fired when the user seeks to a specific position via the progress bar.

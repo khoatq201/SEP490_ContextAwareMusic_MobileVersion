@@ -13,6 +13,7 @@ import '../../core/enums/user_role.dart';
 enum SongOption {
   addToPlaylist,
   playNow,
+  playNext,
   addToQueue,
   goToAlbum,
   goToArtist,
@@ -37,7 +38,9 @@ class SongOptionsBottomSheet extends StatelessWidget {
     super.key,
     required this.song,
     this.showPlayNow = true,
+    this.showPlayNext = false,
     this.playNowLabel = 'Play now',
+    this.playNextLabel = 'Play next',
     this.enableAddToQueue = false,
     this.addToQueueLabel = 'Add to queue',
     this.enableGoToAlbum = false,
@@ -46,7 +49,9 @@ class SongOptionsBottomSheet extends StatelessWidget {
 
   final SongEntity song;
   final bool showPlayNow;
+  final bool showPlayNext;
   final String playNowLabel;
+  final String playNextLabel;
   final bool enableAddToQueue;
   final String addToQueueLabel;
   final bool enableGoToAlbum;
@@ -184,6 +189,16 @@ class SongOptionsBottomSheet extends StatelessWidget {
                 textPrimary: textPrimary,
                 textMuted: textMuted,
                 onTap: () => Navigator.pop(context, SongOption.playNow),
+              ),
+            if (showPlayNext)
+              _OptionTile(
+                icon: Icons.skip_next_outlined,
+                label: playNextLabel,
+                enabled: true,
+                isDark: isDark,
+                textPrimary: textPrimary,
+                textMuted: textMuted,
+                onTap: () => Navigator.pop(context, SongOption.playNext),
               ),
             _OptionTile(
               icon: Icons.queue_music_outlined,

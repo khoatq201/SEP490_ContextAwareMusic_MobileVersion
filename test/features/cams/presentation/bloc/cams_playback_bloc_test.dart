@@ -11,6 +11,7 @@ import 'package:cams_store_manager/core/session/session_cubit.dart';
 import 'package:cams_store_manager/features/cams/data/models/override_response_model.dart';
 import 'package:cams_store_manager/features/cams/data/models/space_playback_state_model.dart';
 import 'package:cams_store_manager/features/cams/data/repositories/cams_repository_impl.dart';
+import 'package:cams_store_manager/features/cams/data/services/queue_first_playback_runtime.dart';
 import 'package:cams_store_manager/features/cams/data/services/store_hub_service.dart';
 import 'package:cams_store_manager/features/cams/domain/entities/pair_code_snapshot.dart';
 import 'package:cams_store_manager/features/cams/domain/entities/pair_device_info.dart';
@@ -36,6 +37,7 @@ void main() {
     late _FakeMoodRepository moodRepository;
     late _FakeStoreHubService storeHubService;
     late SessionCubit sessionCubit;
+    late QueueFirstPlaybackRuntime runtime;
     late CamsPlaybackBloc bloc;
 
     setUp(() {
@@ -43,27 +45,32 @@ void main() {
       moodRepository = _FakeMoodRepository();
       storeHubService = _FakeStoreHubService();
       sessionCubit = SessionCubit(localStorage: _InMemoryLocalStorageService());
-
-      bloc = CamsPlaybackBloc(
+      runtime = QueueFirstPlaybackRuntime(
         getSpaceState: GetSpaceState(repository),
-        overrideSpace: OverrideSpace(repository),
-        cancelOverride: CancelOverride(repository),
-        sendPlaybackCommand: SendPlaybackCommand(repository),
         queueTracks: QueueTracks(repository),
         queuePlaylist: QueuePlaylist(repository),
         reorderQueue: ReorderQueue(repository),
         removeQueueItems: RemoveQueueItems(repository),
         clearQueue: ClearQueue(repository),
         getSpaceQueue: GetSpaceQueue(repository),
+        sendPlaybackCommand: SendPlaybackCommand(repository),
         updateAudioState: UpdateAudioState(repository),
+        storeHubService: storeHubService,
+      );
+
+      bloc = CamsPlaybackBloc(
+        overrideSpace: OverrideSpace(repository),
+        cancelOverride: CancelOverride(repository),
         getMoods: GetMoods(moodRepository),
         storeHubService: storeHubService,
         sessionCubit: sessionCubit,
+        runtime: runtime,
       );
     });
 
     tearDown(() async {
       await bloc.close();
+      await runtime.dispose();
       await sessionCubit.close();
       storeHubService.dispose();
     });
@@ -102,11 +109,11 @@ void main() {
       expect(request.trackIds, ['track-99']);
       expect(request.mode, QueueInsertModeEnum.addToQueue);
       expect(request.isClearExistingQueue, isFalse);
-      expect(request.reason, 'Add track to queue');
+      expect(request.reason, 'Manual track add-to-queue request');
       expect(bloc.state.isOverriding, isFalse);
     });
 
-    test('downgrades requested PlayNow to add-to-queue until capability exists',
+    test('keeps requested PlayNow for playlist queue actions',
         () async {
       await _initBloc(bloc);
 
@@ -120,28 +127,20 @@ void main() {
       await _waitUntil(() => repository.lastQueuePlaylistRequest != null);
 
       final request = repository.lastQueuePlaylistRequest!;
-      expect(request.mode, QueueInsertModeEnum.addToQueue);
-      expect(request.isClearExistingQueue, isFalse);
+      expect(request.mode, QueueInsertModeEnum.playNow);
+      expect(request.isClearExistingQueue, isTrue);
       expect(request.reason, 'Manual playlist play request');
     });
 
     test('honors requested PlayNow when immediate takeover capability is on',
         () async {
       final capableBloc = CamsPlaybackBloc(
-        getSpaceState: GetSpaceState(repository),
         overrideSpace: OverrideSpace(repository),
         cancelOverride: CancelOverride(repository),
-        sendPlaybackCommand: SendPlaybackCommand(repository),
-        queueTracks: QueueTracks(repository),
-        queuePlaylist: QueuePlaylist(repository),
-        reorderQueue: ReorderQueue(repository),
-        removeQueueItems: RemoveQueueItems(repository),
-        clearQueue: ClearQueue(repository),
-        getSpaceQueue: GetSpaceQueue(repository),
-        updateAudioState: UpdateAudioState(repository),
         getMoods: GetMoods(moodRepository),
         storeHubService: storeHubService,
         sessionCubit: sessionCubit,
+        runtime: runtime,
         capabilityProvider: const StaticCamsPlaybackCapabilityProvider(
           CamsPlaybackCapabilities(
             supportsImmediateManualQueueTakeover: true,
@@ -163,7 +162,7 @@ void main() {
       final request = repository.lastQueueTracksRequest!;
       expect(request.mode, QueueInsertModeEnum.playNow);
       expect(request.isClearExistingQueue, isTrue);
-      expect(request.reason, 'Play track now');
+      expect(request.reason, 'Manual track play-now request');
     });
 
     test('keeps mood override on overrideSpace with moodId only', () async {
@@ -262,13 +261,11 @@ void main() {
         ),
       ]);
 
-      bloc.add(
-        const CamsStateSyncReceived(
-          playbackState: SpacePlaybackState(
-            spaceId: 'space-1',
-            currentQueueItemId: 'queue-9',
-            hlsUrl: 'https://stream.example.com/queue-9.m3u8',
-          ),
+      storeHubService.emitStateSync(
+        const SpacePlaybackStateModel(
+          spaceId: 'space-1',
+          currentQueueItemId: 'queue-9',
+          hlsUrl: 'https://stream.example.com/queue-9.m3u8',
         ),
       );
       await _waitUntil(
@@ -471,17 +468,15 @@ void main() {
     test('updates audio state through state/audio endpoint', () async {
       await _initBloc(bloc);
 
-      bloc.add(
-        const CamsStateSyncReceived(
-          playbackState: SpacePlaybackState(
-            spaceId: 'space-1',
-            volumePercent: 45,
-            isMuted: false,
-            queueEndBehavior: 0,
-          ),
+      storeHubService.emitStateSync(
+        const SpacePlaybackStateModel(
+          spaceId: 'space-1',
+          volumePercent: 45,
+          isMuted: false,
+          queueEndBehavior: 0,
         ),
       );
-      await _nextTick();
+      await _waitUntil(() => bloc.state.playbackState?.volumePercent == 45);
 
       bloc.add(const CamsUpdateAudioState(
         volumePercent: 82,
@@ -621,6 +616,10 @@ class _FakeStoreHubService extends StoreHubService {
     double? positionSeconds,
     String? currentHlsUrl,
   }) async {}
+
+  void emitStateSync(SpacePlaybackStateModel playbackState) {
+    _stateSyncController.add(playbackState);
+  }
 
   @override
   void dispose() {
@@ -769,6 +768,36 @@ class _FakeCamsRepository implements CamsRepository {
       isMuted: isMuted,
       queueEndBehavior: queueEndBehavior,
       usePlaybackDeviceScope: usePlaybackDeviceScope,
+    );
+    getSpaceStateResult = getSpaceStateResult.fold(
+      Left.new,
+      (state) => Right(
+        SpacePlaybackState(
+          spaceId: state.spaceId,
+          storeId: state.storeId,
+          brandId: state.brandId,
+          currentQueueItemId: state.currentQueueItemId,
+          currentTrackName: state.currentTrackName,
+          currentPlaylistId: state.currentPlaylistId,
+          currentPlaylistName: state.currentPlaylistName,
+          hlsUrl: state.hlsUrl,
+          moodName: state.moodName,
+          isManualOverride: state.isManualOverride,
+          overrideMode: state.overrideMode,
+          startedAtUtc: state.startedAtUtc,
+          expectedEndAtUtc: state.expectedEndAtUtc,
+          isPaused: state.isPaused,
+          pausePositionSeconds: state.pausePositionSeconds,
+          seekOffsetSeconds: state.seekOffsetSeconds,
+          pendingQueueItemId: state.pendingQueueItemId,
+          pendingPlaylistId: state.pendingPlaylistId,
+          pendingOverrideReason: state.pendingOverrideReason,
+          volumePercent: volumePercent ?? state.volumePercent,
+          isMuted: isMuted ?? state.isMuted,
+          queueEndBehavior: queueEndBehavior ?? state.queueEndBehavior,
+          spaceQueueItems: state.spaceQueueItems,
+        ),
+      ),
     );
     return const Right(null);
   }

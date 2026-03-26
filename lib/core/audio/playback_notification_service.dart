@@ -62,7 +62,7 @@ class PlaybackNotificationService {
         _audioPlayerService = audioPlayerService {
     _playerStateSub = _audioPlayerService.playerStateStream.listen((_) {
       if (_isEnabled) {
-        _publishPlaybackState();
+        _scheduleNotificationUpdate();
       }
     });
   }
@@ -77,8 +77,10 @@ class PlaybackNotificationService {
   final AudioPlayerService _audioPlayerService;
 
   StreamSubscription<ja.PlayerState>? _playerStateSub;
+  Timer? _notificationDebounceTimer;
   app_player.PlayerState _latestState = const app_player.PlayerState();
   bool _isEnabled = false;
+  String? _lastMediaItemId;
 
   static Future<PlaybackNotificationService> init({
     required AudioPlayerService audioPlayerService,
@@ -114,19 +116,39 @@ class PlaybackNotificationService {
       return;
     }
 
-    _handler.mediaItem.add(_buildMediaItem(playerState));
-    _publishPlaybackState();
+    // Only update mediaItem when the track identity actually changes.
+    final newMediaId = playerState.currentTrack?.id ??
+        playerState.playlistId ??
+        playerState.activeSpaceId;
+    if (newMediaId != _lastMediaItemId) {
+      _lastMediaItemId = newMediaId;
+      _handler.mediaItem.add(_buildMediaItem(playerState));
+    }
+
+    _scheduleNotificationUpdate();
   }
 
   Future<void> clear() async {
     _isEnabled = false;
     _latestState = const app_player.PlayerState();
+    _lastMediaItemId = null;
+    _notificationDebounceTimer?.cancel();
     await _handler.clearSession();
   }
 
   Future<void> dispose() async {
+    _notificationDebounceTimer?.cancel();
     await _playerStateSub?.cancel();
     await _handler.dispose();
+  }
+
+  /// Debounce ALL notification updates to max ~2/sec.
+  void _scheduleNotificationUpdate() {
+    _notificationDebounceTimer?.cancel();
+    _notificationDebounceTimer = Timer(
+      const Duration(milliseconds: 500),
+      _publishPlaybackState,
+    );
   }
 
   void _publishPlaybackState() {
@@ -157,7 +179,7 @@ class PlaybackNotificationService {
   }
 
   PlaybackState _buildPlaybackState(app_player.PlayerState state) {
-    final canSkipNext = state.isHlsMode || state.hasNext;
+    final canSkipNext = state.hasNext;
     final controls = <MediaControl>[
       state.isPlaying ? MediaControl.pause : MediaControl.play,
       if (canSkipNext) MediaControl.skipToNext,

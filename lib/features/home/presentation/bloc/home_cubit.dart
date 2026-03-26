@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../cams/domain/usecases/cancel_override.dart';
 import '../../../cams/domain/usecases/get_space_state.dart';
 import '../../../cams/domain/usecases/override_space.dart';
+import '../../../moods/domain/entities/mood.dart';
 import '../../../moods/domain/usecases/get_moods.dart';
 import '../../domain/repositories/home_repository.dart';
 import 'home_state.dart';
@@ -15,6 +16,7 @@ class HomeCubit extends Cubit<HomeState> {
   final GetMoods _getMoods;
   final OverrideSpace _overrideSpace;
   final CancelOverride _cancelOverride;
+  bool _usePlaybackDeviceScope = false;
 
   HomeCubit(
     this._repository, {
@@ -28,15 +30,34 @@ class HomeCubit extends Cubit<HomeState> {
         _cancelOverride = cancelOverride,
         super(const HomeState());
 
-  Future<void> load() async {
+  Future<void> load({
+    bool includeCatalog = true,
+    bool loadMoods = true,
+  }) async {
     emit(state.copyWith(
       status: HomeStatus.loading,
       clearError: true,
     ));
 
     final sensorsResult = await _repository.getSensorData();
+    if (!includeCatalog) {
+      sensorsResult.fold(
+        (failure) => emit(state.copyWith(
+          status: HomeStatus.error,
+          errorMessage: failure.message,
+        )),
+        (sensors) => emit(state.copyWith(
+          status: HomeStatus.loaded,
+          sensors: sensors,
+          categories: const [],
+          moods: const [],
+        )),
+      );
+      return;
+    }
+
     final categoriesResult = await _repository.getCategories();
-    final moodsResult = await _getMoods();
+    final moodsResult = loadMoods ? await _getMoods() : null;
 
     sensorsResult.fold(
       (failure) => emit(state.copyWith(
@@ -50,7 +71,9 @@ class HomeCubit extends Cubit<HomeState> {
             errorMessage: failure.message,
           )),
           (categories) {
-            final moods = moodsResult.fold((_) => state.moods, (data) => data);
+            final moods = loadMoods
+                ? moodsResult!.fold((_) => state.moods, (data) => data)
+                : const <Mood>[];
             emit(state.copyWith(
               status: HomeStatus.loaded,
               sensors: sensors,
@@ -63,7 +86,12 @@ class HomeCubit extends Cubit<HomeState> {
     );
   }
 
-  Future<void> syncForSpace(String? spaceId) async {
+  Future<void> syncForSpace(
+    String? spaceId, {
+    bool loadMoods = true,
+    bool usePlaybackDeviceScope = false,
+  }) async {
+    _usePlaybackDeviceScope = usePlaybackDeviceScope;
     if (spaceId == null || spaceId.isEmpty) {
       emit(state.copyWith(
         clearActiveSpace: true,
@@ -83,13 +111,26 @@ class HomeCubit extends Cubit<HomeState> {
       clearModeMessage: true,
     ));
 
-    await _ensureMoodsLoaded();
-    await loadSpacePlaybackState(spaceId);
+    if (loadMoods) {
+      await _ensureMoodsLoaded();
+    }
+    await loadSpacePlaybackState(
+      spaceId,
+      usePlaybackDeviceScope: usePlaybackDeviceScope,
+    );
   }
 
   /// Fetch CAMS playback state for the given space to display mood and mode.
-  Future<void> loadSpacePlaybackState(String spaceId) async {
-    final result = await _getSpaceState(spaceId);
+  Future<void> loadSpacePlaybackState(
+    String spaceId, {
+    bool? usePlaybackDeviceScope,
+  }) async {
+    final scopedToPlaybackDevice =
+        usePlaybackDeviceScope ?? _usePlaybackDeviceScope;
+    final result = await _getSpaceState(
+      spaceId,
+      usePlaybackDeviceScope: scopedToPlaybackDevice,
+    );
     result.fold(
       (_) {}, // Non-fatal - fallback UI still works
       (pbState) {

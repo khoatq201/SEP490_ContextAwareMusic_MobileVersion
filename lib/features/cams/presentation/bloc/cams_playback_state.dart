@@ -65,10 +65,10 @@ class CamsPlaybackState extends Equatable {
   bool get hasActiveOverride => playbackState?.hasActiveOverride ?? false;
 
   /// Current HLS URL (from playback state).
-  String? get hlsUrl => playbackState?.hlsUrl;
+  String? get hlsUrl => playbackState?.effectiveHlsUrl;
 
   /// Current track name (queue-first state).
-  String? get currentTrackName => playbackState?.currentTrackName;
+  String? get currentTrackName => playbackState?.effectiveTrackName;
 
   /// Current playback label for UI (track -> playlist -> mood).
   String? get currentPlaybackName => playbackState?.currentDisplayName;

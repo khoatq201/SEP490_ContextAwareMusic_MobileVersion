@@ -40,22 +40,6 @@ class FullScreenPlayerPage extends StatelessWidget {
           final isPlaying = state.isPlaying;
           final useRemoteControls =
               state.isHlsMode && (state.activeSpaceId?.isNotEmpty ?? false);
-          final hasQueueIndex = state.currentIndex >= 0 &&
-              state.currentIndex < state.queue.length;
-          final nextTrackIndex = state.hasNext ? state.currentIndex + 1 : null;
-          final optimisticNextOffset = nextTrackIndex != null
-              ? state.offsetForIndex(nextTrackIndex).toDouble()
-              : null;
-          final optimisticNextTrackId =
-              nextTrackIndex != null ? state.queue[nextTrackIndex].id : null;
-          final previousTrackIndex = hasQueueIndex
-              ? state.displayPosition > 5
-                  ? state.currentIndex
-                  : (state.hasPrevious ? state.currentIndex - 1 : null)
-              : null;
-          final optimisticPreviousOffset = previousTrackIndex != null
-              ? state.offsetForIndex(previousTrackIndex).toDouble()
-              : null;
           final moodTags = track?.moodTags;
           final mood =
               (moodTags != null && moodTags.isNotEmpty) ? moodTags.first : null;
@@ -299,15 +283,6 @@ class FullScreenPlayerPage extends StatelessWidget {
                     GestureDetector(
                       onTap: () {
                         if (useRemoteControls) {
-                          if (optimisticPreviousOffset != null) {
-                            context.read<PlayerBloc>().add(
-                                  PlayerRemoteCommandApplied(
-                                    command: PlaybackCommandEnum.skipPrevious,
-                                    positionSeconds: optimisticPreviousOffset,
-                                    playLocally: true,
-                                  ),
-                                );
-                          }
                           context.read<CamsPlaybackBloc>().add(
                                 const CamsSendCommand(
                                   command: PlaybackCommandEnum.skipPrevious,
@@ -368,18 +343,9 @@ class FullScreenPlayerPage extends StatelessWidget {
 
                     // Skip next
                     GestureDetector(
-                      onTap: () {
+                      onTap: state.hasNext
+                          ? () {
                         if (useRemoteControls) {
-                          if (optimisticNextOffset != null) {
-                            context.read<PlayerBloc>().add(
-                                  PlayerRemoteCommandApplied(
-                                    command: PlaybackCommandEnum.skipNext,
-                                    positionSeconds: optimisticNextOffset,
-                                    targetTrackId: optimisticNextTrackId,
-                                    playLocally: true,
-                                  ),
-                                );
-                          }
                           context.read<CamsPlaybackBloc>().add(
                                 const CamsSendCommand(
                                   command: PlaybackCommandEnum.skipNext,
@@ -390,7 +356,8 @@ class FullScreenPlayerPage extends StatelessWidget {
                         context
                             .read<PlayerBloc>()
                             .add(const PlayerSkipRequested());
-                      },
+                      }
+                          : null,
                       child: Container(
                         width: 52,
                         height: 52,

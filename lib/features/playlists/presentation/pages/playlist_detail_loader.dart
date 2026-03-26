@@ -7,6 +7,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../core/player/player_bloc.dart';
 import '../../../../core/player/player_event.dart';
 import '../../../../core/player/playlist_queue_builder.dart';
+import '../../../../core/session/session_cubit.dart';
 import '../../../../injection_container.dart';
 import '../../data/datasources/playlist_remote_datasource.dart';
 import '../../domain/entities/api_playlist.dart';
@@ -35,6 +36,16 @@ class _PlaylistDetailLoaderState extends State<PlaylistDetailLoader> {
 
   void _seedPlayer(BuildContext context, ApiPlaylist playlist) {
     if (_playerSeeded) return;
+    final session = context.read<SessionCubit>().state;
+    if (session.currentSpace != null || session.isPlaybackDevice) {
+      return;
+    }
+    final playerState = context.read<PlayerBloc>().state;
+    if (playerState.isSyncedCamsPlayback) {
+      // While CAMS/HLS remote playback is active, keep the player queue
+      // untouched to avoid UI metadata jumping to the browsed playlist.
+      return;
+    }
     _playerSeeded = true;
 
     final queue = buildPlaylistQueue(playlist);

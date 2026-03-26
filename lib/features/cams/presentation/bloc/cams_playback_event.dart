@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 import '../../../../core/enums/playback_command_enum.dart';
 import '../../../../core/enums/queue_insert_mode_enum.dart';
 import '../../domain/entities/space_playback_state.dart';
+import '../../data/services/store_hub_service.dart';
 
 abstract class CamsPlaybackEvent extends Equatable {
   const CamsPlaybackEvent();
@@ -263,4 +264,14 @@ class CamsReportPlaybackState extends CamsPlaybackEvent {
   @override
   List<Object?> get props =>
       [spaceId, isPlaying, positionSeconds, currentHlsUrl];
+}
+
+/// Internal: hub connection status changed.
+class CamsHubConnectionChanged extends CamsPlaybackEvent {
+  final ConnectionStatus status;
+
+  const CamsHubConnectionChanged({required this.status});
+
+  @override
+  List<Object?> get props => [status];
 }

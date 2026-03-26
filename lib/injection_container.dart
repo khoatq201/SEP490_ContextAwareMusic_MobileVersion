@@ -139,6 +139,7 @@ import 'features/suno/domain/usecases/suno_usecases.dart';
 // CAMS Feature
 import 'features/cams/data/datasources/cams_remote_datasource.dart';
 import 'features/cams/data/repositories/cams_repository_impl.dart';
+import 'features/cams/data/services/queue_first_playback_runtime.dart';
 import 'features/cams/data/services/store_hub_service.dart';
 import 'features/cams/domain/usecases/get_space_state.dart';
 import 'features/cams/domain/usecases/override_space.dart';
@@ -630,7 +631,7 @@ Future<void> initializeDependencies() async {
   );
 
   // SignalR StoreHub — requires access token factory
-  sl.registerFactory<StoreHubService>(
+  sl.registerLazySingleton<StoreHubService>(
     () => StoreHubService(
       accessTokenFactory: () {
         final localStorage = sl<LocalStorageService>();
@@ -657,24 +658,30 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(() => GeneratePairCode(sl()));
   sl.registerLazySingleton(() => RevokePairCode(sl()));
   sl.registerLazySingleton(() => UnpairPlaybackDevice(sl()));
-
-  // BLoCs
-  sl.registerFactory(
-    () => CamsPlaybackBloc(
+  sl.registerLazySingleton(
+    () => QueueFirstPlaybackRuntime(
       getSpaceState: sl(),
-      overrideSpace: sl(),
-      cancelOverride: sl(),
-      sendPlaybackCommand: sl(),
       queueTracks: sl(),
       queuePlaylist: sl(),
       reorderQueue: sl(),
       removeQueueItems: sl(),
       clearQueue: sl(),
       getSpaceQueue: sl(),
+      sendPlaybackCommand: sl(),
       updateAudioState: sl(),
+      storeHubService: sl(),
+    ),
+  );
+
+  // BLoCs
+  sl.registerFactory(
+    () => CamsPlaybackBloc(
+      overrideSpace: sl(),
+      cancelOverride: sl(),
       getMoods: sl(),
       storeHubService: sl(),
       sessionCubit: sl(),
+      runtime: sl(),
       capabilityProvider: sl(),
     ),
   );

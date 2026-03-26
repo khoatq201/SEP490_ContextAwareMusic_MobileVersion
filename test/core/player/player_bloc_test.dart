@@ -79,6 +79,113 @@ void main() {
       expect(bloc.state.isPlaying, isFalse);
     });
 
+    test(
+        'maps local HLS position updates for later queue items back to absolute queue offsets',
+        () async {
+      final queue = [
+        const Track(
+          id: 'track-1',
+          queueItemId: 'queue-1',
+          title: 'Track 1',
+          artist: 'Artist',
+          fileUrl: '',
+          moodTags: [],
+          duration: 180,
+          seekOffsetSeconds: 0,
+        ),
+        const Track(
+          id: 'track-2',
+          queueItemId: 'queue-2',
+          title: 'Track 2',
+          artist: 'Artist',
+          fileUrl: '',
+          moodTags: [],
+          duration: 220,
+          seekOffsetSeconds: 180,
+        ),
+      ];
+
+      bloc.add(PlayerQueueSeeded(
+        tracks: queue,
+        playlistId: 'playlist-1',
+        force: true,
+      ));
+      await _tick();
+
+      bloc.add(const PlayerHlsStarted(
+        hlsUrl: 'https://stream.example.com/live.m3u8',
+        playlistId: 'playlist-1',
+        queueItemId: 'queue-2',
+        trackId: 'track-2',
+        trackName: 'Track 2',
+        seekOffsetSeconds: 5,
+        playLocally: false,
+      ));
+      await _tick();
+
+      expect(bloc.state.currentIndex, 1);
+      expect(bloc.state.currentPositionPrecise, closeTo(185, 0.001));
+      expect(bloc.state.displayPositionPrecise, closeTo(5, 0.001));
+
+      bloc.add(const PlayerPositionUpdated(positionSeconds: 12));
+      await _tick();
+
+      expect(bloc.state.currentPositionPrecise, closeTo(192, 0.001));
+      expect(bloc.state.displayPositionPrecise, closeTo(12, 0.001));
+      expect(bloc.state.progress, closeTo(12 / 220, 0.001));
+    });
+
+    test('seeks local HLS audio with track-relative time but keeps absolute queue state',
+        () async {
+      final queue = [
+        const Track(
+          id: 'track-1',
+          queueItemId: 'queue-1',
+          title: 'Track 1',
+          artist: 'Artist',
+          fileUrl: '',
+          moodTags: [],
+          duration: 180,
+          seekOffsetSeconds: 0,
+        ),
+        const Track(
+          id: 'track-2',
+          queueItemId: 'queue-2',
+          title: 'Track 2',
+          artist: 'Artist',
+          fileUrl: '',
+          moodTags: [],
+          duration: 220,
+          seekOffsetSeconds: 180,
+        ),
+      ];
+
+      bloc.add(PlayerQueueSeeded(
+        tracks: queue,
+        playlistId: 'playlist-1',
+        force: true,
+      ));
+      await _tick();
+
+      bloc.add(const PlayerHlsStarted(
+        hlsUrl: 'https://stream.example.com/live.m3u8',
+        playlistId: 'playlist-1',
+        queueItemId: 'queue-2',
+        trackId: 'track-2',
+        trackName: 'Track 2',
+        seekOffsetSeconds: 5,
+        playLocally: true,
+      ));
+      await _tick();
+
+      bloc.add(const PlayerSeekRequested(positionSeconds: 210));
+      await _tick();
+
+      expect(audioService.seekCalls.last, const Duration(seconds: 30));
+      expect(bloc.state.currentPositionPrecise, closeTo(210, 0.001));
+      expect(bloc.state.displayPositionPrecise, closeTo(30, 0.001));
+    });
+
     test('maps skipToTrack without offset by targetTrackId', () async {
       final queue = [
         const Track(
@@ -333,6 +440,52 @@ void main() {
       expect(bloc.state.currentQueueItemId, 'queue-1');
     });
 
+    test('focuses pending queue item before HLS stream starts', () async {
+      final queue = [
+        const Track(
+          id: 'track-1',
+          queueItemId: 'queue-1',
+          title: 'Track 1',
+          artist: 'Artist',
+          fileUrl: '',
+          moodTags: [],
+          duration: 180,
+          seekOffsetSeconds: 0,
+        ),
+        const Track(
+          id: 'track-2',
+          queueItemId: 'queue-2',
+          title: 'Track 2',
+          artist: 'Artist',
+          fileUrl: '',
+          moodTags: [],
+          duration: 220,
+          seekOffsetSeconds: 180,
+        ),
+      ];
+
+      bloc.add(PlayerQueueSeeded(
+        tracks: queue,
+        force: true,
+      ));
+      await _tick();
+
+      bloc.add(const PlayerQueueFocusApplied(
+        queueItemId: 'queue-2',
+        trackId: 'track-2',
+        isPlaying: false,
+      ));
+      await _tick();
+
+      expect(bloc.state.currentIndex, 1);
+      expect(bloc.state.currentTrack?.id, 'track-2');
+      expect(bloc.state.currentTrackId, 'track-2');
+      expect(bloc.state.currentQueueItemId, 'queue-2');
+      expect(bloc.state.hasTrack, isTrue);
+      expect(bloc.state.isPlaying, isFalse);
+      expect(bloc.state.isSyncedCamsPlayback, isFalse);
+    });
+
     test('applies volumePercent/isMuted to audio service volume', () async {
       bloc.add(const PlayerAudioSettingsApplied(
         volumePercent: 70,
@@ -348,6 +501,49 @@ void main() {
       await _tick();
       expect(audioService.lastSetVolume, 0.0);
     });
+
+    test('stops audio engine and clears queue-first state on HLS stop',
+        () async {
+      final queue = [
+        const Track(
+          id: 'track-1',
+          queueItemId: 'queue-1',
+          title: 'Track 1',
+          artist: 'Artist',
+          fileUrl: '',
+          moodTags: [],
+          duration: 180,
+          seekOffsetSeconds: 0,
+        ),
+      ];
+
+      bloc.add(PlayerQueueSeeded(
+        tracks: queue,
+        force: true,
+      ));
+      await _tick();
+
+      bloc.add(const PlayerHlsStarted(
+        hlsUrl: 'https://stream.example.com/live.m3u8',
+        queueItemId: 'queue-1',
+        trackId: 'track-1',
+        trackName: 'Track 1',
+        playLocally: true,
+      ));
+      await _tick();
+
+      expect(bloc.state.hasTrack, isTrue);
+      expect(audioService.loadedUrl, 'https://stream.example.com/live.m3u8');
+
+      bloc.add(const PlayerHlsStopped());
+      await _tick();
+
+      expect(bloc.state.hasTrack, isFalse);
+      expect(bloc.state.queue, isEmpty);
+      expect(bloc.state.hlsUrl, isNull);
+      expect(audioService.loadedUrl, isNull);
+      expect(audioService.stopCallCount, 1);
+    });
   });
 }
 
@@ -362,6 +558,7 @@ class _FakeAudioPlayerService extends AudioPlayerService {
   final Duration _bufferedPosition = Duration.zero;
   ProcessingState _processingState = ProcessingState.idle;
   double? lastSetVolume;
+  int stopCallCount = 0;
 
   @override
   Stream<Duration> get positionStream => _positionController.stream;
@@ -400,6 +597,7 @@ class _FakeAudioPlayerService extends AudioPlayerService {
 
   @override
   Future<void> stop() async {
+    stopCallCount += 1;
     _loadedUrl = null;
     _position = Duration.zero;
   }

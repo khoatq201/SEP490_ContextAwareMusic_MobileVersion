@@ -75,8 +75,42 @@ class _MyAppState extends State<MyApp> {
     required LocalStorageService localStorage,
   }) async {
     final currentSession = localStorage.getDeviceSession();
-    if (currentSession == null || localStorage.isDeviceTokenExpired()) {
+    final hasDeviceRefreshToken =
+        localStorage.getDeviceRefreshToken()?.isNotEmpty ?? false;
+    final isDeviceTokenExpired = localStorage.isDeviceTokenExpired();
+    debugPrint(
+      '[PlaybackAuthDebug] hydratePlaybackDeviceSession '
+      'hasDeviceSession=${currentSession != null} '
+      'activeSessionMode=${localStorage.getActiveSessionMode() ?? 'null'} '
+      'deviceTokenExpired=$isDeviceTokenExpired '
+      'hasDeviceRefreshToken=$hasDeviceRefreshToken',
+    );
+    if (currentSession == null) {
       return null;
+    }
+
+    if (isDeviceTokenExpired && !hasDeviceRefreshToken) {
+      debugPrint(
+        '[PlaybackAuthDebug] playback-device session cannot be restored '
+        'because access token is expired and no refresh token is stored.',
+      );
+      return null;
+    }
+
+    if (isDeviceTokenExpired && hasDeviceRefreshToken) {
+      debugPrint(
+        '[PlaybackAuthDebug] playback-device access token is expired; '
+        'attempting immediate device refresh during startup.',
+      );
+      final refreshedToken =
+          await sl<DioClient>().refreshPlaybackDeviceTokenIfNeeded(force: true);
+      if (refreshedToken == null || refreshedToken.isEmpty) {
+        debugPrint(
+          '[PlaybackAuthDebug] startup device refresh failed; '
+          'playback-device session cannot be restored.',
+        );
+        return null;
+      }
     }
 
     final hydrated = Map<String, dynamic>.from(currentSession);
@@ -171,6 +205,13 @@ class _MyAppState extends State<MyApp> {
     final hasRestorablePlaybackSession = deviceSession != null &&
         deviceSession['storeId'] != null &&
         deviceSession['spaceId'] != null;
+    debugPrint(
+      '[PlaybackAuthDebug] initializeApp '
+      'hasRestorablePlaybackSession=$hasRestorablePlaybackSession '
+      'activeSessionMode=${localStorage.getActiveSessionMode() ?? 'null'} '
+      'hasDeviceAccessToken=${(localStorage.getDeviceAccessToken()?.isNotEmpty ?? false)} '
+      'hasDeviceRefreshToken=${(localStorage.getDeviceRefreshToken()?.isNotEmpty ?? false)}',
+    );
 
     if (hasRestorablePlaybackSession) {
       await localStorage.saveDeviceSession(deviceSession);
@@ -255,14 +296,15 @@ class _MyAppState extends State<MyApp> {
       );
     }
 
-    return AppPlaybackCoordinator(
-      child: MaterialApp.router(
-        title: 'CAMS Store Manager',
-        debugShowCheckedModeBanner: false,
-        themeMode: themeProvider.themeMode,
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        routerConfig: AppRouter.router,
+    return MaterialApp.router(
+      title: 'CAMS Store Manager',
+      debugShowCheckedModeBanner: false,
+      themeMode: themeProvider.themeMode,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      routerConfig: AppRouter.router,
+      builder: (context, child) => AppPlaybackCoordinator(
+        child: child ?? const SizedBox.shrink(),
       ),
     );
   }

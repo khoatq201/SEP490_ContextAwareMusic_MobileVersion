@@ -85,7 +85,9 @@ class AudioPlayerService {
   Future<Duration?> loadUrl(String url) async {
     final completer = Completer<Duration?>();
     final loadFuture = _pendingLoad.then((_) async {
-      if (_loadedUrl == url && processingState != ProcessingState.idle) {
+      if (_loadedUrl == url &&
+          processingState != ProcessingState.idle &&
+          processingState != ProcessingState.completed) {
         completer.complete(_player.duration);
         return;
       }
@@ -123,10 +125,17 @@ class AudioPlayerService {
   /// Pause playback.
   Future<void> pause() => _player.pause();
 
-  /// Stop playback and reset position.
+  /// Stop playback, reset position, and clear loaded source identity.
   Future<void> stop() async {
-    await _player.stop();
+    // Reset the pending-load chain so any in-flight setAudioSource()
+    // cannot resurrect _loadedUrl after we null it.
+    _pendingLoad = Future.value();
     _loadedUrl = null;
+    try {
+      await _player.stop();
+    } catch (_) {
+      // Player might already be disposed.
+    }
     await _session?.setActive(false);
   }
 

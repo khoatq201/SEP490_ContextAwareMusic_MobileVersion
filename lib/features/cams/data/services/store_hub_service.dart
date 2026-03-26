@@ -27,6 +27,14 @@ class StoreHubService {
   String? _currentManagerStoreId;
   String? _currentManagerBrandId;
 
+  /// Offset in milliseconds: (deviceTimeUtc - serverTimeUtc).
+  /// Positive = device clock is ahead of server.
+  /// Used to compensate seek calculations derived from `startedAtUtc`.
+  int _serverClockOffsetMs = 0;
+
+  /// Public getter for the calculated server clock offset.
+  int get serverClockOffsetMs => _serverClockOffsetMs;
+
   StoreHubService({required String Function() accessTokenFactory})
       : _accessTokenFactory = accessTokenFactory;
 
@@ -189,6 +197,16 @@ class StoreHubService {
         debugPrint(
           '[StoreHub] Connected to group: ${_readString(data, 'spaceId') ?? _readString(data, 'storeId')}',
         );
+        // Compute clock drift from server timestamp.
+        final serverTimeUtc = _parseDateTime(_readValue(data, 'serverTimeUtc'));
+        if (serverTimeUtc != null) {
+          _serverClockOffsetMs =
+              DateTime.now().toUtc().difference(serverTimeUtc.toUtc()).inMilliseconds;
+          debugPrint(
+            '[StoreHub] Clock offset: ${_serverClockOffsetMs}ms '
+            '(positive = device ahead)',
+          );
+        }
       }
     });
 

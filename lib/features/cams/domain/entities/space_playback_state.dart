@@ -7,6 +7,16 @@ import 'space_queue_state_item.dart';
 /// Queue-first fields are authoritative; legacy playlist fields remain for
 /// parser compatibility during migration only.
 class SpacePlaybackState extends Equatable {
+  static const int queueStatusPending = 0;
+  static const int queueStatusPlaying = 1;
+  static const int queueStatusPlayed = 2;
+  static const int queueStatusSkipped = 3;
+
+  /// Clock drift compensation: (deviceTimeUtc − serverTimeUtc) in ms.
+  /// Set once from StoreHubService.serverClockOffsetMs after
+  /// `ConnectionConfirmed` is received.
+  static int serverClockOffsetMs = 0;
+
   final String spaceId;
   final String? storeId;
   final String? brandId;
@@ -72,10 +82,65 @@ class SpacePlaybackState extends Equatable {
     this.spaceQueueItems = const [],
   });
 
-  bool get hasPlayableHls => hlsUrl != null && hlsUrl!.isNotEmpty;
+  SpaceQueueStateItem? get effectiveQueueItem {
+    if (spaceQueueItems.isEmpty ||
+        currentQueueItemId == null ||
+        currentQueueItemId!.isEmpty) {
+      return null;
+    }
+
+    for (final item in spaceQueueItems) {
+      if (item.queueItemId == currentQueueItemId) {
+        return item;
+      }
+    }
+
+    return null;
+  }
+
+  String? get effectiveQueueItemId {
+    if (currentQueueItemId != null && currentQueueItemId!.isNotEmpty) {
+      return currentQueueItemId;
+    }
+    return null;
+  }
+
+  String? get effectiveTrackName {
+    if (currentTrackName != null && currentTrackName!.isNotEmpty) {
+      return currentTrackName;
+    }
+    return currentPlaylistName;
+  }
+
+  String? get effectiveHlsUrl {
+    if (hlsUrl != null && hlsUrl!.isNotEmpty) {
+      return hlsUrl;
+    }
+    return null;
+  }
+
+  bool get hasPlayableHls =>
+      effectiveHlsUrl != null && effectiveHlsUrl!.isNotEmpty;
 
   /// Whether any stream is currently available.
   bool get isStreaming => hasPlayableHls;
+
+  /// Mirrors the web client's "isSpacePlaying" gate:
+  /// when the server provides a playback window, the current HLS should only
+  /// auto-play while `now` is still inside that window.
+  ///
+  /// If the timing window is absent, keep the current mobile fallback behavior
+  /// and treat the HLS as eligible for playback.
+  bool get isWithinPlaybackWindow {
+    if (startedAtUtc == null || expectedEndAtUtc == null) {
+      return true;
+    }
+
+    final nowUtc = DateTime.now().toUtc();
+    final startedUtc = startedAtUtc!.toUtc();
+    final expectedEndUtc = expectedEndAtUtc!.toUtc();
+    return !nowUtc.isBefore(startedUtc) && !nowUtc.isAfter(expectedEndUtc);
+  }
 
   bool get hasPendingQueueItem =>
       pendingQueueItemId != null && pendingQueueItemId!.isNotEmpty;
@@ -89,10 +154,10 @@ class SpacePlaybackState extends Equatable {
   bool get hasActiveOverride => isManualOverride && overrideMode != null;
 
   /// Queue-first identity used by runtime playback orchestration.
-  String? get currentIdentityId => currentQueueItemId;
+  String? get currentIdentityId => effectiveQueueItemId ?? currentPlaylistId;
 
   String? get currentDisplayName =>
-      currentTrackName ?? moodName ?? currentPlaylistName;
+      effectiveTrackName ?? moodName ?? currentPlaylistName;
 
   double get effectiveSeekOffset {
     if (isPaused) {
@@ -101,11 +166,14 @@ class SpacePlaybackState extends Equatable {
       return _clampOffsetToExpectedDuration(pausedOffset);
     }
     if (startedAtUtc != null) {
-      final elapsedSeconds =
+      final rawElapsed =
           DateTime.now().toUtc().difference(startedAtUtc!).inMilliseconds /
               1000.0;
+      // Subtract device-vs-server clock drift so we don't run ahead.
+      final compensatedElapsed =
+          rawElapsed - (serverClockOffsetMs / 1000.0);
       return _clampOffsetToExpectedDuration(
-        elapsedSeconds < 0 ? 0 : elapsedSeconds,
+        compensatedElapsed < 0 ? 0 : compensatedElapsed,
       );
     }
     return _clampOffsetToExpectedDuration(seekOffsetSeconds ?? 0);

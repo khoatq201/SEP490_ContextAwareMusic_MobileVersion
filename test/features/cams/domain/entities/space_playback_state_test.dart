@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cams_store_manager/features/cams/domain/entities/space_playback_state.dart';
+import 'package:cams_store_manager/features/cams/domain/entities/space_queue_state_item.dart';
 
 void main() {
   group('SpacePlaybackState.effectiveSeekOffset', () {
@@ -58,6 +59,76 @@ void main() {
       );
 
       expect(state.effectiveSeekOffset, 0);
+    });
+  });
+
+  group('SpacePlaybackState queue fallback', () {
+    test('does not derive active playback fields from queue snapshot alone', () {
+      const state = SpacePlaybackState(
+        spaceId: 'space-1',
+        spaceQueueItems: [
+          SpaceQueueStateItem(
+            queueItemId: 'queue-1',
+            trackId: 'track-1',
+            trackName: 'Track One',
+            position: 1,
+            queueStatus: 0,
+            source: 1,
+            hlsUrl: 'https://example.com/t1.m3u8',
+            isReadyToStream: true,
+          ),
+          SpaceQueueStateItem(
+            queueItemId: 'queue-2',
+            trackId: 'track-2',
+            trackName: 'Track Two',
+            position: 2,
+            queueStatus: 0,
+            source: 1,
+            hlsUrl: 'https://example.com/t2.m3u8',
+            isReadyToStream: true,
+          ),
+        ],
+      );
+
+      expect(state.effectiveQueueItemId, isNull);
+      expect(state.effectiveTrackName, isNull);
+      expect(state.effectiveHlsUrl, isNull);
+      expect(state.hasPlayableHls, isFalse);
+      expect(state.isStreaming, isFalse);
+    });
+
+    test('does not derive active playback from played queue items', () {
+      const state = SpacePlaybackState(
+        spaceId: 'space-1',
+        spaceQueueItems: [
+          SpaceQueueStateItem(
+            queueItemId: 'queue-1',
+            trackId: 'track-1',
+            trackName: 'Track One',
+            position: 1,
+            queueStatus: SpacePlaybackState.queueStatusPlayed,
+            source: 1,
+            hlsUrl: 'https://example.com/t1.m3u8',
+            isReadyToStream: true,
+          ),
+          SpaceQueueStateItem(
+            queueItemId: 'queue-2',
+            trackId: 'track-2',
+            trackName: 'Track Two',
+            position: 2,
+            queueStatus: SpacePlaybackState.queueStatusSkipped,
+            source: 1,
+            hlsUrl: 'https://example.com/t2.m3u8',
+            isReadyToStream: true,
+          ),
+        ],
+      );
+
+      expect(state.effectiveQueueItemId, isNull);
+      expect(state.effectiveTrackName, isNull);
+      expect(state.effectiveHlsUrl, isNull);
+      expect(state.hasPlayableHls, isFalse);
+      expect(state.isStreaming, isFalse);
     });
   });
 }

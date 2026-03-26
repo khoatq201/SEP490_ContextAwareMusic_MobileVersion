@@ -28,11 +28,21 @@ class HomeTabPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final sessionState = context.read<SessionCubit>().state;
+    final isPlaybackDevice = sessionState.isPlaybackDevice;
     return BlocProvider(
       create: (_) {
-        final cubit = sl<HomeCubit>()..load();
-        final spaceId = context.read<SessionCubit>().state.currentSpace?.id;
-        cubit.syncForSpace(spaceId);
+        final cubit = sl<HomeCubit>()
+          ..load(
+            includeCatalog: true,
+            loadMoods: !isPlaybackDevice,
+          );
+        final spaceId = sessionState.currentSpace?.id;
+        cubit.syncForSpace(
+          spaceId,
+          loadMoods: !isPlaybackDevice,
+          usePlaybackDeviceScope: isPlaybackDevice,
+        );
         return cubit;
       },
       child: const _HomeDashboardView(),
@@ -49,6 +59,8 @@ class _HomeDashboardView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = _Palette.fromBrightness(Theme.of(context).brightness);
+    final isPlaybackDevice =
+        context.select((SessionCubit cubit) => cubit.state.isPlaybackDevice);
     final hasMiniPlayer =
         context.select((PlayerBloc bloc) => bloc.state.hasTrack);
     final bottomSpacing = ShellLayoutMetrics.reservedBottom(
@@ -61,7 +73,12 @@ class _HomeDashboardView extends StatelessWidget {
       listenWhen: (previous, current) =>
           previous.currentSpace?.id != current.currentSpace?.id,
       listener: (context, sessionState) {
-        context.read<HomeCubit>().syncForSpace(sessionState.currentSpace?.id);
+        final isPlaybackDevice = sessionState.isPlaybackDevice;
+        context.read<HomeCubit>().syncForSpace(
+              sessionState.currentSpace?.id,
+              loadMoods: !isPlaybackDevice,
+              usePlaybackDeviceScope: isPlaybackDevice,
+            );
       },
       child: Scaffold(
         backgroundColor: palette.bg,
@@ -78,7 +95,12 @@ class _HomeDashboardView extends StatelessWidget {
               return _ErrorView(
                 message: state.errorMessage,
                 palette: palette,
-                onRetry: () => context.read<HomeCubit>().load(),
+                onRetry: () => context
+                    .read<HomeCubit>()
+                    .load(
+                      includeCatalog: true,
+                      loadMoods: !isPlaybackDevice,
+                    ),
               );
             }
 

@@ -30,13 +30,7 @@ class MiniPlayerWidget extends StatelessWidget {
             state.isHlsMode && (state.activeSpaceId?.isNotEmpty ?? false);
         final canEndStream =
             state.isSyncedCamsPlayback && camsState.hasActiveOverride;
-        final nextTrackIndex =
-            state.hasNext ? state.currentIndex + 1 : state.currentIndex;
-        final optimisticNextOffset = state.hasNext
-            ? state.offsetForIndex(nextTrackIndex).toDouble()
-            : null;
-        final optimisticNextTrackId =
-            state.hasNext ? state.queue[nextTrackIndex].id : null;
+        final canSkipNext = state.hasNext;
 
         return GestureDetector(
           onTap: () => context.push('/now-playing-full'),
@@ -158,18 +152,9 @@ class MiniPlayerWidget extends StatelessWidget {
                                 ? AppColors.textDarkSecondary
                                 : AppColors.textSecondary,
                           ),
-                          onPressed: () {
+                          onPressed: canSkipNext
+                              ? () {
                             if (useRemoteControls) {
-                              if (optimisticNextOffset != null) {
-                                context.read<PlayerBloc>().add(
-                                      PlayerRemoteCommandApplied(
-                                        command: PlaybackCommandEnum.skipNext,
-                                        positionSeconds: optimisticNextOffset,
-                                        targetTrackId: optimisticNextTrackId,
-                                        playLocally: true,
-                                      ),
-                                    );
-                              }
                               context.read<CamsPlaybackBloc>().add(
                                     const CamsSendCommand(
                                       command: PlaybackCommandEnum.skipNext,
@@ -180,7 +165,8 @@ class MiniPlayerWidget extends StatelessWidget {
                             context
                                 .read<PlayerBloc>()
                                 .add(const PlayerSkipRequested());
-                          },
+                          }
+                              : null,
                         ),
 
                         if (canEndStream)

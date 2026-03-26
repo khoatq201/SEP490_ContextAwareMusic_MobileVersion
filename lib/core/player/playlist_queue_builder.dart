@@ -43,22 +43,35 @@ List<Track> buildPlaylistQueue(ApiPlaylist playlist) {
   });
 }
 
-List<Track> buildSpaceQueue(List<SpaceQueueStateItem> items) {
+List<Track> buildSpaceQueue(
+  List<SpaceQueueStateItem> items, {
+  Map<String, Track> trackMetadataById = const {},
+}) {
   if (items.isEmpty) return const [];
 
   final sortedItems = [...items]
     ..sort((a, b) => a.position.compareTo(b.position));
   return List<Track>.generate(sortedItems.length, (index) {
     final queueItem = sortedItems[index];
+    final metadata = trackMetadataById[queueItem.trackId];
+    final resolvedTitle = (queueItem.trackName?.trim().isNotEmpty ?? false)
+        ? queueItem.trackName!.trim()
+        : metadata?.title ?? 'Unknown Track';
+    final resolvedArtist =
+        (metadata?.artist.trim().isNotEmpty ?? false)
+            ? metadata!.artist
+            : 'Unknown Artist';
     return Track(
       id: queueItem.trackId,
       queueItemId: queueItem.queueItemId,
-      title: queueItem.trackName ?? 'Unknown Track',
-      artist: 'Unknown Artist',
-      fileUrl: queueItem.hlsUrl ?? '',
-      moodTags: const [],
-      duration: null,
-      seekOffsetSeconds: null,
+      title: resolvedTitle,
+      artist: resolvedArtist,
+      fileUrl: queueItem.hlsUrl ?? metadata?.fileUrl ?? '',
+      localPath: metadata?.localPath,
+      moodTags: metadata?.moodTags ?? const [],
+      duration: metadata?.duration,
+      albumArt: metadata?.albumArt,
+      seekOffsetSeconds: metadata?.seekOffsetSeconds,
     );
   });
 }

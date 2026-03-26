@@ -41,6 +41,38 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
   double _volume = 0.6;
   bool _isShuffleOn = false;
 
+  bool _hasRemoteNext(
+    CamsPlaybackState camsState,
+    ps.PlayerState playerState,
+  ) {
+    final playback = camsState.playbackState;
+    final queueItems = playback?.spaceQueueItems ?? const [];
+    if (queueItems.isEmpty) return false;
+
+    final sortedItems = [...queueItems]
+      ..sort((a, b) => a.position.compareTo(b.position));
+
+    var currentIndex = -1;
+    final currentQueueItemId = playback?.currentQueueItemId;
+    if (currentQueueItemId != null && currentQueueItemId.isNotEmpty) {
+      currentIndex = sortedItems
+          .indexWhere((item) => item.queueItemId == currentQueueItemId);
+    }
+
+    if (currentIndex < 0) {
+      currentIndex = sortedItems.indexWhere((item) => item.queueStatus == 1);
+    }
+
+    if (currentIndex < 0 &&
+        playerState.currentTrackId != null &&
+        playerState.currentTrackId!.isNotEmpty) {
+      currentIndex = sortedItems
+          .indexWhere((item) => item.trackId == playerState.currentTrackId);
+    }
+
+    return currentIndex >= 0 && currentIndex < sortedItems.length - 1;
+  }
+
   @override
   Widget build(BuildContext context) {
     final palette = _NPPalette.fromBrightness(Theme.of(context).brightness);
@@ -145,6 +177,9 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
     final isPlaying = playerState.isPlaying;
     final useRemoteControls =
         playerState.isSyncedCamsPlayback || camsState.isStreaming;
+    final hasNextForControls = useRemoteControls
+        ? (_hasRemoteNext(camsState, playerState) || playerState.hasNext)
+        : playerState.hasNext;
     final syncedVolumePercent =
         camsState.playbackState?.volumePercent.clamp(0, 100).toInt();
     final syncedIsMuted = camsState.playbackState?.isMuted;
@@ -163,24 +198,6 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
     final playbackLabel = camsState.currentPlaybackName?.toUpperCase() ??
         mood?.toUpperCase() ??
         'MUSIC';
-    final hasQueueIndex = playerState.currentIndex >= 0 &&
-        playerState.currentIndex < playerState.queue.length;
-    final nextTrackIndex =
-        playerState.hasNext ? playerState.currentIndex + 1 : null;
-    final optimisticNextOffset = nextTrackIndex != null
-        ? playerState.offsetForIndex(nextTrackIndex).toDouble()
-        : null;
-    final optimisticNextTrackId =
-        nextTrackIndex != null ? playerState.queue[nextTrackIndex].id : null;
-    final previousTrackIndex = hasQueueIndex
-        ? displayPosition > 5
-            ? playerState.currentIndex
-            : (playerState.hasPrevious ? playerState.currentIndex - 1 : null)
-        : null;
-    final optimisticPreviousOffset = previousTrackIndex != null
-        ? playerState.offsetForIndex(previousTrackIndex).toDouble()
-        : null;
-
     // Device label for "Playing from"
     final String deviceLabel;
     if (isPlayback) {
@@ -326,7 +343,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                   isShuffleOn: _isShuffleOn,
                   volume: effectiveVolume,
                   palette: palette,
-                  hasNext: playerState.hasNext,
+                  hasNext: hasNextForControls,
                   hasPrevious: playerState.hasPrevious || displayPosition > 3,
                   onShuffle: () => setState(() => _isShuffleOn = !_isShuffleOn),
                   onPlayPause: () {
@@ -344,15 +361,6 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                   },
                   onSkipBack: () {
                     if (useRemoteControls) {
-                      if (isPlayback && optimisticPreviousOffset != null) {
-                        context.read<PlayerBloc>().add(
-                              PlayerRemoteCommandApplied(
-                                command: PlaybackCommandEnum.skipPrevious,
-                                positionSeconds: optimisticPreviousOffset,
-                                playLocally: true,
-                              ),
-                            );
-                      }
                       context
                           .read<CamsPlaybackBloc>()
                           .add(const CamsSendCommand(
@@ -366,16 +374,6 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                   },
                   onSkip: () {
                     if (useRemoteControls) {
-                      if (isPlayback && optimisticNextOffset != null) {
-                        context.read<PlayerBloc>().add(
-                              PlayerRemoteCommandApplied(
-                                command: PlaybackCommandEnum.skipNext,
-                                positionSeconds: optimisticNextOffset,
-                                targetTrackId: optimisticNextTrackId,
-                                playLocally: true,
-                              ),
-                            );
-                      }
                       context
                           .read<CamsPlaybackBloc>()
                           .add(const CamsSendCommand(
