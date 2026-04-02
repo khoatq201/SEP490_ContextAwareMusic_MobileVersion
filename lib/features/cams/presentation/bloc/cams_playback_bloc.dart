@@ -358,11 +358,13 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
       'spaceId=${state.spaceId ?? '-'} '
       'command=${event.command.name} '
       'seek=${event.seekPositionSeconds?.toStringAsFixed(2) ?? '-'} '
+      'targetQueueItemId=${event.targetQueueItemId ?? '-'} '
       'targetTrackId=${event.targetTrackId ?? '-'}',
     );
     final result = await runtime.sendCommand(
       command: event.command,
       seekPositionSeconds: event.seekPositionSeconds,
+      targetQueueItemId: event.targetQueueItemId,
       targetTrackId: event.targetTrackId,
     );
 
@@ -454,6 +456,10 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
           ? event.seekPositionSeconds
           : null,
       clearLastSeekPosition: !_shouldPersistSeekPosition(event.command),
+      lastTargetQueueItemId: _shouldPersistTargetTrackId(event.command)
+          ? event.targetQueueItemId
+          : null,
+      clearLastTargetQueueItemId: !_shouldPersistTargetTrackId(event.command),
       lastTargetTrackId: _shouldPersistTargetTrackId(event.command)
           ? event.targetTrackId
           : null,

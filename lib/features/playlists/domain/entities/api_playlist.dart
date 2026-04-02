@@ -13,16 +13,7 @@ class ApiPlaylist extends Equatable {
   final String? moodName;
   final String name;
   final String? description;
-
-  /// Legacy field (playlist-level dynamic stream contract).
-  final bool? isDynamic;
   final bool? isDefault;
-
-  /// Legacy playlist-level stream URL.
-  final String? hlsUrl;
-
-  /// Legacy playlist-level duration; playback now prefers per-track metadata.
-  final int? totalDurationSeconds;
   final int trackCount;
   final EntityStatusEnum status;
   final DateTime createdAt;
@@ -40,10 +31,7 @@ class ApiPlaylist extends Equatable {
     this.moodName,
     required this.name,
     this.description,
-    this.isDynamic,
     this.isDefault,
-    this.hlsUrl,
-    this.totalDurationSeconds,
     this.trackCount = 0,
     this.status = EntityStatusEnum.active,
     required this.createdAt,
@@ -54,31 +42,21 @@ class ApiPlaylist extends Equatable {
   /// Whether this playlist has a ready HLS stream
   bool get isStreamReady {
     final playlistTracks = tracks;
-    if (playlistTracks != null && playlistTracks.isNotEmpty) {
-      // Queue-first contract: prefer per-track readiness whenever tracks exist.
-      return playlistTracks.any((item) => item.isStreamReady);
-    }
-
-    // Legacy fallback for older list/detail payloads without track items.
-    return (hlsUrl?.trim().isNotEmpty ?? false);
+    return playlistTracks != null &&
+        playlistTracks.isNotEmpty &&
+        playlistTracks.any((item) => item.isStreamReady);
   }
 
   int? get resolvedTotalDurationSeconds {
     final playlistTracks = tracks;
-    if (playlistTracks != null && playlistTracks.isNotEmpty) {
-      final summedTrackDuration = playlistTracks.fold<int>(
-        0,
-        (total, track) => total + track.effectiveDuration,
-      );
-      if (summedTrackDuration > 0) {
-        final backendTotal = totalDurationSeconds;
-        if (backendTotal == null || backendTotal != summedTrackDuration) {
-          return summedTrackDuration;
-        }
-      }
+    if (playlistTracks == null || playlistTracks.isEmpty) {
+      return null;
     }
-
-    return totalDurationSeconds;
+    final summedTrackDuration = playlistTracks.fold<int>(
+      0,
+      (total, track) => total + track.effectiveDuration,
+    );
+    return summedTrackDuration > 0 ? summedTrackDuration : null;
   }
 
   /// Formatted total duration
@@ -103,10 +81,7 @@ class ApiPlaylist extends Equatable {
         moodName,
         name,
         description,
-        isDynamic,
         isDefault,
-        hlsUrl,
-        totalDurationSeconds,
         trackCount,
         status,
         createdAt,

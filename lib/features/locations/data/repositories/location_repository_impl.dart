@@ -3,6 +3,7 @@ import '../../../../core/error/exceptions.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/models/pagination_result.dart';
 import '../../../../core/network/network_info.dart';
+import '../../../music_policy/data/models/fuzzy_override_profile_request.dart';
 import '../../domain/entities/location_space.dart';
 import '../../domain/repositories/location_repository.dart';
 import '../datasources/location_remote_datasource.dart';
@@ -149,6 +150,27 @@ class LocationRepositoryImpl implements LocationRepository {
     if (await networkInfo.isConnected) {
       try {
         final result = await remoteDataSource.toggleSpaceStatus(spaceId);
+        return Right(result);
+      } on ServerException catch (e) {
+        return Left(ServerFailure(e.message));
+      } catch (e) {
+        return Left(ServerFailure('Unexpected error: $e'));
+      }
+    }
+    return const Left(NetworkFailure('No internet connection'));
+  }
+
+  @override
+  Future<Either<Failure, SpaceMutationResult>> createFuzzyOverrideProfile(
+    String spaceId,
+    FuzzyOverrideProfileRequest request,
+  ) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final result = await remoteDataSource.createFuzzyOverrideProfile(
+          spaceId,
+          request,
+        );
         return Right(result);
       } on ServerException catch (e) {
         return Left(ServerFailure(e.message));

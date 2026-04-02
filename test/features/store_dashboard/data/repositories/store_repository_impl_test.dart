@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cams_store_manager/core/error/exceptions.dart';
 import 'package:cams_store_manager/core/error/failures.dart';
+import 'package:cams_store_manager/features/music_policy/data/models/fuzzy_override_profile_request.dart';
 import 'package:cams_store_manager/features/store_dashboard/data/datasources/store_remote_datasource.dart';
 import 'package:cams_store_manager/features/store_dashboard/data/models/space_summary_model.dart';
 import 'package:cams_store_manager/features/store_dashboard/data/models/store_model.dart';
@@ -110,6 +111,14 @@ class _FakeStoreRemoteDataSource implements StoreRemoteDataSource {
   @override
   Future<StoreMutationResult> toggleStoreStatus(String storeId) async {
     lastToggledStoreId = storeId;
+    return const StoreMutationResult(isSuccess: true);
+  }
+
+  @override
+  Future<StoreMutationResult> createFuzzyOverrideProfile(
+    String storeId,
+    FuzzyOverrideProfileRequest request,
+  ) async {
     return const StoreMutationResult(isSuccess: true);
   }
 

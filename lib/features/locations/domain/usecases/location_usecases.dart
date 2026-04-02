@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/models/pagination_result.dart';
+import '../../../music_policy/data/models/fuzzy_override_profile_request.dart';
 import '../../data/datasources/location_remote_datasource.dart';
 import '../entities/location_space.dart';
 import '../repositories/location_repository.dart';
@@ -83,5 +84,18 @@ class ToggleSpaceStatus {
 
   Future<Either<Failure, SpaceMutationResult>> call(String spaceId) {
     return repository.toggleSpaceStatus(spaceId);
+  }
+}
+
+class CreateSpaceFuzzyOverrideProfile {
+  final LocationRepository repository;
+
+  CreateSpaceFuzzyOverrideProfile(this.repository);
+
+  Future<Either<Failure, SpaceMutationResult>> call(
+    String spaceId,
+    FuzzyOverrideProfileRequest request,
+  ) {
+    return repository.createFuzzyOverrideProfile(spaceId, request);
   }
 }

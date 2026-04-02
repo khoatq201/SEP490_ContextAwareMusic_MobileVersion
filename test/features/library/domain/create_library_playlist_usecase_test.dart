@@ -117,7 +117,6 @@ class _FakePlaylistRemoteDataSource implements PlaylistRemoteDataSource {
     String? brandId,
     String? storeId,
     String? moodId,
-    bool? isDynamic,
     bool? isDefault,
     DateTime? createdFrom,
     DateTime? createdTo,
@@ -169,11 +168,6 @@ class _FakePlaylistRemoteDataSource implements PlaylistRemoteDataSource {
     required String playlistId,
     required String trackId,
   }) async {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<PlaylistMutationResult> retranscodePlaylist(String playlistId) async {
     throw UnimplementedError();
   }
 }

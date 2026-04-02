@@ -1,7 +1,8 @@
 /// Matches backend MusicProviderEnum.
 enum MusicProviderEnum {
   custom(0),
-  suno(1);
+  suno(1),
+  brandModel(2);
 
   const MusicProviderEnum(this.value);
   final int value;
@@ -33,6 +34,8 @@ enum MusicProviderEnum {
         return 'Custom Upload';
       case MusicProviderEnum.suno:
         return 'Suno AI';
+      case MusicProviderEnum.brandModel:
+        return 'Brand Model';
     }
   }
 }

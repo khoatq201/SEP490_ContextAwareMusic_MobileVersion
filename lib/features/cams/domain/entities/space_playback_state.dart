@@ -1,7 +1,110 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../../core/enums/ai_generation_mode_enum.dart';
 import '../../../../core/enums/override_mode_enum.dart';
 import 'space_queue_state_item.dart';
+
+class SpacePlaybackExplainability extends Equatable {
+  final String? triggeredRule;
+  final String? reason;
+  final String? moodName;
+  final int? recommendedBpmMin;
+  final int? recommendedBpmMax;
+  final int? recommendedBpmTarget;
+  final bool? usedMoodOnlyFallback;
+  final int? moodOnlyCount;
+  final int? bpmFilteredCount;
+  final AiGenerationModeEnum? aiGenerationMode;
+  final String? fuzzyProfileName;
+  final String? fuzzyProfileTemplate;
+  final bool? restrictedToAllowedPlaylists;
+  final int? allowedPlaylistCount;
+
+  const SpacePlaybackExplainability({
+    this.triggeredRule,
+    this.reason,
+    this.moodName,
+    this.recommendedBpmMin,
+    this.recommendedBpmMax,
+    this.recommendedBpmTarget,
+    this.usedMoodOnlyFallback,
+    this.moodOnlyCount,
+    this.bpmFilteredCount,
+    this.aiGenerationMode,
+    this.fuzzyProfileName,
+    this.fuzzyProfileTemplate,
+    this.restrictedToAllowedPlaylists,
+    this.allowedPlaylistCount,
+  });
+
+  bool get hasBpmBand => recommendedBpmMin != null && recommendedBpmMax != null;
+
+  bool get hasAnyData =>
+      (triggeredRule?.trim().isNotEmpty ?? false) ||
+      (reason?.trim().isNotEmpty ?? false) ||
+      (moodName?.trim().isNotEmpty ?? false) ||
+      recommendedBpmMin != null ||
+      recommendedBpmMax != null ||
+      recommendedBpmTarget != null ||
+      usedMoodOnlyFallback != null ||
+      moodOnlyCount != null ||
+      bpmFilteredCount != null ||
+      aiGenerationMode != null ||
+      (fuzzyProfileName?.trim().isNotEmpty ?? false) ||
+      (fuzzyProfileTemplate?.trim().isNotEmpty ?? false) ||
+      restrictedToAllowedPlaylists != null ||
+      allowedPlaylistCount != null;
+
+  String? get bpmBandLabel {
+    if (hasBpmBand) {
+      return '${recommendedBpmMin!}-${recommendedBpmMax!} BPM';
+    }
+    if (recommendedBpmTarget != null) {
+      return 'Target ${recommendedBpmTarget!} BPM';
+    }
+    return null;
+  }
+
+  String? get bpmTargetLabel {
+    if (recommendedBpmTarget == null) return null;
+    if (hasBpmBand) {
+      return 'Target ${recommendedBpmTarget!} BPM';
+    }
+    return '${recommendedBpmTarget!} BPM';
+  }
+
+  String? get playlistRestrictionLabel {
+    if (allowedPlaylistCount != null) {
+      final count = allowedPlaylistCount!;
+      return '$count allowed playlist${count == 1 ? '' : 's'}';
+    }
+    if (restrictedToAllowedPlaylists == true) {
+      return 'Playlist restriction enabled';
+    }
+    if (restrictedToAllowedPlaylists == false) {
+      return 'No playlist restriction';
+    }
+    return null;
+  }
+
+  @override
+  List<Object?> get props => [
+        triggeredRule,
+        reason,
+        moodName,
+        recommendedBpmMin,
+        recommendedBpmMax,
+        recommendedBpmTarget,
+        usedMoodOnlyFallback,
+        moodOnlyCount,
+        bpmFilteredCount,
+        aiGenerationMode,
+        fuzzyProfileName,
+        fuzzyProfileTemplate,
+        restrictedToAllowedPlaylists,
+        allowedPlaylistCount,
+      ];
+}
 
 /// Represents the live playback state of a Space.
 /// Queue-first fields are authoritative; legacy playlist fields remain for
@@ -55,6 +158,7 @@ class SpacePlaybackState extends Equatable {
 
   /// Full queue snapshot from CAMS.
   final List<SpaceQueueStateItem> spaceQueueItems;
+  final SpacePlaybackExplainability? explainability;
 
   const SpacePlaybackState({
     required this.spaceId,
@@ -80,6 +184,7 @@ class SpacePlaybackState extends Equatable {
     this.isMuted = false,
     this.queueEndBehavior = 0,
     this.spaceQueueItems = const [],
+    this.explainability,
   });
 
   SpaceQueueStateItem? get effectiveQueueItem {
@@ -170,8 +275,7 @@ class SpacePlaybackState extends Equatable {
           DateTime.now().toUtc().difference(startedAtUtc!).inMilliseconds /
               1000.0;
       // Subtract device-vs-server clock drift so we don't run ahead.
-      final compensatedElapsed =
-          rawElapsed - (serverClockOffsetMs / 1000.0);
+      final compensatedElapsed = rawElapsed - (serverClockOffsetMs / 1000.0);
       return _clampOffsetToExpectedDuration(
         compensatedElapsed < 0 ? 0 : compensatedElapsed,
       );
@@ -224,5 +328,6 @@ class SpacePlaybackState extends Equatable {
         isMuted,
         queueEndBehavior,
         spaceQueueItems,
+        explainability,
       ];
 }

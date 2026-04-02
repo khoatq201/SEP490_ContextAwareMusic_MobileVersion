@@ -12,6 +12,7 @@ class SendPlaybackCommand {
     required String spaceId,
     required PlaybackCommandEnum command,
     double? seekPositionSeconds,
+    String? targetQueueItemId,
     String? targetTrackId,
     bool usePlaybackDeviceScope = false,
   }) {
@@ -19,6 +20,7 @@ class SendPlaybackCommand {
       spaceId: spaceId,
       command: command,
       seekPositionSeconds: seekPositionSeconds,
+      targetQueueItemId: targetQueueItemId,
       targetTrackId: targetTrackId,
       usePlaybackDeviceScope: usePlaybackDeviceScope,
     );

@@ -135,7 +135,8 @@ void main() {
       expect(bloc.state.progress, closeTo(12 / 220, 0.001));
     });
 
-    test('seeks local HLS audio with track-relative time but keeps absolute queue state',
+    test(
+        'seeks local HLS audio with track-relative time but keeps absolute queue state',
         () async {
       final queue = [
         const Track(
@@ -186,7 +187,7 @@ void main() {
       expect(bloc.state.displayPositionPrecise, closeTo(30, 0.001));
     });
 
-    test('maps skipToTrack without offset by targetTrackId', () async {
+    test('maps skipToTrack without offset by targetQueueItemId', () async {
       final queue = [
         const Track(
           id: 'track-1',
@@ -230,7 +231,7 @@ void main() {
 
       bloc.add(const PlayerRemoteCommandApplied(
         command: PlaybackCommandEnum.skipToTrack,
-        targetTrackId: 'track-2',
+        targetQueueItemId: 'queue-2',
         playLocally: true,
       ));
       await _tick();
@@ -238,11 +239,13 @@ void main() {
       expect(bloc.state.currentTrackId, 'track-2');
       expect(bloc.state.currentIndex, 1);
       expect(bloc.state.currentTrack?.id, 'track-2');
+      expect(bloc.state.currentQueueItemId, 'queue-2');
       expect(bloc.state.currentPosition, 180);
       expect(audioService.seekCalls, isEmpty);
     });
 
-    test('ignores targetTrackId on seek to prevent wrong title jumps', () async {
+    test('ignores targetTrackId on seek to prevent wrong title jumps',
+        () async {
       final queue = [
         const Track(
           id: 'track-1',
@@ -298,7 +301,8 @@ void main() {
       expect(bloc.state.currentPosition, 70);
     });
 
-    test('does not remap track by offset when queue timeline metadata is absent',
+    test(
+        'does not remap track by offset when queue timeline metadata is absent',
         () async {
       final queue = [
         const Track(

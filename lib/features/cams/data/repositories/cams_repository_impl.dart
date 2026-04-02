@@ -33,6 +33,7 @@ abstract class CamsRepository {
     required String spaceId,
     required PlaybackCommandEnum command,
     double? seekPositionSeconds,
+    String? targetQueueItemId,
     String? targetTrackId,
     bool usePlaybackDeviceScope = false,
   });
@@ -162,6 +163,7 @@ class CamsRepositoryImpl implements CamsRepository {
     required String spaceId,
     required PlaybackCommandEnum command,
     double? seekPositionSeconds,
+    String? targetQueueItemId,
     String? targetTrackId,
     bool usePlaybackDeviceScope = false,
   }) async {
@@ -170,6 +172,7 @@ class CamsRepositoryImpl implements CamsRepository {
         spaceId: spaceId,
         command: command,
         seekPositionSeconds: seekPositionSeconds,
+        targetQueueItemId: targetQueueItemId,
         targetTrackId: targetTrackId,
         usePlaybackDeviceScope: usePlaybackDeviceScope,
       );

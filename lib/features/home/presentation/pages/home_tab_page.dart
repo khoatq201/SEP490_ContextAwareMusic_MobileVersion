@@ -13,6 +13,7 @@ import '../../../../core/presentation/shell_layout_metrics.dart';
 import '../../../../core/session/session_cubit.dart';
 import '../../../../core/session/session_state.dart';
 import '../../../../injection_container.dart';
+import '../../../cams/domain/entities/space_playback_state.dart';
 import '../../domain/entities/category_entity.dart';
 import '../../domain/entities/playlist_entity.dart';
 import '../../domain/entities/sensor_entity.dart';
@@ -95,9 +96,7 @@ class _HomeDashboardView extends StatelessWidget {
               return _ErrorView(
                 message: state.errorMessage,
                 palette: palette,
-                onRetry: () => context
-                    .read<HomeCubit>()
-                    .load(
+                onRetry: () => context.read<HomeCubit>().load(
                       includeCatalog: true,
                       loadMoods: !isPlaybackDevice,
                     ),
@@ -152,6 +151,20 @@ class _HomeDashboardView extends StatelessWidget {
                     ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.08),
                   ),
                 ),
+
+                if (state.isManualMode ||
+                    state.explainability?.hasAnyData == true)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      child: _AiExplainabilityCard(
+                        explainability: state.explainability,
+                        isManualMode: state.isManualMode,
+                        manualSelectionOpen: state.isManualSelectionOpen,
+                        palette: palette,
+                      ).animate().fadeIn(duration: 380.ms).slideY(begin: 0.06),
+                    ),
+                  ),
 
                 if (state.showMoodPicker)
                   SliverToBoxAdapter(
@@ -943,6 +956,255 @@ class _ModeActionButton extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _AiExplainabilityCard extends StatelessWidget {
+  const _AiExplainabilityCard({
+    required this.explainability,
+    required this.isManualMode,
+    required this.manualSelectionOpen,
+    required this.palette,
+  });
+
+  final SpacePlaybackExplainability? explainability;
+  final bool isManualMode;
+  final bool manualSelectionOpen;
+  final _Palette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    final showingManualState = isManualMode;
+    final summaryChips = <MapEntry<String, String>>[];
+    final detailRows = <MapEntry<String, String>>[];
+    final data = explainability;
+
+    if (!showingManualState && data != null) {
+      final moodName = data.moodName?.trim();
+      final bpmBand = data.bpmBandLabel;
+      final bpmTarget = data.bpmTargetLabel;
+      final fallbackLabel = data.usedMoodOnlyFallback == null
+          ? null
+          : (data.usedMoodOnlyFallback!
+              ? 'Mood-only fallback enabled'
+              : 'BPM-filter kept enough tracks');
+
+      if (moodName != null && moodName.isNotEmpty) {
+        summaryChips.add(MapEntry('Mood', moodName));
+      }
+      if (bpmBand != null && bpmBand.isNotEmpty) {
+        summaryChips.add(MapEntry('BPM band', bpmBand));
+      }
+      if (bpmTarget != null && bpmTarget.isNotEmpty) {
+        summaryChips.add(MapEntry('Target', bpmTarget));
+      }
+      if (data.aiGenerationMode != null) {
+        summaryChips.add(
+          MapEntry('Mode', data.aiGenerationMode!.displayName),
+        );
+      }
+      if (data.fuzzyProfileName?.trim().isNotEmpty ?? false) {
+        summaryChips.add(
+          MapEntry('Profile', data.fuzzyProfileName!.trim()),
+        );
+      }
+      if (data.fuzzyProfileTemplate?.trim().isNotEmpty ?? false) {
+        summaryChips.add(
+          MapEntry('Template', data.fuzzyProfileTemplate!.trim()),
+        );
+      }
+      if (data.playlistRestrictionLabel?.trim().isNotEmpty ?? false) {
+        summaryChips.add(
+          MapEntry('Playlists', data.playlistRestrictionLabel!.trim()),
+        );
+      }
+      if (fallbackLabel != null) {
+        summaryChips.add(MapEntry('Fallback', fallbackLabel));
+      }
+      if (data.triggeredRule?.trim().isNotEmpty ?? false) {
+        detailRows.add(MapEntry('Rule fired', data.triggeredRule!.trim()));
+      }
+      if (data.reason?.trim().isNotEmpty ?? false) {
+        detailRows.add(MapEntry('Reason', data.reason!.trim()));
+      }
+    }
+
+    final title = showingManualState
+        ? (manualSelectionOpen
+            ? 'AI paused for manual setup'
+            : 'AI paused by manual override')
+        : 'Why CAMS picked this vibe';
+    final subtitle = showingManualState
+        ? (manualSelectionOpen
+            ? 'You opened manual mood selection, so auto explainability is temporarily hidden until AI Auto is active again.'
+            : 'A manual selection is controlling playback right now, so CAMS is not presenting a new auto-selection reason.')
+        : 'Auto mode is active. CAMS is exposing the latest rule, mood, and BPM guidance for this space.';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: palette.card,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: palette.border),
+        boxShadow: [
+          BoxShadow(
+            color: palette.shadow.withOpacity(0.10),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(11),
+                  decoration: BoxDecoration(
+                    color: palette.overlay,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(
+                    showingManualState
+                        ? Icons.pause_circle_outline_rounded
+                        : Icons.auto_graph_rounded,
+                    color:
+                        showingManualState ? palette.textMuted : palette.accent,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: GoogleFonts.poppins(
+                          color: palette.textPrimary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: GoogleFonts.inter(
+                          color: palette.textMuted,
+                          fontSize: 12,
+                          height: 1.35,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (!showingManualState && summaryChips.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: summaryChips
+                    .map((entry) => _ExplainabilityTag(
+                          label: entry.key,
+                          value: entry.value,
+                          palette: palette,
+                        ))
+                    .toList(),
+              ),
+            ],
+            if (!showingManualState && detailRows.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              ...detailRows.map(
+                (entry) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: 84,
+                        child: Text(
+                          entry.key,
+                          style: GoogleFonts.inter(
+                            color: palette.textMuted,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          entry.value,
+                          style: GoogleFonts.inter(
+                            color: palette.textPrimary,
+                            fontSize: 11,
+                            height: 1.35,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ExplainabilityTag extends StatelessWidget {
+  const _ExplainabilityTag({
+    required this.label,
+    required this.value,
+    required this.palette,
+  });
+
+  final String label;
+  final String value;
+  final _Palette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: palette.overlay,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: palette.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              color: palette.textMuted,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            value,
+            style: GoogleFonts.inter(
+              color: palette.textPrimary,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cams_store_manager/core/enums/music_provider_enum.dart';
 import 'package:cams_store_manager/features/tracks/data/models/api_track_model.dart';
+import 'package:cams_store_manager/features/tracks/domain/entities/copyright_scan_policy_outcome.dart';
+import 'package:cams_store_manager/features/tracks/domain/entities/track_copyright_clearance_status.dart';
 import 'package:cams_store_manager/features/tracks/domain/entities/track_metadata_status.dart';
 
 void main() {
@@ -91,6 +93,39 @@ void main() {
 
       expect(model.isStreamReady, isTrue);
       expect(model.metadataStatus, TrackMetadataStatus.metadataUnknown);
+    });
+
+    test(
+        'parses nested copyright review fields when backend includes scan data',
+        () {
+      final model = ApiTrackModel.fromJson(const {
+        'id': 'track-6',
+        'title': 'Manual Upload',
+        'createdAt': '2026-03-24T08:00:00Z',
+        'copyrightScan': {
+          'trackCopyrightClearanceStatus': 'Pending',
+          'policyOutcome': 'Manual',
+          'matchedTitle': 'Reference Track',
+          'matchedArtist': 'Reference Artist',
+          'scannedAtUtc': '2026-03-24T08:02:00Z',
+        },
+      });
+
+      expect(
+        model.copyrightClearanceStatus,
+        TrackCopyrightClearanceStatus.pending,
+      );
+      expect(
+        model.copyrightScanPolicyOutcome,
+        CopyrightScanPolicyOutcome.manual,
+      );
+      expect(model.copyrightMatchTitle, 'Reference Track');
+      expect(model.copyrightMatchArtist, 'Reference Artist');
+      expect(
+        model.copyrightScannedAtUtc,
+        DateTime.parse('2026-03-24T08:02:00Z'),
+      );
+      expect(model.requiresCopyrightReview, isTrue);
     });
   });
 }

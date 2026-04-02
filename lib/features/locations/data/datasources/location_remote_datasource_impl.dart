@@ -2,6 +2,7 @@ import '../../../../core/constants/api_constants.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/models/pagination_result.dart';
 import '../../../../core/network/dio_client.dart';
+import '../../../music_policy/data/models/fuzzy_override_profile_request.dart';
 import '../models/location_space_model.dart';
 import 'location_remote_datasource.dart';
 import 'package:dio/dio.dart';
@@ -137,6 +138,29 @@ class LocationRemoteDataSourceImpl implements LocationRemoteDataSource {
       );
     } catch (e) {
       throw ServerException('Failed to toggle space status: $e');
+    }
+  }
+
+  @override
+  Future<SpaceMutationResult> createFuzzyOverrideProfile(
+    String spaceId,
+    FuzzyOverrideProfileRequest request,
+  ) async {
+    try {
+      final response = await dioClient.post(
+        ApiConstants.spaceFuzzyProfiles(spaceId),
+        data: request.toJson(),
+      );
+      return _parseMutationResult(response.data);
+    } on DioException catch (e) {
+      throw ServerException(
+        _extractDioErrorMessage(
+          e,
+          fallback: 'Failed to save space fuzzy override.',
+        ),
+      );
+    } catch (e) {
+      throw ServerException('Failed to save space fuzzy override: $e');
     }
   }
 

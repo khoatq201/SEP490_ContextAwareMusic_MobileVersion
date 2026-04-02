@@ -1,7 +1,9 @@
 import 'package:dio/dio.dart';
 
 import '../../../../core/constants/api_constants.dart';
+import '../../../../core/enums/ai_generation_mode_enum.dart';
 import '../../../../core/error/exceptions.dart';
+import '../../../../core/models/pagination_result.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/models/api_result.dart';
 import '../models/suno_config_model.dart';
@@ -9,6 +11,11 @@ import '../models/suno_generation_model.dart';
 
 abstract class SunoRemoteDataSource {
   Future<String> createGeneration(CreateSunoGenerationRequest request);
+
+  Future<PaginationResult<SunoGenerationModel>> getGenerations({
+    int page = 1,
+    int pageSize = 10,
+  });
 
   Future<SunoGenerationModel> getGeneration(String id);
 
@@ -21,29 +28,55 @@ abstract class SunoRemoteDataSource {
 
 class CreateSunoGenerationRequest {
   final String? prompt;
-  final String title;
+  final String? title;
   final String? artist;
   final String? moodId;
   final String? targetPlaylistId;
   final bool autoAddToTargetPlaylist;
+  final AiGenerationModeEnum? aiGenerationMode;
+  final String? fuzzyProfileTemplate;
+  final int? recommendedBpmMin;
+  final int? recommendedBpmMax;
+  final int? recommendedBpmTarget;
 
   const CreateSunoGenerationRequest({
     this.prompt,
-    required this.title,
+    this.title,
     this.artist,
     this.moodId,
     this.targetPlaylistId,
-    this.autoAddToTargetPlaylist = false,
+    this.autoAddToTargetPlaylist = true,
+    this.aiGenerationMode,
+    this.fuzzyProfileTemplate,
+    this.recommendedBpmMin,
+    this.recommendedBpmMax,
+    this.recommendedBpmTarget,
   });
 
   Map<String, dynamic> toJson() {
     return {
       if (prompt != null && prompt!.trim().isNotEmpty) 'prompt': prompt!.trim(),
-      'title': title.trim(),
+      if (title != null && title!.trim().isNotEmpty) 'title': title!.trim(),
       if (artist != null && artist!.trim().isNotEmpty) 'artist': artist!.trim(),
       if (moodId != null && moodId!.trim().isNotEmpty) 'moodId': moodId!.trim(),
       if (targetPlaylistId != null && targetPlaylistId!.trim().isNotEmpty)
         'targetPlaylistId': targetPlaylistId!.trim(),
+      if (aiGenerationMode != null) 'aiGenerationMode': aiGenerationMode!.value,
+      if (fuzzyProfileTemplate != null &&
+          fuzzyProfileTemplate!.trim().isNotEmpty)
+        'fuzzyProfileTemplate': fuzzyProfileTemplate!.trim(),
+      if (recommendedBpmMin != null) ...{
+        'recommendedBpmMin': recommendedBpmMin,
+        'bpmMin': recommendedBpmMin,
+      },
+      if (recommendedBpmMax != null) ...{
+        'recommendedBpmMax': recommendedBpmMax,
+        'bpmMax': recommendedBpmMax,
+      },
+      if (recommendedBpmTarget != null) ...{
+        'recommendedBpmTarget': recommendedBpmTarget,
+        'bpmTarget': recommendedBpmTarget,
+      },
       'autoAddToTargetPlaylist': autoAddToTargetPlaylist,
     };
   }
@@ -88,10 +121,46 @@ class SunoRemoteDataSourceImpl implements SunoRemoteDataSource {
       }
       return result.data!;
     } on DioException catch (e) {
-      throw ServerException('Failed to create Suno generation: ${e.message}');
+      throw ServerException(
+        _extractDioErrorMessage(
+          e,
+          fallback: 'Failed to create Suno generation.',
+        ),
+      );
     } catch (e) {
       if (e is ServerException) rethrow;
       throw ServerException('Failed to create Suno generation: $e');
+    }
+  }
+
+  @override
+  Future<PaginationResult<SunoGenerationModel>> getGenerations({
+    int page = 1,
+    int pageSize = 10,
+  }) async {
+    try {
+      final response = await dioClient.get(
+        ApiConstants.sunoGenerations,
+        queryParameters: {
+          'page': page,
+          'pageSize': pageSize,
+        },
+      );
+      final payload = _requirePaginationMap(response.data);
+      return PaginationResult<SunoGenerationModel>.fromJson(
+        payload,
+        fromItemJson: SunoGenerationModel.fromJson,
+      );
+    } on DioException catch (e) {
+      throw ServerException(
+        _extractDioErrorMessage(
+          e,
+          fallback: 'Failed to load Suno generation history.',
+        ),
+      );
+    } catch (e) {
+      if (e is ServerException) rethrow;
+      throw ServerException('Failed to load Suno generation history: $e');
     }
   }
 
@@ -194,5 +263,78 @@ class SunoRemoteDataSourceImpl implements SunoRemoteDataSource {
       return Map<String, dynamic>.from(data);
     }
     throw ServerException('Invalid Suno API response.');
+  }
+
+  Map<String, dynamic> _requirePaginationMap(dynamic data) {
+    final payload = _requireResultMap(data);
+    if (payload['items'] is List) {
+      return payload;
+    }
+
+    final nestedData = payload['data'];
+    if (nestedData is Map<String, dynamic> && nestedData['items'] is List) {
+      return nestedData;
+    }
+    if (nestedData is Map) {
+      final nestedMap = Map<String, dynamic>.from(nestedData);
+      if (nestedMap['items'] is List) {
+        return nestedMap;
+      }
+    }
+
+    if (payload['isSuccess'] == false) {
+      throw ServerException(_extractErrorMessage(payload));
+    }
+
+    throw ServerException('Invalid Suno generation history response.');
+  }
+
+  String _extractDioErrorMessage(
+    DioException error, {
+    required String fallback,
+  }) {
+    final payload = error.response?.data;
+    if (payload is Map<String, dynamic>) {
+      return _extractErrorMessage(payload);
+    }
+    if (payload is Map) {
+      return _extractErrorMessage(Map<String, dynamic>.from(payload));
+    }
+    final message = error.message;
+    if (message != null && message.trim().isNotEmpty) {
+      return message;
+    }
+    return fallback;
+  }
+
+  String _extractErrorMessage(Map<String, dynamic> payload) {
+    final errors = payload['errors'];
+    if (errors is List && errors.isNotEmpty) {
+      final first = errors.first;
+      if (first is Map<String, dynamic>) {
+        final detail = first['message']?.toString();
+        if (detail != null && detail.trim().isNotEmpty) {
+          return detail;
+        }
+      }
+      final detail = first.toString();
+      if (detail.trim().isNotEmpty) {
+        return detail;
+      }
+    }
+    if (errors is Map<String, dynamic> && errors.isNotEmpty) {
+      final firstValue = errors.values.first;
+      if (firstValue is List && firstValue.isNotEmpty) {
+        final detail = firstValue.first.toString();
+        if (detail.trim().isNotEmpty) {
+          return detail;
+        }
+      }
+    }
+    final message = payload['message']?.toString();
+    if (message != null && message.trim().isNotEmpty) {
+      return message;
+    }
+    return 'Request failed.';
   }
 }

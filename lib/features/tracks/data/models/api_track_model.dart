@@ -1,6 +1,8 @@
 import '../../../../core/enums/entity_status_enum.dart';
 import '../../../../core/enums/music_provider_enum.dart';
 import '../../domain/entities/api_track.dart';
+import '../../domain/entities/copyright_scan_policy_outcome.dart';
+import '../../domain/entities/track_copyright_clearance_status.dart';
 import '../../domain/entities/track_metadata_status.dart';
 
 class ApiTrackModel extends ApiTrack {
@@ -28,6 +30,11 @@ class ApiTrackModel extends ApiTrack {
     super.generatedAt,
     super.lyricsUrl,
     super.lastPlayedAt,
+    super.copyrightClearanceStatus,
+    super.copyrightScanPolicyOutcome,
+    super.copyrightMatchTitle,
+    super.copyrightMatchArtist,
+    super.copyrightScannedAtUtc,
     super.metadataStatusOverride,
     super.status,
     required super.createdAt,
@@ -38,6 +45,11 @@ class ApiTrackModel extends ApiTrack {
     final hlsUrl = json['hlsUrl'] as String? ?? json['audioUrl'] as String?;
     final sourceAudioUrl =
         json['sourceAudioUrl'] as String? ?? json['audioUrl'] as String?;
+    final copyrightPayload = _readNestedMap(json, const [
+      'copyrightScan',
+      'trackCopyrightScan',
+      'copyright',
+    ]);
     return ApiTrackModel(
       id: json['id'] as String,
       brandId: json['brandId'] as String?,
@@ -62,6 +74,35 @@ class ApiTrackModel extends ApiTrack {
       generatedAt: _parseDateTime(json['generatedAt']),
       lyricsUrl: json['lyricsUrl'] as String?,
       lastPlayedAt: _parseDateTime(json['lastPlayedAt']),
+      copyrightClearanceStatus: TrackCopyrightClearanceStatus.fromJson(
+        json['copyrightClearanceStatus'] ??
+            json['trackCopyrightClearanceStatus'] ??
+            copyrightPayload?['clearanceStatus'] ??
+            copyrightPayload?['trackCopyrightClearanceStatus'] ??
+            copyrightPayload?['copyrightClearanceStatus'] ??
+            copyrightPayload?['status'],
+      ),
+      copyrightScanPolicyOutcome: CopyrightScanPolicyOutcome.fromJson(
+        json['copyrightScanPolicyOutcome'] ??
+            json['policyOutcome'] ??
+            copyrightPayload?['policyOutcome'] ??
+            copyrightPayload?['trackCopyrightScanPolicyOutcome'] ??
+            copyrightPayload?['copyrightScanPolicyOutcome'],
+      ),
+      copyrightMatchTitle: json['copyrightMatchTitle'] as String? ??
+          json['matchedTitle'] as String? ??
+          copyrightPayload?['matchedTitle']?.toString() ??
+          copyrightPayload?['title']?.toString(),
+      copyrightMatchArtist: json['copyrightMatchArtist'] as String? ??
+          json['matchedArtist'] as String? ??
+          copyrightPayload?['matchedArtist']?.toString() ??
+          copyrightPayload?['artist']?.toString(),
+      copyrightScannedAtUtc: _parseDateTime(
+        json['copyrightScannedAtUtc'] ??
+            json['copyrightScannedAt'] ??
+            copyrightPayload?['scannedAtUtc'] ??
+            copyrightPayload?['scannedAt'],
+      ),
       metadataStatusOverride: _readMetadataStatus(json['metadataStatus']),
       status: EntityStatusEnum.fromJson(json['status'] ?? 1),
       createdAt: _parseDateTime(json['createdAt']) ?? DateTime.now().toUtc(),
@@ -95,6 +136,11 @@ class ApiTrackModel extends ApiTrack {
       'generatedAt': generatedAt?.toIso8601String(),
       'lyricsUrl': lyricsUrl,
       'lastPlayedAt': lastPlayedAt?.toIso8601String(),
+      'copyrightClearanceStatus': copyrightClearanceStatus?.name,
+      'copyrightScanPolicyOutcome': copyrightScanPolicyOutcome?.name,
+      'copyrightMatchTitle': copyrightMatchTitle,
+      'copyrightMatchArtist': copyrightMatchArtist,
+      'copyrightScannedAtUtc': copyrightScannedAtUtc?.toIso8601String(),
       'metadataStatus': metadataStatus.name,
       'status': status.value,
       'createdAt': createdAt.toIso8601String(),
@@ -124,6 +170,22 @@ class ApiTrackModel extends ApiTrack {
         (value) => value.name.toLowerCase() == raw.toLowerCase(),
         orElse: () => TrackMetadataStatus.metadataUnknown,
       );
+    }
+    return null;
+  }
+
+  static Map<String, dynamic>? _readNestedMap(
+    Map<String, dynamic> json,
+    List<String> keys,
+  ) {
+    for (final key in keys) {
+      final value = json[key];
+      if (value is Map<String, dynamic>) {
+        return value;
+      }
+      if (value is Map) {
+        return Map<String, dynamic>.from(value);
+      }
     }
     return null;
   }

@@ -48,4 +48,5 @@ app.*.map.json
 *.md
 !CAMS_QUEUE_FIRST_RECONNECT_ACCEPTANCE.md
 docs/
+docs copy 2/
 analyze*.txt

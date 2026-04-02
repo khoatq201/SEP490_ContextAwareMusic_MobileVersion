@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../cams/domain/entities/space_playback_state.dart';
 import '../../../moods/domain/entities/mood.dart';
 import '../../domain/entities/category_entity.dart';
 import '../../domain/entities/sensor_entity.dart';
@@ -41,6 +42,7 @@ class HomeState extends Equatable {
 
   /// Inline message for mode changes (pending transcode, action failures, etc.).
   final String? modeMessage;
+  final SpacePlaybackExplainability? explainability;
 
   const HomeState({
     this.status = HomeStatus.initial,
@@ -57,6 +59,7 @@ class HomeState extends Equatable {
     this.isStreaming = false,
     this.isPendingTranscode = false,
     this.modeMessage,
+    this.explainability,
   });
 
   bool get isManualMode => isManualOverride || isManualSelectionOpen;
@@ -82,11 +85,13 @@ class HomeState extends Equatable {
     bool? isStreaming,
     bool? isPendingTranscode,
     String? modeMessage,
+    SpacePlaybackExplainability? explainability,
     bool clearError = false,
     bool clearActiveSpace = false,
     bool clearMood = false,
     bool clearPlaylist = false,
     bool clearModeMessage = false,
+    bool clearExplainability = false,
   }) {
     return HomeState(
       status: status ?? this.status,
@@ -110,6 +115,8 @@ class HomeState extends Equatable {
       isStreaming: isStreaming ?? this.isStreaming,
       isPendingTranscode: isPendingTranscode ?? this.isPendingTranscode,
       modeMessage: clearModeMessage ? null : (modeMessage ?? this.modeMessage),
+      explainability:
+          clearExplainability ? null : (explainability ?? this.explainability),
     );
   }
 
@@ -129,5 +136,6 @@ class HomeState extends Equatable {
         isStreaming,
         isPendingTranscode,
         modeMessage,
+        explainability,
       ];
 }

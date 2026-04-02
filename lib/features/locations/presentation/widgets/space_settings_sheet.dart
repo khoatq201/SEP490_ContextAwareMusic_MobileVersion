@@ -9,6 +9,9 @@ import '../../../../core/enums/space_type_enum.dart';
 import '../../../../core/enums/user_role.dart';
 import '../../../../core/session/session_cubit.dart';
 import '../../../../injection_container.dart';
+import '../../../music_policy/data/models/fuzzy_override_profile_request.dart';
+import '../../../music_policy/presentation/widgets/fuzzy_override_editor_sheet.dart';
+import '../../../playlists/data/datasources/playlist_remote_datasource.dart';
 import '../../data/datasources/location_remote_datasource.dart';
 import '../../domain/usecases/location_usecases.dart';
 import '../bloc/location_bloc.dart';
@@ -211,6 +214,68 @@ class SpaceSettingsSheet extends StatelessWidget {
     );
   }
 
+  Future<List<FuzzyOverridePlaylistOption>> _loadSpacePlaylistOptions() async {
+    final response = await sl<PlaylistRemoteDataSource>().getPlaylists(
+      page: 1,
+      pageSize: 100,
+      storeId: space.storeId,
+    );
+    return response.items
+        .map(
+          (playlist) => FuzzyOverridePlaylistOption(
+            id: playlist.id,
+            label: playlist.name,
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  Future<void> _showMusicPolicyEditor(BuildContext context) async {
+    List<FuzzyOverridePlaylistOption> playlists;
+    try {
+      playlists = await _loadSpacePlaylistOptions();
+    } catch (error) {
+      if (!context.mounted) return;
+      _showSnackBar(
+        context,
+        'Failed to load playlists for music policy: $error',
+        isError: true,
+      );
+      return;
+    }
+    if (!context.mounted) return;
+
+    final request = await showModalBottomSheet<FuzzyOverrideProfileRequest>(
+      context: context,
+      useRootNavigator: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => FuzzyOverrideEditorSheet(
+        title: 'Space Music Policy',
+        playlists: playlists,
+        summary: space.fuzzyOverrideSummary,
+        overrideLevel: space.fuzzyOverrideLevel,
+      ),
+    );
+
+    if (request == null || !context.mounted) return;
+
+    final result =
+        await sl<CreateSpaceFuzzyOverrideProfile>()(space.id, request);
+    if (!context.mounted) return;
+
+    result.fold(
+      (failure) => _showSnackBar(context, failure.message, isError: true),
+      (success) {
+        _reloadLocations(context);
+        _showSnackBar(
+          context,
+          success.message ?? 'Space music policy updated successfully.',
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final palette = _SheetPalette.of(context);
@@ -291,9 +356,31 @@ class SpaceSettingsSheet extends StatelessWidget {
                 _NavTile(
                   icon: LucideIcons.music4,
                   iconColor: palette.accent,
-                  label: 'Music settings',
+                  label: 'Music policy',
+                  trailing: SizedBox(
+                    width: 96,
+                    child: Text(
+                      space.fuzzyOverrideSummary?.headline ??
+                          space.fuzzyOverrideLevel?.displayName ??
+                          'Inherited',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.right,
+                      style: GoogleFonts.inter(
+                        color: palette.textMuted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
                   palette: palette,
-                  onTap: () => _comingSoon(context, 'Music settings'),
+                  onTap: () => canManageSpace
+                      ? _showMusicPolicyEditor(context)
+                      : _showSnackBar(
+                          context,
+                          'Only managers can edit music policy.',
+                          isError: true,
+                        ),
                 ),
                 _NavTile(
                   icon: LucideIcons.calendar,

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -15,6 +17,7 @@ import '../../../../core/player/player_event.dart';
 import '../../../../core/player/player_state.dart' as ps;
 import '../../../../core/player/space_info.dart';
 import '../../../../features/cams/data/models/override_response_model.dart';
+import '../../../../features/cams/domain/entities/space_playback_state.dart';
 import '../../../../features/cams/presentation/bloc/cams_playback_bloc.dart';
 import '../../../../features/cams/presentation/bloc/cams_playback_event.dart';
 import '../../../../features/cams/presentation/bloc/cams_playback_state.dart';
@@ -412,6 +415,20 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                 const SizedBox(height: 24),
 
                 // â”€â”€ Override Mood CTA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                if (effectiveSpaceId != null &&
+                    (camsState.hasActiveOverride ||
+                        camsState.explainability?.hasAnyData == true))
+                  _AiExplainabilityPanel(
+                    explainability: camsState.explainability,
+                    hasActiveOverride: camsState.hasActiveOverride,
+                    palette: palette,
+                  ).animate().fadeIn(duration: 420.ms).slideY(begin: 0.10),
+
+                if (effectiveSpaceId != null &&
+                    (camsState.hasActiveOverride ||
+                        camsState.explainability?.hasAnyData == true))
+                  const SizedBox(height: 16),
+
                 if (effectiveSpaceId != null)
                   _OverrideMoodCTA(
                     spaceId: effectiveSpaceId,
@@ -1234,7 +1251,7 @@ class _TopBar extends StatelessWidget {
 }
 
 // â”€â”€ Progress Bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-class _ProgressBar extends StatelessWidget {
+class _ProgressBar extends StatefulWidget {
   const _ProgressBar(
       {required this.duration,
       required this.currentPosition,
@@ -1251,6 +1268,17 @@ class _ProgressBar extends StatelessWidget {
   final bool useRemoteControls;
   final _NPPalette palette;
 
+  @override
+  State<_ProgressBar> createState() => _ProgressBarState();
+}
+
+class _ProgressBarState extends State<_ProgressBar> {
+  static const Duration _remoteSeekDebounce = Duration(milliseconds: 180);
+
+  Timer? _remoteSeekTimer;
+  double? _dragPositionSeconds;
+  bool _isDragging = false;
+
   String _fmt(int sec) {
     final m = sec ~/ 60;
     final s = sec % 60;
@@ -1258,10 +1286,67 @@ class _ProgressBar extends StatelessWidget {
   }
 
   @override
+  void didUpdateWidget(covariant _ProgressBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_isDragging || _dragPositionSeconds == null) return;
+
+    final drift = (widget.currentPosition - _dragPositionSeconds!).abs();
+    if (drift <= 1) {
+      setState(() {
+        _dragPositionSeconds = null;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _remoteSeekTimer?.cancel();
+    super.dispose();
+  }
+
+  double _clampSliderPosition(double value) {
+    if (widget.duration <= 0) return 0;
+    return value.clamp(0.0, widget.duration.toDouble()).toDouble();
+  }
+
+  int _resolveTargetSeconds(double sliderPositionSeconds) {
+    final seekSeconds = sliderPositionSeconds.round();
+    return widget.useAbsoluteSeek
+        ? widget.seekBaseOffsetSeconds + seekSeconds
+        : seekSeconds;
+  }
+
+  void _dispatchSeekCommit(double sliderPositionSeconds) {
+    final targetSeconds = _resolveTargetSeconds(sliderPositionSeconds);
+    context.read<PlayerBloc>().add(
+          PlayerSeekRequested(positionSeconds: targetSeconds),
+        );
+
+    if (!widget.useRemoteControls) return;
+
+    _remoteSeekTimer?.cancel();
+    _remoteSeekTimer = Timer(_remoteSeekDebounce, () {
+      if (!mounted) return;
+      context.read<CamsPlaybackBloc>().add(
+            CamsSendCommand(
+              command: PlaybackCommandEnum.seek,
+              seekPositionSeconds: targetSeconds.toDouble(),
+            ),
+          );
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final clampedPosition = duration > 0
-        ? currentPosition.clamp(0.0, duration.toDouble()).toDouble()
+    final displayedPosition = _dragPositionSeconds ?? widget.currentPosition;
+    final clampedPosition = widget.duration > 0
+        ? displayedPosition.clamp(0.0, widget.duration.toDouble()).toDouble()
         : 0.0;
+    final displayedRemaining = widget.duration > 0
+        ? (widget.duration - clampedPosition.floor())
+            .clamp(0, widget.duration)
+            .toInt()
+        : 0;
 
     return Column(
       children: [
@@ -1270,36 +1355,35 @@ class _ProgressBar extends StatelessWidget {
             trackHeight: 3,
             thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
             overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
-            activeTrackColor: palette.textPrimary,
-            inactiveTrackColor: palette.textMuted.withOpacity(0.25),
-            thumbColor: palette.textPrimary,
-            overlayColor: palette.textPrimary.withOpacity(0.15),
+            activeTrackColor: widget.palette.textPrimary,
+            inactiveTrackColor:
+                widget.palette.textMuted.withValues(alpha: 0.25),
+            thumbColor: widget.palette.textPrimary,
+            overlayColor: widget.palette.textPrimary.withValues(alpha: 0.15),
           ),
           child: Slider(
-            value: duration > 0 ? clampedPosition : 0,
+            value: widget.duration > 0 ? clampedPosition : 0,
             min: 0,
-            max: duration > 0 ? duration.toDouble() : 1,
+            max: widget.duration > 0 ? widget.duration.toDouble() : 1,
+            onChangeStart: (value) {
+              _remoteSeekTimer?.cancel();
+              setState(() {
+                _isDragging = true;
+                _dragPositionSeconds = _clampSliderPosition(value);
+              });
+            },
             onChanged: (value) {
-              final seekSeconds = value.round();
-              final targetSeconds = useAbsoluteSeek
-                  ? seekBaseOffsetSeconds + seekSeconds
-                  : seekSeconds;
-              context.read<PlayerBloc>().add(
-                    PlayerSeekRequested(positionSeconds: targetSeconds),
-                  );
+              setState(() {
+                _dragPositionSeconds = _clampSliderPosition(value);
+              });
             },
             onChangeEnd: (value) {
-              if (!useRemoteControls) return;
-              final seekSeconds = value.round();
-              final targetSeconds = useAbsoluteSeek
-                  ? seekBaseOffsetSeconds + seekSeconds
-                  : seekSeconds;
-              context.read<CamsPlaybackBloc>().add(
-                    CamsSendCommand(
-                      command: PlaybackCommandEnum.seek,
-                      seekPositionSeconds: targetSeconds.toDouble(),
-                    ),
-                  );
+              final clampedValue = _clampSliderPosition(value);
+              setState(() {
+                _isDragging = false;
+                _dragPositionSeconds = clampedValue;
+              });
+              _dispatchSeekCommit(clampedValue);
             },
           ),
         ),
@@ -1310,10 +1394,13 @@ class _ProgressBar extends StatelessWidget {
             children: [
               Text(_fmt(clampedPosition.floor()),
                   style: GoogleFonts.inter(
-                      color: palette.textMuted, fontSize: 12)),
-              Text(duration > 0 ? '-${_fmt(remainingDuration)}' : '--:--',
+                      color: widget.palette.textMuted, fontSize: 12)),
+              Text(
+                  widget.duration > 0
+                      ? '-${_fmt(displayedRemaining)}'
+                      : '--:--',
                   style: GoogleFonts.inter(
-                      color: palette.textMuted, fontSize: 12)),
+                      color: widget.palette.textMuted, fontSize: 12)),
             ],
           ),
         ),
@@ -1855,6 +1942,218 @@ class _SensorCard extends StatelessWidget {
 // ============================================================================
 // Manual / Auto Override panel (same behavior as Home)
 // ============================================================================
+class _AiExplainabilityPanel extends StatelessWidget {
+  const _AiExplainabilityPanel({
+    required this.explainability,
+    required this.hasActiveOverride,
+    required this.palette,
+  });
+
+  final SpacePlaybackExplainability? explainability;
+  final bool hasActiveOverride;
+  final _NPPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    final showManualState = hasActiveOverride;
+    final data = explainability;
+    final stats = <MapEntry<String, String>>[];
+
+    if (!showManualState && data != null) {
+      if (data.moodName?.trim().isNotEmpty ?? false) {
+        stats.add(MapEntry('Mood', data.moodName!.trim()));
+      }
+      if (data.bpmBandLabel != null) {
+        stats.add(MapEntry('BPM band', data.bpmBandLabel!));
+      }
+      if (data.bpmTargetLabel != null) {
+        stats.add(MapEntry('Target', data.bpmTargetLabel!));
+      }
+      if (data.aiGenerationMode != null) {
+        stats.add(MapEntry('Mode', data.aiGenerationMode!.displayName));
+      }
+      if (data.fuzzyProfileName?.trim().isNotEmpty ?? false) {
+        stats.add(MapEntry('Profile', data.fuzzyProfileName!.trim()));
+      }
+      if (data.fuzzyProfileTemplate?.trim().isNotEmpty ?? false) {
+        stats.add(MapEntry('Template', data.fuzzyProfileTemplate!.trim()));
+      }
+      if (data.playlistRestrictionLabel?.trim().isNotEmpty ?? false) {
+        stats.add(MapEntry('Playlists', data.playlistRestrictionLabel!.trim()));
+      }
+      if (data.usedMoodOnlyFallback != null) {
+        stats.add(
+          MapEntry(
+            'Fallback',
+            data.usedMoodOnlyFallback!
+                ? 'Mood-only fallback used'
+                : 'BPM-filtered queue retained',
+          ),
+        );
+      }
+      if (data.moodOnlyCount != null) {
+        stats.add(MapEntry('Mood-only pool', '${data.moodOnlyCount} tracks'));
+      }
+      if (data.bpmFilteredCount != null) {
+        stats.add(
+          MapEntry('BPM-filtered pool', '${data.bpmFilteredCount} tracks'),
+        );
+      }
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      decoration: BoxDecoration(
+        color: palette.card,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: palette.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: palette.overlay,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  showManualState
+                      ? Icons.pause_circle_outline_rounded
+                      : Icons.auto_graph_rounded,
+                  color: showManualState ? palette.textMuted : palette.accent,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      showManualState
+                          ? 'AI explainability paused'
+                          : 'CAMS explainability',
+                      style: GoogleFonts.poppins(
+                        color: palette.textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      showManualState
+                          ? 'Manual override is active, so the latest AI rule details are intentionally hidden until Auto Mode resumes.'
+                          : 'Review the fuzzy rule, BPM guidance, and fallback signals behind the current auto-selection.',
+                      style: GoogleFonts.inter(
+                        color: palette.textMuted,
+                        fontSize: 12,
+                        height: 1.35,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (!showManualState && stats.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: stats
+                  .map(
+                    (entry) => Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: palette.overlay,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: palette.border),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            entry.key,
+                            style: GoogleFonts.inter(
+                              color: palette.textMuted,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            entry.value,
+                            style: GoogleFonts.inter(
+                              color: palette.textPrimary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ],
+          if (!showManualState &&
+              data?.triggeredRule?.trim().isNotEmpty == true) ...[
+            const SizedBox(height: 14),
+            Text(
+              'Rule fired',
+              style: GoogleFonts.inter(
+                color: palette.textMuted,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              data!.triggeredRule!.trim(),
+              style: GoogleFonts.inter(
+                color: palette.textPrimary,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+          if (!showManualState && data?.reason?.trim().isNotEmpty == true) ...[
+            const SizedBox(height: 12),
+            Text(
+              'Reason',
+              style: GoogleFonts.inter(
+                color: palette.textMuted,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              data!.reason!.trim(),
+              style: GoogleFonts.inter(
+                color: palette.textPrimary,
+                fontSize: 12,
+                height: 1.35,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _OverrideMoodCTA extends StatefulWidget {
   const _OverrideMoodCTA({
     required this.spaceId,

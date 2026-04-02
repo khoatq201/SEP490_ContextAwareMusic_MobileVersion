@@ -67,6 +67,7 @@ class QueueFirstPlaybackRuntime {
   bool _isBootstrapping = false;
   PlaybackCommandEnum? _pendingTraceCommand;
   double? _pendingTraceSeekPositionSeconds;
+  String? _pendingTraceTargetQueueItemId;
   String? _pendingTraceTargetTrackId;
   DateTime? _pendingTraceIssuedAtUtc;
 
@@ -350,6 +351,7 @@ class QueueFirstPlaybackRuntime {
   Future<Either<Failure, void>> sendCommand({
     required PlaybackCommandEnum command,
     double? seekPositionSeconds,
+    String? targetQueueItemId,
     String? targetTrackId,
   }) async {
     final activeSpaceId = _activeSpaceId;
@@ -364,12 +366,14 @@ class QueueFirstPlaybackRuntime {
       'scope=${_usePlaybackDeviceScope ? 'playback_device' : 'manager'} '
       'command=${command.name} '
       'seek=${seekPositionSeconds?.toStringAsFixed(2) ?? '-'} '
+      'targetQueueItemId=${targetQueueItemId ?? '-'} '
       'targetTrackId=${targetTrackId ?? '-'}',
     );
     final result = await sendPlaybackCommand(
       spaceId: activeSpaceId,
       command: command,
       seekPositionSeconds: seekPositionSeconds,
+      targetQueueItemId: targetQueueItemId,
       targetTrackId: targetTrackId,
       usePlaybackDeviceScope: _usePlaybackDeviceScope,
     );
@@ -393,6 +397,7 @@ class QueueFirstPlaybackRuntime {
         _rememberPendingTraceCommand(
           command: command,
           seekPositionSeconds: seekPositionSeconds,
+          targetQueueItemId: targetQueueItemId,
           targetTrackId: targetTrackId,
         );
         if (_isLocallyPatchableCommand(command)) {
@@ -470,12 +475,16 @@ class QueueFirstPlaybackRuntime {
       if (!_isActiveSpace(event.spaceId)) return;
       _debugLog(
         'hub PlayStream spaceId=${event.spaceId} '
+        'transition=${event.transitionType.name} '
         'queueItemId=${event.currentQueueItemId ?? '-'} '
         'trackId=${event.trackId ?? '-'} '
         'trackName=${event.trackName ?? '-'} '
         'hls=${event.hlsUrl}',
       );
-      unawaited(refreshState(silent: true));
+      // Remote queue inserts can arrive before GET /state reflects the new
+      // queue snapshot. Reuse the mutation reconcile loop so we do not miss
+      // pending queue updates emitted by another device.
+      unawaited(_refreshAfterMutation(baselineFingerprint: _lastFingerprint));
     });
 
     _playbackCommandSub = storeHubService.onPlaybackCommand.listen((event) {
@@ -485,12 +494,14 @@ class QueueFirstPlaybackRuntime {
         'spaceId=${event.spaceId} '
         'command=${event.command.name} '
         'seek=${event.seekPositionSeconds?.toStringAsFixed(2) ?? '-'} '
+        'targetQueueItemId=${event.targetQueueItemId ?? '-'} '
         'targetTrackId=${event.targetTrackId ?? '-'}',
       );
       _debugLog(
         'hub PlaybackCommand spaceId=${event.spaceId} '
         'command=${event.command.name} '
         'seek=${event.seekPositionSeconds?.toStringAsFixed(2) ?? '-'} '
+        'targetQueueItemId=${event.targetQueueItemId ?? '-'} '
         'targetTrackId=${event.targetTrackId ?? '-'}',
       );
 
@@ -975,6 +986,7 @@ class QueueFirstPlaybackRuntime {
   void _rememberPendingTraceCommand({
     required PlaybackCommandEnum command,
     double? seekPositionSeconds,
+    String? targetQueueItemId,
     String? targetTrackId,
   }) {
     if (!_shouldTraceStateSync(command)) {
@@ -982,6 +994,7 @@ class QueueFirstPlaybackRuntime {
     }
     _pendingTraceCommand = command;
     _pendingTraceSeekPositionSeconds = seekPositionSeconds;
+    _pendingTraceTargetQueueItemId = targetQueueItemId;
     _pendingTraceTargetTrackId = targetTrackId;
     _pendingTraceIssuedAtUtc = DateTime.now().toUtc();
   }
@@ -1028,6 +1041,7 @@ class QueueFirstPlaybackRuntime {
       'ageMs=$ageMs '
       'command=${pendingCommand.name} '
       'seekRequest=${_pendingTraceSeekPositionSeconds?.toStringAsFixed(2) ?? '-'} '
+      'targetQueueItemId=${_pendingTraceTargetQueueItemId ?? '-'} '
       'targetTrackId=${_pendingTraceTargetTrackId ?? '-'} '
       '${_describePlaybackState(playbackState)}',
     );
@@ -1037,6 +1051,7 @@ class QueueFirstPlaybackRuntime {
   void _clearPendingTraceCommand() {
     _pendingTraceCommand = null;
     _pendingTraceSeekPositionSeconds = null;
+    _pendingTraceTargetQueueItemId = null;
     _pendingTraceTargetTrackId = null;
     _pendingTraceIssuedAtUtc = null;
   }

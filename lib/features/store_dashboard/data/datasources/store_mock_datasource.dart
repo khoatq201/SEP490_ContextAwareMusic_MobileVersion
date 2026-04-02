@@ -1,4 +1,5 @@
 import '../../../../core/enums/entity_status_enum.dart';
+import '../../../music_policy/data/models/fuzzy_override_profile_request.dart';
 import '../models/store_model.dart';
 import '../models/space_summary_model.dart';
 import 'store_remote_datasource.dart';
@@ -137,6 +138,18 @@ class StoreMockDataSource implements StoreRemoteDataSource {
     return const StoreMutationResult(
       isSuccess: true,
       message: 'Store status updated successfully',
+    );
+  }
+
+  @override
+  Future<StoreMutationResult> createFuzzyOverrideProfile(
+    String storeId,
+    FuzzyOverrideProfileRequest request,
+  ) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    return const StoreMutationResult(
+      isSuccess: true,
+      message: 'Store fuzzy override saved successfully',
     );
   }
 }

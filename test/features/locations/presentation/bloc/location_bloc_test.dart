@@ -35,6 +35,7 @@ import 'package:cams_store_manager/features/locations/data/datasources/location_
 import 'package:cams_store_manager/features/locations/presentation/bloc/location_bloc.dart';
 import 'package:cams_store_manager/features/locations/presentation/bloc/location_event.dart';
 import 'package:cams_store_manager/features/locations/presentation/bloc/location_state.dart';
+import 'package:cams_store_manager/features/music_policy/data/models/fuzzy_override_profile_request.dart';
 import 'package:cams_store_manager/features/playlists/data/datasources/playlist_remote_datasource.dart';
 import 'package:cams_store_manager/features/playlists/data/models/api_playlist_model.dart';
 import 'package:cams_store_manager/features/store_dashboard/domain/entities/store.dart';
@@ -432,6 +433,14 @@ class _FakeLocationRepository implements LocationRepository {
   ) async {
     return const Right(SpaceMutationResult(isSuccess: true));
   }
+
+  @override
+  Future<Either<Failure, SpaceMutationResult>> createFuzzyOverrideProfile(
+    String spaceId,
+    FuzzyOverrideProfileRequest request,
+  ) async {
+    return const Right(SpaceMutationResult(isSuccess: true));
+  }
 }
 
 class _FakeStoreSelectionRepository implements StoreSelectionRepository {
@@ -477,7 +486,6 @@ class _FakePlaylistRemoteDataSource implements PlaylistRemoteDataSource {
     String? brandId,
     String? storeId,
     String? moodId,
-    bool? isDynamic,
     bool? isDefault,
     DateTime? createdFrom,
     DateTime? createdTo,
@@ -522,11 +530,6 @@ class _FakePlaylistRemoteDataSource implements PlaylistRemoteDataSource {
     required String playlistId,
     required String trackId,
   }) async {
-    return const PlaylistMutationResult(isSuccess: true);
-  }
-
-  @override
-  Future<PlaylistMutationResult> retranscodePlaylist(String playlistId) async {
     return const PlaylistMutationResult(isSuccess: true);
   }
 }
@@ -679,6 +682,7 @@ class _FakeCamsRepository implements CamsRepository {
     required String spaceId,
     required PlaybackCommandEnum command,
     double? seekPositionSeconds,
+    String? targetQueueItemId,
     String? targetTrackId,
     bool usePlaybackDeviceScope = false,
   }) async {

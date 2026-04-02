@@ -1,6 +1,7 @@
 import '../../../../core/enums/override_mode_enum.dart';
-import '../../domain/entities/space_queue_state_item.dart';
+import '../../../../core/enums/ai_generation_mode_enum.dart';
 import '../../domain/entities/space_playback_state.dart';
+import '../../domain/entities/space_queue_state_item.dart';
 import 'space_queue_state_item_model.dart';
 
 class SpacePlaybackStateModel extends SpacePlaybackState {
@@ -28,6 +29,7 @@ class SpacePlaybackStateModel extends SpacePlaybackState {
     super.isMuted,
     super.queueEndBehavior,
     super.spaceQueueItems,
+    super.explainability,
   });
 
   /// Parse from GET /api/cams/spaces/{spaceId}/state -> data field.
@@ -67,6 +69,7 @@ class SpacePlaybackStateModel extends SpacePlaybackState {
       isMuted: _readBool(json, 'isMuted') ?? false,
       queueEndBehavior: _readNum(json, 'queueEndBehavior')?.toInt() ?? 0,
       spaceQueueItems: queueItems.cast<SpaceQueueStateItem>(),
+      explainability: _readExplainability(json),
     );
   }
 
@@ -118,6 +121,119 @@ class SpacePlaybackStateModel extends SpacePlaybackState {
     final value = _readValue(json, key);
     if (value is DateTime) return value;
     if (value is String) return DateTime.tryParse(value);
+    return null;
+  }
+
+  static SpacePlaybackExplainability? _readExplainability(
+    Map<String, dynamic> json,
+  ) {
+    final nested = _readExplainabilityPayload(json);
+    final mergedSource = <String, dynamic>{...json};
+    if (nested != null) {
+      mergedSource.addAll(nested);
+    }
+
+    final hasCoreExplainability = _hasExplainabilityKeys(mergedSource);
+    if (!hasCoreExplainability && nested == null) {
+      return null;
+    }
+
+    final explainability = SpacePlaybackExplainability(
+      triggeredRule: _readString(mergedSource, 'triggeredRule'),
+      reason: _readString(mergedSource, 'reason'),
+      moodName: _readString(mergedSource, 'moodName') ??
+          _readString(mergedSource, 'newMood') ??
+          _readString(mergedSource, 'selectedMoodName'),
+      recommendedBpmMin: _readNum(mergedSource, 'recommendedBpmMin')?.toInt(),
+      recommendedBpmMax: _readNum(mergedSource, 'recommendedBpmMax')?.toInt(),
+      recommendedBpmTarget:
+          _readNum(mergedSource, 'recommendedBpmTarget')?.toInt(),
+      usedMoodOnlyFallback: _readBool(mergedSource, 'usedMoodOnlyFallback') ??
+          _readBool(mergedSource, 'bpmFallback'),
+      moodOnlyCount: _readNum(mergedSource, 'moodOnlyCount')?.toInt(),
+      bpmFilteredCount: _readNum(mergedSource, 'bpmFilteredCount')?.toInt(),
+      aiGenerationMode: _readAiGenerationMode(mergedSource),
+      fuzzyProfileName: _readString(mergedSource, 'fuzzyProfileName') ??
+          _readString(mergedSource, 'profileName') ??
+          _readString(mergedSource, 'musicProfileName'),
+      fuzzyProfileTemplate: _readString(mergedSource, 'fuzzyProfileTemplate') ??
+          _readString(mergedSource, 'profileTemplate') ??
+          _readString(mergedSource, 'templateName'),
+      restrictedToAllowedPlaylists:
+          _readBool(mergedSource, 'restrictedToAllowedPlaylists') ??
+              _readBool(mergedSource, 'isRestricted') ??
+              _readBool(mergedSource, 'restricted'),
+      allowedPlaylistCount:
+          _readNum(mergedSource, 'allowedPlaylistCount')?.toInt() ??
+              _readNum(mergedSource, 'restrictedPlaylistCount')?.toInt(),
+    );
+
+    return explainability.hasAnyData ? explainability : null;
+  }
+
+  static Map<String, dynamic>? _readExplainabilityPayload(
+    Map<String, dynamic> json,
+  ) {
+    const keys = [
+      'explainability',
+      'aiExplainability',
+      'selectionExplainability',
+      'musicSelectionExplainability',
+      'fuzzyExplainability',
+      'fuzzyResult',
+    ];
+    for (final key in keys) {
+      final value = _readValue(json, key);
+      if (value is Map) {
+        return Map<String, dynamic>.from(value);
+      }
+    }
+    return null;
+  }
+
+  static bool _hasExplainabilityKeys(Map<String, dynamic> json) {
+    const keys = [
+      'triggeredRule',
+      'reason',
+      'recommendedBpmMin',
+      'recommendedBpmMax',
+      'recommendedBpmTarget',
+      'usedMoodOnlyFallback',
+      'bpmFallback',
+      'moodOnlyCount',
+      'bpmFilteredCount',
+      'newMood',
+      'selectedMoodName',
+      'aiGenerationMode',
+      'generationMode',
+      'fuzzyProfileName',
+      'profileName',
+      'fuzzyProfileTemplate',
+      'profileTemplate',
+      'restrictedToAllowedPlaylists',
+      'isRestricted',
+      'restricted',
+      'allowedPlaylistCount',
+    ];
+    for (final key in keys) {
+      if (_readValue(json, key) != null) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  static AiGenerationModeEnum? _readAiGenerationMode(
+    Map<String, dynamic> json,
+  ) {
+    for (final key in const ['aiGenerationMode', 'generationMode']) {
+      final value = _readValue(json, key);
+      if (value == null) continue;
+      final parsed = AiGenerationModeEnum.fromJson(value);
+      if (parsed != AiGenerationModeEnum.unknown) {
+        return parsed;
+      }
+    }
     return null;
   }
 }

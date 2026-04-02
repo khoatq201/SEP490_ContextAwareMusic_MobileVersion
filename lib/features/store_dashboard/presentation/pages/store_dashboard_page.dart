@@ -7,6 +7,7 @@ import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/constants/app_typography.dart';
 import '../../../../core/enums/entity_status_enum.dart';
 import '../../../../core/enums/space_type_enum.dart';
+import '../../../../core/enums/user_role.dart';
 import '../../../../core/player/player_bloc.dart';
 import '../../../../core/player/player_event.dart';
 import '../../../../core/player/space_info.dart';
@@ -20,6 +21,9 @@ import '../../../space_control/presentation/bloc/music_control_bloc.dart';
 import '../../../space_control/presentation/bloc/music_control_event.dart';
 import '../../../space_control/presentation/bloc/space_monitoring_bloc.dart';
 import '../../../space_control/presentation/bloc/space_monitoring_event.dart';
+import '../../../music_policy/data/models/fuzzy_override_profile_request.dart';
+import '../../../music_policy/presentation/widgets/fuzzy_override_editor_sheet.dart';
+import '../../../playlists/data/datasources/playlist_remote_datasource.dart';
 import '../../data/datasources/store_remote_datasource.dart';
 import '../../domain/entities/store.dart';
 import '../../domain/usecases/store_mutation_usecases.dart';
@@ -409,15 +413,89 @@ class StoreDashboardPage extends StatelessWidget {
     );
   }
 
+  Future<List<FuzzyOverridePlaylistOption>> _loadStorePlaylistOptions(
+    Store store,
+  ) async {
+    final response = await sl<PlaylistRemoteDataSource>().getPlaylists(
+      page: 1,
+      pageSize: 100,
+      storeId: store.id,
+    );
+    return response.items
+        .map(
+          (playlist) => FuzzyOverridePlaylistOption(
+            id: playlist.id,
+            label: playlist.name,
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  Future<void> _showStoreFuzzyOverrideSheet(
+    BuildContext context,
+    Store store,
+  ) async {
+    List<FuzzyOverridePlaylistOption> playlists;
+    try {
+      playlists = await _loadStorePlaylistOptions(store);
+    } catch (error) {
+      if (!context.mounted) return;
+      _showStoreSnackBar(
+        context,
+        'Failed to load playlists for music policy: $error',
+        isError: true,
+      );
+      return;
+    }
+    if (!context.mounted) return;
+
+    final request = await showModalBottomSheet<FuzzyOverrideProfileRequest>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => FuzzyOverrideEditorSheet(
+        title: 'Store Music Policy',
+        playlists: playlists,
+        summary: store.fuzzyOverrideSummary,
+        overrideLevel: store.fuzzyOverrideLevel,
+      ),
+    );
+
+    if (request == null || !context.mounted) return;
+
+    final result = await sl<CreateStoreFuzzyOverrideProfile>()(
+      store.id,
+      request,
+    );
+    if (!context.mounted) return;
+
+    result.fold(
+      (failure) => _showStoreSnackBar(context, failure.message, isError: true),
+      (success) {
+        context.read<StoreDashboardBloc>().add(
+              RefreshStoreDashboard(storeId: store.id),
+            );
+        _showStoreSnackBar(
+          context,
+          success.message ?? 'Store music policy updated.',
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final authState = context.read<AuthBloc>().state;
     final user = authState.user;
+    final session = context.watch<SessionCubit>().state;
     // BrandManager / SystemAdmin can switch stores; StoreManager cannot.
     final canSwitchStore =
         user != null && (user.isBrandManager || user.isSystemAdmin);
     final canManageStore = user?.isBrandManager == true;
+    final canManageMusicPolicy = !session.isPlaybackDevice &&
+        (session.currentRole == UserRole.brandManager ||
+            session.currentRole == UserRole.storeManager);
 
     return PopScope(
       canPop: false,
@@ -577,6 +655,72 @@ class StoreDashboardPage extends StatelessWidget {
                           ? () => _deleteStore(context, state.store!)
                           : null,
                     ),
+
+                    const SizedBox(height: AppDimensions.spacingLg),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Music Policy',
+                            style: AppTypography.titleLarge.copyWith(
+                              color: isDark
+                                  ? AppColors.textDarkPrimary
+                                  : AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        if (canManageMusicPolicy)
+                          OutlinedButton.icon(
+                            onPressed: () => _showStoreFuzzyOverrideSheet(
+                              context,
+                              state.store!,
+                            ),
+                            icon: const Icon(Icons.tune_rounded, size: 18),
+                            label: const Text('Edit'),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: AppDimensions.spacingMd),
+                    if (state.store!.fuzzyOverrideSummary?.hasAnyData == true)
+                      FuzzyOverrideSummaryCard(
+                        title: 'Active Store Policy',
+                        summary: state.store!.fuzzyOverrideSummary!,
+                      )
+                    else
+                      Card(
+                        elevation: 0,
+                        child: Padding(
+                          padding: const EdgeInsets.all(
+                            AppDimensions.spacingLg,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                state.store!.fuzzyOverrideLevel?.displayName ??
+                                    'Using brand defaults',
+                                style: AppTypography.bodyLarge.copyWith(
+                                  color: isDark
+                                      ? AppColors.textDarkPrimary
+                                      : AppColors.textPrimary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: AppDimensions.spacingXs),
+                              Text(
+                                canManageMusicPolicy
+                                    ? 'Create a store override to tune fuzzy BPM bands, thresholds, and allowed playlists for this location.'
+                                    : 'No store-level override is active. This store is currently using the inherited brand music policy.',
+                                style: AppTypography.bodySmall.copyWith(
+                                  color: isDark
+                                      ? AppColors.textDarkSecondary
+                                      : AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
 
                     const SizedBox(height: AppDimensions.spacingLg),
 

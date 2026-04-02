@@ -113,6 +113,11 @@ class SunoPlaybackOrchestrator {
           moodId: request.moodId,
           targetPlaylistId: request.targetPlaylistId,
           autoAddToTargetPlaylist: request.autoAddToTargetPlaylist,
+          aiGenerationMode: request.aiGenerationMode,
+          fuzzyProfileTemplate: request.fuzzyProfileTemplate,
+          recommendedBpmMin: request.recommendedBpmMin,
+          recommendedBpmMax: request.recommendedBpmMax,
+          recommendedBpmTarget: request.recommendedBpmTarget,
         );
         _contextsByGenerationId[generationId] = context;
         _generationSnapshots[generationId] = generation;

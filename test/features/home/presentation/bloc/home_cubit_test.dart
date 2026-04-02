@@ -148,6 +148,7 @@ class _FakeCamsRepository implements CamsRepository {
     required String spaceId,
     required PlaybackCommandEnum command,
     double? seekPositionSeconds,
+    String? targetQueueItemId,
     String? targetTrackId,
     bool usePlaybackDeviceScope = false,
   }) async {

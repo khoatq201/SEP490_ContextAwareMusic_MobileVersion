@@ -3,6 +3,7 @@ import '../../../../core/enums/entity_status_enum.dart';
 import '../../../../core/enums/space_type_enum.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/models/pagination_result.dart';
+import '../../../music_policy/data/models/fuzzy_override_profile_request.dart';
 import '../models/location_space_model.dart';
 import 'location_remote_datasource.dart';
 
@@ -263,6 +264,24 @@ class LocationMockDataSource implements LocationRemoteDataSource {
       );
     }
     throw ServerException('Space not found.');
+  }
+
+  @override
+  Future<SpaceMutationResult> createFuzzyOverrideProfile(
+    String spaceId,
+    FuzzyOverrideProfileRequest request,
+  ) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    final exists = _mockData.values.any(
+      (spaces) => spaces.any((space) => space.id == spaceId),
+    );
+    if (!exists) {
+      throw ServerException('Space not found.');
+    }
+    return const SpaceMutationResult(
+      isSuccess: true,
+      message: 'Space fuzzy override saved successfully',
+    );
   }
 
   String? _resolveStoreName(String storeId) {

@@ -200,8 +200,10 @@ class StoreHubService {
         // Compute clock drift from server timestamp.
         final serverTimeUtc = _parseDateTime(_readValue(data, 'serverTimeUtc'));
         if (serverTimeUtc != null) {
-          _serverClockOffsetMs =
-              DateTime.now().toUtc().difference(serverTimeUtc.toUtc()).inMilliseconds;
+          _serverClockOffsetMs = DateTime.now()
+              .toUtc()
+              .difference(serverTimeUtc.toUtc())
+              .inMilliseconds;
           debugPrint(
             '[StoreHub] Clock offset: ${_serverClockOffsetMs}ms '
             '(positive = device ahead)',
@@ -220,11 +222,9 @@ class StoreHubService {
               TransitionTypeEnum.immediate;
       final hlsUrl = _readString(payload, 'hlsUrl') ?? '';
 
-      // Pending means stream is not ready yet.
-      if (transitionType == TransitionTypeEnum.pending && hlsUrl.isEmpty) {
-        return;
-      }
-
+      // Queue-first clients still need pending PlayStream events even before
+      // an HLS URL exists so they can refresh queue snapshots after remote
+      // inserts from another device.
       _playStreamController.add(PlayStreamEvent(
         spaceId: _readString(payload, 'spaceId') ?? '',
         hlsUrl: hlsUrl,
@@ -250,6 +250,8 @@ class StoreHubService {
         ),
         seekPositionSeconds:
             _readNum(payload, 'seekPositionSeconds')?.toDouble(),
+        targetQueueItemId: _readString(payload, 'targetQueueItemId') ??
+            _readString(payload, 'targetTrackId'),
         targetTrackId: _readString(payload, 'targetTrackId'),
       ));
     });
@@ -277,10 +279,9 @@ class StoreHubService {
         SunoGenerationStatusChangedEvent(
           id: _readString(payload, 'id') ?? '',
           brandId: _readString(payload, 'brandId') ?? '',
-          generationStatus:
-              SunoGenerationStatus.fromJson(
-                _readValue(payload, 'generationStatus'),
-              ),
+          generationStatus: SunoGenerationStatus.fromJson(
+            _readValue(payload, 'generationStatus'),
+          ),
           progressPercent: _readNum(payload, 'progressPercent')?.toInt(),
           errorMessage: _readString(payload, 'errorMessage'),
           generatedTrackId: _readString(payload, 'generatedTrackId'),
@@ -421,12 +422,14 @@ class PlaybackCommandEvent {
   final String spaceId;
   final PlaybackCommandEnum command;
   final double? seekPositionSeconds;
+  final String? targetQueueItemId;
   final String? targetTrackId;
 
   const PlaybackCommandEvent({
     required this.spaceId,
     required this.command,
     this.seekPositionSeconds,
+    this.targetQueueItemId,
     this.targetTrackId,
   });
 }

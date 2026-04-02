@@ -59,5 +59,42 @@ void main() {
       expect(model.isMuted, false);
       expect(model.queueEndBehavior, 0);
     });
+
+    test('parses explainability payload from nested CAMS state block', () {
+      final model = SpacePlaybackStateModel.fromJson({
+        'spaceId': 'space-ai',
+        'explainability': {
+          'TriggeredRule': 'RULE_2_HEATWAVE',
+          'Reason': 'Stress High and Density Crowded',
+          'NewMood': 'Chill',
+          'RecommendedBpmMin': 85,
+          'RecommendedBpmMax': 105,
+          'RecommendedBpmTarget': 94,
+          'BpmFallback': true,
+          'MoodOnlyCount': 12,
+          'BpmFilteredCount': 6,
+        },
+      });
+
+      expect(model.explainability, isNotNull);
+      expect(model.explainability!.triggeredRule, 'RULE_2_HEATWAVE');
+      expect(model.explainability!.reason, 'Stress High and Density Crowded');
+      expect(model.explainability!.moodName, 'Chill');
+      expect(model.explainability!.recommendedBpmMin, 85);
+      expect(model.explainability!.recommendedBpmMax, 105);
+      expect(model.explainability!.recommendedBpmTarget, 94);
+      expect(model.explainability!.usedMoodOnlyFallback, isTrue);
+      expect(model.explainability!.moodOnlyCount, 12);
+      expect(model.explainability!.bpmFilteredCount, 6);
+    });
+
+    test('does not create explainability from legacy mood-only state', () {
+      final model = SpacePlaybackStateModel.fromJson(const {
+        'spaceId': 'space-1',
+        'moodName': 'Focus',
+      });
+
+      expect(model.explainability, isNull);
+    });
   });
 }

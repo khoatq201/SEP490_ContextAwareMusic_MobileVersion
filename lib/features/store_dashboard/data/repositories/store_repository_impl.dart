@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/error/exceptions.dart';
+import '../../../music_policy/data/models/fuzzy_override_profile_request.dart';
 import '../../domain/entities/store.dart';
 import '../../domain/entities/space_summary.dart';
 import '../../domain/repositories/store_repository.dart';
@@ -93,6 +94,26 @@ class StoreRepositoryImpl implements StoreRepository {
     } catch (e) {
       return Left(
           ServerFailure('Failed to toggle store status: ${e.toString()}'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, StoreMutationResult>> createFuzzyOverrideProfile(
+    String storeId,
+    FuzzyOverrideProfileRequest request,
+  ) async {
+    try {
+      final result = await remoteDataSource.createFuzzyOverrideProfile(
+        storeId,
+        request,
+      );
+      return Right(result);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(
+        ServerFailure('Failed to save store fuzzy override: ${e.toString()}'),
+      );
     }
   }
 }

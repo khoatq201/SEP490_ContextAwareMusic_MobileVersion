@@ -153,16 +153,19 @@ class CamsCancelOverride extends CamsPlaybackEvent {
 class CamsSendCommand extends CamsPlaybackEvent {
   final PlaybackCommandEnum command;
   final double? seekPositionSeconds;
+  final String? targetQueueItemId;
   final String? targetTrackId;
 
   const CamsSendCommand({
     required this.command,
     this.seekPositionSeconds,
+    this.targetQueueItemId,
     this.targetTrackId,
   });
 
   @override
-  List<Object?> get props => [command, seekPositionSeconds, targetTrackId];
+  List<Object?> get props =>
+      [command, seekPositionSeconds, targetQueueItemId, targetTrackId];
 }
 
 /// Internal: SignalR PlayStream event received.
@@ -205,18 +208,20 @@ class CamsPlaybackCommandReceived extends CamsPlaybackEvent {
   final String spaceId;
   final PlaybackCommandEnum command;
   final double? seekPositionSeconds;
+  final String? targetQueueItemId;
   final String? targetTrackId;
 
   const CamsPlaybackCommandReceived({
     required this.spaceId,
     required this.command,
     this.seekPositionSeconds,
+    this.targetQueueItemId,
     this.targetTrackId,
   });
 
   @override
   List<Object?> get props =>
-      [spaceId, command, seekPositionSeconds, targetTrackId];
+      [spaceId, command, seekPositionSeconds, targetQueueItemId, targetTrackId];
 }
 
 /// Internal: SignalR SpaceStateSync event received.

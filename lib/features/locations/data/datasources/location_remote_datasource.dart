@@ -1,4 +1,5 @@
 import '../../../../core/models/pagination_result.dart';
+import '../../../music_policy/data/models/fuzzy_override_profile_request.dart';
 import '../models/location_space_model.dart';
 
 abstract class LocationRemoteDataSource {
@@ -17,6 +18,10 @@ abstract class LocationRemoteDataSource {
   );
   Future<SpaceMutationResult> deleteSpace(String spaceId);
   Future<SpaceMutationResult> toggleSpaceStatus(String spaceId);
+  Future<SpaceMutationResult> createFuzzyOverrideProfile(
+    String spaceId,
+    FuzzyOverrideProfileRequest request,
+  );
 }
 
 class SpaceMutationRequest {

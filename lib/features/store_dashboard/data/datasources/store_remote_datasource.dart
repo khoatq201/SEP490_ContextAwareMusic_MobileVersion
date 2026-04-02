@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/network/dio_client.dart';
+import '../../../music_policy/data/models/fuzzy_override_profile_request.dart';
 import '../models/space_summary_model.dart';
 import '../models/store_model.dart';
 
@@ -16,6 +17,10 @@ abstract class StoreRemoteDataSource {
   );
   Future<StoreMutationResult> deleteStore(String storeId);
   Future<StoreMutationResult> toggleStoreStatus(String storeId);
+  Future<StoreMutationResult> createFuzzyOverrideProfile(
+    String storeId,
+    FuzzyOverrideProfileRequest request,
+  );
 }
 
 class StoreMutationRequest {
@@ -212,6 +217,29 @@ class StoreRemoteDataSourceImpl implements StoreRemoteDataSource {
       );
     } catch (e) {
       throw ServerException('Failed to toggle store status: $e');
+    }
+  }
+
+  @override
+  Future<StoreMutationResult> createFuzzyOverrideProfile(
+    String storeId,
+    FuzzyOverrideProfileRequest request,
+  ) async {
+    try {
+      final response = await dioClient.post(
+        ApiConstants.storeFuzzyProfiles(storeId),
+        data: request.toJson(),
+      );
+      return _parseMutationResult(response.data);
+    } on DioException catch (e) {
+      throw ServerException(
+        _extractDioErrorMessage(
+          e,
+          fallback: 'Failed to save store fuzzy override.',
+        ),
+      );
+    } catch (e) {
+      throw ServerException('Failed to save store fuzzy override: $e');
     }
   }
 

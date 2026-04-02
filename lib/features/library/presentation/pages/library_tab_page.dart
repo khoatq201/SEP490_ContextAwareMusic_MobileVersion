@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/enums/ai_generation_mode_enum.dart';
 import '../../../../core/enums/music_provider_enum.dart';
 import '../../../../core/enums/user_role.dart';
 import '../../../../core/error/exceptions.dart';
@@ -17,6 +18,8 @@ import '../../../../injection_container.dart';
 import '../../../cams/data/services/store_hub_service.dart';
 import '../../../home/domain/entities/playlist_entity.dart';
 import '../../../home/domain/entities/song_entity.dart';
+import '../../../moods/domain/entities/mood.dart';
+import '../../../moods/domain/usecases/get_moods.dart';
 import '../../domain/create_library_playlist_usecase.dart';
 import '../../domain/playlist_creation_guard.dart';
 import '../../../playlists/data/datasources/playlist_remote_datasource.dart';
@@ -28,6 +31,8 @@ import '../../../suno/domain/services/suno_playback_orchestrator.dart';
 import '../../../suno/domain/usecases/suno_usecases.dart';
 import '../../../tracks/data/datasources/track_remote_datasource.dart';
 import '../../../tracks/domain/entities/api_track.dart';
+import '../../../tracks/domain/entities/copyright_scan_policy_outcome.dart';
+import '../../../tracks/domain/entities/track_copyright_clearance_status.dart';
 import '../../../tracks/domain/entities/track_filter.dart';
 import '../../../tracks/domain/entities/track_metadata_status.dart';
 import '../../../tracks/domain/usecases/track_usecases.dart';
@@ -68,6 +73,7 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
   bool _showAiOnly = false;
 
   List<PlaylistEntity> _savedPlaylists = [];
+  List<Mood> _moods = [];
   List<ApiTrack> _tracks = [];
   final List<SongEntity> _blockedSongs = [];
   bool _loading = true;
@@ -106,11 +112,16 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
 
   Future<void> _loadInitialData() async {
     try {
-      await Future.wait([
+      final futures = <Future<void>>[
         _loadPlaylists(),
+        _loadMoods(),
         _loadTracks(),
         _loadSunoConfig(),
-      ]);
+      ];
+      if (_canManageSunoTracks()) {
+        futures.add(_loadSunoGenerationHistory());
+      }
+      await Future.wait(futures);
     } finally {
       if (mounted) {
         setState(() => _loading = false);
@@ -137,6 +148,19 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
       });
     } catch (_) {
       // Keep library usable even when playlists fail to load.
+    }
+  }
+
+  Future<void> _loadMoods() async {
+    try {
+      final result = await sl<GetMoods>()();
+      if (!mounted) return;
+      result.fold(
+        (_) {},
+        (moods) => setState(() => _moods = moods),
+      );
+    } catch (_) {
+      // Suno generation can still work without mood labels.
     }
   }
 
@@ -213,10 +237,45 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
     );
   }
 
+  Future<void> _loadSunoGenerationHistory() async {
+    final result = await sl<GetSunoGenerations>()(page: 1, pageSize: 6);
+    if (!mounted) return;
+
+    result.fold(
+      (_) {},
+      (generations) {
+        setState(() {
+          _sunoGenerations
+            ..clear()
+            ..addAll(generations.take(6));
+        });
+
+        final playbackContext = _currentSunoPlaybackContext();
+        if (playbackContext == null) return;
+        for (final generation in generations) {
+          if (generation.generationStatus.isTerminal) {
+            continue;
+          }
+          unawaited(
+            _sunoPlaybackOrchestrator.handleGenerationSnapshot(
+              generation: generation,
+              context: playbackContext,
+            ),
+          );
+        }
+      },
+    );
+  }
+
+  bool _canManageSunoTracks() {
+    final session = context.read<SessionCubit>().state;
+    return !session.isPlaybackDevice &&
+        session.currentRole == UserRole.brandManager;
+  }
+
   Future<void> _ensureSunoRealtimeSubscription() async {
     final session = context.read<SessionCubit>().state;
-    final canManageTracks = !session.isPlaybackDevice &&
-        session.currentRole == UserRole.brandManager;
+    final canManageTracks = _canManageSunoTracks();
     final brandId = session.currentStore?.brandId;
     if (!canManageTracks ||
         brandId == null ||
@@ -272,8 +331,22 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
   }
 
   void _handleSunoEvent(SunoGenerationStatusChangedEvent event) {
+    if (!mounted || event.id.isEmpty) return;
+
     final playbackContext = _currentSunoPlaybackContext();
-    if (!mounted || event.id.isEmpty || playbackContext == null) return;
+    if (playbackContext == null) {
+      final previous = _findGenerationById(event.id);
+      _upsertGeneration(
+        (previous ?? SunoGeneration(id: event.id)).copyWith(
+          brandId: event.brandId.isEmpty ? null : event.brandId,
+          generationStatus: event.generationStatus,
+          progressPercent: event.progressPercent,
+          errorMessage: event.errorMessage,
+          generatedTrackId: event.generatedTrackId,
+        ),
+      );
+      return;
+    }
 
     _sunoPlaybackOrchestrator.handleRealtimeStatusChanged(
       event: event,
@@ -499,14 +572,15 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
   }
 
   Future<void> _openTrackEditorSheet({ApiTrack? track}) async {
-    final result = await showModalBottomSheet<_TrackEditorResult>(
+    final result = await showModalBottomSheet<Object?>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _UploadTrackBottomSheet(track: track),
     );
 
-    if (!mounted || result == null) return;
+    if (!mounted || result is! _TrackEditorResult) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -543,6 +617,7 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
       backgroundColor: Colors.transparent,
       builder: (_) => _GenerateSunoTrackBottomSheet(
         playlists: _savedPlaylists,
+        moods: _moods,
         initialConfig: _sunoConfig,
       ),
     );
@@ -684,6 +759,32 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
     );
   }
 
+  Future<void> _reviewTrackCopyright(
+    ApiTrack track, {
+    required bool approve,
+  }) async {
+    final result = await sl<SetTrackCopyrightClearance>()(
+      track.id,
+      approve: approve,
+    );
+    if (!mounted) return;
+
+    result.fold(
+      (failure) => _showSnackBar(failure.message, isError: true),
+      (_) async {
+        final refreshed = await sl<GetTrackById>()(track.id);
+        if (!mounted) return;
+        refreshed.fold(
+          (_) => unawaited(_loadTracks(silent: true)),
+          _upsertTrack,
+        );
+        _showSnackBar(
+          approve ? 'Track approved for playback.' : 'Track rejected.',
+        );
+      },
+    );
+  }
+
   void _unblockSong(String songId) {
     setState(() => _blockedSongs.removeWhere((s) => s.id == songId));
   }
@@ -711,6 +812,8 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
         (session.currentRole == UserRole.brandManager ||
             session.currentRole == UserRole.storeManager);
     final canManageTracks = !session.isPlaybackDevice &&
+        session.currentRole == UserRole.brandManager;
+    final canReviewTrackCopyright = !session.isPlaybackDevice &&
         session.currentRole == UserRole.brandManager;
     final canAutoStreamSuno =
         canManageTracks && ((session.currentSpace?.id ?? '').isNotEmpty);
@@ -903,6 +1006,8 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
                     child: _SunoGenerationPanel(
                       palette: palette,
                       generations: _sunoGenerations,
+                      playlists: _savedPlaylists,
+                      moods: _moods,
                       onCancel: canManageTracks ? _cancelSunoGeneration : null,
                     ),
                   ),
@@ -964,6 +1069,7 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
                     : _tracksSliver(
                         palette,
                         canManageTracks: canManageTracks,
+                        canReviewTrackCopyright: canReviewTrackCopyright,
                       ),
 
               SliverToBoxAdapter(child: SizedBox(height: contentBottomSpacing)),
@@ -1116,6 +1222,7 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
   Widget _tracksSliver(
     _Palette palette, {
     required bool canManageTracks,
+    required bool canReviewTrackCopyright,
   }) {
     return SliverList.builder(
       itemCount: _tracks.length,
@@ -1125,7 +1232,12 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
           track: track,
           palette: palette,
           canManage: canManageTracks,
-          onTap: () => _showTrackDetailSheet(track, canManage: canManageTracks),
+          canReviewCopyright: canReviewTrackCopyright,
+          onTap: () => _showTrackDetailSheet(
+            track,
+            canManage: canManageTracks,
+            canReviewCopyright: canReviewTrackCopyright,
+          ),
         );
       },
     );
@@ -1162,6 +1274,7 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
   Future<void> _showTrackDetailSheet(
     ApiTrack track, {
     required bool canManage,
+    required bool canReviewCopyright,
   }) async {
     final action = await showModalBottomSheet<_TrackLibraryAction>(
       context: context,
@@ -1171,6 +1284,7 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
       builder: (_) => _TrackDetailBottomSheet(
         track: track,
         canManage: canManage,
+        canReviewCopyright: canReviewCopyright,
       ),
     );
 
@@ -1188,6 +1302,12 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
         break;
       case _TrackLibraryAction.delete:
         await _deleteTrack(track);
+        break;
+      case _TrackLibraryAction.approveCopyright:
+        await _reviewTrackCopyright(track, approve: true);
+        break;
+      case _TrackLibraryAction.rejectCopyright:
+        await _reviewTrackCopyright(track, approve: false);
         break;
     }
   }
@@ -1295,19 +1415,69 @@ class _PlaylistTile extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // Blocked song tile
 // ─────────────────────────────────────────────────────────────────────────────
-enum _TrackLibraryAction { edit, toggleStatus, retranscode, delete }
+enum _TrackLibraryAction {
+  edit,
+  toggleStatus,
+  retranscode,
+  delete,
+  approveCopyright,
+  rejectCopyright,
+}
+
+Color _trackMetadataColor(TrackMetadataStatus status) {
+  switch (status) {
+    case TrackMetadataStatus.metadataPending:
+      return Colors.amber.shade700;
+    case TrackMetadataStatus.metadataReady:
+      return Colors.green.shade600;
+    case TrackMetadataStatus.metadataUnknown:
+      return Colors.orange.shade800;
+  }
+}
+
+Color _copyrightClearanceColorValue(
+  TrackCopyrightClearanceStatus status,
+) {
+  switch (status) {
+    case TrackCopyrightClearanceStatus.pending:
+      return Colors.amber.shade700;
+    case TrackCopyrightClearanceStatus.approved:
+      return Colors.green.shade600;
+    case TrackCopyrightClearanceStatus.rejected:
+      return Colors.red.shade600;
+    case TrackCopyrightClearanceStatus.unknown:
+      return Colors.blueGrey.shade600;
+  }
+}
+
+Color _copyrightPolicyColorValue(
+  CopyrightScanPolicyOutcome outcome,
+) {
+  switch (outcome) {
+    case CopyrightScanPolicyOutcome.clear:
+      return Colors.green.shade600;
+    case CopyrightScanPolicyOutcome.flagged:
+      return Colors.red.shade600;
+    case CopyrightScanPolicyOutcome.manual:
+      return Colors.orange.shade700;
+    case CopyrightScanPolicyOutcome.unknown:
+      return Colors.blueGrey.shade600;
+  }
+}
 
 class _TrackLibraryTile extends StatelessWidget {
   const _TrackLibraryTile({
     required this.track,
     required this.palette,
     required this.canManage,
+    required this.canReviewCopyright,
     required this.onTap,
   });
 
   final ApiTrack track;
   final _Palette palette;
   final bool canManage;
+  final bool canReviewCopyright;
   final VoidCallback onTap;
 
   @override
@@ -1373,7 +1543,8 @@ class _TrackLibraryTile extends StatelessWidget {
                         _TrackBadge(
                           palette: palette,
                           label: track.metadataStatus.displayName,
-                          accentColor: _metadataColor(track.metadataStatus),
+                          accentColor:
+                              _trackMetadataColor(track.metadataStatus),
                         ),
                         _TrackBadge(
                           palette: palette,
@@ -1395,6 +1566,23 @@ class _TrackLibraryTile extends StatelessWidget {
                             palette: palette,
                             label: track.transcodeStatus!,
                           ),
+                        if (track.copyrightClearanceStatus != null)
+                          _TrackBadge(
+                            palette: palette,
+                            label: track.copyrightClearanceStatus!.displayName,
+                            accentColor: _copyrightClearanceColorValue(
+                              track.copyrightClearanceStatus!,
+                            ),
+                          ),
+                        if (track.copyrightScanPolicyOutcome != null)
+                          _TrackBadge(
+                            palette: palette,
+                            label:
+                                track.copyrightScanPolicyOutcome!.displayName,
+                            accentColor: _copyrightPolicyColorValue(
+                              track.copyrightScanPolicyOutcome!,
+                            ),
+                          ),
                       ],
                     ),
                   ],
@@ -1413,7 +1601,7 @@ class _TrackLibraryTile extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  if (canManage)
+                  if (canManage || canReviewCopyright)
                     Icon(Icons.more_horiz_rounded,
                         color: palette.textMuted, size: 18)
                   else
@@ -1426,17 +1614,6 @@ class _TrackLibraryTile extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  Color _metadataColor(TrackMetadataStatus status) {
-    switch (status) {
-      case TrackMetadataStatus.metadataPending:
-        return Colors.amber.shade700;
-      case TrackMetadataStatus.metadataReady:
-        return Colors.green.shade600;
-      case TrackMetadataStatus.metadataUnknown:
-        return Colors.orange.shade800;
-    }
   }
 }
 
@@ -1477,10 +1654,12 @@ class _TrackDetailBottomSheet extends StatelessWidget {
   const _TrackDetailBottomSheet({
     required this.track,
     required this.canManage,
+    required this.canReviewCopyright,
   });
 
   final ApiTrack track;
   final bool canManage;
+  final bool canReviewCopyright;
 
   @override
   Widget build(BuildContext context) {
@@ -1494,7 +1673,23 @@ class _TrackDetailBottomSheet extends StatelessWidget {
       MapEntry('Energy', track.energyLevel?.toStringAsFixed(2)),
       MapEntry('Valence', track.valence?.toStringAsFixed(2)),
       MapEntry('Suno Clip', track.sunoClipId),
+      MapEntry('Generation Prompt', track.generationPrompt),
       MapEntry('Generated At', track.generatedAt?.toLocal().toString()),
+      MapEntry('Lyrics URL', track.lyricsUrl),
+      MapEntry(
+        'Copyright Clearance',
+        track.copyrightClearanceStatus?.displayName,
+      ),
+      MapEntry(
+        'Policy Outcome',
+        track.copyrightScanPolicyOutcome?.displayName,
+      ),
+      MapEntry('Matched Title', track.copyrightMatchTitle),
+      MapEntry('Matched Artist', track.copyrightMatchArtist),
+      MapEntry(
+        'Copyright Scanned',
+        track.copyrightScannedAtUtc?.toLocal().toString(),
+      ),
       MapEntry('Last Played', track.lastPlayedAt?.toLocal().toString()),
       MapEntry('HLS', track.hlsUrl),
       MapEntry('Source Audio', track.sourceAudioUrl),
@@ -1546,6 +1741,38 @@ class _TrackDetailBottomSheet extends StatelessWidget {
                     fontSize: 13,
                   ),
                 ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _TrackBadge(
+                      palette: palette,
+                      label: track.provider?.displayName ?? 'Track',
+                    ),
+                    _TrackBadge(
+                      palette: palette,
+                      label: track.metadataStatus.displayName,
+                      accentColor: _trackMetadataColor(track.metadataStatus),
+                    ),
+                    if (track.copyrightClearanceStatus != null)
+                      _TrackBadge(
+                        palette: palette,
+                        label: track.copyrightClearanceStatus!.displayName,
+                        accentColor: _copyrightClearanceColorValue(
+                          track.copyrightClearanceStatus!,
+                        ),
+                      ),
+                    if (track.copyrightScanPolicyOutcome != null)
+                      _TrackBadge(
+                        palette: palette,
+                        label: track.copyrightScanPolicyOutcome!.displayName,
+                        accentColor: _copyrightPolicyColorValue(
+                          track.copyrightScanPolicyOutcome!,
+                        ),
+                      ),
+                  ],
+                ),
                 const SizedBox(height: 16),
                 ...metadataRows
                     .where((entry) => (entry.value ?? '').trim().isNotEmpty)
@@ -1580,6 +1807,42 @@ class _TrackDetailBottomSheet extends StatelessWidget {
                         ),
                       ),
                     ),
+                if (canReviewCopyright && track.requiresCopyrightReview) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Copyright Review',
+                    style: GoogleFonts.inter(
+                      color: palette.textMuted,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      _TrackActionButton(
+                        label: 'Approve',
+                        icon: Icons.verified_rounded,
+                        onTap: () => Navigator.pop(
+                          context,
+                          _TrackLibraryAction.approveCopyright,
+                        ),
+                      ),
+                      _TrackActionButton(
+                        label: 'Reject',
+                        icon: Icons.gpp_bad_rounded,
+                        isDestructive: true,
+                        onTap: () => Navigator.pop(
+                          context,
+                          _TrackLibraryAction.rejectCopyright,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
                 if (canManage) ...[
                   const SizedBox(height: 8),
                   Wrap(
@@ -1668,11 +1931,15 @@ class _SunoGenerationPanel extends StatelessWidget {
   const _SunoGenerationPanel({
     required this.palette,
     required this.generations,
+    required this.playlists,
+    required this.moods,
     this.onCancel,
   });
 
   final _Palette palette;
   final List<SunoGeneration> generations;
+  final List<PlaylistEntity> playlists;
+  final List<Mood> moods;
   final Future<void> Function(String generationId)? onCancel;
 
   @override
@@ -1746,6 +2013,39 @@ class _SunoGenerationPanel extends StatelessWidget {
                         fontSize: 11,
                       ),
                     ),
+                    ..._metadataRowsFor(generation).map(
+                      (entry) => Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(
+                              width: 108,
+                              child: Text(
+                                entry.key,
+                                style: GoogleFonts.inter(
+                                  color: palette.textMuted,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                entry.value,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.inter(
+                                  color: palette.textPrimary,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                     if (onCancel != null &&
                         !generation.generationStatus.isTerminal) ...[
                       const SizedBox(height: 8),
@@ -1767,6 +2067,62 @@ class _SunoGenerationPanel extends StatelessWidget {
     );
   }
 
+  List<MapEntry<String, String>> _metadataRowsFor(SunoGeneration generation) {
+    final rows = <MapEntry<String, String>>[];
+    final moodLabel = _resolveMoodLabel(generation.moodId);
+    final playlistLabel = _resolvePlaylistLabel(generation.targetPlaylistId);
+    final bpmBand = _bpmBandLabel(generation);
+
+    if (moodLabel != null) {
+      rows.add(MapEntry('Mood', moodLabel));
+    }
+    if (playlistLabel != null) {
+      rows.add(MapEntry('Target Playlist', playlistLabel));
+    }
+    if (generation.aiGenerationMode != null) {
+      rows.add(MapEntry('Mode', generation.aiGenerationMode!.displayName));
+    }
+    if (generation.provider != null) {
+      rows.add(MapEntry('Provider', generation.provider!.displayName));
+    }
+    if (generation.fuzzyProfileName?.trim().isNotEmpty ?? false) {
+      rows.add(MapEntry('Fuzzy Profile', generation.fuzzyProfileName!.trim()));
+    }
+    if (generation.fuzzyProfileTemplate?.trim().isNotEmpty ?? false) {
+      rows.add(
+        MapEntry('Template', generation.fuzzyProfileTemplate!.trim()),
+      );
+    }
+    if (bpmBand != null) {
+      rows.add(MapEntry('BPM Band', bpmBand));
+    }
+    if (generation.recommendedBpmTarget != null) {
+      rows.add(
+        MapEntry('Target BPM', generation.recommendedBpmTarget.toString()),
+      );
+    }
+    if (generation.generatedTrackId?.trim().isNotEmpty ?? false) {
+      rows.add(
+          MapEntry('Generated Track', generation.generatedTrackId!.trim()));
+    }
+    if (generation.externalTaskId?.trim().isNotEmpty ?? false) {
+      rows.add(MapEntry('External Task', generation.externalTaskId!.trim()));
+    }
+    if (generation.outputAudioUrl?.trim().isNotEmpty ?? false) {
+      rows.add(MapEntry('Output Audio', generation.outputAudioUrl!.trim()));
+    }
+    final completedAt = _formatDateTime(generation.completedAtUtc);
+    if (completedAt != null) {
+      rows.add(MapEntry('Completed', completedAt));
+    }
+    final lastPolledAt = _formatDateTime(generation.lastPolledAtUtc);
+    if (lastPolledAt != null) {
+      rows.add(MapEntry('Last Polled', lastPolledAt));
+    }
+
+    return rows;
+  }
+
   Color _statusColor(SunoGenerationStatus status) {
     switch (status) {
       case SunoGenerationStatus.queued:
@@ -1782,6 +2138,50 @@ class _SunoGenerationPanel extends StatelessWidget {
       case SunoGenerationStatus.unknown:
         return Colors.grey.shade600;
     }
+  }
+
+  String? _resolveMoodLabel(String? moodId) {
+    final trimmedMoodId = moodId?.trim();
+    if (trimmedMoodId == null || trimmedMoodId.isEmpty) {
+      return null;
+    }
+    for (final mood in moods) {
+      if (mood.id == trimmedMoodId) {
+        return mood.name;
+      }
+    }
+    return trimmedMoodId;
+  }
+
+  String? _resolvePlaylistLabel(String? playlistId) {
+    final trimmedPlaylistId = playlistId?.trim();
+    if (trimmedPlaylistId == null || trimmedPlaylistId.isEmpty) {
+      return null;
+    }
+    for (final playlist in playlists) {
+      if (playlist.id == trimmedPlaylistId) {
+        return playlist.title;
+      }
+    }
+    return trimmedPlaylistId;
+  }
+
+  String? _formatDateTime(DateTime? value) {
+    if (value == null) return null;
+    return value.toLocal().toString();
+  }
+
+  String? _bpmBandLabel(SunoGeneration generation) {
+    final min = generation.recommendedBpmMin;
+    final max = generation.recommendedBpmMax;
+    if (min == null && max == null) return null;
+    if (min != null && max != null) {
+      return '$min-$max BPM';
+    }
+    if (min != null) {
+      return '$min+ BPM';
+    }
+    return 'Up to $max BPM';
   }
 }
 
@@ -2213,6 +2613,11 @@ class _UploadTrackBottomSheetState extends State<_UploadTrackBottomSheet> {
     );
   }
 
+  void _closeSheet() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    Navigator.of(context).pop();
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -2267,9 +2672,7 @@ class _UploadTrackBottomSheetState extends State<_UploadTrackBottomSheet> {
                       ),
                       const Spacer(),
                       IconButton(
-                        onPressed: _submitting
-                            ? null
-                            : () => Navigator.pop(context, false),
+                        onPressed: _submitting ? null : _closeSheet,
                         icon: Icon(LucideIcons.x, color: textMuted, size: 20),
                       ),
                     ],
@@ -2406,10 +2809,12 @@ class _UploadTrackBottomSheetState extends State<_UploadTrackBottomSheet> {
 class _GenerateSunoTrackBottomSheet extends StatefulWidget {
   const _GenerateSunoTrackBottomSheet({
     required this.playlists,
+    required this.moods,
     required this.initialConfig,
   });
 
   final List<PlaylistEntity> playlists;
+  final List<Mood> moods;
   final SunoConfig? initialConfig;
 
   @override
@@ -2423,8 +2828,15 @@ class _GenerateSunoTrackBottomSheetState
   final _titleController = TextEditingController();
   final _artistController = TextEditingController();
   final _promptController = TextEditingController();
+  final _bpmMinController = TextEditingController();
+  final _bpmMaxController = TextEditingController();
+  final _bpmTargetController = TextEditingController();
+  String? _selectedMoodId;
   String? _selectedPlaylistId;
-  bool _autoAddToTargetPlaylist = false;
+  AiGenerationModeEnum? _selectedGenerationMode;
+  String? _selectedFuzzyTemplate;
+  bool _autoAddToTargetPlaylist = true;
+  bool _showAdvanced = false;
 
   @override
   void initState() {
@@ -2432,6 +2844,25 @@ class _GenerateSunoTrackBottomSheetState
     _selectedPlaylistId = widget.initialConfig?.sunoDefaultPlaylistId;
     _autoAddToTargetPlaylist = _selectedPlaylistId != null;
     _promptController.text = widget.initialConfig?.sunoPromptTemplate ?? '';
+    _selectedGenerationMode = widget.initialConfig?.aiGenerationMode;
+    _selectedFuzzyTemplate = widget.initialConfig?.fuzzyProfileTemplate;
+    if (_selectedGenerationMode == null &&
+        widget.initialConfig?.availableGenerationModes.isNotEmpty == true) {
+      _selectedGenerationMode =
+          widget.initialConfig!.availableGenerationModes.first;
+    }
+    if ((_selectedFuzzyTemplate?.trim().isEmpty ?? true) &&
+        widget.initialConfig?.availableFuzzyProfileTemplates.isNotEmpty ==
+            true) {
+      _selectedFuzzyTemplate =
+          widget.initialConfig!.availableFuzzyProfileTemplates.first;
+    }
+    _bpmMinController.text =
+        widget.initialConfig?.recommendedBpmMin?.toString() ?? '';
+    _bpmMaxController.text =
+        widget.initialConfig?.recommendedBpmMax?.toString() ?? '';
+    _bpmTargetController.text =
+        widget.initialConfig?.recommendedBpmTarget?.toString() ?? '';
   }
 
   @override
@@ -2439,6 +2870,9 @@ class _GenerateSunoTrackBottomSheetState
     _titleController.dispose();
     _artistController.dispose();
     _promptController.dispose();
+    _bpmMinController.dispose();
+    _bpmMaxController.dispose();
+    _bpmTargetController.dispose();
     super.dispose();
   }
 
@@ -2447,6 +2881,17 @@ class _GenerateSunoTrackBottomSheetState
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textPrimary = isDark ? Colors.white : Colors.black87;
     final textMuted = isDark ? Colors.white60 : Colors.black54;
+    final hasConfiguredPromptTemplate =
+        widget.initialConfig?.sunoPromptTemplate?.trim().isNotEmpty ?? false;
+    final sortedMoods = [...widget.moods]
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    final generationModes = _generationModeOptions;
+    final fuzzyTemplates = _fuzzyTemplateOptions;
+    final hasAdvancedOptions = generationModes.isNotEmpty ||
+        fuzzyTemplates.isNotEmpty ||
+        widget.initialConfig?.recommendedBpmMin != null ||
+        widget.initialConfig?.recommendedBpmMax != null ||
+        widget.initialConfig?.recommendedBpmTarget != null;
 
     return SafeArea(
       top: false,
@@ -2499,12 +2944,9 @@ class _GenerateSunoTrackBottomSheetState
                   TextFormField(
                     controller: _titleController,
                     decoration: _editorDecoration(
-                      label: 'Title *',
+                      label: 'Title (optional)',
                       isDark: isDark,
                     ),
-                    validator: (value) => (value?.trim().isEmpty ?? true)
-                        ? 'Title is required.'
-                        : null,
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
@@ -2515,12 +2957,59 @@ class _GenerateSunoTrackBottomSheetState
                     ),
                   ),
                   const SizedBox(height: 12),
+                  DropdownButtonFormField<String?>(
+                    initialValue:
+                        sortedMoods.any((mood) => mood.id == _selectedMoodId)
+                            ? _selectedMoodId
+                            : null,
+                    decoration: _editorDecoration(
+                      label: 'Mood',
+                      isDark: isDark,
+                    ),
+                    items: [
+                      const DropdownMenuItem<String?>(
+                        value: null,
+                        child: Text('No mood preference'),
+                      ),
+                      ...sortedMoods.map(
+                        (mood) => DropdownMenuItem<String?>(
+                          value: mood.id,
+                          child: Text(mood.name),
+                        ),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      setState(() => _selectedMoodId = value);
+                    },
+                  ),
+                  const SizedBox(height: 12),
                   TextFormField(
                     controller: _promptController,
                     maxLines: 4,
                     decoration: _editorDecoration(
-                      label: 'Prompt (optional)',
+                      label: hasConfiguredPromptTemplate
+                          ? 'Prompt override'
+                          : 'Prompt *',
                       isDark: isDark,
+                    ),
+                    validator: (value) {
+                      if (hasConfiguredPromptTemplate) {
+                        return null;
+                      }
+                      return (value?.trim().isEmpty ?? true)
+                          ? 'Prompt is required when no brand default prompt is configured.'
+                          : null;
+                    },
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    hasConfiguredPromptTemplate
+                        ? 'Leave this blank to use the brand default prompt template.'
+                        : 'Enter a prompt because this brand does not have a default Suno prompt yet.',
+                    style: GoogleFonts.inter(
+                      color: textMuted,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -2572,6 +3061,157 @@ class _GenerateSunoTrackBottomSheetState
                       ),
                     ),
                   ),
+                  if (hasAdvancedOptions) ...[
+                    const SizedBox(height: 6),
+                    Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: (isDark ? Colors.white : Colors.black)
+                            .withValues(alpha: 0.04),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Theme(
+                        data: Theme.of(context).copyWith(
+                          dividerColor: Colors.transparent,
+                        ),
+                        child: ExpansionTile(
+                          initiallyExpanded: _showAdvanced,
+                          onExpansionChanged: (value) {
+                            setState(() => _showAdvanced = value);
+                          },
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          collapsedShape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          tilePadding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 4,
+                          ),
+                          childrenPadding:
+                              const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                          title: Text(
+                            'Advanced',
+                            style: GoogleFonts.inter(
+                              color: textPrimary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          subtitle: Text(
+                            'Generation mode, fuzzy profile, and BPM guidance',
+                            style: GoogleFonts.inter(
+                              color: textMuted,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          children: [
+                            if (generationModes.isNotEmpty) ...[
+                              DropdownButtonFormField<AiGenerationModeEnum?>(
+                                initialValue: generationModes.contains(
+                                  _selectedGenerationMode,
+                                )
+                                    ? _selectedGenerationMode
+                                    : generationModes.first,
+                                decoration: _editorDecoration(
+                                  label: 'Generation mode',
+                                  isDark: isDark,
+                                ),
+                                items: generationModes
+                                    .map(
+                                      (mode) => DropdownMenuItem<
+                                          AiGenerationModeEnum?>(
+                                        value: mode,
+                                        child: Text(mode.displayName),
+                                      ),
+                                    )
+                                    .toList(),
+                                onChanged: (value) {
+                                  setState(
+                                      () => _selectedGenerationMode = value);
+                                },
+                              ),
+                              const SizedBox(height: 12),
+                            ],
+                            if (fuzzyTemplates.isNotEmpty) ...[
+                              DropdownButtonFormField<String?>(
+                                initialValue: fuzzyTemplates.contains(
+                                  _selectedFuzzyTemplate,
+                                )
+                                    ? _selectedFuzzyTemplate
+                                    : fuzzyTemplates.first,
+                                decoration: _editorDecoration(
+                                  label: 'Fuzzy profile template',
+                                  isDark: isDark,
+                                ),
+                                items: fuzzyTemplates
+                                    .map(
+                                      (template) => DropdownMenuItem<String?>(
+                                        value: template,
+                                        child: Text(template),
+                                      ),
+                                    )
+                                    .toList(),
+                                onChanged: (value) {
+                                  setState(
+                                      () => _selectedFuzzyTemplate = value);
+                                },
+                              ),
+                              const SizedBox(height: 12),
+                            ],
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: _bpmMinController,
+                                    keyboardType: TextInputType.number,
+                                    decoration: _editorDecoration(
+                                      label: 'BPM min',
+                                      isDark: isDark,
+                                    ),
+                                    validator: _validateIntegerField,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: _bpmMaxController,
+                                    keyboardType: TextInputType.number,
+                                    decoration: _editorDecoration(
+                                      label: 'BPM max',
+                                      isDark: isDark,
+                                    ),
+                                    validator: _validateIntegerField,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: _bpmTargetController,
+                              keyboardType: TextInputType.number,
+                              decoration: _editorDecoration(
+                                label: 'Target BPM',
+                                isDark: isDark,
+                              ),
+                              validator: _validateIntegerField,
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Only the fields your backend config exposes are shown here. Leave anything blank to keep the default resolver behavior.',
+                              style: GoogleFonts.inter(
+                                color: textMuted,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   SizedBox(
                     width: double.infinity,
@@ -2584,10 +3224,20 @@ class _GenerateSunoTrackBottomSheetState
                           context,
                           CreateSunoGenerationRequest(
                             prompt: _nullable(_promptController.text),
-                            title: _titleController.text.trim(),
+                            title: _nullable(_titleController.text),
                             artist: _nullable(_artistController.text),
+                            moodId: _selectedMoodId,
                             targetPlaylistId: _selectedPlaylistId,
                             autoAddToTargetPlaylist: _autoAddToTargetPlaylist,
+                            aiGenerationMode: _selectedGenerationMode,
+                            fuzzyProfileTemplate:
+                                _nullable(_selectedFuzzyTemplate ?? ''),
+                            recommendedBpmMin:
+                                _nullableInt(_bpmMinController.text),
+                            recommendedBpmMax:
+                                _nullableInt(_bpmMaxController.text),
+                            recommendedBpmTarget:
+                                _nullableInt(_bpmTargetController.text),
                           ),
                         );
                       },
@@ -2602,6 +3252,52 @@ class _GenerateSunoTrackBottomSheetState
         ),
       ),
     );
+  }
+
+  List<AiGenerationModeEnum> get _generationModeOptions {
+    final modes = <AiGenerationModeEnum>[];
+    final configuredMode = widget.initialConfig?.aiGenerationMode;
+    if (configuredMode != null) {
+      modes.add(configuredMode);
+    }
+    for (final mode in widget.initialConfig?.availableGenerationModes ??
+        const <AiGenerationModeEnum>[]) {
+      if (!modes.contains(mode)) {
+        modes.add(mode);
+      }
+    }
+    return modes;
+  }
+
+  List<String> get _fuzzyTemplateOptions {
+    final templates = <String>[];
+    final configuredTemplate =
+        widget.initialConfig?.fuzzyProfileTemplate?.trim();
+    if (configuredTemplate != null && configuredTemplate.isNotEmpty) {
+      templates.add(configuredTemplate);
+    }
+    for (final template
+        in widget.initialConfig?.availableFuzzyProfileTemplates ??
+            const <String>[]) {
+      final trimmed = template.trim();
+      if (trimmed.isEmpty || templates.contains(trimmed)) {
+        continue;
+      }
+      templates.add(trimmed);
+    }
+    return templates;
+  }
+
+  String? _validateIntegerField(String? value) {
+    final trimmed = value?.trim() ?? '';
+    if (trimmed.isEmpty) return null;
+    return int.tryParse(trimmed) == null ? 'Enter a whole number.' : null;
+  }
+
+  int? _nullableInt(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return null;
+    return int.tryParse(trimmed);
   }
 }
 

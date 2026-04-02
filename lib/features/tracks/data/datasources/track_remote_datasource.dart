@@ -37,6 +37,11 @@ abstract class TrackRemoteDataSource {
   Future<TrackMutationResult> toggleTrackStatus(String trackId);
 
   Future<TrackMutationResult> retranscodeTrack(String trackId);
+
+  Future<TrackMutationResult> setTrackCopyrightClearance(
+    String trackId, {
+    required bool approve,
+  });
 }
 
 /// Wrapper for paginated track list response.
@@ -382,6 +387,36 @@ class TrackRemoteDataSourceImpl implements TrackRemoteDataSource {
       throw ServerException('Failed to retranscode track: ${e.message}');
     } catch (e) {
       throw ServerException('Failed to retranscode track: $e');
+    }
+  }
+
+  @override
+  Future<TrackMutationResult> setTrackCopyrightClearance(
+    String trackId, {
+    required bool approve,
+  }) async {
+    try {
+      final response = await dioClient.post(
+        ApiConstants.trackCopyrightClearance(trackId),
+        queryParameters: {'approve': approve},
+      );
+      final data = response.data;
+      if (data is Map<String, dynamic> && data['isSuccess'] == false) {
+        throw ServerException(_extractErrorMessage(data));
+      }
+      return data is Map<String, dynamic>
+          ? TrackMutationResult.fromJson(data)
+          : const TrackMutationResult(isSuccess: true);
+    } on DioException catch (e) {
+      final payload = e.response?.data;
+      if (payload is Map<String, dynamic>) {
+        throw ServerException(_extractErrorMessage(payload));
+      }
+      throw ServerException(
+        'Failed to update copyright clearance: ${e.message}',
+      );
+    } catch (e) {
+      throw ServerException('Failed to update copyright clearance: $e');
     }
   }
 

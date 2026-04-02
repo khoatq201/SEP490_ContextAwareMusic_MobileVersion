@@ -33,6 +33,7 @@ class CamsPlaybackState extends Equatable {
   /// Last playback command received from SignalR.
   final PlaybackCommandEnum? lastPlaybackCommand;
   final double? lastSeekPositionSeconds;
+  final String? lastTargetQueueItemId;
   final String? lastTargetTrackId;
   final int commandSequence;
   final String? pendingTrackPlaylistId;
@@ -49,6 +50,7 @@ class CamsPlaybackState extends Equatable {
     this.isHubConnected = false,
     this.lastPlaybackCommand,
     this.lastSeekPositionSeconds,
+    this.lastTargetQueueItemId,
     this.lastTargetTrackId,
     this.commandSequence = 0,
     this.pendingTrackPlaylistId,
@@ -79,6 +81,11 @@ class CamsPlaybackState extends Equatable {
   /// Current mood name.
   String? get currentMoodName => playbackState?.moodName;
 
+  SpacePlaybackExplainability? get explainability =>
+      playbackState?.explainability;
+
+  bool get hasExplainability => explainability?.hasAnyData ?? false;
+
   CamsPlaybackState copyWith({
     CamsStatus? status,
     String? spaceId,
@@ -90,6 +97,7 @@ class CamsPlaybackState extends Equatable {
     bool? isHubConnected,
     PlaybackCommandEnum? lastPlaybackCommand,
     double? lastSeekPositionSeconds,
+    String? lastTargetQueueItemId,
     String? lastTargetTrackId,
     int? commandSequence,
     String? pendingTrackPlaylistId,
@@ -98,6 +106,7 @@ class CamsPlaybackState extends Equatable {
     bool clearOverrideResponse = false,
     bool clearLastCommand = false,
     bool clearLastSeekPosition = false,
+    bool clearLastTargetQueueItemId = false,
     bool clearLastTargetTrackId = false,
     bool clearPendingTrackJump = false,
   }) {
@@ -118,6 +127,9 @@ class CamsPlaybackState extends Equatable {
       lastSeekPositionSeconds: (clearLastCommand || clearLastSeekPosition)
           ? null
           : (lastSeekPositionSeconds ?? this.lastSeekPositionSeconds),
+      lastTargetQueueItemId: (clearLastCommand || clearLastTargetQueueItemId)
+          ? null
+          : (lastTargetQueueItemId ?? this.lastTargetQueueItemId),
       lastTargetTrackId: (clearLastCommand || clearLastTargetTrackId)
           ? null
           : (lastTargetTrackId ?? this.lastTargetTrackId),
@@ -143,6 +155,7 @@ class CamsPlaybackState extends Equatable {
         isHubConnected,
         lastPlaybackCommand,
         lastSeekPositionSeconds,
+        lastTargetQueueItemId,
         lastTargetTrackId,
         commandSequence,
         pendingTrackPlaylistId,

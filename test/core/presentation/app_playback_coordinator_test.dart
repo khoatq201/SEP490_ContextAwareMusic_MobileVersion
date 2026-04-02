@@ -346,8 +346,10 @@ void main() {
         currentQueueItemId: 'queue-1',
         currentTrackName: 'Track One',
         hlsUrl: 'https://stream.example.com/t1.m3u8',
-        startedAtUtc: DateTime.now().toUtc().subtract(const Duration(seconds: 5)),
-        expectedEndAtUtc: DateTime.now().toUtc().add(const Duration(seconds: 30)),
+        startedAtUtc:
+            DateTime.now().toUtc().subtract(const Duration(seconds: 5)),
+        expectedEndAtUtc:
+            DateTime.now().toUtc().add(const Duration(seconds: 30)),
         isPaused: false,
         volumePercent: 80,
         spaceQueueItems: const [
@@ -376,7 +378,8 @@ void main() {
       await tester.pump();
       await _waitUntil(
         tester,
-        () => playerBloc.state.isSyncedCamsPlayback && playerBloc.state.isPlaying,
+        () =>
+            playerBloc.state.isSyncedCamsPlayback && playerBloc.state.isPlaying,
       );
       camsBloc.seed(activePlaybackState);
       await tester.pump();
@@ -690,7 +693,6 @@ void main() {
       expect(playerBloc.state.currentPosition, greaterThanOrEqualTo(25));
       expect(playerBloc.state.currentPositionPrecise, greaterThanOrEqualTo(25));
     });
-
   });
 }
 
@@ -975,6 +977,14 @@ class _FakeTrackRepository implements TrackRepository {
   ) async {
     return const Left(ServerFailure('not used in this test'));
   }
+
+  @override
+  Future<Either<Failure, TrackMutationResult>> setTrackCopyrightClearance(
+    String trackId, {
+    required bool approve,
+  }) async {
+    return const Left(ServerFailure('not used in this test'));
+  }
 }
 
 class _FakeStoreHubService extends StoreHubService {
@@ -1078,7 +1088,6 @@ class _FakePlaylistRemoteDataSource implements PlaylistRemoteDataSource {
     String? brandId,
     String? storeId,
     String? moodId,
-    bool? isDynamic,
     bool? isDefault,
     DateTime? createdFrom,
     DateTime? createdTo,
@@ -1123,11 +1132,6 @@ class _FakePlaylistRemoteDataSource implements PlaylistRemoteDataSource {
     required String playlistId,
     required String trackId,
   }) async {
-    return const PlaylistMutationResult(isSuccess: true);
-  }
-
-  @override
-  Future<PlaylistMutationResult> retranscodePlaylist(String playlistId) async {
     return const PlaylistMutationResult(isSuccess: true);
   }
 }
@@ -1214,6 +1218,7 @@ class _FakeCamsRepository implements CamsRepository {
     required String spaceId,
     required PlaybackCommandEnum command,
     double? seekPositionSeconds,
+    String? targetQueueItemId,
     String? targetTrackId,
     bool usePlaybackDeviceScope = false,
   }) async {

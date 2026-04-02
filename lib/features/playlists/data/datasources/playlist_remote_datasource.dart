@@ -16,7 +16,6 @@ abstract class PlaylistRemoteDataSource {
     String? brandId,
     String? storeId,
     String? moodId,
-    bool? isDynamic,
     bool? isDefault,
     DateTime? createdFrom,
     DateTime? createdTo,
@@ -53,9 +52,6 @@ abstract class PlaylistRemoteDataSource {
     required String playlistId,
     required String trackId,
   });
-
-  /// Force queueing a retranscode for playlist.
-  Future<PlaylistMutationResult> retranscodePlaylist(String playlistId);
 }
 
 /// Wrapper for paginated playlist list response.
@@ -93,7 +89,6 @@ class PlaylistMutationRequest {
   final String? storeId;
   final String? moodId;
   final String? description;
-  final bool? isDynamic;
   final bool? isDefault;
   final List<String>? trackIds;
 
@@ -102,7 +97,6 @@ class PlaylistMutationRequest {
     this.storeId,
     this.moodId,
     this.description,
-    this.isDynamic,
     this.isDefault,
     this.trackIds,
   });
@@ -113,7 +107,6 @@ class PlaylistMutationRequest {
       if (storeId != null && storeId!.trim().isNotEmpty) 'storeId': storeId,
       if (moodId != null && moodId!.trim().isNotEmpty) 'moodId': moodId,
       if (description != null) 'description': description,
-      if (isDynamic != null) 'isDynamic': isDynamic,
       if (isDefault != null) 'isDefault': isDefault,
       if (trackIds != null) 'trackIds': trackIds,
     };
@@ -167,7 +160,6 @@ class PlaylistRemoteDataSourceImpl implements PlaylistRemoteDataSource {
     String? brandId,
     String? storeId,
     String? moodId,
-    bool? isDynamic,
     bool? isDefault,
     DateTime? createdFrom,
     DateTime? createdTo,
@@ -183,7 +175,6 @@ class PlaylistRemoteDataSourceImpl implements PlaylistRemoteDataSource {
         if (brandId != null && brandId.isNotEmpty) 'brandId': brandId,
         if (storeId != null && storeId.isNotEmpty) 'storeId': storeId,
         if (moodId != null && moodId.isNotEmpty) 'moodId': moodId,
-        if (isDynamic != null) 'isDynamic': isDynamic,
         if (isDefault != null) 'isDefault': isDefault,
         if (createdFrom != null) 'createdFrom': createdFrom.toIso8601String(),
         if (createdTo != null) 'createdTo': createdTo.toIso8601String(),
@@ -346,22 +337,6 @@ class PlaylistRemoteDataSourceImpl implements PlaylistRemoteDataSource {
       ));
     } catch (e) {
       throw ServerException('Failed to remove track from playlist: $e');
-    }
-  }
-
-  @override
-  Future<PlaylistMutationResult> retranscodePlaylist(String playlistId) async {
-    try {
-      final response =
-          await dioClient.post(ApiConstants.retranscodePlaylist(playlistId));
-      return _parseMutationResult(response.data);
-    } on DioException catch (e) {
-      throw ServerException(_extractDioErrorMessage(
-        e,
-        fallback: 'Failed to retranscode playlist.',
-      ));
-    } catch (e) {
-      throw ServerException('Failed to retranscode playlist: $e');
     }
   }
 

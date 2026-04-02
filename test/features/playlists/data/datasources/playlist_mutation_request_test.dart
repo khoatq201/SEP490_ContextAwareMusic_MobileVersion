@@ -10,7 +10,6 @@ void main() {
         storeId: 'store-1',
         moodId: ' ',
         description: '  Start the day right  ',
-        isDynamic: false,
         isDefault: true,
       );
 
@@ -18,7 +17,6 @@ void main() {
         'name': 'Morning Flow',
         'storeId': 'store-1',
         'description': '  Start the day right  ',
-        'isDynamic': false,
         'isDefault': true,
       });
     });

@@ -1,7 +1,9 @@
 import '../../../../core/enums/entity_status_enum.dart';
+import '../../../../core/enums/store_fuzzy_override_level_enum.dart';
 import '../../../../core/enums/space_type_enum.dart';
 import '../../../cams/data/models/pair_code_snapshot_model.dart';
 import '../../../cams/data/models/pair_device_info_model.dart';
+import '../../../music_policy/data/models/fuzzy_override_summary_model.dart';
 import '../../domain/entities/location_space.dart';
 
 class LocationSpaceModel extends LocationSpace {
@@ -23,6 +25,8 @@ class LocationSpaceModel extends LocationSpace {
     required super.volume,
     super.pairDeviceInfo,
     super.activePairCode,
+    super.fuzzyOverrideSummary,
+    super.fuzzyOverrideLevel,
   });
 
   factory LocationSpaceModel.fromJson(Map<String, dynamic> json) {
@@ -61,6 +65,8 @@ class LocationSpaceModel extends LocationSpace {
               Map<String, dynamic>.from(json['activePairCode'] as Map),
             )
           : null,
+      fuzzyOverrideSummary: FuzzyOverrideSummaryModel.fromRootJson(json),
+      fuzzyOverrideLevel: _readOverrideLevel(json),
     );
   }
 
@@ -81,6 +87,7 @@ class LocationSpaceModel extends LocationSpace {
       'currentTrackArtist': currentTrackArtist,
       'hasActivePlayback': hasActivePlayback,
       'volume': volume,
+      'fuzzyOverrideLevel': fuzzyOverrideLevel?.displayName,
       'pairDeviceInfo': pairDeviceInfo == null
           ? null
           : {
@@ -109,5 +116,18 @@ class LocationSpaceModel extends LocationSpace {
               'expiresInSeconds': activePairCode!.expiresInSeconds,
             },
     };
+  }
+
+  static StoreFuzzyOverrideLevelEnum? _readOverrideLevel(
+    Map<String, dynamic> json,
+  ) {
+    final nestedPolicy = json['brandMusicPolicy'];
+    final nestedValue = nestedPolicy is Map
+        ? nestedPolicy['storeOverrideLevel'] ?? nestedPolicy['overrideLevel']
+        : null;
+    final parsed = StoreFuzzyOverrideLevelEnum.fromJson(
+      json['storeOverrideLevel'] ?? json['fuzzyOverrideLevel'] ?? nestedValue,
+    );
+    return parsed == StoreFuzzyOverrideLevelEnum.unknown ? null : parsed;
   }
 }

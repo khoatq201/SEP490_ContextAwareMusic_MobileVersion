@@ -11,7 +11,6 @@ void main() {
       final playlist = ApiPlaylist(
         id: 'playlist-1',
         name: 'Queue-first',
-        totalDurationSeconds: 300,
         status: EntityStatusEnum.active,
         createdAt: DateTime.utc(2026, 3, 25),
         tracks: const [
@@ -28,6 +27,7 @@ void main() {
           PlaylistTrackItem(
             trackId: 'track-3',
             title: 'Track 3',
+            actualDurationSec: 50,
             seekOffsetSeconds: 250,
           ),
         ],

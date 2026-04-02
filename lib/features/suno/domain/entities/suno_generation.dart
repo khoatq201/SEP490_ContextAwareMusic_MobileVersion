@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../../core/enums/ai_generation_mode_enum.dart';
+import '../../../../core/enums/music_provider_enum.dart';
 import 'suno_generation_status.dart';
 
 class SunoGeneration extends Equatable {
@@ -17,6 +19,13 @@ class SunoGeneration extends Equatable {
   final String? moodId;
   final String? targetPlaylistId;
   final bool autoAddToTargetPlaylist;
+  final AiGenerationModeEnum? aiGenerationMode;
+  final MusicProviderEnum? provider;
+  final String? fuzzyProfileTemplate;
+  final String? fuzzyProfileName;
+  final int? recommendedBpmMin;
+  final int? recommendedBpmMax;
+  final int? recommendedBpmTarget;
   final DateTime? completedAtUtc;
   final DateTime? lastPolledAtUtc;
 
@@ -35,6 +44,13 @@ class SunoGeneration extends Equatable {
     this.moodId,
     this.targetPlaylistId,
     this.autoAddToTargetPlaylist = false,
+    this.aiGenerationMode,
+    this.provider,
+    this.fuzzyProfileTemplate,
+    this.fuzzyProfileName,
+    this.recommendedBpmMin,
+    this.recommendedBpmMax,
+    this.recommendedBpmTarget,
     this.completedAtUtc,
     this.lastPolledAtUtc,
   });
@@ -54,6 +70,13 @@ class SunoGeneration extends Equatable {
     String? moodId,
     String? targetPlaylistId,
     bool? autoAddToTargetPlaylist,
+    AiGenerationModeEnum? aiGenerationMode,
+    MusicProviderEnum? provider,
+    String? fuzzyProfileTemplate,
+    String? fuzzyProfileName,
+    int? recommendedBpmMin,
+    int? recommendedBpmMax,
+    int? recommendedBpmTarget,
     DateTime? completedAtUtc,
     DateTime? lastPolledAtUtc,
   }) {
@@ -73,6 +96,13 @@ class SunoGeneration extends Equatable {
       targetPlaylistId: targetPlaylistId ?? this.targetPlaylistId,
       autoAddToTargetPlaylist:
           autoAddToTargetPlaylist ?? this.autoAddToTargetPlaylist,
+      aiGenerationMode: aiGenerationMode ?? this.aiGenerationMode,
+      provider: provider ?? this.provider,
+      fuzzyProfileTemplate: fuzzyProfileTemplate ?? this.fuzzyProfileTemplate,
+      fuzzyProfileName: fuzzyProfileName ?? this.fuzzyProfileName,
+      recommendedBpmMin: recommendedBpmMin ?? this.recommendedBpmMin,
+      recommendedBpmMax: recommendedBpmMax ?? this.recommendedBpmMax,
+      recommendedBpmTarget: recommendedBpmTarget ?? this.recommendedBpmTarget,
       completedAtUtc: completedAtUtc ?? this.completedAtUtc,
       lastPolledAtUtc: lastPolledAtUtc ?? this.lastPolledAtUtc,
     );
@@ -94,6 +124,13 @@ class SunoGeneration extends Equatable {
         moodId,
         targetPlaylistId,
         autoAddToTargetPlaylist,
+        aiGenerationMode,
+        provider,
+        fuzzyProfileTemplate,
+        fuzzyProfileName,
+        recommendedBpmMin,
+        recommendedBpmMax,
+        recommendedBpmTarget,
         completedAtUtc,
         lastPolledAtUtc,
       ];

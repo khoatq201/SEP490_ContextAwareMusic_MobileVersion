@@ -1,4 +1,7 @@
 import '../../../../core/enums/entity_status_enum.dart';
+import '../../../../core/enums/store_fuzzy_override_level_enum.dart';
+import '../../../music_policy/data/models/fuzzy_override_summary_model.dart';
+import '../../../music_policy/domain/entities/fuzzy_override_summary.dart';
 import '../../domain/entities/store.dart';
 
 class StoreModel {
@@ -18,6 +21,8 @@ class StoreModel {
   final String? firestoreCollectionPath;
   final String? currentMood;
   final DateTime? lastMoodUpdateAt;
+  final FuzzyOverrideSummary? fuzzyOverrideSummary;
+  final StoreFuzzyOverrideLevelEnum? fuzzyOverrideLevel;
   final EntityStatusEnum status;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -41,6 +46,8 @@ class StoreModel {
     this.firestoreCollectionPath,
     this.currentMood,
     this.lastMoodUpdateAt,
+    this.fuzzyOverrideSummary,
+    this.fuzzyOverrideLevel,
     this.status = EntityStatusEnum.active,
     this.createdAt,
     this.updatedAt,
@@ -68,6 +75,8 @@ class StoreModel {
       lastMoodUpdateAt: json['lastMoodUpdateAt'] != null
           ? DateTime.parse(json['lastMoodUpdateAt'] as String)
           : null,
+      fuzzyOverrideSummary: FuzzyOverrideSummaryModel.fromRootJson(json),
+      fuzzyOverrideLevel: _readOverrideLevel(json),
       status: EntityStatusEnum.fromJson(json['status']),
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'] as String)
@@ -98,6 +107,8 @@ class StoreModel {
       firestoreCollectionPath: firestoreCollectionPath,
       currentMood: currentMood,
       lastMoodUpdateAt: lastMoodUpdateAt,
+      fuzzyOverrideSummary: fuzzyOverrideSummary,
+      fuzzyOverrideLevel: fuzzyOverrideLevel,
       status: status,
       createdAt: createdAt,
       updatedAt: updatedAt,
@@ -124,11 +135,25 @@ class StoreModel {
       'firestoreCollectionPath': firestoreCollectionPath,
       'currentMood': currentMood,
       'lastMoodUpdateAt': lastMoodUpdateAt?.toIso8601String(),
+      'fuzzyOverrideLevel': fuzzyOverrideLevel?.displayName,
       'status': status.value,
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
       'createdBy': createdBy,
       'updatedBy': updatedBy,
     };
+  }
+
+  static StoreFuzzyOverrideLevelEnum? _readOverrideLevel(
+    Map<String, dynamic> json,
+  ) {
+    final nestedPolicy = json['brandMusicPolicy'];
+    final nestedValue = nestedPolicy is Map
+        ? nestedPolicy['storeOverrideLevel'] ?? nestedPolicy['overrideLevel']
+        : null;
+    final parsed = StoreFuzzyOverrideLevelEnum.fromJson(
+      json['storeOverrideLevel'] ?? json['fuzzyOverrideLevel'] ?? nestedValue,
+    );
+    return parsed == StoreFuzzyOverrideLevelEnum.unknown ? null : parsed;
   }
 }

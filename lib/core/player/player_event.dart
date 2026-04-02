@@ -238,12 +238,14 @@ class PlayerHlsStopped extends PlayerEvent {
 class PlayerRemoteCommandApplied extends PlayerEvent {
   final PlaybackCommandEnum command;
   final double? positionSeconds;
+  final String? targetQueueItemId;
   final String? targetTrackId;
   final bool playLocally;
 
   const PlayerRemoteCommandApplied({
     required this.command,
     this.positionSeconds,
+    this.targetQueueItemId,
     this.targetTrackId,
     this.playLocally = true,
   });
@@ -252,6 +254,7 @@ class PlayerRemoteCommandApplied extends PlayerEvent {
   List<Object?> get props => [
         command,
         positionSeconds,
+        targetQueueItemId,
         targetTrackId,
         playLocally,
       ];

@@ -94,3 +94,19 @@ class RetranscodeTrack {
     return repository.retranscodeTrack(trackId);
   }
 }
+
+class SetTrackCopyrightClearance {
+  final TrackRepository repository;
+
+  SetTrackCopyrightClearance(this.repository);
+
+  Future<Either<Failure, TrackMutationResult>> call(
+    String trackId, {
+    required bool approve,
+  }) {
+    return repository.setTrackCopyrightClearance(
+      trackId,
+      approve: approve,
+    );
+  }
+}

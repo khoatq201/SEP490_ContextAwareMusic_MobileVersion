@@ -34,6 +34,7 @@ abstract class CamsRemoteDataSource {
     required String spaceId,
     required PlaybackCommandEnum command,
     double? seekPositionSeconds,
+    String? targetQueueItemId,
     String? targetTrackId,
     bool usePlaybackDeviceScope = false,
   });
@@ -175,6 +176,7 @@ class CamsRemoteDataSourceImpl implements CamsRemoteDataSource {
     required String spaceId,
     required PlaybackCommandEnum command,
     double? seekPositionSeconds,
+    String? targetQueueItemId,
     String? targetTrackId,
     bool usePlaybackDeviceScope = false,
   }) async {
@@ -182,6 +184,7 @@ class CamsRemoteDataSourceImpl implements CamsRemoteDataSource {
       'command': command.value,
       if (seekPositionSeconds != null)
         'seekPositionSeconds': seekPositionSeconds,
+      if (targetQueueItemId != null) 'targetQueueItemId': targetQueueItemId,
       if (targetTrackId != null) 'targetTrackId': targetTrackId,
     };
 

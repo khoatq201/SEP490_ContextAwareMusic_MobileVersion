@@ -33,6 +33,11 @@ abstract class TrackRepository {
   );
 
   Future<Either<Failure, TrackMutationResult>> retranscodeTrack(String trackId);
+
+  Future<Either<Failure, TrackMutationResult>> setTrackCopyrightClearance(
+    String trackId, {
+    required bool approve,
+  });
 }
 
 class TrackRepositoryImpl implements TrackRepository {
@@ -146,6 +151,26 @@ class TrackRepositoryImpl implements TrackRepository {
       return Left(ServerFailure(e.message));
     } catch (e) {
       return Left(ServerFailure('Failed to retranscode track: $e'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, TrackMutationResult>> setTrackCopyrightClearance(
+    String trackId, {
+    required bool approve,
+  }) async {
+    try {
+      final result = await remoteDataSource.setTrackCopyrightClearance(
+        trackId,
+        approve: approve,
+      );
+      return Right(result);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(
+        ServerFailure('Failed to update copyright clearance: $e'),
+      );
     }
   }
 }

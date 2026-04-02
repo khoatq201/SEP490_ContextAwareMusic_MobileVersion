@@ -9,8 +9,8 @@ class ApiConstants {
   static const bool useMockData = false;
 
   // Base URLs
-  // Android emulator can use 10.0.2.2 (host localhost); real devices should use LAN IP.
-  static const String baseUrl = 'http://192.168.1.4:7001';
+  // Android emulator can use 10.0.2.2 (host localhost); real devices should use LAN IP.http://192.168.1.4:7001,https://logcams.cloud
+  static const String baseUrl = 'https://logcams.cloud';
 
   // Default request headers
   static const Map<String, String> defaultHeaders = {
@@ -36,6 +36,8 @@ class ApiConstants {
   static String deleteStore(String storeId) => '/api/stores/$storeId';
   static String toggleStoreStatus(String storeId) =>
       '/api/stores/$storeId/toggle-status';
+  static String storeFuzzyProfiles(String storeId) =>
+      '/api/stores/$storeId/fuzzy-profiles';
   static const String getSpacesEndpoint = '/api/spaces';
   static const String getSpaceDetailEndpoint = '/api/spaces/{spaceId}';
   static String getSpaceDetail(String spaceId) => '/api/spaces/$spaceId';
@@ -45,6 +47,8 @@ class ApiConstants {
       '/api/spaces/{spaceId}/toggle-status';
   static String toggleSpaceStatus(String spaceId) =>
       '/api/spaces/$spaceId/toggle-status';
+  static String spaceFuzzyProfiles(String spaceId) =>
+      '/api/spaces/$spaceId/fuzzy-profiles';
 
   // Moods
   static const String getMoods = '/api/moods';
@@ -56,6 +60,8 @@ class ApiConstants {
   static String deleteTrack(String id) => '/api/tracks/$id';
   static String toggleTrackStatus(String id) => '/api/tracks/$id/toggle-status';
   static String retranscodeTrack(String id) => '/api/tracks/$id/retranscode';
+  static String trackCopyrightClearance(String id) =>
+      '/api/tracks/$id/copyright-clearance';
 
   // Suno
   static const String sunoBase = '/api/cms/suno';
@@ -76,9 +82,6 @@ class ApiConstants {
   static String addTracksToPlaylist(String id) => '/api/playlists/$id/tracks';
   static String removeTrackFromPlaylist(String playlistId, String trackId) =>
       '/api/playlists/$playlistId/tracks/$trackId';
-  static String retranscodePlaylist(String id) =>
-      '/api/playlists/$id/retranscode';
-
   // CAMS — Context-Aware Music System
   static String camsOverride(String spaceId) =>
       '/api/cams/spaces/$spaceId/override';

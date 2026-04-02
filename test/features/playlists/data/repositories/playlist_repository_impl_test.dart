@@ -65,22 +65,6 @@ void main() {
       expect(remoteDataSource.lastAddTracksPlaylistId, 'playlist-3');
       expect(remoteDataSource.lastAddedTrackIds, const ['track-1', 'track-2']);
     });
-
-    test('retranscodePlaylist maps unexpected errors to ServerFailure',
-        () async {
-      remoteDataSource.retranscodeError = Exception('boom');
-
-      final result = await repository.retranscodePlaylist('playlist-4');
-
-      expect(result, isA<Left<Failure, PlaylistMutationResult>>());
-      result.fold(
-        (failure) {
-          expect(failure, isA<ServerFailure>());
-          expect(failure.message, contains('Failed to retranscode playlist:'));
-        },
-        (_) => fail('Expected failure'),
-      );
-    });
   });
 }
 
@@ -88,7 +72,6 @@ class _FakePlaylistRemoteDataSource implements PlaylistRemoteDataSource {
   PlaylistMutationResult createResult =
       const PlaylistMutationResult(isSuccess: true);
   Exception? updateError;
-  Exception? retranscodeError;
   String? lastAddTracksPlaylistId;
   List<String>? lastAddedTrackIds;
 
@@ -117,14 +100,6 @@ class _FakePlaylistRemoteDataSource implements PlaylistRemoteDataSource {
   }) async {
     lastAddTracksPlaylistId = playlistId;
     lastAddedTrackIds = trackIds;
-    return const PlaylistMutationResult(isSuccess: true);
-  }
-
-  @override
-  Future<PlaylistMutationResult> retranscodePlaylist(String playlistId) async {
-    if (retranscodeError != null) {
-      throw retranscodeError!;
-    }
     return const PlaylistMutationResult(isSuccess: true);
   }
 
@@ -162,7 +137,6 @@ class _FakePlaylistRemoteDataSource implements PlaylistRemoteDataSource {
     String? brandId,
     String? storeId,
     String? moodId,
-    bool? isDynamic,
     bool? isDefault,
     DateTime? createdFrom,
     DateTime? createdTo,

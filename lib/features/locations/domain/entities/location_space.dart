@@ -1,9 +1,11 @@
 import 'package:equatable/equatable.dart';
 
 import '../../../../core/enums/entity_status_enum.dart';
+import '../../../../core/enums/store_fuzzy_override_level_enum.dart';
 import '../../../../core/enums/space_type_enum.dart';
 import '../../../cams/domain/entities/pair_code_snapshot.dart';
 import '../../../cams/domain/entities/pair_device_info.dart';
+import '../../../music_policy/domain/entities/fuzzy_override_summary.dart';
 
 /// Represents a space (and its summary info) displayed in the Location Tab.
 class LocationSpace extends Equatable {
@@ -28,6 +30,8 @@ class LocationSpace extends Equatable {
   final double volume;
   final PairDeviceInfo? pairDeviceInfo;
   final PairCodeSnapshot? activePairCode;
+  final FuzzyOverrideSummary? fuzzyOverrideSummary;
+  final StoreFuzzyOverrideLevelEnum? fuzzyOverrideLevel;
 
   const LocationSpace({
     required this.id,
@@ -47,6 +51,8 @@ class LocationSpace extends Equatable {
     this.volume = 50.0,
     this.pairDeviceInfo,
     this.activePairCode,
+    this.fuzzyOverrideSummary,
+    this.fuzzyOverrideLevel,
   });
 
   String? get currentPlaybackName {
@@ -98,6 +104,8 @@ class LocationSpace extends Equatable {
     double? volume,
     PairDeviceInfo? pairDeviceInfo,
     PairCodeSnapshot? activePairCode,
+    FuzzyOverrideSummary? fuzzyOverrideSummary,
+    StoreFuzzyOverrideLevelEnum? fuzzyOverrideLevel,
     bool clearCurrentPlaylistId = false,
     bool clearCurrentPlaylistName = false,
     bool clearCurrentMoodName = false,
@@ -136,6 +144,8 @@ class LocationSpace extends Equatable {
           clearPairDeviceInfo ? null : (pairDeviceInfo ?? this.pairDeviceInfo),
       activePairCode:
           clearActivePairCode ? null : (activePairCode ?? this.activePairCode),
+      fuzzyOverrideSummary: fuzzyOverrideSummary ?? this.fuzzyOverrideSummary,
+      fuzzyOverrideLevel: fuzzyOverrideLevel ?? this.fuzzyOverrideLevel,
     );
   }
 
@@ -158,5 +168,7 @@ class LocationSpace extends Equatable {
         volume,
         pairDeviceInfo,
         activePairCode,
+        fuzzyOverrideSummary,
+        fuzzyOverrideLevel,
       ];
 }

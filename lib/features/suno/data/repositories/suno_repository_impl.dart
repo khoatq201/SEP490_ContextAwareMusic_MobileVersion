@@ -11,6 +11,11 @@ abstract class SunoRepository {
     CreateSunoGenerationRequest request,
   );
 
+  Future<Either<Failure, List<SunoGeneration>>> getGenerations({
+    int page = 1,
+    int pageSize = 10,
+  });
+
   Future<Either<Failure, SunoGeneration>> getGeneration(String id);
 
   Future<Either<Failure, void>> cancelGeneration(String id);
@@ -38,6 +43,28 @@ class SunoRepositoryImpl implements SunoRepository {
       return Left(ServerFailure(e.message));
     } catch (e) {
       return Left(ServerFailure('Failed to create Suno generation: $e'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<SunoGeneration>>> getGenerations({
+    int page = 1,
+    int pageSize = 10,
+  }) async {
+    try {
+      final result = await remoteDataSource.getGenerations(
+        page: page,
+        pageSize: pageSize,
+      );
+      return Right(
+        result.items
+            .map<SunoGeneration>((generation) => generation)
+            .toList(growable: false),
+      );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure('Failed to load Suno generations: $e'));
     }
   }
 

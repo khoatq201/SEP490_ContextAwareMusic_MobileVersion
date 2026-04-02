@@ -8,6 +8,7 @@ import 'package:cams_store_manager/core/network/network_info.dart';
 import 'package:cams_store_manager/features/locations/data/datasources/location_remote_datasource.dart';
 import 'package:cams_store_manager/features/locations/data/models/location_space_model.dart';
 import 'package:cams_store_manager/features/locations/data/repositories/location_repository_impl.dart';
+import 'package:cams_store_manager/features/music_policy/data/models/fuzzy_override_profile_request.dart';
 
 void main() {
   group('LocationRepositoryImpl write path', () {
@@ -135,6 +136,14 @@ class _FakeLocationRemoteDataSource implements LocationRemoteDataSource {
   Future<SpaceMutationResult> toggleSpaceStatus(String spaceId) async {
     lastToggledSpaceId = spaceId;
     return toggleSpaceStatusResult;
+  }
+
+  @override
+  Future<SpaceMutationResult> createFuzzyOverrideProfile(
+    String spaceId,
+    FuzzyOverrideProfileRequest request,
+  ) async {
+    return const SpaceMutationResult(isSuccess: true);
   }
 
   @override

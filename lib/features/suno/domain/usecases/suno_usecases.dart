@@ -16,6 +16,19 @@ class CreateSunoGeneration {
   }
 }
 
+class GetSunoGenerations {
+  final SunoRepository repository;
+
+  GetSunoGenerations(this.repository);
+
+  Future<Either<Failure, List<SunoGeneration>>> call({
+    int page = 1,
+    int pageSize = 10,
+  }) {
+    return repository.getGenerations(page: page, pageSize: pageSize);
+  }
+}
+
 class GetSunoGeneration {
   final SunoRepository repository;
 

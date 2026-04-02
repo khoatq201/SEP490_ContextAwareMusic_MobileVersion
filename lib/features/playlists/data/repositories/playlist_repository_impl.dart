@@ -15,7 +15,6 @@ abstract class PlaylistRepository {
     String? brandId,
     String? storeId,
     String? moodId,
-    bool? isDynamic,
     bool? isDefault,
     DateTime? createdFrom,
     DateTime? createdTo,
@@ -49,10 +48,6 @@ abstract class PlaylistRepository {
     required String playlistId,
     required String trackId,
   });
-
-  Future<Either<Failure, PlaylistMutationResult>> retranscodePlaylist(
-    String playlistId,
-  );
 }
 
 class PlaylistRepositoryImpl implements PlaylistRepository {
@@ -71,7 +66,6 @@ class PlaylistRepositoryImpl implements PlaylistRepository {
     String? brandId,
     String? storeId,
     String? moodId,
-    bool? isDynamic,
     bool? isDefault,
     DateTime? createdFrom,
     DateTime? createdTo,
@@ -87,7 +81,6 @@ class PlaylistRepositoryImpl implements PlaylistRepository {
         brandId: brandId,
         storeId: storeId,
         moodId: moodId,
-        isDynamic: isDynamic,
         isDefault: isDefault,
         createdFrom: createdFrom,
         createdTo: createdTo,
@@ -203,20 +196,6 @@ class PlaylistRepositoryImpl implements PlaylistRepository {
       return Left(ServerFailure(e.message));
     } catch (e) {
       return Left(ServerFailure('Failed to remove track from playlist: $e'));
-    }
-  }
-
-  @override
-  Future<Either<Failure, PlaylistMutationResult>> retranscodePlaylist(
-    String playlistId,
-  ) async {
-    try {
-      final result = await remoteDataSource.retranscodePlaylist(playlistId);
-      return Right(result);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
-    } catch (e) {
-      return Left(ServerFailure('Failed to retranscode playlist: $e'));
     }
   }
 }

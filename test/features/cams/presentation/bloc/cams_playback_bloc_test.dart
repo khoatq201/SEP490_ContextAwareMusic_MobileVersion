@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cams_store_manager/core/enums/playback_command_enum.dart';
 import 'package:cams_store_manager/core/enums/queue_insert_mode_enum.dart';
+import 'package:cams_store_manager/core/enums/transition_type_enum.dart';
 import 'package:cams_store_manager/core/error/failures.dart';
 import 'package:cams_store_manager/core/services/local_storage_service.dart';
 import 'package:cams_store_manager/core/session/session_cubit.dart';
@@ -113,8 +114,7 @@ void main() {
       expect(bloc.state.isOverriding, isFalse);
     });
 
-    test('keeps requested PlayNow for playlist queue actions',
-        () async {
+    test('keeps requested PlayNow for playlist queue actions', () async {
       await _initBloc(bloc);
 
       bloc.add(const CamsPlayPlaylist(
@@ -313,8 +313,7 @@ void main() {
       expect(bloc.state.playbackState?.currentTrackName, 'Track A');
     });
 
-    test('seek command clears stale targetTrackId from command relay',
-        () async {
+    test('seek command clears stale target ids from command relay', () async {
       await _initBloc(bloc);
 
       bloc.add(
@@ -322,6 +321,7 @@ void main() {
           spaceId: 'space-1',
           command: PlaybackCommandEnum.seek,
           seekPositionSeconds: 128,
+          targetQueueItemId: 'queue-should-not-forward',
           targetTrackId: 'track-should-not-forward',
         ),
       );
@@ -329,6 +329,7 @@ void main() {
 
       expect(bloc.state.lastPlaybackCommand, PlaybackCommandEnum.seek);
       expect(bloc.state.lastSeekPositionSeconds, 128);
+      expect(bloc.state.lastTargetQueueItemId, isNull);
       expect(bloc.state.lastTargetTrackId, isNull);
     });
 
@@ -529,6 +530,51 @@ void main() {
           'https://stream.example.com/reconnected.m3u8');
       expect(bloc.state.status, CamsStatus.active);
     });
+
+    test(
+        'retries remote reconcile when pending PlayStream arrives before state catches up',
+        () async {
+      repository.queueSpaceStateResults([
+        const Right(SpacePlaybackState(spaceId: 'space-1')),
+        const Right(SpacePlaybackState(spaceId: 'space-1')),
+        const Right(
+          SpacePlaybackState(
+            spaceId: 'space-1',
+            spaceQueueItems: [
+              SpaceQueueStateItem(
+                queueItemId: 'queue-remote-1',
+                trackId: 'track-remote-1',
+                trackName: 'Remote Pending Track',
+                position: 1,
+                queueStatus: 0,
+                source: 1,
+              ),
+            ],
+          ),
+        ),
+      ]);
+
+      await _initBloc(bloc);
+
+      storeHubService.emitPlayStream(
+        const PlayStreamEvent(
+          spaceId: 'space-1',
+          hlsUrl: '',
+          transitionType: TransitionTypeEnum.pending,
+        ),
+      );
+
+      await _waitUntil(
+        () => (bloc.state.playbackState?.spaceQueueItems.length ?? 0) == 1,
+        timeout: const Duration(seconds: 3),
+      );
+
+      expect(repository.getSpaceStateCallCount, greaterThanOrEqualTo(3));
+      expect(
+        bloc.state.playbackState?.spaceQueueItems.single.queueItemId,
+        'queue-remote-1',
+      );
+    });
   });
 }
 
@@ -621,6 +667,10 @@ class _FakeStoreHubService extends StoreHubService {
     _stateSyncController.add(playbackState);
   }
 
+  void emitPlayStream(PlayStreamEvent event) {
+    _playStreamController.add(event);
+  }
+
   @override
   void dispose() {
     _playStreamController.close();
@@ -659,6 +709,16 @@ class _FakeCamsRepository implements CamsRepository {
   int getSpaceStateCallCount = 0;
   int getQueueCallCount = 0;
   int clearQueueCallCount = 0;
+  final List<Either<Failure, SpacePlaybackState>> _queuedGetSpaceStateResults =
+      [];
+
+  void queueSpaceStateResults(
+    List<Either<Failure, SpacePlaybackState>> results,
+  ) {
+    _queuedGetSpaceStateResults
+      ..clear()
+      ..addAll(results);
+  }
 
   @override
   Future<Either<Failure, void>> queuePlaylist({
@@ -728,7 +788,10 @@ class _FakeCamsRepository implements CamsRepository {
     bool usePlaybackDeviceScope = false,
   }) async {
     getSpaceStateCallCount += 1;
-    return getSpaceStateResult.fold(
+    final result = _queuedGetSpaceStateResults.isNotEmpty
+        ? _queuedGetSpaceStateResults.removeAt(0)
+        : getSpaceStateResult;
+    return result.fold(
       Left.new,
       (state) => Right(
           state.spaceId.isEmpty ? SpacePlaybackState(spaceId: spaceId) : state),
@@ -748,6 +811,7 @@ class _FakeCamsRepository implements CamsRepository {
     required String spaceId,
     required PlaybackCommandEnum command,
     double? seekPositionSeconds,
+    String? targetQueueItemId,
     String? targetTrackId,
     bool usePlaybackDeviceScope = false,
   }) async {

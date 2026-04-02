@@ -2,6 +2,8 @@ import 'package:equatable/equatable.dart';
 
 import '../../../../core/enums/entity_status_enum.dart';
 import '../../../../core/enums/music_provider_enum.dart';
+import 'copyright_scan_policy_outcome.dart';
+import 'track_copyright_clearance_status.dart';
 import 'track_metadata_status.dart';
 
 /// Track entity matching backend TrackListItem DTO.
@@ -29,6 +31,11 @@ class ApiTrack extends Equatable {
   final DateTime? generatedAt;
   final String? lyricsUrl;
   final DateTime? lastPlayedAt;
+  final TrackCopyrightClearanceStatus? copyrightClearanceStatus;
+  final CopyrightScanPolicyOutcome? copyrightScanPolicyOutcome;
+  final String? copyrightMatchTitle;
+  final String? copyrightMatchArtist;
+  final DateTime? copyrightScannedAtUtc;
   final TrackMetadataStatus? metadataStatusOverride;
   final EntityStatusEnum status;
   final DateTime createdAt;
@@ -58,6 +65,11 @@ class ApiTrack extends Equatable {
     this.generatedAt,
     this.lyricsUrl,
     this.lastPlayedAt,
+    this.copyrightClearanceStatus,
+    this.copyrightScanPolicyOutcome,
+    this.copyrightMatchTitle,
+    this.copyrightMatchArtist,
+    this.copyrightScannedAtUtc,
     this.metadataStatusOverride,
     this.status = EntityStatusEnum.active,
     required this.createdAt,
@@ -78,6 +90,18 @@ class ApiTrack extends Equatable {
   }
 
   bool get isStreamReady => hlsUrl != null && hlsUrl!.isNotEmpty;
+
+  bool get hasCopyrightReviewData =>
+      copyrightClearanceStatus != null ||
+      copyrightScanPolicyOutcome != null ||
+      (copyrightMatchTitle?.trim().isNotEmpty ?? false) ||
+      (copyrightMatchArtist?.trim().isNotEmpty ?? false) ||
+      copyrightScannedAtUtc != null;
+
+  bool get requiresCopyrightReview =>
+      copyrightClearanceStatus?.requiresReview == true ||
+      (copyrightClearanceStatus == null &&
+          copyrightScanPolicyOutcome == CopyrightScanPolicyOutcome.manual);
 
   TrackMetadataStatus get metadataStatus {
     if (metadataStatusOverride != null) {
@@ -126,6 +150,11 @@ class ApiTrack extends Equatable {
     DateTime? generatedAt,
     String? lyricsUrl,
     DateTime? lastPlayedAt,
+    TrackCopyrightClearanceStatus? copyrightClearanceStatus,
+    CopyrightScanPolicyOutcome? copyrightScanPolicyOutcome,
+    String? copyrightMatchTitle,
+    String? copyrightMatchArtist,
+    DateTime? copyrightScannedAtUtc,
     TrackMetadataStatus? metadataStatusOverride,
     EntityStatusEnum? status,
     DateTime? createdAt,
@@ -155,6 +184,14 @@ class ApiTrack extends Equatable {
       generatedAt: generatedAt ?? this.generatedAt,
       lyricsUrl: lyricsUrl ?? this.lyricsUrl,
       lastPlayedAt: lastPlayedAt ?? this.lastPlayedAt,
+      copyrightClearanceStatus:
+          copyrightClearanceStatus ?? this.copyrightClearanceStatus,
+      copyrightScanPolicyOutcome:
+          copyrightScanPolicyOutcome ?? this.copyrightScanPolicyOutcome,
+      copyrightMatchTitle: copyrightMatchTitle ?? this.copyrightMatchTitle,
+      copyrightMatchArtist: copyrightMatchArtist ?? this.copyrightMatchArtist,
+      copyrightScannedAtUtc:
+          copyrightScannedAtUtc ?? this.copyrightScannedAtUtc,
       metadataStatusOverride:
           metadataStatusOverride ?? this.metadataStatusOverride,
       status: status ?? this.status,
@@ -188,6 +225,11 @@ class ApiTrack extends Equatable {
         generatedAt,
         lyricsUrl,
         lastPlayedAt,
+        copyrightClearanceStatus,
+        copyrightScanPolicyOutcome,
+        copyrightMatchTitle,
+        copyrightMatchArtist,
+        copyrightScannedAtUtc,
         metadataStatusOverride,
         status,
         createdAt,

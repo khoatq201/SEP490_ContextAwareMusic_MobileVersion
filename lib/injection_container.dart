@@ -293,6 +293,7 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(() => UpdateSpace(sl()));
   sl.registerLazySingleton(() => DeleteSpace(sl()));
   sl.registerLazySingleton(() => ToggleSpaceStatus(sl()));
+  sl.registerLazySingleton(() => CreateSpaceFuzzyOverrideProfile(sl()));
 
   // BLoCs
   sl.registerFactory(
@@ -475,6 +476,7 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(() => UpdateStore(sl()));
   sl.registerLazySingleton(() => DeleteStore(sl()));
   sl.registerLazySingleton(() => ToggleStoreStatus(sl()));
+  sl.registerLazySingleton(() => CreateStoreFuzzyOverrideProfile(sl()));
 
   // BLoCs
   sl.registerFactory(
@@ -578,6 +580,7 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(() => DeleteTrack(sl()));
   sl.registerLazySingleton(() => ToggleTrackStatus(sl()));
   sl.registerLazySingleton(() => RetranscodeTrack(sl()));
+  sl.registerLazySingleton(() => SetTrackCopyrightClearance(sl()));
 
   // =============================================
   // Playlists Feature
@@ -604,6 +607,7 @@ Future<void> initializeDependencies() async {
   );
 
   sl.registerLazySingleton(() => CreateSunoGeneration(sl()));
+  sl.registerLazySingleton(() => GetSunoGenerations(sl()));
   sl.registerLazySingleton(() => GetSunoGeneration(sl()));
   sl.registerLazySingleton(() => CancelSunoGeneration(sl()));
   sl.registerLazySingleton(() => GetSunoConfig(sl()));

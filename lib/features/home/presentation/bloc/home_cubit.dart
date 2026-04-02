@@ -102,6 +102,7 @@ class HomeCubit extends Cubit<HomeState> {
         clearMood: true,
         clearPlaylist: true,
         clearModeMessage: true,
+        clearExplainability: true,
       ));
       return;
     }
@@ -143,8 +144,10 @@ class HomeCubit extends Cubit<HomeState> {
           currentPlaybackName: resolvedPlaybackName,
           isStreaming: pbState.isStreaming,
           isPendingTranscode: pbState.hasPendingPlayback,
+          explainability: pbState.explainability,
           clearMood: pbState.moodName == null,
           clearPlaylist: resolvedPlaybackName == null,
+          clearExplainability: pbState.explainability == null,
         ));
       },
     );

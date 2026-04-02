@@ -23,23 +23,26 @@ void main() {
       expect(model.tracks!.first.hlsUrl, 'https://example.com/t1.m3u8');
     });
 
-    test('falls back to audioUrl for legacy track payloads', () {
+    test('derives total duration from track detail payload', () {
       final model = ApiPlaylistModel.fromDetailJson({
-        'id': 'playlist-legacy',
-        'name': 'Legacy Playlist',
+        'id': 'playlist-2',
+        'name': 'Playlist',
         'createdAt': '2026-03-24T08:00:00Z',
         'tracks': [
           {
-            'trackId': 'track-legacy',
-            'title': 'Legacy Track',
-            'audioUrl': 'https://example.com/legacy.mp3',
-            'seekOffsetSeconds': 10,
+            'trackId': 'track-1',
+            'durationSec': 120,
+            'seekOffsetSeconds': 0,
+          },
+          {
+            'trackId': 'track-2',
+            'actualDurationSec': 95,
+            'seekOffsetSeconds': 120,
           }
         ],
       });
 
-      expect(model.tracks, isNotNull);
-      expect(model.tracks!.first.hlsUrl, 'https://example.com/legacy.mp3');
+      expect(model.resolvedTotalDurationSeconds, 215);
     });
   });
 }

@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:cams_store_manager/core/enums/ai_generation_mode_enum.dart';
+import 'package:cams_store_manager/core/enums/music_provider_enum.dart';
 import 'package:cams_store_manager/features/suno/data/models/suno_generation_model.dart';
 import 'package:cams_store_manager/features/suno/domain/entities/suno_generation_status.dart';
 
@@ -21,6 +23,13 @@ void main() {
         'moodId': 'mood-1',
         'targetPlaylistId': 'playlist-9',
         'autoAddToTargetPlaylist': true,
+        'generationMode': 'BrandModel',
+        'generatedTrackProvider': 'suno',
+        'profileTemplate': 'coffee-house',
+        'profileName': 'Lunch Rush',
+        'bpmMin': 94,
+        'bpmMax': 112,
+        'bpmTarget': 104,
         'completedAtUtc': '2026-03-24T08:10:00Z',
         'lastPolledAtUtc': '2026-03-24T08:11:00Z',
       });
@@ -38,6 +47,13 @@ void main() {
       expect(model.moodId, 'mood-1');
       expect(model.targetPlaylistId, 'playlist-9');
       expect(model.autoAddToTargetPlaylist, isTrue);
+      expect(model.aiGenerationMode, AiGenerationModeEnum.brandModel);
+      expect(model.provider, MusicProviderEnum.suno);
+      expect(model.fuzzyProfileTemplate, 'coffee-house');
+      expect(model.fuzzyProfileName, 'Lunch Rush');
+      expect(model.recommendedBpmMin, 94);
+      expect(model.recommendedBpmMax, 112);
+      expect(model.recommendedBpmTarget, 104);
       expect(model.completedAtUtc, DateTime.parse('2026-03-24T08:10:00Z'));
       expect(model.lastPolledAtUtc, DateTime.parse('2026-03-24T08:11:00Z'));
     });

@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 import '../../../../core/enums/entity_status_enum.dart';
+import '../../../../core/enums/store_fuzzy_override_level_enum.dart';
+import '../../../music_policy/domain/entities/fuzzy_override_summary.dart';
 
 /// Domain entity matching backend StoreDetailResponse.
 class Store extends Equatable {
@@ -19,6 +21,8 @@ class Store extends Equatable {
   final String? firestoreCollectionPath;
   final String? currentMood;
   final DateTime? lastMoodUpdateAt;
+  final FuzzyOverrideSummary? fuzzyOverrideSummary;
+  final StoreFuzzyOverrideLevelEnum? fuzzyOverrideLevel;
   final EntityStatusEnum status;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -42,6 +46,8 @@ class Store extends Equatable {
     this.firestoreCollectionPath,
     this.currentMood,
     this.lastMoodUpdateAt,
+    this.fuzzyOverrideSummary,
+    this.fuzzyOverrideLevel,
     this.status = EntityStatusEnum.active,
     this.createdAt,
     this.updatedAt,
@@ -76,6 +82,8 @@ class Store extends Equatable {
         firestoreCollectionPath,
         currentMood,
         lastMoodUpdateAt,
+        fuzzyOverrideSummary,
+        fuzzyOverrideLevel,
         status,
         createdAt,
         updatedAt,
