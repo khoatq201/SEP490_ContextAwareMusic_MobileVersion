@@ -1309,7 +1309,7 @@ class _ProgressBarState extends State<_ProgressBar> {
     return value.clamp(0.0, widget.duration.toDouble()).toDouble();
   }
 
-  int _resolveTargetSeconds(double sliderPositionSeconds) {
+  int _resolveAbsoluteTargetSeconds(double sliderPositionSeconds) {
     final seekSeconds = sliderPositionSeconds.round();
     return widget.useAbsoluteSeek
         ? widget.seekBaseOffsetSeconds + seekSeconds
@@ -1317,9 +1317,11 @@ class _ProgressBarState extends State<_ProgressBar> {
   }
 
   void _dispatchSeekCommit(double sliderPositionSeconds) {
-    final targetSeconds = _resolveTargetSeconds(sliderPositionSeconds);
+    final localTargetSeconds =
+        _resolveAbsoluteTargetSeconds(sliderPositionSeconds);
+    final remoteTargetSeconds = sliderPositionSeconds.round();
     context.read<PlayerBloc>().add(
-          PlayerSeekRequested(positionSeconds: targetSeconds),
+          PlayerSeekRequested(positionSeconds: localTargetSeconds),
         );
 
     if (!widget.useRemoteControls) return;
@@ -1327,10 +1329,12 @@ class _ProgressBarState extends State<_ProgressBar> {
     _remoteSeekTimer?.cancel();
     _remoteSeekTimer = Timer(_remoteSeekDebounce, () {
       if (!mounted) return;
+      // CAMS seek payload targets the current HLS stream position, not the
+      // cumulative queue offset shown in local PlayerState.
       context.read<CamsPlaybackBloc>().add(
             CamsSendCommand(
               command: PlaybackCommandEnum.seek,
-              seekPositionSeconds: targetSeconds.toDouble(),
+              seekPositionSeconds: remoteTargetSeconds.toDouble(),
             ),
           );
     });
