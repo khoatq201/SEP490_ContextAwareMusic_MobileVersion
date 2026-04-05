@@ -613,6 +613,7 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
 
     final request = await showModalBottomSheet<CreateSunoGenerationRequest>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _GenerateSunoTrackBottomSheet(
@@ -644,6 +645,7 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
   Future<void> _openSunoConfigSheet() async {
     final request = await showModalBottomSheet<UpdateSunoConfigRequest>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _SunoConfigBottomSheet(
@@ -2838,6 +2840,11 @@ class _GenerateSunoTrackBottomSheetState
   bool _autoAddToTargetPlaylist = true;
   bool _showAdvanced = false;
 
+  void _closeSheet() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    Navigator.of(context).pop();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -2878,6 +2885,11 @@ class _GenerateSunoTrackBottomSheetState
 
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final maxSheetHeight = mediaQuery.size.height -
+        mediaQuery.padding.top -
+        mediaQuery.viewInsets.top -
+        24;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textPrimary = isDark ? Colors.white : Colors.black87;
     final textMuted = isDark ? Colors.white60 : Colors.black54;
@@ -2899,354 +2911,391 @@ class _GenerateSunoTrackBottomSheetState
         padding: EdgeInsets.only(
           left: 16,
           right: 16,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+          bottom: mediaQuery.viewInsets.bottom + 16,
         ),
-        child: Container(
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 38,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: isDark ? Colors.white24 : Colors.black26,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Generate with Suno',
-                    style: GoogleFonts.poppins(
-                      color: textPrimary,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Create an AI track request and let realtime updates drive progress.',
-                    style: GoogleFonts.inter(
-                      color: textMuted,
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  TextFormField(
-                    controller: _titleController,
-                    decoration: _editorDecoration(
-                      label: 'Title (optional)',
-                      isDark: isDark,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _artistController,
-                    decoration: _editorDecoration(
-                      label: 'Artist',
-                      isDark: isDark,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String?>(
-                    initialValue:
-                        sortedMoods.any((mood) => mood.id == _selectedMoodId)
-                            ? _selectedMoodId
-                            : null,
-                    decoration: _editorDecoration(
-                      label: 'Mood',
-                      isDark: isDark,
-                    ),
-                    items: [
-                      const DropdownMenuItem<String?>(
-                        value: null,
-                        child: Text('No mood preference'),
-                      ),
-                      ...sortedMoods.map(
-                        (mood) => DropdownMenuItem<String?>(
-                          value: mood.id,
-                          child: Text(mood.name),
-                        ),
-                      ),
-                    ],
-                    onChanged: (value) {
-                      setState(() => _selectedMoodId = value);
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _promptController,
-                    maxLines: 4,
-                    decoration: _editorDecoration(
-                      label: hasConfiguredPromptTemplate
-                          ? 'Prompt override'
-                          : 'Prompt *',
-                      isDark: isDark,
-                    ),
-                    validator: (value) {
-                      if (hasConfiguredPromptTemplate) {
-                        return null;
-                      }
-                      return (value?.trim().isEmpty ?? true)
-                          ? 'Prompt is required when no brand default prompt is configured.'
-                          : null;
-                    },
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    hasConfiguredPromptTemplate
-                        ? 'Leave this blank to use the brand default prompt template.'
-                        : 'Enter a prompt because this brand does not have a default Suno prompt yet.',
-                    style: GoogleFonts.inter(
-                      color: textMuted,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String?>(
-                    initialValue: widget.playlists.any(
-                            (playlist) => playlist.id == _selectedPlaylistId)
-                        ? _selectedPlaylistId
-                        : null,
-                    decoration: _editorDecoration(
-                      label: 'Target playlist',
-                      isDark: isDark,
-                    ),
-                    items: [
-                      const DropdownMenuItem<String?>(
-                        value: null,
-                        child: Text('No target playlist'),
-                      ),
-                      ...widget.playlists.map(
-                        (playlist) => DropdownMenuItem<String?>(
-                          value: playlist.id,
-                          child: Text(playlist.title),
-                        ),
-                      ),
-                    ],
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedPlaylistId = value;
-                        if (value == null) {
-                          _autoAddToTargetPlaylist = false;
-                        }
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 8),
-                  SwitchListTile.adaptive(
-                    contentPadding: EdgeInsets.zero,
-                    value:
-                        _autoAddToTargetPlaylist && _selectedPlaylistId != null,
-                    onChanged: _selectedPlaylistId == null
-                        ? null
-                        : (value) =>
-                            setState(() => _autoAddToTargetPlaylist = value),
-                    title: Text(
-                      'Auto-add to selected playlist',
-                      style: GoogleFonts.inter(
-                        color: textPrimary,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  if (hasAdvancedOptions) ...[
-                    const SizedBox(height: 6),
-                    Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: (isDark ? Colors.white : Colors.black)
-                            .withValues(alpha: 0.04),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Theme(
-                        data: Theme.of(context).copyWith(
-                          dividerColor: Colors.transparent,
-                        ),
-                        child: ExpansionTile(
-                          initiallyExpanded: _showAdvanced,
-                          onExpansionChanged: (value) {
-                            setState(() => _showAdvanced = value);
-                          },
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          collapsedShape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          tilePadding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 4,
-                          ),
-                          childrenPadding:
-                              const EdgeInsets.fromLTRB(14, 0, 14, 14),
-                          title: Text(
-                            'Advanced',
-                            style: GoogleFonts.inter(
-                              color: textPrimary,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: maxSheetHeight),
+          child: Container(
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: SingleChildScrollView(
+                    physics: const ClampingScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Center(
+                            child: Container(
+                              width: 38,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: isDark ? Colors.white24 : Colors.black26,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
                             ),
                           ),
-                          subtitle: Text(
-                            'Generation mode, fuzzy profile, and BPM guidance',
+                          const SizedBox(height: 10),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Generate with Suno',
+                                      style: GoogleFonts.poppins(
+                                        color: textPrimary,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      'Create an AI track request and let realtime updates drive progress.',
+                                      style: GoogleFonts.inter(
+                                        color: textMuted,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              IconButton(
+                                tooltip: 'Close',
+                                onPressed: _closeSheet,
+                                icon: Icon(
+                                  Icons.close_rounded,
+                                  color: textPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+                          TextFormField(
+                            controller: _titleController,
+                            decoration: _editorDecoration(
+                              label: 'Title (optional)',
+                              isDark: isDark,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _artistController,
+                            decoration: _editorDecoration(
+                              label: 'Artist',
+                              isDark: isDark,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          DropdownButtonFormField<String?>(
+                            initialValue: sortedMoods
+                                    .any((mood) => mood.id == _selectedMoodId)
+                                ? _selectedMoodId
+                                : null,
+                            decoration: _editorDecoration(
+                              label: 'Mood',
+                              isDark: isDark,
+                            ),
+                            items: [
+                              const DropdownMenuItem<String?>(
+                                value: null,
+                                child: Text('No mood preference'),
+                              ),
+                              ...sortedMoods.map(
+                                (mood) => DropdownMenuItem<String?>(
+                                  value: mood.id,
+                                  child: Text(mood.name),
+                                ),
+                              ),
+                            ],
+                            onChanged: (value) {
+                              setState(() => _selectedMoodId = value);
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _promptController,
+                            maxLines: 4,
+                            decoration: _editorDecoration(
+                              label: hasConfiguredPromptTemplate
+                                  ? 'Prompt override'
+                                  : 'Prompt *',
+                              isDark: isDark,
+                            ),
+                            validator: (value) {
+                              if (hasConfiguredPromptTemplate) {
+                                return null;
+                              }
+                              return (value?.trim().isEmpty ?? true)
+                                  ? 'Prompt is required when no brand default prompt is configured.'
+                                  : null;
+                            },
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            hasConfiguredPromptTemplate
+                                ? 'Leave this blank to use the brand default prompt template.'
+                                : 'Enter a prompt because this brand does not have a default Suno prompt yet.',
                             style: GoogleFonts.inter(
                               color: textMuted,
                               fontSize: 11,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                          children: [
-                            if (generationModes.isNotEmpty) ...[
-                              DropdownButtonFormField<AiGenerationModeEnum?>(
-                                initialValue: generationModes.contains(
-                                  _selectedGenerationMode,
-                                )
-                                    ? _selectedGenerationMode
-                                    : generationModes.first,
-                                decoration: _editorDecoration(
-                                  label: 'Generation mode',
-                                  isDark: isDark,
-                                ),
-                                items: generationModes
-                                    .map(
-                                      (mode) => DropdownMenuItem<
-                                          AiGenerationModeEnum?>(
-                                        value: mode,
-                                        child: Text(mode.displayName),
-                                      ),
-                                    )
-                                    .toList(),
-                                onChanged: (value) {
-                                  setState(
-                                      () => _selectedGenerationMode = value);
-                                },
-                              ),
-                              const SizedBox(height: 12),
-                            ],
-                            if (fuzzyTemplates.isNotEmpty) ...[
-                              DropdownButtonFormField<String?>(
-                                initialValue: fuzzyTemplates.contains(
-                                  _selectedFuzzyTemplate,
-                                )
-                                    ? _selectedFuzzyTemplate
-                                    : fuzzyTemplates.first,
-                                decoration: _editorDecoration(
-                                  label: 'Fuzzy profile template',
-                                  isDark: isDark,
-                                ),
-                                items: fuzzyTemplates
-                                    .map(
-                                      (template) => DropdownMenuItem<String?>(
-                                        value: template,
-                                        child: Text(template),
-                                      ),
-                                    )
-                                    .toList(),
-                                onChanged: (value) {
-                                  setState(
-                                      () => _selectedFuzzyTemplate = value);
-                                },
-                              ),
-                              const SizedBox(height: 12),
-                            ],
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: TextFormField(
-                                    controller: _bpmMinController,
-                                    keyboardType: TextInputType.number,
-                                    decoration: _editorDecoration(
-                                      label: 'BPM min',
-                                      isDark: isDark,
-                                    ),
-                                    validator: _validateIntegerField,
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: TextFormField(
-                                    controller: _bpmMaxController,
-                                    keyboardType: TextInputType.number,
-                                    decoration: _editorDecoration(
-                                      label: 'BPM max',
-                                      isDark: isDark,
-                                    ),
-                                    validator: _validateIntegerField,
-                                  ),
-                                ),
-                              ],
+                          const SizedBox(height: 12),
+                          DropdownButtonFormField<String?>(
+                            initialValue: widget.playlists.any((playlist) =>
+                                    playlist.id == _selectedPlaylistId)
+                                ? _selectedPlaylistId
+                                : null,
+                            decoration: _editorDecoration(
+                              label: 'Target playlist',
+                              isDark: isDark,
                             ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: _bpmTargetController,
-                              keyboardType: TextInputType.number,
-                              decoration: _editorDecoration(
-                                label: 'Target BPM',
-                                isDark: isDark,
+                            items: [
+                              const DropdownMenuItem<String?>(
+                                value: null,
+                                child: Text('No target playlist'),
                               ),
-                              validator: _validateIntegerField,
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              'Only the fields your backend config exposes are shown here. Leave anything blank to keep the default resolver behavior.',
+                              ...widget.playlists.map(
+                                (playlist) => DropdownMenuItem<String?>(
+                                  value: playlist.id,
+                                  child: Text(playlist.title),
+                                ),
+                              ),
+                            ],
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedPlaylistId = value;
+                                if (value == null) {
+                                  _autoAddToTargetPlaylist = false;
+                                }
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 8),
+                          SwitchListTile.adaptive(
+                            contentPadding: EdgeInsets.zero,
+                            value: _autoAddToTargetPlaylist &&
+                                _selectedPlaylistId != null,
+                            onChanged: _selectedPlaylistId == null
+                                ? null
+                                : (value) => setState(
+                                    () => _autoAddToTargetPlaylist = value),
+                            title: Text(
+                              'Auto-add to selected playlist',
                               style: GoogleFonts.inter(
-                                color: textMuted,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
+                                color: textPrimary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          if (hasAdvancedOptions) ...[
+                            const SizedBox(height: 6),
+                            Container(
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                color: (isDark ? Colors.white : Colors.black)
+                                    .withValues(alpha: 0.04),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Theme(
+                                data: Theme.of(context).copyWith(
+                                  dividerColor: Colors.transparent,
+                                ),
+                                child: ExpansionTile(
+                                  initiallyExpanded: _showAdvanced,
+                                  onExpansionChanged: (value) {
+                                    setState(() => _showAdvanced = value);
+                                  },
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  collapsedShape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  tilePadding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 4,
+                                  ),
+                                  childrenPadding:
+                                      const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                                  title: Text(
+                                    'Advanced',
+                                    style: GoogleFonts.inter(
+                                      color: textPrimary,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  subtitle: Text(
+                                    'Generation mode, fuzzy profile, and BPM guidance',
+                                    style: GoogleFonts.inter(
+                                      color: textMuted,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  children: [
+                                    if (generationModes.isNotEmpty) ...[
+                                      DropdownButtonFormField<
+                                          AiGenerationModeEnum?>(
+                                        initialValue: generationModes.contains(
+                                          _selectedGenerationMode,
+                                        )
+                                            ? _selectedGenerationMode
+                                            : generationModes.first,
+                                        decoration: _editorDecoration(
+                                          label: 'Generation mode',
+                                          isDark: isDark,
+                                        ),
+                                        items: generationModes
+                                            .map(
+                                              (mode) => DropdownMenuItem<
+                                                  AiGenerationModeEnum?>(
+                                                value: mode,
+                                                child: Text(mode.displayName),
+                                              ),
+                                            )
+                                            .toList(),
+                                        onChanged: (value) {
+                                          setState(() =>
+                                              _selectedGenerationMode = value);
+                                        },
+                                      ),
+                                      const SizedBox(height: 12),
+                                    ],
+                                    if (fuzzyTemplates.isNotEmpty) ...[
+                                      DropdownButtonFormField<String?>(
+                                        initialValue: fuzzyTemplates.contains(
+                                          _selectedFuzzyTemplate,
+                                        )
+                                            ? _selectedFuzzyTemplate
+                                            : fuzzyTemplates.first,
+                                        decoration: _editorDecoration(
+                                          label: 'Fuzzy profile template',
+                                          isDark: isDark,
+                                        ),
+                                        items: fuzzyTemplates
+                                            .map(
+                                              (template) =>
+                                                  DropdownMenuItem<String?>(
+                                                value: template,
+                                                child: Text(template),
+                                              ),
+                                            )
+                                            .toList(),
+                                        onChanged: (value) {
+                                          setState(() =>
+                                              _selectedFuzzyTemplate = value);
+                                        },
+                                      ),
+                                      const SizedBox(height: 12),
+                                    ],
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: TextFormField(
+                                            controller: _bpmMinController,
+                                            keyboardType: TextInputType.number,
+                                            decoration: _editorDecoration(
+                                              label: 'BPM min',
+                                              isDark: isDark,
+                                            ),
+                                            validator: _validateIntegerField,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: TextFormField(
+                                            controller: _bpmMaxController,
+                                            keyboardType: TextInputType.number,
+                                            decoration: _editorDecoration(
+                                              label: 'BPM max',
+                                              isDark: isDark,
+                                            ),
+                                            validator: _validateIntegerField,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    TextFormField(
+                                      controller: _bpmTargetController,
+                                      keyboardType: TextInputType.number,
+                                      decoration: _editorDecoration(
+                                        label: 'Target BPM',
+                                        isDark: isDark,
+                                      ),
+                                      validator: _validateIntegerField,
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      'Only the fields your backend config exposes are shown here. Leave anything blank to keep the default resolver behavior.',
+                                      style: GoogleFonts.inter(
+                                        color: textMuted,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ],
-                        ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: FilledButton.icon(
+                              onPressed: () {
+                                final isValid =
+                                    _formKey.currentState?.validate() ?? false;
+                                if (!isValid) return;
+                                Navigator.pop(
+                                  context,
+                                  CreateSunoGenerationRequest(
+                                    prompt: _nullable(_promptController.text),
+                                    title: _nullable(_titleController.text),
+                                    artist: _nullable(_artistController.text),
+                                    moodId: _selectedMoodId,
+                                    targetPlaylistId: _selectedPlaylistId,
+                                    autoAddToTargetPlaylist:
+                                        _autoAddToTargetPlaylist,
+                                    aiGenerationMode: _selectedGenerationMode,
+                                    fuzzyProfileTemplate:
+                                        _nullable(_selectedFuzzyTemplate ?? ''),
+                                    recommendedBpmMin:
+                                        _nullableInt(_bpmMinController.text),
+                                    recommendedBpmMax:
+                                        _nullableInt(_bpmMaxController.text),
+                                    recommendedBpmTarget:
+                                        _nullableInt(_bpmTargetController.text),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.auto_awesome_rounded,
+                                  size: 18),
+                              label: const Text('Queue Generation'),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: () {
-                        final isValid =
-                            _formKey.currentState?.validate() ?? false;
-                        if (!isValid) return;
-                        Navigator.pop(
-                          context,
-                          CreateSunoGenerationRequest(
-                            prompt: _nullable(_promptController.text),
-                            title: _nullable(_titleController.text),
-                            artist: _nullable(_artistController.text),
-                            moodId: _selectedMoodId,
-                            targetPlaylistId: _selectedPlaylistId,
-                            autoAddToTargetPlaylist: _autoAddToTargetPlaylist,
-                            aiGenerationMode: _selectedGenerationMode,
-                            fuzzyProfileTemplate:
-                                _nullable(_selectedFuzzyTemplate ?? ''),
-                            recommendedBpmMin:
-                                _nullableInt(_bpmMinController.text),
-                            recommendedBpmMax:
-                                _nullableInt(_bpmMaxController.text),
-                            recommendedBpmTarget:
-                                _nullableInt(_bpmTargetController.text),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.auto_awesome_rounded, size: 18),
-                      label: const Text('Queue Generation'),
-                    ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -3318,6 +3367,11 @@ class _SunoConfigBottomSheetState extends State<_SunoConfigBottomSheet> {
   final _promptTemplateController = TextEditingController();
   String? _selectedPlaylistId;
 
+  void _closeSheet() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    Navigator.of(context).pop();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -3334,6 +3388,11 @@ class _SunoConfigBottomSheetState extends State<_SunoConfigBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final maxSheetHeight = mediaQuery.size.height -
+        mediaQuery.padding.top -
+        mediaQuery.viewInsets.top -
+        24;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return SafeArea(
@@ -3342,84 +3401,111 @@ class _SunoConfigBottomSheetState extends State<_SunoConfigBottomSheet> {
         padding: EdgeInsets.only(
           left: 16,
           right: 16,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+          bottom: mediaQuery.viewInsets.bottom + 16,
         ),
-        child: Container(
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: maxSheetHeight),
+          child: Container(
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+              borderRadius: BorderRadius.circular(24),
+            ),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Center(
-                  child: Container(
-                    width: 38,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.white24 : Colors.black26,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Suno Config',
-                  style: GoogleFonts.poppins(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _promptTemplateController,
-                  maxLines: 5,
-                  decoration: _editorDecoration(
-                    label: 'Prompt template',
-                    isDark: isDark,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String?>(
-                  initialValue: widget.playlists
-                          .any((playlist) => playlist.id == _selectedPlaylistId)
-                      ? _selectedPlaylistId
-                      : null,
-                  decoration: _editorDecoration(
-                    label: 'Default playlist',
-                    isDark: isDark,
-                  ),
-                  items: [
-                    const DropdownMenuItem<String?>(
-                      value: null,
-                      child: Text('No default playlist'),
-                    ),
-                    ...widget.playlists.map(
-                      (playlist) => DropdownMenuItem<String?>(
-                        value: playlist.id,
-                        child: Text(playlist.title),
-                      ),
-                    ),
-                  ],
-                  onChanged: (value) =>
-                      setState(() => _selectedPlaylistId = value),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: () => Navigator.pop(
-                      context,
-                      UpdateSunoConfigRequest(
-                        sunoPromptTemplate: _nullable(
-                          _promptTemplateController.text,
+                Flexible(
+                  child: SingleChildScrollView(
+                    physics: const ClampingScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Center(
+                          child: Container(
+                            width: 38,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: isDark ? Colors.white24 : Colors.black26,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
                         ),
-                        sunoDefaultPlaylistId: _selectedPlaylistId,
-                      ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Suno Config',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton(
+                              tooltip: 'Close',
+                              onPressed: _closeSheet,
+                              icon: Icon(
+                                Icons.close_rounded,
+                                color: isDark ? Colors.white : Colors.black87,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: _promptTemplateController,
+                          maxLines: 5,
+                          decoration: _editorDecoration(
+                            label: 'Prompt template',
+                            isDark: isDark,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<String?>(
+                          initialValue: widget.playlists.any((playlist) =>
+                                  playlist.id == _selectedPlaylistId)
+                              ? _selectedPlaylistId
+                              : null,
+                          decoration: _editorDecoration(
+                            label: 'Default playlist',
+                            isDark: isDark,
+                          ),
+                          items: [
+                            const DropdownMenuItem<String?>(
+                              value: null,
+                              child: Text('No default playlist'),
+                            ),
+                            ...widget.playlists.map(
+                              (playlist) => DropdownMenuItem<String?>(
+                                value: playlist.id,
+                                child: Text(playlist.title),
+                              ),
+                            ),
+                          ],
+                          onChanged: (value) =>
+                              setState(() => _selectedPlaylistId = value),
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton(
+                            onPressed: () => Navigator.pop(
+                              context,
+                              UpdateSunoConfigRequest(
+                                sunoPromptTemplate: _nullable(
+                                  _promptTemplateController.text,
+                                ),
+                                sunoDefaultPlaylistId: _selectedPlaylistId,
+                              ),
+                            ),
+                            child: const Text('Save Config'),
+                          ),
+                        ),
+                      ],
                     ),
-                    child: const Text('Save Config'),
                   ),
                 ),
               ],

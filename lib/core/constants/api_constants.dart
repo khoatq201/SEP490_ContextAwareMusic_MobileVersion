@@ -49,6 +49,10 @@ class ApiConstants {
       '/api/spaces/$spaceId/toggle-status';
   static String spaceFuzzyProfiles(String spaceId) =>
       '/api/spaces/$spaceId/fuzzy-profiles';
+  static String spaceHubBinding(String spaceId) =>
+      '/api/spaces/$spaceId/hub-binding';
+  static String restartSpaceHub(String spaceId) =>
+      '/api/spaces/$spaceId/hub-binding/restart';
 
   // Moods
   static const String getMoods = '/api/moods';

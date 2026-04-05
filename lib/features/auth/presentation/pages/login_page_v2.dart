@@ -5,7 +5,6 @@ import '../../../../core/constants/api_constants.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/constants/app_typography.dart';
-import '../../../../core/widgets/cams_button.dart';
 import '../../../../core/widgets/cams_logo.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
@@ -89,10 +88,7 @@ class _LoginPageV2State extends State<LoginPageV2>
     return Scaffold(
       body: BlocConsumer<AuthBloc, AuthState>(
         listener: (context, state) {
-          if (state.status == AuthStatus.authenticated) {
-            // Role-based navigation after login
-            context.go('/store-selection');
-          } else if (state.status == AuthStatus.error) {
+          if (state.status == AuthStatus.error) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.errorMessage ?? 'Login failed'),
@@ -144,8 +140,8 @@ class _LoginPageV2State extends State<LoginPageV2>
                               boxShadow: [
                                 BoxShadow(
                                   color: isDark
-                                      ? Colors.black.withOpacity(0.3)
-                                      : Colors.black.withOpacity(0.08),
+                                      ? Colors.black.withValues(alpha: 0.3)
+                                      : Colors.black.withValues(alpha: 0.08),
                                   blurRadius: 10,
                                   offset: const Offset(0, 4),
                                 ),
@@ -361,15 +357,21 @@ class _LoginPageV2State extends State<LoginPageV2>
                                   AppDimensions.cardPaddingMd),
                               decoration: BoxDecoration(
                                 color: isDark
-                                    ? AppColors.primaryCyan.withOpacity(0.1)
-                                    : AppColors.primaryOrange.withOpacity(0.08),
+                                    ? AppColors.primaryCyan.withValues(
+                                        alpha: 0.1,
+                                      )
+                                    : AppColors.primaryOrange.withValues(
+                                        alpha: 0.08,
+                                      ),
                                 borderRadius: BorderRadius.circular(
                                     AppDimensions.radiusMd),
                                 border: Border.all(
                                   color: isDark
-                                      ? AppColors.primaryCyan.withOpacity(0.3)
+                                      ? AppColors.primaryCyan.withValues(
+                                          alpha: 0.3,
+                                        )
                                       : AppColors.primaryOrange
-                                          .withOpacity(0.3),
+                                          .withValues(alpha: 0.3),
                                 ),
                               ),
                               child: Column(
@@ -487,8 +489,8 @@ class _LoginPageV2State extends State<LoginPageV2>
           Icon(Icons.touch_app_outlined,
               size: 14,
               color: isDark
-                  ? AppColors.primaryCyan.withOpacity(0.5)
-                  : AppColors.primaryOrange.withOpacity(0.5)),
+                  ? AppColors.primaryCyan.withValues(alpha: 0.5)
+                  : AppColors.primaryOrange.withValues(alpha: 0.5)),
         ],
       ),
     );

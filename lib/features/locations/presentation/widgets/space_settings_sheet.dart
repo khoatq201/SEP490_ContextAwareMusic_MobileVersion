@@ -9,26 +9,25 @@ import '../../../../core/enums/space_type_enum.dart';
 import '../../../../core/enums/user_role.dart';
 import '../../../../core/session/session_cubit.dart';
 import '../../../../injection_container.dart';
+import '../../../hub_management/presentation/pages/space_hub_page.dart';
 import '../../../music_policy/data/models/fuzzy_override_profile_request.dart';
 import '../../../music_policy/presentation/widgets/fuzzy_override_editor_sheet.dart';
 import '../../../playlists/data/datasources/playlist_remote_datasource.dart';
 import '../../data/datasources/location_remote_datasource.dart';
+import '../../domain/entities/location_space.dart';
 import '../../domain/usecases/location_usecases.dart';
 import '../bloc/location_bloc.dart';
 import '../bloc/location_event.dart';
-import '../../domain/entities/location_space.dart';
 
-/// Bottom sheet showing settings for a single space.
-/// Conditionally shows "Soundtrack Remote" only in remote-control mode.
 class SpaceSettingsSheet extends StatelessWidget {
-  final LocationSpace space;
-  final bool isPlaybackDevice;
-
   const SpaceSettingsSheet({
     super.key,
     required this.space,
     required this.isPlaybackDevice,
   });
+
+  final LocationSpace space;
+  final bool isPlaybackDevice;
 
   bool _canManageSpace(BuildContext context) {
     final session = context.read<SessionCubit>().state;
@@ -135,7 +134,9 @@ class SpaceSettingsSheet extends StatelessWidget {
       (success) {
         _reloadLocations(context);
         _showSnackBar(
-            context, success.message ?? 'Space updated successfully.');
+          context,
+          success.message ?? 'Space updated successfully.',
+        );
       },
     );
   }
@@ -188,7 +189,9 @@ class SpaceSettingsSheet extends StatelessWidget {
         _reloadLocations(context);
         Navigator.pop(context);
         _showSnackBar(
-            context, success.message ?? 'Space deleted successfully.');
+          context,
+          success.message ?? 'Space deleted successfully.',
+        );
       },
     );
   }
@@ -249,6 +252,7 @@ class SpaceSettingsSheet extends StatelessWidget {
       context: context,
       useRootNavigator: true,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (_) => FuzzyOverrideEditorSheet(
         title: 'Space Music Policy',
@@ -281,221 +285,298 @@ class SpaceSettingsSheet extends StatelessWidget {
     final palette = _SheetPalette.of(context);
     final router = GoRouter.of(context);
     final canManageSpace = _canManageSpace(context);
+    final hubStatusLabel = space.hubBinding == null
+        ? 'Hub pending'
+        : space.hubBinding!.isSyncPending
+            ? 'Hub sync pending'
+            : 'Hub configured';
 
     return SafeArea(
       bottom: true,
-      child: Container(
-        decoration: BoxDecoration(
-          color: palette.bg,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.9,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // ── Drag handle ───────────────────────────────────────────
-            const SizedBox(height: 10),
-            Center(
-              child: Container(
-                width: 38,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: palette.textMuted.withAlpha(80),
-                  borderRadius: BorderRadius.circular(2),
+        child: Container(
+          decoration: BoxDecoration(
+            color: palette.bg,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border.all(color: palette.border),
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 10),
+                Center(
+                  child: Container(
+                    width: 38,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: palette.textMuted.withValues(alpha: 0.35),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 14),
-
-            // ── Title row ─────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Space Settings',
-                      style: GoogleFonts.poppins(
-                        color: palette.textPrimary,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: Icon(Icons.close, color: palette.textMuted),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            // ── Info section ──────────────────────────────────────────
-            _InfoGroup(
-              palette: palette,
-              children: [
-                _InfoRow(label: 'Name', value: space.name, palette: palette),
-                _InfoRow(
-                    label: 'Type',
-                    value: space.type.displayName,
-                    palette: palette),
-                _InfoRow(
-                    label: 'Status',
-                    value: space.status.displayName,
-                    palette: palette),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-
-            // ── Navigation tiles ──────────────────────────────────────
-            _TileGroup(
-              palette: palette,
-              children: [
-                _NavTile(
-                  icon: LucideIcons.music4,
-                  iconColor: palette.accent,
-                  label: 'Music policy',
-                  trailing: SizedBox(
-                    width: 96,
-                    child: Text(
-                      space.fuzzyOverrideSummary?.headline ??
-                          space.fuzzyOverrideLevel?.displayName ??
-                          'Inherited',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.right,
-                      style: GoogleFonts.inter(
-                        color: palette.textMuted,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  palette: palette,
-                  onTap: () => canManageSpace
-                      ? _showMusicPolicyEditor(context)
-                      : _showSnackBar(
-                          context,
-                          'Only managers can edit music policy.',
-                          isError: true,
+                const SizedBox(height: 14),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'CAMS Space Settings',
+                              style: GoogleFonts.poppins(
+                                color: palette.textPrimary,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Manage policies, provisioning, and companion controls for this space.',
+                              style: GoogleFonts.inter(
+                                color: palette.textMuted,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
                         ),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: palette.panel,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: palette.border),
+                        ),
+                        child: IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: Icon(Icons.close, color: palette.textMuted),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                _NavTile(
-                  icon: LucideIcons.calendar,
-                  iconColor: palette.accent,
-                  label: 'Space schedule',
+                const SizedBox(height: 12),
+                _SpaceContextCard(
                   palette: palette,
-                  onTap: () {
-                    Navigator.pop(context);
-                    router.push(_buildSpaceScheduleLocation(space));
-                  },
+                  space: space,
+                  hubStatusLabel: hubStatusLabel,
                 ),
-                _NavTile(
-                  icon: LucideIcons.clock,
-                  iconColor: palette.accent,
-                  label: 'Recently played songs',
+                const SizedBox(height: 16),
+                _SectionLabel(
                   palette: palette,
-                  onTap: () => _comingSoon(context, 'Recently played songs'),
+                  label: 'SPACE TOOLS',
                 ),
-                _NavTile(
-                  icon: LucideIcons.ban,
-                  iconColor: AppColors.error,
-                  label: 'Blocked songs',
+                const SizedBox(height: 8),
+                _SectionCard(
                   palette: palette,
-                  onTap: () => _comingSoon(context, 'Blocked songs'),
+                  child: Column(
+                    children: [
+                      _NavTile(
+                        icon: LucideIcons.music4,
+                        iconColor: palette.accent,
+                        label: 'Music policy',
+                        subtitle:
+                            'Tune BPM bands, thresholds, and allowed playlists for this space.',
+                        trailing: SizedBox(
+                          width: 96,
+                          child: Text(
+                            space.fuzzyOverrideSummary?.headline ??
+                                space.fuzzyOverrideLevel?.displayName ??
+                                'Inherited',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.right,
+                            style: GoogleFonts.inter(
+                              color: palette.textMuted,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        palette: palette,
+                        onTap: () => canManageSpace
+                            ? _showMusicPolicyEditor(context)
+                            : _showSnackBar(
+                                context,
+                                'Only managers can edit music policy.',
+                                isError: true,
+                              ),
+                      ),
+                      const SizedBox(height: 10),
+                      _NavTile(
+                        icon: LucideIcons.router,
+                        iconColor: palette.accent,
+                        label: 'IoT Hub & Wi-Fi',
+                        subtitle:
+                            'Provision the ESP32 over BLE and review the saved hub binding.',
+                        trailing: SizedBox(
+                          width: 120,
+                          child: Text(
+                            space.hubBinding == null
+                                ? 'Not configured'
+                                : space.hubBinding!.isSyncPending
+                                    ? 'Sync pending'
+                                    : space.hubBinding!.wifiSsid,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.right,
+                            style: GoogleFonts.inter(
+                              color: palette.textMuted,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        palette: palette,
+                        onTap: () async {
+                          LocationBloc? locationBloc;
+                          try {
+                            locationBloc = context.read<LocationBloc>();
+                          } catch (_) {
+                            locationBloc = null;
+                          }
+                          Navigator.pop(context);
+                          final didMutate = await router.push<bool>(
+                            buildSpaceHubLocation(
+                              spaceId: space.id,
+                              storeId: space.storeId,
+                              spaceName: space.name,
+                            ),
+                          );
+                          if (didMutate == true) {
+                            locationBloc?.add(const LoadLocationsRequested());
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 10),
+                      _NavTile(
+                        icon: LucideIcons.calendar,
+                        iconColor: palette.accent,
+                        label: 'Space schedule',
+                        subtitle:
+                            'Control when this space follows automatic schedules.',
+                        palette: palette,
+                        onTap: () {
+                          Navigator.pop(context);
+                          router.push(_buildSpaceScheduleLocation(space));
+                        },
+                      ),
+                      const SizedBox(height: 10),
+                      _NavTile(
+                        icon: LucideIcons.clock,
+                        iconColor: palette.accent,
+                        label: 'Recently played songs',
+                        subtitle:
+                            'Review what has been played recently in this space.',
+                        palette: palette,
+                        onTap: () =>
+                            _comingSoon(context, 'Recently played songs'),
+                      ),
+                      const SizedBox(height: 10),
+                      _NavTile(
+                        icon: LucideIcons.ban,
+                        iconColor: AppColors.error,
+                        label: 'Blocked songs',
+                        subtitle:
+                            'Manage tracks that should never play in this space.',
+                        palette: palette,
+                        onTap: () => _comingSoon(context, 'Blocked songs'),
+                      ),
+                    ],
+                  ),
                 ),
+                if (canManageSpace) ...[
+                  const SizedBox(height: 16),
+                  _SectionLabel(
+                    palette: palette,
+                    label: 'SPACE MANAGEMENT',
+                  ),
+                  const SizedBox(height: 8),
+                  _SectionCard(
+                    palette: palette,
+                    child: Column(
+                      children: [
+                        _NavTile(
+                          icon: Icons.edit_rounded,
+                          iconColor: palette.accent,
+                          label: 'Edit space',
+                          subtitle:
+                              'Rename the space and update its description.',
+                          palette: palette,
+                          onTap: () => _editSpace(context),
+                        ),
+                        const SizedBox(height: 10),
+                        _NavTile(
+                          icon: space.status.isActive
+                              ? LucideIcons.toggleRight
+                              : LucideIcons.toggleLeft,
+                          iconColor: space.status.isActive
+                              ? AppColors.warning
+                              : AppColors.success,
+                          label: space.status.isActive
+                              ? 'Set inactive'
+                              : 'Set active',
+                          subtitle: space.status.isActive
+                              ? 'Pause this space without deleting it.'
+                              : 'Bring this space back into active operation.',
+                          palette: palette,
+                          onTap: () => _toggleSpaceStatus(context),
+                        ),
+                        const SizedBox(height: 10),
+                        _NavTile(
+                          icon: LucideIcons.trash2,
+                          iconColor: AppColors.error,
+                          label: 'Delete space',
+                          subtitle:
+                              'Remove this space from the currently selected store.',
+                          palette: palette,
+                          onTap: () => _deleteSpace(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                if (!isPlaybackDevice) ...[
+                  const SizedBox(height: 16),
+                  _SectionLabel(
+                    palette: palette,
+                    label: 'CAMS REMOTE',
+                  ),
+                  const SizedBox(height: 8),
+                  _SectionCard(
+                    palette: palette,
+                    child: _NavTile(
+                      icon: LucideIcons.smartphone,
+                      iconColor: palette.accent,
+                      label: 'CAMS Remote',
+                      subtitle:
+                          'Quick remote controls and companion tools for this space.',
+                      trailing: Text(
+                        'Enabled',
+                        style: GoogleFonts.inter(
+                          color: palette.textMuted,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      palette: palette,
+                      onTap: () => _comingSoon(context, 'CAMS Remote'),
+                    ),
+                  ),
+                ],
               ],
             ),
-
-            if (canManageSpace) ...[
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  'SPACE MANAGEMENT',
-                  style: GoogleFonts.inter(
-                    color: palette.textMuted,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.6,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              _TileGroup(
-                palette: palette,
-                children: [
-                  _NavTile(
-                    icon: Icons.edit_rounded,
-                    iconColor: palette.accent,
-                    label: 'Edit space',
-                    palette: palette,
-                    onTap: () => _editSpace(context),
-                  ),
-                  _NavTile(
-                    icon: space.status.isActive
-                        ? LucideIcons.toggleRight
-                        : LucideIcons.toggleLeft,
-                    iconColor: space.status.isActive
-                        ? AppColors.warning
-                        : AppColors.success,
-                    label:
-                        space.status.isActive ? 'Set inactive' : 'Set active',
-                    palette: palette,
-                    onTap: () => _toggleSpaceStatus(context),
-                  ),
-                  _NavTile(
-                    icon: LucideIcons.trash2,
-                    iconColor: AppColors.error,
-                    label: 'Delete space',
-                    palette: palette,
-                    onTap: () => _deleteSpace(context),
-                  ),
-                ],
-              ),
-            ],
-
-            // ── Soundtrack Remote (only for remote control mode) ──────
-            if (!isPlaybackDevice) ...[
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  'REMOTE CONTROL',
-                  style: GoogleFonts.inter(
-                    color: palette.textMuted,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.6,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              _TileGroup(
-                palette: palette,
-                children: [
-                  _NavTile(
-                    icon: LucideIcons.smartphone,
-                    iconColor: palette.accent,
-                    label: 'Soundtrack Remote',
-                    trailing: Text(
-                      'Enabled',
-                      style: GoogleFonts.inter(
-                        color: palette.textMuted,
-                        fontSize: 14,
-                      ),
-                    ),
-                    palette: palette,
-                    onTap: () => _comingSoon(context, 'Soundtrack Remote'),
-                  ),
-                ],
-              ),
-            ],
-
-            const SizedBox(height: 28),
-          ],
+          ),
         ),
       ),
     );
@@ -520,98 +601,183 @@ String _buildSpaceScheduleLocation(LocationSpace space) {
   ).toString();
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Sub-widgets
-// ─────────────────────────────────────────────────────────────────────────────
+class _SpaceContextCard extends StatelessWidget {
+  const _SpaceContextCard({
+    required this.palette,
+    required this.space,
+    required this.hubStatusLabel,
+  });
 
-class _InfoGroup extends StatelessWidget {
-  const _InfoGroup({required this.palette, required this.children});
   final _SheetPalette palette;
-  final List<Widget> children;
+  final LocationSpace space;
+  final String hubStatusLabel;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: palette.card,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: palette.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: palette.isDark ? 0.18 : 0.05),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
-      child: Column(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          for (int i = 0; i < children.length; i++) ...[
-            children[i],
-            if (i < children.length - 1)
-              Padding(
-                padding: const EdgeInsets.only(left: 16),
-                child: Divider(height: 1, color: palette.border),
-              ),
-          ],
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: palette.accent.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(
+              LucideIcons.layoutTemplate,
+              color: palette.accent,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  space.name,
+                  style: GoogleFonts.poppins(
+                    color: palette.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                if (space.description?.trim().isNotEmpty ?? false) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    space.description!,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      color: palette.textMuted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _InfoPill(
+                      palette: palette,
+                      label: space.type.displayName,
+                    ),
+                    _InfoPill(
+                      palette: palette,
+                      label: space.status.displayName,
+                    ),
+                    _InfoPill(
+                      palette: palette,
+                      label: hubStatusLabel,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-class _InfoRow extends StatelessWidget {
-  const _InfoRow(
-      {required this.label, required this.value, required this.palette});
-  final String label;
-  final String value;
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel({
+    required this.palette,
+    required this.label,
+  });
+
   final _SheetPalette palette;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Row(
-        children: [
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              color: palette.textPrimary,
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
-            ),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            color: palette.textMuted,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.7,
           ),
-          const Spacer(),
-          Text(
-            value,
-            style: GoogleFonts.inter(
-              color: palette.textMuted,
-              fontSize: 15,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 }
 
-class _TileGroup extends StatelessWidget {
-  const _TileGroup({required this.palette, required this.children});
+class _SectionCard extends StatelessWidget {
+  const _SectionCard({
+    required this.palette,
+    required this.child,
+  });
+
   final _SheetPalette palette;
-  final List<Widget> children;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: palette.card,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: palette.border),
       ),
-      child: Column(
-        children: [
-          for (int i = 0; i < children.length; i++) ...[
-            children[i],
-            if (i < children.length - 1)
-              Padding(
-                padding: const EdgeInsets.only(left: 52),
-                child: Divider(height: 1, color: palette.border),
-              ),
-          ],
-        ],
+      child: child,
+    );
+  }
+}
+
+class _InfoPill extends StatelessWidget {
+  const _InfoPill({
+    required this.palette,
+    required this.label,
+  });
+
+  final _SheetPalette palette;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: palette.panel,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: palette.border),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.inter(
+          color: palette.textPrimary,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
@@ -624,11 +790,14 @@ class _NavTile extends StatelessWidget {
     required this.label,
     required this.palette,
     required this.onTap,
+    this.subtitle,
     this.trailing,
   });
+
   final IconData icon;
   final Color iconColor;
   final String label;
+  final String? subtitle;
   final _SheetPalette palette;
   final VoidCallback onTap;
   final Widget? trailing;
@@ -637,35 +806,64 @@ class _NavTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      borderRadius: BorderRadius.circular(16),
+      child: Ink(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: palette.panel,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: palette.border),
+        ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 28,
-              height: 28,
+              width: 38,
+              height: 38,
               decoration: BoxDecoration(
-                color: iconColor.withAlpha(25),
-                borderRadius: BorderRadius.circular(8),
+                color: iconColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: iconColor, size: 16),
+              child: Icon(icon, color: iconColor, size: 18),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(
-                label,
-                style: GoogleFonts.inter(
-                  color: palette.textPrimary,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: GoogleFonts.poppins(
+                      color: palette.textPrimary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle!,
+                      style: GoogleFonts.inter(
+                        color: palette.textMuted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
-            if (trailing != null) trailing!,
-            if (trailing != null) const SizedBox(width: 6),
-            Icon(Icons.chevron_right_rounded,
-                color: palette.textMuted, size: 20),
+            const SizedBox(width: 8),
+            if (trailing != null) ...[
+              Flexible(child: trailing!),
+              const SizedBox(width: 6),
+            ],
+            Icon(
+              LucideIcons.chevronRight,
+              color: palette.textMuted,
+              size: 18,
+            ),
           ],
         ),
       ),
@@ -673,45 +871,41 @@ class _NavTile extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Palette
-// ─────────────────────────────────────────────────────────────────────────────
 class _SheetPalette {
-  final Color bg;
-  final Color card;
-  final Color border;
-  final Color textPrimary;
-  final Color textMuted;
-  final Color accent;
-
   const _SheetPalette({
+    required this.isDark,
     required this.bg,
     required this.card,
+    required this.panel,
     required this.border,
     required this.textPrimary,
     required this.textMuted,
     required this.accent,
   });
 
+  final bool isDark;
+  final Color bg;
+  final Color card;
+  final Color panel;
+  final Color border;
+  final Color textPrimary;
+  final Color textMuted;
+  final Color accent;
+
   factory _SheetPalette.of(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    if (isDark) {
-      return const _SheetPalette(
-        bg: AppColors.backgroundDarkPrimary,
-        card: AppColors.surfaceDark,
-        border: AppColors.borderDarkLight,
-        textPrimary: AppColors.textDarkPrimary,
-        textMuted: AppColors.textDarkSecondary,
-        accent: AppColors.primaryCyan,
-      );
-    }
-    return const _SheetPalette(
-      bg: AppColors.backgroundPrimary,
-      card: AppColors.surface,
-      border: AppColors.borderLight,
-      textPrimary: AppColors.textPrimary,
-      textMuted: AppColors.textTertiary,
-      accent: AppColors.primaryOrange,
+    return _SheetPalette(
+      isDark: isDark,
+      bg: isDark
+          ? AppColors.backgroundDarkPrimary
+          : AppColors.backgroundPrimary,
+      card: isDark ? AppColors.surfaceDark : Colors.white,
+      panel:
+          isDark ? AppColors.surfaceDarkElevated : AppColors.backgroundPrimary,
+      border: isDark ? AppColors.borderDarkLight : AppColors.borderLight,
+      textPrimary: isDark ? AppColors.textDarkPrimary : AppColors.textPrimary,
+      textMuted: isDark ? AppColors.textDarkSecondary : AppColors.textTertiary,
+      accent: isDark ? AppColors.primaryCyan : AppColors.primaryOrange,
     );
   }
 }

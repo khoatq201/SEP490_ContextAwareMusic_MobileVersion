@@ -5,6 +5,7 @@ import '../../../../core/enums/store_fuzzy_override_level_enum.dart';
 import '../../../../core/enums/space_type_enum.dart';
 import '../../../cams/domain/entities/pair_code_snapshot.dart';
 import '../../../cams/domain/entities/pair_device_info.dart';
+import '../../../hub_management/domain/entities/space_hub_binding.dart';
 import '../../../music_policy/domain/entities/fuzzy_override_summary.dart';
 
 /// Represents a space (and its summary info) displayed in the Location Tab.
@@ -30,6 +31,7 @@ class LocationSpace extends Equatable {
   final double volume;
   final PairDeviceInfo? pairDeviceInfo;
   final PairCodeSnapshot? activePairCode;
+  final SpaceHubBinding? hubBinding;
   final FuzzyOverrideSummary? fuzzyOverrideSummary;
   final StoreFuzzyOverrideLevelEnum? fuzzyOverrideLevel;
 
@@ -51,6 +53,7 @@ class LocationSpace extends Equatable {
     this.volume = 50.0,
     this.pairDeviceInfo,
     this.activePairCode,
+    this.hubBinding,
     this.fuzzyOverrideSummary,
     this.fuzzyOverrideLevel,
   });
@@ -70,6 +73,8 @@ class LocationSpace extends Equatable {
       (currentPlaybackName != null && currentPlaybackName!.isNotEmpty);
 
   bool get hasPairedPlaybackDevice => pairDeviceInfo?.isPaired ?? false;
+
+  bool get hasHubBinding => hubBinding != null;
 
   bool get hasActivePairCode =>
       !hasPairedPlaybackDevice &&
@@ -104,6 +109,7 @@ class LocationSpace extends Equatable {
     double? volume,
     PairDeviceInfo? pairDeviceInfo,
     PairCodeSnapshot? activePairCode,
+    SpaceHubBinding? hubBinding,
     FuzzyOverrideSummary? fuzzyOverrideSummary,
     StoreFuzzyOverrideLevelEnum? fuzzyOverrideLevel,
     bool clearCurrentPlaylistId = false,
@@ -113,6 +119,7 @@ class LocationSpace extends Equatable {
     bool clearCurrentTrackArtist = false,
     bool clearPairDeviceInfo = false,
     bool clearActivePairCode = false,
+    bool clearHubBinding = false,
   }) {
     return LocationSpace(
       id: id ?? this.id,
@@ -144,6 +151,7 @@ class LocationSpace extends Equatable {
           clearPairDeviceInfo ? null : (pairDeviceInfo ?? this.pairDeviceInfo),
       activePairCode:
           clearActivePairCode ? null : (activePairCode ?? this.activePairCode),
+      hubBinding: clearHubBinding ? null : (hubBinding ?? this.hubBinding),
       fuzzyOverrideSummary: fuzzyOverrideSummary ?? this.fuzzyOverrideSummary,
       fuzzyOverrideLevel: fuzzyOverrideLevel ?? this.fuzzyOverrideLevel,
     );
@@ -168,6 +176,7 @@ class LocationSpace extends Equatable {
         volume,
         pairDeviceInfo,
         activePairCode,
+        hubBinding,
         fuzzyOverrideSummary,
         fuzzyOverrideLevel,
       ];

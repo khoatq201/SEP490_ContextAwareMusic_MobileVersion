@@ -47,7 +47,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           errorMessage: failure.message,
         ));
       },
-      (user) {
+      (user) async {
+        sessionCubit.setRoleFromString(user.role);
+        await sessionCubit.restoreSelectionFromStorage();
         emit(state.copyWith(
           status: AuthStatus.authenticated,
           user: user,

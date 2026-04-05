@@ -11,7 +11,6 @@ import '../../../../core/session/session_cubit.dart';
 import '../../domain/entities/location_space.dart';
 import '../bloc/location_bloc.dart';
 import '../bloc/location_event.dart';
-import '../bloc/location_state.dart';
 import 'space_management_tile.dart';
 
 class BrandLocationsView extends StatelessWidget {

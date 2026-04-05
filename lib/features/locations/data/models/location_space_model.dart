@@ -3,6 +3,7 @@ import '../../../../core/enums/store_fuzzy_override_level_enum.dart';
 import '../../../../core/enums/space_type_enum.dart';
 import '../../../cams/data/models/pair_code_snapshot_model.dart';
 import '../../../cams/data/models/pair_device_info_model.dart';
+import '../../../hub_management/data/models/space_hub_binding_model.dart';
 import '../../../music_policy/data/models/fuzzy_override_summary_model.dart';
 import '../../domain/entities/location_space.dart';
 
@@ -25,6 +26,7 @@ class LocationSpaceModel extends LocationSpace {
     required super.volume,
     super.pairDeviceInfo,
     super.activePairCode,
+    super.hubBinding,
     super.fuzzyOverrideSummary,
     super.fuzzyOverrideLevel,
   });
@@ -63,6 +65,11 @@ class LocationSpaceModel extends LocationSpace {
       activePairCode: json['activePairCode'] is Map
           ? PairCodeSnapshotModel.fromJson(
               Map<String, dynamic>.from(json['activePairCode'] as Map),
+            )
+          : null,
+      hubBinding: json['hubBinding'] is Map
+          ? SpaceHubBindingModel.fromJson(
+              Map<String, dynamic>.from(json['hubBinding'] as Map),
             )
           : null,
       fuzzyOverrideSummary: FuzzyOverrideSummaryModel.fromRootJson(json),
@@ -115,6 +122,9 @@ class LocationSpaceModel extends LocationSpace {
               'expiresAt': activePairCode!.expiresAt.toIso8601String(),
               'expiresInSeconds': activePairCode!.expiresInSeconds,
             },
+      'hubBinding': hubBinding == null
+          ? null
+          : SpaceHubBindingModel.fromEntity(hubBinding!).toJson(),
     };
   }
 

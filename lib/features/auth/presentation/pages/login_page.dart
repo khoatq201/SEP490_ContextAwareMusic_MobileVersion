@@ -53,10 +53,7 @@ class _LoginPageState extends State<LoginPage> {
     return Scaffold(
       body: BlocConsumer<AuthBloc, AuthState>(
         listener: (context, state) {
-          if (state.status == AuthStatus.authenticated) {
-            // Role-based navigation after login
-            context.go('/store-selection');
-          } else if (state.status == AuthStatus.error) {
+          if (state.status == AuthStatus.error) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.errorMessage ?? 'Login failed'),
@@ -87,7 +84,7 @@ class _LoginPageState extends State<LoginPage> {
                           width: 120,
                           height: 120,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.1),
+                            color: Colors.white.withValues(alpha: 0.1),
                             shape: BoxShape.circle,
                             border: Border.all(color: Colors.white, width: 3),
                           ),

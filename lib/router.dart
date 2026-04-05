@@ -42,6 +42,9 @@ import 'features/locations/presentation/pages/locations_tab_page.dart';
 import 'features/space_schedule/presentation/pages/space_schedule_page.dart';
 import 'features/space_schedule/presentation/bloc/space_schedule_bloc.dart';
 import 'features/space_schedule/presentation/bloc/space_schedule_event.dart';
+import 'features/hub_management/presentation/bloc/hub_provisioning_bloc.dart';
+import 'features/hub_management/presentation/bloc/hub_provisioning_event.dart';
+import 'features/hub_management/presentation/pages/space_hub_page.dart';
 import 'features/context_rules/presentation/pages/context_rules_page.dart';
 import 'features/context_rules/presentation/pages/create_rule_page.dart';
 import 'core/session/session_cubit.dart';
@@ -53,7 +56,8 @@ class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Iterable<Stream<dynamic>> streams) {
     notifyListeners(); // initial evaluation
     _subscriptions = streams
-        .map((stream) => stream.asBroadcastStream().listen((_) => notifyListeners()))
+        .map((stream) =>
+            stream.asBroadcastStream().listen((_) => notifyListeners()))
         .toList(growable: false);
   }
 
@@ -73,6 +77,17 @@ class AppRouter {
       GlobalKey<NavigatorState>(debugLabel: 'root');
 
   static GlobalKey<NavigatorState> get rootNavigatorKey => _rootNavigatorKey;
+
+  static String _managerLandingLocation(SessionCubit sessionCubit) {
+    final session = sessionCubit.state;
+    if (session.currentSpace != null) {
+      return '/home';
+    }
+    if (session.currentStore != null) {
+      return '/store/${session.currentStore!.id}';
+    }
+    return '/store-selection';
+  }
 
   static GoRouter router = GoRouter(
     navigatorKey: _rootNavigatorKey,
@@ -120,8 +135,9 @@ class AppRouter {
         // If on welcome/login/pair page, redirect based on role.
         if (location == '/welcome' ||
             location == '/login' ||
+            location == '/forgot-password' ||
             location == '/pair-device') {
-          return '/store-selection';
+          return _managerLandingLocation(sessionCubit);
         }
 
         // Prevent StoreManager from staying on /store-selection.
@@ -130,9 +146,11 @@ class AppRouter {
         // send them to their store dashboard.
         if (location == '/store-selection' &&
             user != null &&
-            user.isStoreManager &&
-            sessionCubit.state.currentStore != null) {
-          return '/store/${sessionCubit.state.currentStore!.id}';
+            user.isStoreManager) {
+          final target = _managerLandingLocation(sessionCubit);
+          if (target != location) {
+            return target;
+          }
         }
       }
 
@@ -416,6 +434,49 @@ class AppRouter {
                   ),
                 ),
               child: SpaceSchedulePage(
+                spaceId: spaceId,
+                storeId: storeId,
+                spaceName: spaceName,
+              ),
+            ),
+          );
+        },
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/space-hub',
+        name: 'space-hub',
+        pageBuilder: (context, state) {
+          final spaceId = state.uri.queryParameters['spaceId'];
+          final storeId = state.uri.queryParameters['storeId'];
+          final spaceName = state.uri.queryParameters['spaceName'];
+
+          if (spaceId == null || storeId == null || spaceName == null) {
+            return MaterialPage(
+              fullscreenDialog: true,
+              child: Scaffold(
+                body: Center(
+                  child: Text(
+                    'Missing hub provisioning context',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+              ),
+            );
+          }
+
+          return MaterialPage(
+            fullscreenDialog: true,
+            child: BlocProvider(
+              create: (_) => sl<HubProvisioningBloc>()
+                ..add(
+                  HubProvisioningStarted(
+                    spaceId: spaceId,
+                    storeId: storeId,
+                    spaceName: spaceName,
+                  ),
+                ),
+              child: SpaceHubPage(
                 spaceId: spaceId,
                 storeId: storeId,
                 spaceName: spaceName,

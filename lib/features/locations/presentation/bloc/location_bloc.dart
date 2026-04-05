@@ -12,6 +12,8 @@ import '../../../cams/domain/entities/pair_device_info.dart';
 import '../../../cams/domain/entities/space_playback_state.dart';
 import '../../../cams/domain/usecases/get_space_state.dart';
 import '../../../cams/domain/usecases/pairing_usecases.dart';
+import '../../../hub_management/domain/usecases/space_hub_usecases.dart';
+import '../../../hub_management/domain/entities/space_hub_binding.dart';
 import '../../../playlists/data/datasources/playlist_remote_datasource.dart';
 import '../../../playlists/domain/entities/api_playlist.dart';
 import '../../../playlists/domain/entities/playlist_track_item.dart';
@@ -29,6 +31,7 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
   final GetSpacesForStore getSpacesForStore;
   final GetSpacesForBrand getSpacesForBrand;
   final GetSpaceState getSpaceState;
+  final GetSpaceHubBinding getSpaceHubBinding;
   final GetPairDeviceInfoForManager getPairDeviceInfoForManager;
   final GetPairDeviceInfoForPlaybackDevice getPairDeviceInfoForPlaybackDevice;
   final GeneratePairCode generatePairCode;
@@ -50,6 +53,7 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
     required this.getSpacesForStore,
     required this.getSpacesForBrand,
     required this.getSpaceState,
+    required this.getSpaceHubBinding,
     required this.getPairDeviceInfoForManager,
     required this.getPairDeviceInfoForPlaybackDevice,
     required this.generatePairCode,
@@ -513,6 +517,20 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
       for (final entry in pairEntries) entry.key: entry.value,
     };
 
+    final hubEntries = await Future.wait(
+      spaces.map((space) async {
+        final result = await getSpaceHubBinding(space.id);
+        return result.fold<MapEntry<String, SpaceHubBinding?>>(
+          (_) => MapEntry(space.id, null),
+          (binding) => MapEntry(space.id, binding),
+        );
+      }),
+    );
+
+    final hubBindingBySpaceId = {
+      for (final entry in hubEntries) entry.key: entry.value,
+    };
+
     await _warmPlaylistCache(
       _collectLegacyPlaylistIds(
         playbackBySpaceId.values.whereType<SpacePlaybackState>(),
@@ -528,7 +546,10 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
         playbackBySpaceId[space.id],
         _playlistCache,
       );
-      return updated.copyWith(pairDeviceInfo: pairInfoBySpaceId[space.id]);
+      return updated.copyWith(
+        pairDeviceInfo: pairInfoBySpaceId[space.id],
+        hubBinding: hubBindingBySpaceId[space.id],
+      );
     }).toList();
   }
 
@@ -778,24 +799,22 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
                 .toList(),
           );
 
-    final brandSpaces = current.brandSpaces == null
-        ? null
-        : current.brandSpaces!.map((storeId, page) {
-            return MapEntry(
-              storeId,
-              PaginationResult<LocationSpace>(
-                currentPage: page.currentPage,
-                pageSize: page.pageSize,
-                totalItems: page.totalItems,
-                totalPages: page.totalPages,
-                hasPrevious: page.hasPrevious,
-                hasNext: page.hasNext,
-                items: page.items
-                    .map((space) => space.id == spaceId ? mapper(space) : space)
-                    .toList(),
-              ),
-            );
-          });
+    final brandSpaces = current.brandSpaces?.map((storeId, page) {
+      return MapEntry(
+        storeId,
+        PaginationResult<LocationSpace>(
+          currentPage: page.currentPage,
+          pageSize: page.pageSize,
+          totalItems: page.totalItems,
+          totalPages: page.totalPages,
+          hasPrevious: page.hasPrevious,
+          hasNext: page.hasNext,
+          items: page.items
+              .map((space) => space.id == spaceId ? mapper(space) : space)
+              .toList(),
+        ),
+      );
+    });
 
     return current.copyWith(
       pairedSpace: pairedSpace,

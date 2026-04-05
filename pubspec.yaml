@@ -29,6 +29,7 @@ dependencies:
   connectivity_plus: ^5.0.1
   device_info_plus: ^11.1.0
   package_info_plus: ^8.1.2
+  permission_handler: ^12.0.1
 
   # Local Storage
   hive: ^2.2.3
@@ -53,6 +54,7 @@ dependencies:
   just_audio: ^0.9.39
   audio_service: ^0.18.18
   audio_session: ^0.1.25
+  flutter_esp_ble_prov: ^0.1.7
 
   # UI
   cupertino_icons: ^1.0.6
@@ -73,6 +75,10 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
+
+dependency_overrides:
+  flutter_esp_ble_prov:
+    path: third_party/flutter_esp_ble_prov
 
 # Flutter Native Splash Configuration (Optional - uncomment when you have logo PNG)
 # flutter_native_splash:

@@ -28,6 +28,9 @@ import 'package:cams_store_manager/features/cams/domain/entities/space_playback_
 import 'package:cams_store_manager/features/cams/domain/entities/space_queue_state_item.dart';
 import 'package:cams_store_manager/features/cams/domain/usecases/get_space_state.dart';
 import 'package:cams_store_manager/features/cams/domain/usecases/pairing_usecases.dart';
+import 'package:cams_store_manager/features/hub_management/domain/entities/space_hub_binding.dart';
+import 'package:cams_store_manager/features/hub_management/domain/repositories/space_hub_repository.dart';
+import 'package:cams_store_manager/features/hub_management/domain/usecases/space_hub_usecases.dart';
 import 'package:cams_store_manager/features/locations/domain/entities/location_space.dart';
 import 'package:cams_store_manager/features/locations/domain/repositories/location_repository.dart';
 import 'package:cams_store_manager/features/locations/domain/usecases/location_usecases.dart';
@@ -52,6 +55,7 @@ void main() {
     late _FakeStoreSelectionRepository storeSelectionRepository;
     late _FakePlaylistRemoteDataSource playlistDataSource;
     late _FakeStoreHubService storeHubService;
+    late _FakeSpaceHubRepository spaceHubRepository;
     late LocationBloc bloc;
 
     setUp(() {
@@ -94,6 +98,7 @@ void main() {
       storeSelectionRepository = _FakeStoreSelectionRepository();
       playlistDataSource = _FakePlaylistRemoteDataSource();
       storeHubService = _FakeStoreHubService();
+      spaceHubRepository = _FakeSpaceHubRepository();
 
       bloc = LocationBloc(
         sessionCubit: sessionCubit,
@@ -102,6 +107,7 @@ void main() {
         getSpacesForStore: GetSpacesForStore(locationRepository),
         getSpacesForBrand: GetSpacesForBrand(locationRepository),
         getSpaceState: GetSpaceState(camsRepository),
+        getSpaceHubBinding: GetSpaceHubBinding(spaceHubRepository),
         getPairDeviceInfoForManager:
             GetPairDeviceInfoForManager(camsRepository),
         getPairDeviceInfoForPlaybackDevice:
@@ -447,6 +453,34 @@ class _FakeStoreSelectionRepository implements StoreSelectionRepository {
   @override
   Future<Either<Failure, List<StoreSummary>>> getUserStores() async {
     return const Right([]);
+  }
+}
+
+class _FakeSpaceHubRepository implements SpaceHubRepository {
+  final Map<String, SpaceHubBinding?> bindingsBySpaceId = {};
+
+  @override
+  Future<Either<Failure, SpaceHubBinding?>> getBinding(String spaceId) async {
+    return Right(bindingsBySpaceId[spaceId]);
+  }
+
+  @override
+  Future<Either<Failure, SpaceHubBinding>> upsertBinding(
+    SpaceHubBinding binding,
+  ) async {
+    bindingsBySpaceId[binding.spaceId] = binding;
+    return Right(binding);
+  }
+
+  @override
+  Future<Either<Failure, void>> deleteBinding(String spaceId) async {
+    bindingsBySpaceId.remove(spaceId);
+    return const Right(null);
+  }
+
+  @override
+  Future<Either<Failure, void>> restartHub(String spaceId) async {
+    return const Right(null);
   }
 }
 

@@ -272,6 +272,14 @@ class SpaceManagementTile extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 14),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _HubSummarySection(
+                space: space,
+                palette: palette,
+              ),
+            ),
+            const SizedBox(height: 14),
           ],
           Container(height: 1, color: palette.border),
           _ActionRow(
@@ -511,6 +519,103 @@ class _PairingSection extends StatelessWidget {
     if (diff.inHours < 1) return '${diff.inMinutes}m ago';
     if (diff.inDays < 1) return '${diff.inHours}h ago';
     return '${diff.inDays}d ago';
+  }
+}
+
+class _HubSummarySection extends StatelessWidget {
+  const _HubSummarySection({
+    required this.space,
+    required this.palette,
+  });
+
+  final LocationSpace space;
+  final _SpacePalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    final binding = space.hubBinding;
+    final isConfigured = binding != null;
+    final statusLabel = !isConfigured
+        ? 'IoT hub not configured'
+        : binding.isSyncPending
+            ? 'Provisioned locally, sync pending'
+            : binding.hasFailure
+                ? 'Hub binding needs attention'
+                : 'ESP32 is assigned to this space';
+    final detailLabel = !isConfigured
+        ? 'Open Space Settings to scan a CAM device and send Wi-Fi credentials.'
+        : '${binding.bleDeviceName} • ${binding.wifiSsid}';
+    final accent = !isConfigured
+        ? palette.textMuted
+        : binding.isSyncPending
+            ? const Color(0xFFB7791F)
+            : binding.hasFailure
+                ? AppColors.error
+                : palette.accent;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: palette.panel,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: palette.border),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              isConfigured ? LucideIcons.router : LucideIcons.wifiOff,
+              color: accent,
+              size: 17,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'IoT Hub & Wi-Fi',
+                  style: GoogleFonts.poppins(
+                    color: palette.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  statusLabel,
+                  style: GoogleFonts.inter(
+                    color: palette.textMuted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  detailLabel,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    color: palette.textPrimary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

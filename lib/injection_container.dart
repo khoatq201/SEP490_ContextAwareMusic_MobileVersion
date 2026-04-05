@@ -27,6 +27,17 @@ import 'features/device_pairing/domain/repositories/device_pairing_repository.da
 import 'features/device_pairing/domain/usecases/pair_device.dart';
 import 'features/device_pairing/presentation/bloc/device_pairing_bloc.dart';
 
+// Hub Management Feature
+import 'features/hub_management/data/datasources/space_hub_remote_datasource.dart';
+import 'features/hub_management/data/datasources/space_hub_stub_datasource.dart';
+import 'features/hub_management/data/repositories/space_hub_repository_impl.dart';
+import 'features/hub_management/data/services/ble_permission_service.dart';
+import 'features/hub_management/data/services/ble_provisioning_service.dart';
+import 'features/hub_management/data/services/provisioning_identity_resolver.dart';
+import 'features/hub_management/domain/repositories/space_hub_repository.dart';
+import 'features/hub_management/domain/usecases/space_hub_usecases.dart';
+import 'features/hub_management/presentation/bloc/hub_provisioning_bloc.dart';
+
 // Location Feature
 import 'features/locations/data/datasources/location_remote_datasource.dart';
 import 'features/locations/data/datasources/location_mock_datasource.dart';
@@ -267,6 +278,60 @@ Future<void> initializeDependencies() async {
   );
 
   // =============================================
+  // Hub Management Feature
+  // =============================================
+
+  // Data sources
+  sl.registerLazySingleton<SpaceHubRemoteDataSource>(
+    () => SpaceHubRemoteDataSourceImpl(dioClient: sl()),
+  );
+  sl.registerLazySingleton(
+    () => SpaceHubStubDataSource(localStorage: sl()),
+  );
+
+  // Services
+  sl.registerLazySingleton<BleProvisioningService>(
+    () => FlutterBleProvisioningService(),
+  );
+  sl.registerLazySingleton<BlePermissionService>(
+    () => PermissionHandlerBlePermissionService(),
+  );
+  sl.registerLazySingleton<ProvisioningIdentityResolver>(
+    () => const PrefixProvisioningIdentityResolver(
+      blePrefix: 'CAM',
+      sharedProofOfPossession: 'cam-shared-pop',
+    ),
+  );
+
+  // Repositories
+  sl.registerLazySingleton<SpaceHubRepository>(
+    () => SpaceHubRepositoryImpl(
+      remoteDataSource: sl(),
+      stubDataSource: sl(),
+      networkInfo: sl(),
+    ),
+  );
+
+  // Use cases
+  sl.registerLazySingleton(() => GetSpaceHubBinding(sl()));
+  sl.registerLazySingleton(() => UpsertSpaceHubBinding(sl()));
+  sl.registerLazySingleton(() => DeleteSpaceHubBinding(sl()));
+  sl.registerLazySingleton(() => RestartSpaceHub(sl()));
+
+  // BLoCs
+  sl.registerFactory(
+    () => HubProvisioningBloc(
+      getSpaceHubBinding: sl(),
+      upsertSpaceHubBinding: sl(),
+      deleteSpaceHubBinding: sl(),
+      restartSpaceHub: sl(),
+      bleProvisioningService: sl(),
+      blePermissionService: sl(),
+      identityResolver: sl(),
+    ),
+  );
+
+  // =============================================
   // Location Feature
   // =============================================
 
@@ -304,6 +369,7 @@ Future<void> initializeDependencies() async {
       getSpacesForStore: sl(),
       getSpacesForBrand: sl(),
       getSpaceState: sl(),
+      getSpaceHubBinding: sl(),
       getPairDeviceInfoForManager: sl(),
       getPairDeviceInfoForPlaybackDevice: sl(),
       generatePairCode: sl(),
