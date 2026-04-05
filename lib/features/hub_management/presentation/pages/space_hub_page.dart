@@ -5,6 +5,8 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/presentation/app_error_presentation.dart';
+import '../../../../core/widgets/app_status_banner.dart';
 import '../../domain/entities/ble_candidate.dart';
 import '../../domain/entities/hub_device_location.dart';
 import '../../domain/entities/space_hub_binding.dart';
@@ -119,12 +121,22 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
             children: [
               if (state.message != null &&
                   state.message!.trim().isNotEmpty) ...[
-                _MessageBanner(
+                AppStatusBanner(
+                  title: state.phase == HubProvisioningPhase.failure
+                      ? 'Setup needs attention'
+                      : (state.binding?.isSyncPending ?? false) ||
+                              (state.binding?.isDeviceLocationSyncPending ??
+                                  false)
+                          ? 'Sync pending'
+                          : 'Hub status',
                   message: state.message!,
-                  palette: palette,
-                  isError: state.phase == HubProvisioningPhase.failure,
-                  isWarning: (state.binding?.isSyncPending ?? false) ||
-                      (state.binding?.isDeviceLocationSyncPending ?? false),
+                  tone: state.phase == HubProvisioningPhase.failure
+                      ? AppStatusTone.error
+                      : (state.binding?.isSyncPending ?? false) ||
+                              (state.binding?.isDeviceLocationSyncPending ??
+                                  false)
+                          ? AppStatusTone.warning
+                          : AppStatusTone.info,
                 ),
                 const SizedBox(height: 16),
               ],

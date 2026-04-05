@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:dartz/dartz.dart';
+import '../../../../core/error/error_mapper.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/network/network_info.dart';
@@ -28,9 +29,19 @@ class SpaceRepositoryImpl implements SpaceRepository {
       return Right(
           spaces.map((model) => model.toEntity()).toList().cast<Space>());
     } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
+      return Left(
+        ErrorMapper.toFailure(
+          e,
+          fallbackMessage: 'Unable to load spaces right now.',
+        ),
+      );
     } on NetworkException catch (e) {
-      return Left(NetworkFailure(e.message));
+      return Left(
+        ErrorMapper.toFailure(
+          e,
+          fallbackMessage: 'Check your internet connection and try again.',
+        ),
+      );
     }
   }
 
@@ -44,9 +55,19 @@ class SpaceRepositoryImpl implements SpaceRepository {
       final space = await remoteDataSource.getSpaceById(spaceId);
       return Right(space.toEntity());
     } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
+      return Left(
+        ErrorMapper.toFailure(
+          e,
+          fallbackMessage: 'Unable to load this space right now.',
+        ),
+      );
     } on NetworkException catch (e) {
-      return Left(NetworkFailure(e.message));
+      return Left(
+        ErrorMapper.toFailure(
+          e,
+          fallbackMessage: 'Check your internet connection and try again.',
+        ),
+      );
     }
   }
 

@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/error/error_mapper.dart';
+import '../../../../core/error/failure_kind.dart';
 import '../../domain/entities/sensor_data.dart';
 import '../../domain/usecases/get_space_by_id.dart';
 import '../../domain/usecases/subscribe_to_sensor_data.dart';
@@ -41,7 +43,7 @@ class SpaceMonitoringBloc
       (failure) {
         emit(state.copyWith(
           status: SpaceMonitoringStatus.error,
-          errorMessage: failure.message,
+          errorMessage: ErrorMapper.displayMessageForFailure(failure),
         ));
       },
       (space) {
@@ -59,7 +61,10 @@ class SpaceMonitoringBloc
           onError: (error) {
             emit(state.copyWith(
               status: SpaceMonitoringStatus.error,
-              errorMessage: 'Failed to receive space updates: $error',
+              errorMessage: ErrorMapper.sanitizeMessageForDisplay(
+                '$error',
+                kind: FailureKind.mqtt,
+              ),
             ));
           },
         );
@@ -72,7 +77,10 @@ class SpaceMonitoringBloc
           onError: (error) {
             emit(state.copyWith(
               status: SpaceMonitoringStatus.error,
-              errorMessage: 'Failed to receive sensor data: $error',
+              errorMessage: ErrorMapper.sanitizeMessageForDisplay(
+                '$error',
+                kind: FailureKind.mqtt,
+              ),
             ));
           },
         );

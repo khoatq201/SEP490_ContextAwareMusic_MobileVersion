@@ -11,6 +11,7 @@ import '../../../../core/player/player_bloc.dart';
 import '../../../../core/player/player_event.dart';
 import '../../../../core/player/local_preview_feedback.dart';
 import '../../../../core/session/session_cubit.dart';
+import '../../../../core/widgets/app_error_view.dart';
 import '../../../../injection_container.dart';
 import '../../../space_control/domain/entities/track.dart';
 import '../../domain/entities/album_entity.dart';
@@ -25,13 +26,15 @@ class AlbumDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => sl<AlbumDetailCubit>()..load(albumId),
-      child: const _AlbumDetailView(),
+      child: _AlbumDetailView(albumId: albumId),
     );
   }
 }
 
 class _AlbumDetailView extends StatelessWidget {
-  const _AlbumDetailView();
+  const _AlbumDetailView({required this.albumId});
+
+  final String albumId;
 
   @override
   Widget build(BuildContext context) {
@@ -46,21 +49,13 @@ class _AlbumDetailView extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
           if (state.status == AlbumDetailStatus.error) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error_outline, size: 64, color: palette.textMuted),
-                  const SizedBox(height: 12),
-                  Text(state.errorMessage ?? 'An error occurred',
-                      style: TextStyle(color: palette.textMuted)),
-                  const SizedBox(height: 16),
-                  TextButton(
-                    onPressed: () => context.pop(),
-                    child: const Text('Go back'),
-                  ),
-                ],
-              ),
+            return AppErrorView(
+              failure: state.failure,
+              title: 'Album unavailable',
+              onRetry: () =>
+                  context.read<AlbumDetailCubit>().load(albumId),
+              onSecondaryAction: () => context.pop(),
+              secondaryLabel: 'Go back',
             );
           }
 

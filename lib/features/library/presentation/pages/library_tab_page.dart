@@ -461,113 +461,64 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
 
   // ── Create playlist dialog ─────────────────────────────────────────────────
   Future<void> _showCreatePlaylistDialog() async {
-    final palette = _Palette.fromBrightness(Theme.of(context).brightness);
-    final controller = TextEditingController();
+    final session = context.read<SessionCubit>().state;
+    final storeId = session.currentStore?.id;
+    final guardResult = evaluatePlaylistCreationGuard(
+      isPlaybackDevice: session.isPlaybackDevice,
+      currentRole: session.currentRole,
+      currentStoreId: storeId,
+    );
+    if (!guardResult.isAllowed) {
+      _showSnackBar(guardResult.errorMessage ?? 'Cannot create playlist.',
+          isError: true);
+      return;
+    }
 
-    final confirmed = await showDialog<bool>(
+    final draft = await showModalBottomSheet<_CreatePlaylistDraft>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: palette.card,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          'Create New Playlist',
-          style: GoogleFonts.poppins(
-            color: palette.textPrimary,
-            fontWeight: FontWeight.w700,
-            fontSize: 17,
-          ),
-        ),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          style: GoogleFonts.inter(color: palette.textPrimary, fontSize: 14),
-          cursorColor: palette.accent,
-          decoration: InputDecoration(
-            hintText: 'E.g.: Lunch music...',
-            hintStyle: GoogleFonts.inter(
-              color: palette.textMuted.withValues(alpha: 0.55),
-              fontSize: 14,
-            ),
-            filled: true,
-            fillColor: palette.overlay,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: palette.border),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: palette.border),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: palette.accent, width: 1.5),
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text('Cancel',
-                style: GoogleFonts.inter(color: palette.textMuted)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: palette.accent,
-              foregroundColor: palette.textOnAccent,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              elevation: 0,
-            ),
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text('Create',
-                style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
-          ),
-        ],
+      useRootNavigator: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _CreatePlaylistBottomSheet(
+        moods: _moods,
+        tracks: _tracks,
+        storeName: session.currentStore?.name,
       ),
     );
 
-    if (confirmed == true) {
-      if (!mounted) return;
-      final name = controller.text.trim();
-      if (name.isEmpty) return;
-      final session = context.read<SessionCubit>().state;
-      final storeId = session.currentStore?.id;
-      final guardResult = evaluatePlaylistCreationGuard(
-        isPlaybackDevice: session.isPlaybackDevice,
-        currentRole: session.currentRole,
-        currentStoreId: storeId,
+    if (draft == null) return;
+    if (!mounted) return;
+    final resolvedStoreId = storeId!;
+
+    try {
+      final createdPlaylistId = await createLibraryPlaylist(
+        playlistDataSource: sl<PlaylistRemoteDataSource>(),
+        name: draft.name,
+        storeId: resolvedStoreId,
+        description: draft.description,
+        moodId: draft.moodId,
+        isDefault: draft.isDefault ? true : null,
+        trackIds: draft.trackIds,
       );
-      if (!guardResult.isAllowed) {
-        _showSnackBar(guardResult.errorMessage ?? 'Cannot create playlist.',
-            isError: true);
-        return;
+
+      await _loadPlaylists();
+      if (!mounted) return;
+
+      _showSnackBar(
+        draft.trackIds.isEmpty
+            ? 'Playlist created.'
+            : 'Playlist created with ${draft.trackIds.length} track${draft.trackIds.length == 1 ? '' : 's'}.',
+      );
+
+      if (createdPlaylistId != null && createdPlaylistId.isNotEmpty) {
+        context.push('/home/playlist-detail', extra: createdPlaylistId);
       }
-      final resolvedStoreId = storeId!;
-
-      try {
-        final createdPlaylistId = await createLibraryPlaylist(
-          playlistDataSource: sl<PlaylistRemoteDataSource>(),
-          name: name,
-          storeId: resolvedStoreId,
-        );
-
-        await _loadPlaylists();
-        if (!mounted) return;
-
-        _showSnackBar('Playlist created.');
-
-        if (createdPlaylistId != null && createdPlaylistId.isNotEmpty) {
-          context.push('/home/playlist-detail', extra: createdPlaylistId);
-        }
-      } on ServerException catch (e) {
-        if (!mounted) return;
-        _showSnackBar(e.message, isError: true);
-      } catch (_) {
-        if (!mounted) return;
-        _showSnackBar('Failed to create playlist.', isError: true);
-      }
+    } on ServerException catch (e) {
+      if (!mounted) return;
+      _showSnackBar(e.message, isError: true);
+    } catch (_) {
+      if (!mounted) return;
+      _showSnackBar('Failed to create playlist.', isError: true);
     }
   }
 
@@ -3542,6 +3493,653 @@ InputDecoration _editorDecoration({
 String? _nullable(String value) {
   final trimmed = value.trim();
   return trimmed.isEmpty ? null : trimmed;
+}
+
+class _CreatePlaylistDraft {
+  const _CreatePlaylistDraft({
+    required this.name,
+    this.description,
+    this.moodId,
+    required this.isDefault,
+    required this.trackIds,
+  });
+
+  final String name;
+  final String? description;
+  final String? moodId;
+  final bool isDefault;
+  final List<String> trackIds;
+}
+
+class _CreatePlaylistBottomSheet extends StatefulWidget {
+  const _CreatePlaylistBottomSheet({
+    required this.moods,
+    required this.tracks,
+    this.storeName,
+  });
+
+  final List<Mood> moods;
+  final List<ApiTrack> tracks;
+  final String? storeName;
+
+  @override
+  State<_CreatePlaylistBottomSheet> createState() =>
+      _CreatePlaylistBottomSheetState();
+}
+
+class _CreatePlaylistBottomSheetState extends State<_CreatePlaylistBottomSheet> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _nameController;
+  late final TextEditingController _descriptionController;
+  late final TextEditingController _trackSearchController;
+  final Set<String> _selectedTrackIds = <String>{};
+  String? _selectedMoodId;
+  bool _isDefault = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController();
+    _descriptionController = TextEditingController();
+    _trackSearchController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _descriptionController.dispose();
+    _trackSearchController.dispose();
+    super.dispose();
+  }
+
+  List<Mood> get _sortedMoods {
+    final moods = [...widget.moods];
+    moods.sort(
+      (left, right) => left.name.toLowerCase().compareTo(
+            right.name.toLowerCase(),
+          ),
+    );
+    return moods;
+  }
+
+  List<ApiTrack> get _filteredTracks {
+    final tracks = [...widget.tracks];
+    tracks.sort(
+      (left, right) => left.title.toLowerCase().compareTo(
+            right.title.toLowerCase(),
+          ),
+    );
+
+    final query = _trackSearchController.text.trim().toLowerCase();
+    if (query.isEmpty) {
+      return tracks;
+    }
+
+    return tracks.where((track) {
+      final artist = track.artist?.trim() ?? '';
+      final mood = track.moodName?.trim() ?? '';
+      final haystack = '${track.title} $artist $mood'.toLowerCase();
+      return haystack.contains(query);
+    }).toList(growable: false);
+  }
+
+  void _toggleTrackSelection(String trackId, bool shouldSelect) {
+    setState(() {
+      if (shouldSelect) {
+        _selectedTrackIds.add(trackId);
+      } else {
+        _selectedTrackIds.remove(trackId);
+      }
+    });
+  }
+
+  void _submit() {
+    final isValid = _formKey.currentState?.validate() ?? false;
+    if (!isValid) {
+      return;
+    }
+
+    Navigator.of(context).pop(
+      _CreatePlaylistDraft(
+        name: _nameController.text.trim(),
+        description: _nullable(_descriptionController.text),
+        moodId: _selectedMoodId,
+        isDefault: _isDefault,
+        trackIds: _selectedTrackIds.toList(growable: false),
+      ),
+    );
+  }
+
+  String _trackSubtitle(ApiTrack track) {
+    final parts = <String>[
+      if (track.artist?.trim().isNotEmpty ?? false) track.artist!.trim(),
+      if (track.moodName?.trim().isNotEmpty ?? false) track.moodName!.trim(),
+      track.formattedDuration,
+    ];
+    return parts.join(' • ');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = _Palette.fromBrightness(Theme.of(context).brightness);
+    final isDark = palette.isDark;
+    final filteredTracks = _filteredTracks;
+    final selectedTrackCount = _selectedTrackIds.length;
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    return SafeArea(
+      top: false,
+      child: AnimatedPadding(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        padding: EdgeInsets.only(bottom: bottomInset),
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: Container(
+            height: screenHeight * 0.88,
+            decoration: BoxDecoration(
+              color: palette.card,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: palette.shadow.withValues(alpha: 0.2),
+                  blurRadius: 24,
+                  offset: const Offset(0, -8),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 44,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: palette.textMuted.withValues(alpha: 0.35),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Create Playlist',
+                              style: GoogleFonts.poppins(
+                                color: palette.textPrimary,
+                                fontSize: 22,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              widget.storeName?.trim().isNotEmpty == true
+                                  ? 'This playlist will be created for ${widget.storeName}. Add mood, description, default status, or a few starter tracks now.'
+                                  : 'Add mood, description, default status, or a few starter tracks now.',
+                              style: GoogleFonts.inter(
+                                color: palette.textMuted,
+                                fontSize: 12.5,
+                                height: 1.45,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      IconButton(
+                        tooltip: 'Close',
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: Icon(
+                          Icons.close_rounded,
+                          color: palette.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Divider(
+                  height: 1,
+                  color: palette.border.withValues(alpha: 0.85),
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: palette.overlay,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: palette.border.withValues(alpha: 0.8),
+                              ),
+                            ),
+                            child: Text(
+                              'Playlist name is required and must stay unique inside the current store. Description, mood, default flag, and starter tracks are optional.',
+                              style: GoogleFonts.inter(
+                                color: palette.textMuted,
+                                fontSize: 12,
+                                height: 1.45,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            controller: _nameController,
+                            autofocus: true,
+                            maxLength: 255,
+                            textInputAction: TextInputAction.next,
+                            style: GoogleFonts.inter(
+                              color: palette.textPrimary,
+                            ),
+                            decoration: _editorDecoration(
+                              label: 'Playlist name *',
+                              isDark: isDark,
+                            ).copyWith(
+                              hintText: 'Morning store opening mix',
+                              hintStyle: GoogleFonts.inter(
+                                color:
+                                    palette.textMuted.withValues(alpha: 0.55),
+                                fontSize: 13,
+                              ),
+                              counterStyle: GoogleFonts.inter(
+                                color:
+                                    palette.textMuted.withValues(alpha: 0.75),
+                                fontSize: 11,
+                              ),
+                            ),
+                            validator: (value) {
+                              final trimmed = value?.trim() ?? '';
+                              if (trimmed.isEmpty) {
+                                return 'Playlist name is required.';
+                              }
+                              if (trimmed.length > 255) {
+                                return 'Playlist name must be 255 characters or fewer.';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 10),
+                          TextFormField(
+                            controller: _descriptionController,
+                            maxLength: 2000,
+                            minLines: 3,
+                            maxLines: 5,
+                            style: GoogleFonts.inter(
+                              color: palette.textPrimary,
+                            ),
+                            decoration: _editorDecoration(
+                              label: 'Description',
+                              isDark: isDark,
+                            ).copyWith(
+                              hintText:
+                                  'Short note for the team or the intended vibe.',
+                              hintStyle: GoogleFonts.inter(
+                                color:
+                                    palette.textMuted.withValues(alpha: 0.55),
+                                fontSize: 13,
+                              ),
+                              counterStyle: GoogleFonts.inter(
+                                color:
+                                    palette.textMuted.withValues(alpha: 0.75),
+                                fontSize: 11,
+                              ),
+                              alignLabelWithHint: true,
+                            ),
+                            validator: (value) {
+                              final trimmedLength = value?.trim().length ?? 0;
+                              if (trimmedLength > 2000) {
+                                return 'Description must be 2000 characters or fewer.';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 10),
+                          DropdownButtonFormField<String?>(
+                            initialValue: _selectedMoodId,
+                            decoration: _editorDecoration(
+                              label: 'Mood',
+                              isDark: isDark,
+                            ),
+                            style: GoogleFonts.inter(
+                              color: palette.textPrimary,
+                              fontSize: 14,
+                            ),
+                            dropdownColor: palette.card,
+                            items: [
+                              const DropdownMenuItem<String?>(
+                                value: null,
+                                child: Text('No mood assigned'),
+                              ),
+                              ..._sortedMoods.map(
+                                (mood) => DropdownMenuItem<String?>(
+                                  value: mood.id,
+                                  child: Text(mood.name),
+                                ),
+                              ),
+                            ],
+                            onChanged: (value) {
+                              setState(() => _selectedMoodId = value);
+                            },
+                          ),
+                          const SizedBox(height: 8),
+                          SwitchListTile.adaptive(
+                            value: _isDefault,
+                            contentPadding: EdgeInsets.zero,
+                            activeThumbColor: palette.accent,
+                            activeTrackColor:
+                                palette.accent.withValues(alpha: 0.32),
+                            title: Text(
+                              'Set as store default playlist',
+                              style: GoogleFonts.inter(
+                                color: palette.textPrimary,
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            subtitle: Text(
+                              'Use this when the store should fall back to this playlist by default.',
+                              style: GoogleFonts.inter(
+                                color: palette.textMuted,
+                                fontSize: 11.5,
+                              ),
+                            ),
+                            onChanged: (value) {
+                              setState(() => _isDefault = value);
+                            },
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: palette.overlay,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: palette.border.withValues(alpha: 0.8),
+                              ),
+                            ),
+                            child: Theme(
+                              data: Theme.of(context).copyWith(
+                                dividerColor: Colors.transparent,
+                              ),
+                              child: ExpansionTile(
+                                tilePadding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 2,
+                                ),
+                                childrenPadding:
+                                    const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                collapsedShape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                title: Text(
+                                  'Initial tracks',
+                                  style: GoogleFonts.inter(
+                                    color: palette.textPrimary,
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  selectedTrackCount == 0
+                                      ? 'Optional. Start empty and add tracks later.'
+                                      : '$selectedTrackCount track${selectedTrackCount == 1 ? '' : 's'} selected for creation.',
+                                  style: GoogleFonts.inter(
+                                    color: palette.textMuted,
+                                    fontSize: 11.5,
+                                  ),
+                                ),
+                                children: [
+                                  if (widget.tracks.isEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(bottom: 4),
+                                      child: Text(
+                                        'No tracks are loaded in the library yet. You can still create the playlist now.',
+                                        style: GoogleFonts.inter(
+                                          color: palette.textMuted,
+                                          fontSize: 12,
+                                          height: 1.45,
+                                        ),
+                                      ),
+                                    )
+                                  else ...[
+                                    TextField(
+                                      controller: _trackSearchController,
+                                      onChanged: (_) => setState(() {}),
+                                      style: GoogleFonts.inter(
+                                        color: palette.textPrimary,
+                                      ),
+                                      decoration: _editorDecoration(
+                                        label: 'Search tracks',
+                                        isDark: isDark,
+                                      ).copyWith(
+                                        prefixIcon: Icon(
+                                          Icons.search_rounded,
+                                          color: palette.textMuted,
+                                        ),
+                                        suffixIcon: _trackSearchController
+                                                .text.isEmpty
+                                            ? null
+                                            : IconButton(
+                                                tooltip: 'Clear',
+                                                onPressed: () {
+                                                  _trackSearchController.clear();
+                                                  setState(() {});
+                                                },
+                                                icon: Icon(
+                                                  Icons.close_rounded,
+                                                  color: palette.textMuted,
+                                                ),
+                                              ),
+                                      ),
+                                    ),
+                                    if (selectedTrackCount > 0) ...[
+                                      const SizedBox(height: 8),
+                                      Align(
+                                        alignment: Alignment.centerRight,
+                                        child: TextButton(
+                                          onPressed: () {
+                                            setState(
+                                              () => _selectedTrackIds.clear(),
+                                            );
+                                          },
+                                          child: const Text('Clear selection'),
+                                        ),
+                                      ),
+                                    ],
+                                    const SizedBox(height: 10),
+                                    SizedBox(
+                                      height: 240,
+                                      child: DecoratedBox(
+                                        decoration: BoxDecoration(
+                                          color: palette.card,
+                                          borderRadius:
+                                              BorderRadius.circular(14),
+                                          border: Border.all(
+                                            color: palette.border,
+                                          ),
+                                        ),
+                                        child: ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(14),
+                                          child: filteredTracks.isEmpty
+                                              ? Center(
+                                                  child: Padding(
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                      horizontal: 20,
+                                                    ),
+                                                    child: Text(
+                                                      'No tracks match your search.',
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                      style: GoogleFonts.inter(
+                                                        color:
+                                                            palette.textMuted,
+                                                        fontSize: 12,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                )
+                                              : ListView.separated(
+                                                  itemCount:
+                                                      filteredTracks.length,
+                                                  separatorBuilder:
+                                                      (_, __) => Divider(
+                                                    height: 1,
+                                                    color: palette.border
+                                                        .withValues(
+                                                      alpha: 0.7,
+                                                    ),
+                                                  ),
+                                                  itemBuilder:
+                                                      (context, index) {
+                                                    final track =
+                                                        filteredTracks[index];
+                                                    final isSelected =
+                                                        _selectedTrackIds
+                                                            .contains(track.id);
+
+                                                    return CheckboxListTile
+                                                        .adaptive(
+                                                      value: isSelected,
+                                                      controlAffinity:
+                                                          ListTileControlAffinity
+                                                              .leading,
+                                                      activeColor:
+                                                          palette.accent,
+                                                      checkboxShape:
+                                                          RoundedRectangleBorder(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(6),
+                                                      ),
+                                                      title: Text(
+                                                        track.title,
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                        style:
+                                                            GoogleFonts.inter(
+                                                          color: palette
+                                                              .textPrimary,
+                                                          fontSize: 13,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                        ),
+                                                      ),
+                                                      subtitle: Text(
+                                                        _trackSubtitle(track),
+                                                        maxLines: 2,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                        style:
+                                                            GoogleFonts.inter(
+                                                          color:
+                                                              palette.textMuted,
+                                                          fontSize: 11.5,
+                                                        ),
+                                                      ),
+                                                      contentPadding:
+                                                          const EdgeInsets
+                                                              .symmetric(
+                                                        horizontal: 10,
+                                                      ),
+                                                      onChanged: (value) {
+                                                        _toggleTrackSelection(
+                                                          track.id,
+                                                          value ?? false,
+                                                        );
+                                                      },
+                                                    );
+                                                  },
+                                                ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Divider(
+                  height: 1,
+                  color: palette.border.withValues(alpha: 0.85),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: palette.textMuted,
+                            side: BorderSide(color: palette.border),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          child: Text(
+                            'Cancel',
+                            style: GoogleFonts.inter(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: _submit,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: palette.accent,
+                            foregroundColor: palette.textOnAccent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          child: Text(
+                            'Create Playlist',
+                            style: GoogleFonts.inter(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _FilePickerTile extends StatelessWidget {

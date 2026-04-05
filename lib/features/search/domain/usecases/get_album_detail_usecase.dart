@@ -1,10 +1,14 @@
+import 'package:dartz/dartz.dart';
+
+import '../../../../core/error/failures.dart';
 import '../entities/album_entity.dart';
 import '../repositories/search_repository.dart';
 
 class GetAlbumDetailUseCase {
-  final SearchRepository repository;
   GetAlbumDetailUseCase(this.repository);
 
-  Future<AlbumEntity> call(String albumId) =>
+  final SearchRepository repository;
+
+  Future<Either<Failure, AlbumEntity>> call(String albumId) =>
       repository.getAlbumDetail(albumId);
 }

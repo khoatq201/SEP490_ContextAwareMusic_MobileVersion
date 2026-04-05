@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
-import '../../../../core/error/exceptions.dart';
+
+import '../../../../core/error/error_mapper.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/network/network_info.dart';
@@ -10,17 +11,17 @@ import '../datasources/auth_remote_datasource.dart';
 import '../models/user_model.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
-  final AuthRemoteDataSource remoteDataSource;
-  final LocalStorageService localStorage;
-  final NetworkInfo networkInfo;
-  final DioClient dioClient;
-
   AuthRepositoryImpl({
     required this.remoteDataSource,
     required this.localStorage,
     required this.networkInfo,
     required this.dioClient,
   });
+
+  final AuthRemoteDataSource remoteDataSource;
+  final LocalStorageService localStorage;
+  final NetworkInfo networkInfo;
+  final DioClient dioClient;
 
   @override
   Future<Either<Failure, User>> login({
@@ -33,14 +34,12 @@ class AuthRepositoryImpl implements AuthRepository {
     }
 
     try {
-      // 1. Call login API → get accessToken + expiresAt + roles
       final authResponse = await remoteDataSource.login(
         email: email,
         password: password,
         rememberMe: rememberMe,
       );
 
-      // 2. Switch the app back to manager mode.
       await localStorage.clearDeviceSession();
       await localStorage.saveManagerAuthToken(authResponse.accessToken);
       await localStorage.saveManagerAccessTokenExpiry(authResponse.expiresAt);
@@ -48,42 +47,44 @@ class AuthRepositoryImpl implements AuthRepository {
         LocalStorageService.sessionModeManager,
       );
 
-      // 3. Fetch full profile
       final profileResponse = await remoteDataSource.getProfile();
       final user = profileResponse.toUser();
 
-      // 4. Save user locally for offline / cache-first reads
       await localStorage.saveUser(UserModel.fromEntity(user).toJson());
 
       return Right(user);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
-    } on AuthenticationException catch (e) {
-      return Left(ServerFailure(e.message));
-    } catch (e) {
-      return Left(ServerFailure('Failed to login: $e'));
+    } catch (error, stackTrace) {
+      return Left(
+        ErrorMapper.toFailure(
+          error,
+          fallbackMessage: 'Login failed. Please try again.',
+          stackTrace: stackTrace,
+        ),
+      );
     }
   }
 
   @override
   Future<Either<Failure, void>> logout() async {
     try {
-      // Call API to logout (invalidate refresh token cookie on server)
       if (await networkInfo.isConnected) {
         try {
           await remoteDataSource.logout();
-        } catch (_) {
-          // Even if logout API fails, we still clear local state
-        }
+        } catch (_) {}
       }
 
-      // Clear only manager artifacts.
       await localStorage.clearManagerSession();
       await dioClient.clearCookies();
 
       return const Right(null);
-    } catch (e) {
-      return Left(ServerFailure('Failed to logout: $e'));
+    } catch (error, stackTrace) {
+      return Left(
+        ErrorMapper.toFailure(
+          error,
+          fallbackMessage: 'We could not sign you out right now.',
+          stackTrace: stackTrace,
+        ),
+      );
     }
   }
 
@@ -96,14 +97,12 @@ class AuthRepositoryImpl implements AuthRepository {
         return const Left(CacheFailure('No user found'));
       }
 
-      // Cache-first: check local storage
       final userJson = await localStorage.getUser();
       if (userJson != null) {
         final userModel = UserModel.fromJson(userJson);
         return Right(userModel.toEntity());
       }
 
-      // Fallback: fetch from API if online
       if (await networkInfo.isConnected) {
         final profileResponse = await remoteDataSource.getProfile();
         final user = profileResponse.toUser();
@@ -115,12 +114,14 @@ class AuthRepositoryImpl implements AuthRepository {
       }
 
       return const Left(CacheFailure('No user found'));
-    } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
-    } on AuthenticationException {
-      return const Left(ServerFailure('Session expired. Please login again.'));
-    } catch (e) {
-      return Left(CacheFailure('Failed to get current user: $e'));
+    } catch (error, stackTrace) {
+      return Left(
+        ErrorMapper.toFailure(
+          error,
+          fallbackMessage: 'We could not restore your session.',
+          stackTrace: stackTrace,
+        ),
+      );
     }
   }
 
@@ -129,7 +130,7 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       final token = localStorage.getManagerAuthToken();
       return Right(token != null && token.isNotEmpty);
-    } catch (e) {
+    } catch (_) {
       return const Right(false);
     }
   }
@@ -151,10 +152,14 @@ class AuthRepositoryImpl implements AuthRepository {
         confirmPassword: confirmPassword,
       );
       return const Right(null);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
-    } catch (e) {
-      return Left(ServerFailure('Failed to change password: $e'));
+    } catch (error, stackTrace) {
+      return Left(
+        ErrorMapper.toFailure(
+          error,
+          fallbackMessage: 'We could not change your password right now.',
+          stackTrace: stackTrace,
+        ),
+      );
     }
   }
 
@@ -165,28 +170,27 @@ class AuthRepositoryImpl implements AuthRepository {
     }
 
     try {
-      // 1. Call refresh-token API (uses HttpOnly cookie)
       final authResponse = await remoteDataSource.refreshToken();
 
-      // 2. Save new access token & expiry
       await localStorage.saveManagerAuthToken(authResponse.accessToken);
       await localStorage.saveManagerAccessTokenExpiry(authResponse.expiresAt);
       await localStorage.saveActiveSessionMode(
         LocalStorageService.sessionModeManager,
       );
 
-      // 3. Fetch updated profile
       final profileResponse = await remoteDataSource.getProfile();
       final user = profileResponse.toUser();
       await localStorage.saveUser(UserModel.fromEntity(user).toJson());
 
       return Right(user);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
-    } on AuthenticationException catch (e) {
-      return Left(ServerFailure(e.message));
-    } catch (e) {
-      return Left(ServerFailure('Failed to refresh token: $e'));
+    } catch (error, stackTrace) {
+      return Left(
+        ErrorMapper.toFailure(
+          error,
+          fallbackMessage: 'We could not refresh your session right now.',
+          stackTrace: stackTrace,
+        ),
+      );
     }
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/error/error_mapper.dart';
 import '../../../cams/domain/usecases/cancel_override.dart';
 import '../../../cams/domain/usecases/get_space_state.dart';
 import '../../../cams/domain/usecases/override_space.dart';
@@ -44,7 +45,7 @@ class HomeCubit extends Cubit<HomeState> {
       sensorsResult.fold(
         (failure) => emit(state.copyWith(
           status: HomeStatus.error,
-          errorMessage: failure.message,
+          errorMessage: ErrorMapper.displayMessageForFailure(failure),
         )),
         (sensors) => emit(state.copyWith(
           status: HomeStatus.loaded,
@@ -62,13 +63,13 @@ class HomeCubit extends Cubit<HomeState> {
     sensorsResult.fold(
       (failure) => emit(state.copyWith(
         status: HomeStatus.error,
-        errorMessage: failure.message,
+        errorMessage: ErrorMapper.displayMessageForFailure(failure),
       )),
       (sensors) {
         categoriesResult.fold(
           (failure) => emit(state.copyWith(
             status: HomeStatus.error,
-            errorMessage: failure.message,
+            errorMessage: ErrorMapper.displayMessageForFailure(failure),
           )),
           (categories) {
             final moods = loadMoods
@@ -196,7 +197,8 @@ class HomeCubit extends Cubit<HomeState> {
     result.fold(
       (failure) => emit(state.copyWith(
         isApplyingOverride: false,
-        modeMessage: 'Switch to auto failed: ${failure.message}',
+        modeMessage:
+            'Switch to auto failed: ${ErrorMapper.displayMessageForFailure(failure)}',
       )),
       (_) async {
         emit(state.copyWith(
@@ -226,7 +228,8 @@ class HomeCubit extends Cubit<HomeState> {
     result.fold(
       (failure) => emit(state.copyWith(
         isApplyingOverride: false,
-        modeMessage: 'Override failed: ${failure.message}',
+        modeMessage:
+            'Override failed: ${ErrorMapper.displayMessageForFailure(failure)}',
       )),
       (_) async {
         emit(state.copyWith(

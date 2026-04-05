@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/error/error_mapper.dart';
 import '../../../../core/models/pagination_result.dart';
 import '../../../../core/session/session_cubit.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
@@ -123,7 +124,7 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
     await result.fold(
       (failure) async => emit(state.copyWith(
         status: LocationStatus.failure,
-        errorMessage: failure.message,
+        errorMessage: ErrorMapper.displayMessageForFailure(failure),
       )),
       (space) async {
         final enriched = await _enrichSpaces(
@@ -185,7 +186,7 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
     await result.fold(
       (failure) async => emit(state.copyWith(
         status: LocationStatus.failure,
-        errorMessage: failure.message,
+        errorMessage: ErrorMapper.displayMessageForFailure(failure),
       )),
       (brandSpacesMap) async {
         final enriched = await _enrichBrandSpaces(
@@ -228,7 +229,7 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
     await result.fold(
       (failure) async => emit(state.copyWith(
         status: LocationStatus.failure,
-        errorMessage: failure.message,
+        errorMessage: ErrorMapper.displayMessageForFailure(failure),
       )),
       (spacesPagination) async {
         final enrichedItems = await _enrichSpaces(
@@ -279,7 +280,9 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
     await result.fold(
       (failure) async {
         emit(_withSpaceBusy(
-          state.copyWith(errorMessage: failure.message),
+          state.copyWith(
+            errorMessage: ErrorMapper.displayMessageForFailure(failure),
+          ),
           event.spaceId,
           false,
         ));
@@ -315,7 +318,9 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
     await result.fold(
       (failure) async {
         emit(_withSpaceBusy(
-          state.copyWith(errorMessage: failure.message),
+          state.copyWith(
+            errorMessage: ErrorMapper.displayMessageForFailure(failure),
+          ),
           event.spaceId,
           false,
         ));
@@ -347,7 +352,9 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
     await result.fold(
       (failure) async {
         emit(_withSpaceBusy(
-          state.copyWith(errorMessage: failure.message),
+          state.copyWith(
+            errorMessage: ErrorMapper.displayMessageForFailure(failure),
+          ),
           event.spaceId,
           false,
         ));

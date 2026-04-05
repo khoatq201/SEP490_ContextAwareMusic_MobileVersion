@@ -5,6 +5,7 @@ import '../../../../core/constants/api_constants.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/constants/app_typography.dart';
+import '../../../../core/widgets/app_inline_error_card.dart';
 import '../../../../core/widgets/cams_logo.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
@@ -87,20 +88,7 @@ class _LoginPageV2State extends State<LoginPageV2>
   Widget build(BuildContext context) {
     return Scaffold(
       body: BlocConsumer<AuthBloc, AuthState>(
-        listener: (context, state) {
-          if (state.status == AuthStatus.error) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.errorMessage ?? 'Login failed'),
-                backgroundColor: AppColors.error,
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-                ),
-              ),
-            );
-          }
-        },
+        listener: (_, __) {},
         builder: (context, state) {
           final isLoading = state.status == AuthStatus.loading;
           final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -171,6 +159,15 @@ class _LoginPageV2State extends State<LoginPageV2>
                                   textAlign: TextAlign.center,
                                 ),
                                 const SizedBox(height: AppDimensions.spacingLg),
+                                if (state.failure != null) ...[
+                                  AppInlineErrorCard(
+                                    failure: state.failure,
+                                    title: 'Sign-in failed',
+                                    margin: const EdgeInsets.only(
+                                      bottom: AppDimensions.spacingMd,
+                                    ),
+                                  ),
+                                ],
                                 TextFormField(
                                   controller: _emailController,
                                   validator: _validateEmail,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/widgets/app_inline_error_card.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -52,16 +53,7 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: BlocConsumer<AuthBloc, AuthState>(
-        listener: (context, state) {
-          if (state.status == AuthStatus.error) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.errorMessage ?? 'Login failed'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-        },
+        listener: (_, __) {},
         builder: (context, state) {
           final isLoading = state.status == AuthStatus.loading;
           final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -140,6 +132,13 @@ class _LoginPageState extends State<LoginPage> {
                                   textAlign: TextAlign.center,
                                 ),
                                 const SizedBox(height: 32),
+                                if (state.failure != null) ...[
+                                  AppInlineErrorCard(
+                                    failure: state.failure,
+                                    title: 'Sign-in failed',
+                                    margin: const EdgeInsets.only(bottom: 16),
+                                  ),
+                                ],
 
                                 // Email Field
                                 TextFormField(

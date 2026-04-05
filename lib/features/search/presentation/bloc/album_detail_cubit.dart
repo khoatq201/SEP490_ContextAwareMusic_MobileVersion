@@ -1,48 +1,52 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/error/failures.dart';
 import '../../domain/entities/album_entity.dart';
 import '../../domain/usecases/get_album_detail_usecase.dart';
 
-// ─── State ───────────────────────────────────────────────────────────────────
 class AlbumDetailState extends Equatable {
-  final AlbumDetailStatus status;
-  final AlbumEntity? album;
-  final String? errorMessage;
-
   const AlbumDetailState({
     this.status = AlbumDetailStatus.initial,
     this.album,
-    this.errorMessage,
+    this.failure,
   });
 
+  final AlbumDetailStatus status;
+  final AlbumEntity? album;
+  final Failure? failure;
+
+  String? get errorMessage => failure?.message;
+
   @override
-  List<Object?> get props => [status, album, errorMessage];
+  List<Object?> get props => [status, album, failure];
 }
 
 enum AlbumDetailStatus { initial, loading, loaded, error }
 
-// ─── Cubit ───────────────────────────────────────────────────────────────────
 class AlbumDetailCubit extends Cubit<AlbumDetailState> {
-  final GetAlbumDetailUseCase _getAlbumDetail;
-
   AlbumDetailCubit({required GetAlbumDetailUseCase getAlbumDetail})
       : _getAlbumDetail = getAlbumDetail,
         super(const AlbumDetailState());
 
+  final GetAlbumDetailUseCase _getAlbumDetail;
+
   Future<void> load(String albumId) async {
     emit(const AlbumDetailState(status: AlbumDetailStatus.loading));
-    try {
-      final album = await _getAlbumDetail(albumId);
-      emit(AlbumDetailState(
-        status: AlbumDetailStatus.loaded,
-        album: album,
-      ));
-    } catch (e) {
-      emit(AlbumDetailState(
-        status: AlbumDetailStatus.error,
-        errorMessage: e.toString(),
-      ));
-    }
+    final result = await _getAlbumDetail(albumId);
+    result.fold(
+      (failure) => emit(
+        AlbumDetailState(
+          status: AlbumDetailStatus.error,
+          failure: failure,
+        ),
+      ),
+      (album) => emit(
+        AlbumDetailState(
+          status: AlbumDetailStatus.loaded,
+          album: album,
+        ),
+      ),
+    );
   }
 }

@@ -8,9 +8,13 @@ import '../../../../core/constants/app_typography.dart';
 import '../../../../core/enums/entity_status_enum.dart';
 import '../../../../core/enums/space_type_enum.dart';
 import '../../../../core/enums/user_role.dart';
+import '../../../../core/error/failures.dart';
 import '../../../../core/player/player_bloc.dart';
 import '../../../../core/player/player_event.dart';
 import '../../../../core/player/space_info.dart';
+import '../../../../core/presentation/app_feedback.dart';
+import '../../../../core/widgets/app_error_view.dart';
+import '../../../../core/widgets/app_feedback_presenter.dart';
 import '../../../../injection_container.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
@@ -244,10 +248,24 @@ class StoreDashboardPage extends StatelessWidget {
     String message, {
     bool isError = false,
   }) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? AppColors.error : null,
+    AppFeedbackPresenter.show(
+      context,
+      isError
+          ? AppFeedback.error(message, title: 'Request failed')
+          : AppFeedback.success(message),
+    );
+  }
+
+  void _showStoreFailure(
+    BuildContext context,
+    Failure failure, {
+    String title = 'Request failed',
+  }) {
+    AppFeedbackPresenter.show(
+      context,
+      AppFeedback.fromFailure(
+        failure,
+        title: title,
       ),
     );
   }
@@ -344,7 +362,7 @@ class StoreDashboardPage extends StatelessWidget {
     if (!context.mounted) return;
 
     result.fold(
-      (failure) => _showStoreSnackBar(context, failure.message, isError: true),
+      (failure) => _showStoreFailure(context, failure, title: 'Update failed'),
       (success) {
         context
             .read<StoreDashboardBloc>()
@@ -362,7 +380,8 @@ class StoreDashboardPage extends StatelessWidget {
     if (!context.mounted) return;
 
     result.fold(
-      (failure) => _showStoreSnackBar(context, failure.message, isError: true),
+      (failure) =>
+          _showStoreFailure(context, failure, title: 'Status update failed'),
       (success) {
         context
             .read<StoreDashboardBloc>()
@@ -402,7 +421,7 @@ class StoreDashboardPage extends StatelessWidget {
     if (!context.mounted) return;
 
     result.fold(
-      (failure) => _showStoreSnackBar(context, failure.message, isError: true),
+      (failure) => _showStoreFailure(context, failure, title: 'Delete failed'),
       (success) {
         _showStoreSnackBar(
           context,
@@ -470,7 +489,8 @@ class StoreDashboardPage extends StatelessWidget {
     if (!context.mounted) return;
 
     result.fold(
-      (failure) => _showStoreSnackBar(context, failure.message, isError: true),
+      (failure) =>
+          _showStoreFailure(context, failure, title: 'Music policy failed'),
       (success) {
         context.read<StoreDashboardBloc>().add(
               RefreshStoreDashboard(storeId: store.id),
@@ -571,14 +591,8 @@ class StoreDashboardPage extends StatelessWidget {
                 sessionCubit.changeStore(state.store!);
               }
             }
-            if (state.status == StoreDashboardStatus.error &&
-                state.errorMessage != null) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.errorMessage!),
-                  backgroundColor: AppColors.error,
-                ),
-              );
+            if (state.feedback != null) {
+              AppFeedbackPresenter.show(context, state.feedback!);
             }
           },
           builder: (context, state) {
@@ -590,37 +604,12 @@ class StoreDashboardPage extends StatelessWidget {
 
             if (state.status == StoreDashboardStatus.error &&
                 state.store == null) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 64,
-                      color: AppColors.error,
+              return AppErrorView(
+                failure: state.failure,
+                title: 'Store unavailable',
+                onRetry: () => context.read<StoreDashboardBloc>().add(
+                      LoadStoreDashboard(storeId: storeId),
                     ),
-                    const SizedBox(height: AppDimensions.spacingMd),
-                    Text(
-                      state.errorMessage ?? 'An error occurred',
-                      style: AppTypography.bodyMedium.copyWith(
-                        color: isDark
-                            ? AppColors.textDarkSecondary
-                            : AppColors.textSecondary,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: AppDimensions.spacingMd),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        context.read<StoreDashboardBloc>().add(
-                              LoadStoreDashboard(storeId: storeId),
-                            );
-                      },
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Retry'),
-                    ),
-                  ],
-                ),
               );
             }
 

@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 
+import '../../../../core/error/error_mapper.dart';
 import '../../../../core/error/failures.dart';
 import '../../domain/entities/offline_playlist.dart';
 import '../../domain/repositories/offline_playlist_repository.dart';
@@ -16,7 +17,12 @@ class OfflinePlaylistRepositoryImpl implements OfflinePlaylistRepository {
       final playlists = await dataSource.getAvailablePlaylists();
       return Right(playlists);
     } catch (e) {
-      return Left(ServerFailure(e.toString()));
+      return Left(
+        ErrorMapper.toFailure(
+          e,
+          fallbackMessage: 'Unable to load offline playlists right now.',
+        ),
+      );
     }
   }
 
@@ -27,7 +33,12 @@ class OfflinePlaylistRepositoryImpl implements OfflinePlaylistRepository {
         yield Right(progress);
       }
     } catch (e) {
-      yield Left(ServerFailure(e.toString()));
+      yield Left(
+        ErrorMapper.toFailure(
+          e,
+          fallbackMessage: 'Unable to download this playlist right now.',
+        ),
+      );
     }
   }
 
@@ -37,7 +48,12 @@ class OfflinePlaylistRepositoryImpl implements OfflinePlaylistRepository {
       await dataSource.deletePlaylist(playlistId);
       return const Right(null);
     } catch (e) {
-      return Left(CacheFailure(e.toString()));
+      return Left(
+        ErrorMapper.toFailure(
+          e,
+          fallbackMessage: 'Unable to remove the downloaded playlist.',
+        ),
+      );
     }
   }
 
@@ -52,7 +68,12 @@ class OfflinePlaylistRepositoryImpl implements OfflinePlaylistRepository {
           .toList();
       return Right(downloaded);
     } catch (e) {
-      return Left(CacheFailure(e.toString()));
+      return Left(
+        ErrorMapper.toFailure(
+          e,
+          fallbackMessage: 'Unable to load downloaded playlists right now.',
+        ),
+      );
     }
   }
 }

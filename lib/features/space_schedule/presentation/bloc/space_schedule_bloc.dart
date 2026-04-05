@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:dartz/dartz.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/error/error_mapper.dart';
 import '../../../../core/error/failures.dart';
 import '../../domain/entities/schedule_music_item.dart';
 import '../../domain/entities/schedule_slot.dart';
@@ -62,7 +63,7 @@ class SpaceScheduleBloc extends Bloc<SpaceScheduleEvent, SpaceScheduleState> {
       (failure) => emit(
         state.copyWith(
           status: SpaceScheduleStatus.error,
-          errorMessage: failure.message,
+          errorMessage: ErrorMapper.displayMessageForFailure(failure),
           clearFeedbackMessage: true,
         ),
       ),
@@ -274,7 +275,7 @@ class SpaceScheduleBloc extends Bloc<SpaceScheduleEvent, SpaceScheduleState> {
       (failure) => emit(
         state.copyWith(
           status: SpaceScheduleStatus.loaded,
-          errorMessage: failure.message,
+          errorMessage: ErrorMapper.displayMessageForFailure(failure),
         ),
       ),
       (source) => emit(
@@ -324,7 +325,7 @@ class SpaceScheduleBloc extends Bloc<SpaceScheduleEvent, SpaceScheduleState> {
       (failure) => emit(
         state.copyWith(
           status: SpaceScheduleStatus.loaded,
-          errorMessage: failure.message,
+          errorMessage: ErrorMapper.displayMessageForFailure(failure),
           clearFeedbackMessage: true,
         ),
       ),

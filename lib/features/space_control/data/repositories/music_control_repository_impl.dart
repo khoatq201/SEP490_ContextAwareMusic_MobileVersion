@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import '../../../../core/error/error_mapper.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/network/network_info.dart';
@@ -33,9 +34,19 @@ class MusicControlRepositoryImpl implements MusicControlRepository {
       );
       return const Right(null);
     } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
+      return Left(
+        ErrorMapper.toFailure(
+          e,
+          fallbackMessage: 'Unable to change the mood right now.',
+        ),
+      );
     } on NetworkException catch (e) {
-      return Left(NetworkFailure(e.message));
+      return Left(
+        ErrorMapper.toFailure(
+          e,
+          fallbackMessage: 'Check your internet connection and try again.',
+        ),
+      );
     }
   }
 
@@ -66,9 +77,19 @@ class MusicControlRepositoryImpl implements MusicControlRepository {
       await remoteDataSource.sendMusicControl(spaceId, action);
       return const Right(null);
     } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
+      return Left(
+        ErrorMapper.toFailure(
+          e,
+          fallbackMessage: 'Unable to control playback right now.',
+        ),
+      );
     } on NetworkException catch (e) {
-      return Left(NetworkFailure(e.message));
+      return Left(
+        ErrorMapper.toFailure(
+          e,
+          fallbackMessage: 'Check your internet connection and try again.',
+        ),
+      );
     }
   }
 

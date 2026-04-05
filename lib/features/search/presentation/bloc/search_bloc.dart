@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../domain/entities/search_filter_tag.dart';
 import '../../domain/entities/search_result.dart';
 import '../../domain/usecases/get_categories_usecase.dart';
@@ -9,11 +10,6 @@ import 'search_event.dart';
 import 'search_state.dart';
 
 class SearchBloc extends Bloc<SearchEvent, SearchState> {
-  final GetCategoriesUseCase _getCategories;
-  final SearchMusicUseCase _searchMusic;
-  final SearchByTypeUseCase _searchByType;
-  final GetFeaturedPlaylistsUseCase _getFeaturedPlaylists;
-
   SearchBloc({
     required GetCategoriesUseCase getCategories,
     required SearchMusicUseCase searchMusic,
@@ -31,68 +27,104 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
     on<LoadFeaturedEvent>(_onLoadFeatured);
   }
 
+  final GetCategoriesUseCase _getCategories;
+  final SearchMusicUseCase _searchMusic;
+  final SearchByTypeUseCase _searchByType;
+  final GetFeaturedPlaylistsUseCase _getFeaturedPlaylists;
+
   Future<void> _onLoadCategories(
     LoadCategoriesEvent event,
     Emitter<SearchState> emit,
   ) async {
-    emit(state.copyWith(status: SearchStatus.loading));
-    try {
-      final cats = await _getCategories();
-      emit(state.copyWith(status: SearchStatus.success, categories: cats));
-    } catch (e) {
-      emit(state.copyWith(
-        status: SearchStatus.failure,
-        errorMessage: e.toString(),
-      ));
-    }
+    emit(state.copyWith(status: SearchStatus.loading, clearFailure: true));
+
+    final result = await _getCategories();
+    result.fold(
+      (failure) => emit(
+        state.copyWith(
+          status: SearchStatus.failure,
+          failure: failure,
+        ),
+      ),
+      (categories) => emit(
+        state.copyWith(
+          status: SearchStatus.success,
+          categories: categories,
+          clearFailure: true,
+        ),
+      ),
+    );
   }
 
   Future<void> _onQueryChanged(
     QueryChangedEvent event,
     Emitter<SearchState> emit,
   ) async {
-    final q = event.query.trim();
-    if (q.isEmpty) {
-      emit(state.copyWith(query: '', results: []));
+    final query = event.query.trim();
+    if (query.isEmpty) {
+      emit(
+        state.copyWith(
+          query: '',
+          results: const [],
+          status: SearchStatus.initial,
+          clearFailure: true,
+        ),
+      );
       return;
     }
-    emit(state.copyWith(query: q, status: SearchStatus.loading));
-    try {
-      final tag = state.activeTag;
-      List<SearchResult> results;
 
-      if (tag == SearchFilterTag.all || tag == SearchFilterTag.featuring) {
-        results = await _searchMusic(q);
-      } else {
-        final typeMap = {
-          SearchFilterTag.playlists: SearchResultType.playlist,
-          SearchFilterTag.artists: SearchResultType.artist,
-          SearchFilterTag.songs: SearchResultType.song,
-          SearchFilterTag.albums: SearchResultType.album,
-          SearchFilterTag.categories: SearchResultType.category,
-        };
-        results = await _searchByType(q, typeMap[tag]!);
-      }
+    emit(
+      state.copyWith(
+        query: query,
+        status: SearchStatus.loading,
+        clearFailure: true,
+      ),
+    );
 
-      emit(state.copyWith(
-        status: SearchStatus.success,
-        results: results,
-        query: q,
-      ));
-    } catch (e) {
-      emit(state.copyWith(
-        status: SearchStatus.failure,
-        errorMessage: e.toString(),
-      ));
-    }
+    final tag = state.activeTag;
+    final typeMap = {
+      SearchFilterTag.playlists: SearchResultType.playlist,
+      SearchFilterTag.artists: SearchResultType.artist,
+      SearchFilterTag.songs: SearchResultType.song,
+      SearchFilterTag.albums: SearchResultType.album,
+      SearchFilterTag.categories: SearchResultType.category,
+    };
+
+    final result =
+        tag == SearchFilterTag.all || tag == SearchFilterTag.featuring
+            ? await _searchMusic(query)
+            : await _searchByType(query, typeMap[tag]!);
+
+    result.fold(
+      (failure) => emit(
+        state.copyWith(
+          status: SearchStatus.failure,
+          failure: failure,
+          results: const [],
+          query: query,
+        ),
+      ),
+      (results) => emit(
+        state.copyWith(
+          status: SearchStatus.success,
+          results: results,
+          query: query,
+          clearFailure: true,
+        ),
+      ),
+    );
   }
 
   void _onClearSearch(ClearSearchEvent event, Emitter<SearchState> emit) {
-    emit(state.copyWith(
-      query: '',
-      results: [],
-      activeTag: SearchFilterTag.all,
-    ));
+    emit(
+      state.copyWith(
+        query: '',
+        results: const [],
+        activeTag: SearchFilterTag.all,
+        status: SearchStatus.initial,
+        clearFailure: true,
+      ),
+    );
   }
 
   Future<void> _onFilterTagChanged(
@@ -101,11 +133,10 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
   ) async {
     emit(state.copyWith(activeTag: event.tag));
 
-    // If there is a current query, re-search with the new filter
     if (state.query.isNotEmpty) {
       add(QueryChangedEvent(state.query));
     }
-    // If switching to "Featuring" with no query, load featured playlists
+
     if (event.tag == SearchFilterTag.featuring &&
         state.featuredPlaylists.isEmpty) {
       add(const LoadFeaturedEvent());
@@ -116,11 +147,10 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
     LoadFeaturedEvent event,
     Emitter<SearchState> emit,
   ) async {
-    try {
-      final featured = await _getFeaturedPlaylists();
-      emit(state.copyWith(featuredPlaylists: featured));
-    } catch (_) {
-      // Silently fail — featured is non-critical
-    }
+    final result = await _getFeaturedPlaylists();
+    result.fold(
+      (_) {},
+      (featured) => emit(state.copyWith(featuredPlaylists: featured)),
+    );
   }
 }

@@ -1,4 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../../../core/presentation/app_feedback.dart';
 import '../../../../core/session/session_cubit.dart';
 import '../../domain/usecases/change_password.dart';
 import '../../domain/usecases/get_current_user.dart';
@@ -8,12 +10,6 @@ import 'auth_event.dart';
 import 'auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
-  final Login login;
-  final Logout logout;
-  final GetCurrentUser getCurrentUser;
-  final ChangePassword changePassword;
-  final SessionCubit sessionCubit;
-
   AuthBloc({
     required this.login,
     required this.logout,
@@ -28,11 +24,21 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<ChangePasswordRequested>(_onChangePasswordRequested);
   }
 
+  final Login login;
+  final Logout logout;
+  final GetCurrentUser getCurrentUser;
+  final ChangePassword changePassword;
+  final SessionCubit sessionCubit;
+
   Future<void> _onLoginRequested(
     LoginRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(state.copyWith(status: AuthStatus.loading));
+    emit(state.copyWith(
+      status: AuthStatus.loading,
+      clearFailure: true,
+      clearFeedback: true,
+    ));
 
     final result = await login(
       email: event.email,
@@ -41,19 +47,24 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     );
 
     result.fold(
-      (failure) {
-        emit(state.copyWith(
+      (failure) => emit(
+        state.copyWith(
           status: AuthStatus.error,
-          errorMessage: failure.message,
-        ));
-      },
+          failure: failure,
+          clearFeedback: true,
+        ),
+      ),
       (user) async {
         sessionCubit.setRoleFromString(user.role);
         await sessionCubit.restoreSelectionFromStorage();
-        emit(state.copyWith(
-          status: AuthStatus.authenticated,
-          user: user,
-        ));
+        emit(
+          state.copyWith(
+            status: AuthStatus.authenticated,
+            user: user,
+            clearFailure: true,
+            clearFeedback: true,
+          ),
+        );
       },
     );
   }
@@ -62,17 +73,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     LogoutRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(state.copyWith(status: AuthStatus.loading));
+    emit(state.copyWith(
+      status: AuthStatus.loading,
+      clearFailure: true,
+      clearFeedback: true,
+    ));
 
     final result = await logout();
 
     result.fold(
-      (failure) {
-        emit(state.copyWith(
+      (failure) => emit(
+        state.copyWith(
           status: AuthStatus.error,
-          errorMessage: failure.message,
-        ));
-      },
+          failure: failure,
+          clearFeedback: true,
+        ),
+      ),
       (_) {
         sessionCubit.reset();
         emit(const AuthState(status: AuthStatus.unauthenticated));
@@ -84,20 +100,28 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     CheckAuthStatus event,
     Emitter<AuthState> emit,
   ) async {
-    emit(state.copyWith(status: AuthStatus.loading));
+    emit(state.copyWith(
+      status: AuthStatus.loading,
+      clearFailure: true,
+      clearFeedback: true,
+    ));
 
     final result = await getCurrentUser();
 
     result.fold(
-      (failure) {
+      (_) {
         sessionCubit.reset();
         emit(const AuthState(status: AuthStatus.unauthenticated));
       },
       (user) {
-        emit(state.copyWith(
-          status: AuthStatus.authenticated,
-          user: user,
-        ));
+        emit(
+          state.copyWith(
+            status: AuthStatus.authenticated,
+            user: user,
+            clearFailure: true,
+            clearFeedback: true,
+          ),
+        );
       },
     );
   }
@@ -109,9 +133,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     final result = await getCurrentUser();
 
     result.fold(
-      (failure) => null,
+      (_) {},
       (user) {
-        emit(state.copyWith(user: user));
+        emit(
+          state.copyWith(
+            user: user,
+            clearFailure: true,
+          ),
+        );
       },
     );
   }
@@ -120,7 +149,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     ChangePasswordRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(state.copyWith(status: AuthStatus.loading));
+    emit(state.copyWith(
+      status: AuthStatus.loading,
+      clearFailure: true,
+      clearFeedback: true,
+    ));
 
     final result = await changePassword(
       currentPassword: event.currentPassword,
@@ -129,17 +162,21 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     );
 
     result.fold(
-      (failure) {
-        emit(state.copyWith(
+      (failure) => emit(
+        state.copyWith(
           status: AuthStatus.error,
-          errorMessage: failure.message,
-        ));
-      },
+          failure: failure,
+          clearFeedback: true,
+        ),
+      ),
       (_) {
-        emit(state.copyWith(
-          status: AuthStatus.changePasswordSuccess,
-          successMessage: 'Password changed successfully',
-        ));
+        emit(
+          state.copyWith(
+            status: AuthStatus.changePasswordSuccess,
+            feedback: AppFeedback.success('Password changed successfully'),
+            clearFailure: true,
+          ),
+        );
       },
     );
   }

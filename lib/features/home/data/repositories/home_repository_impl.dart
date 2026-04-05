@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 
+import '../../../../core/error/error_mapper.dart';
 import '../../../../core/error/failures.dart';
 import '../../domain/entities/category_entity.dart';
 import '../../domain/entities/sensor_entity.dart';
@@ -19,7 +20,12 @@ class HomeRepositoryImpl implements HomeRepository {
       final sensors = await dataSource.getSensorData();
       return Right(sensors);
     } catch (e) {
-      return Left(ServerFailure('Failed to load sensor data: ${e.toString()}'));
+      return Left(
+        ErrorMapper.toFailure(
+          e,
+          fallbackMessage: 'Unable to load sensor data right now.',
+        ),
+      );
     }
   }
 
@@ -29,7 +35,12 @@ class HomeRepositoryImpl implements HomeRepository {
       final categories = await dataSource.getCategories();
       return Right(categories);
     } catch (e) {
-      return Left(ServerFailure('Failed to load categories: ${e.toString()}'));
+      return Left(
+        ErrorMapper.toFailure(
+          e,
+          fallbackMessage: 'Unable to load music categories right now.',
+        ),
+      );
     }
   }
 }

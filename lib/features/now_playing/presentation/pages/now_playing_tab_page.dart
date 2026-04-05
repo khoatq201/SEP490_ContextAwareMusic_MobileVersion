@@ -16,6 +16,8 @@ import '../../../../core/player/player_bloc.dart';
 import '../../../../core/player/player_event.dart';
 import '../../../../core/player/player_state.dart' as ps;
 import '../../../../core/player/space_info.dart';
+import '../../../../core/presentation/app_feedback.dart';
+import '../../../../core/widgets/app_feedback_presenter.dart';
 import '../../../../features/cams/data/models/override_response_model.dart';
 import '../../../../features/cams/domain/entities/space_playback_state.dart';
 import '../../../../features/cams/presentation/bloc/cams_playback_bloc.dart';
@@ -120,13 +122,10 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
               previous.errorMessage != current.errorMessage &&
               current.errorMessage != null,
           listener: (context, camsState) {
-            // Show error snackbar
             if (camsState.errorMessage != null) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(camsState.errorMessage!),
-                  behavior: SnackBarBehavior.floating,
-                ),
+              AppFeedbackPresenter.show(
+                context,
+                AppFeedback.error(camsState.errorMessage!),
               );
             }
           },

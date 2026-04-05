@@ -4,6 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_typography.dart';
+import '../../../../core/error/failures.dart';
+import '../../../../core/widgets/app_error_view.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../bloc/store_selection_bloc.dart';
@@ -84,7 +86,7 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
             // ── StoreManager: always show a loading/redirecting screen ──
             if (_isStoreManager) {
               if (state is StoreSelectionError) {
-                return _buildStoreManagerError(state.message);
+                return _buildStoreManagerError(state.failure);
               }
               return _buildStoreManagerLoading();
             }
@@ -95,38 +97,12 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
             }
 
             if (state is StoreSelectionError) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 64,
-                      color: Colors.red,
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Error loading stores',
-                      style: AppTypography.titleLarge,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      state.message,
-                      style: AppTypography.bodyMedium,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        context.read<StoreSelectionBloc>().add(
-                              const LoadUserStores(),
-                            );
-                      },
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Retry'),
-                    ),
-                  ],
-                ),
+              return AppErrorView(
+                failure: state.failure,
+                title: 'Stores unavailable',
+                onRetry: () => context
+                    .read<StoreSelectionBloc>()
+                    .add(const LoadUserStores()),
               );
             }
 
@@ -172,33 +148,14 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
   }
 
   /// Error screen for StoreManager when store fetch fails.
-  Widget _buildStoreManagerError(String message) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.error_outline, size: 64, color: Colors.red),
-          const SizedBox(height: 16),
-          const Text('Could not load your store',
-              style: AppTypography.titleLarge),
-          const SizedBox(height: 8),
-          Text(message,
-              style: AppTypography.bodyMedium, textAlign: TextAlign.center),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: () {
-              context.read<StoreSelectionBloc>().add(const LoadUserStores());
-            },
-            icon: const Icon(Icons.refresh),
-            label: const Text('Retry'),
-          ),
-          const SizedBox(height: 12),
-          TextButton(
-            onPressed: () => _showLogoutDialog(context),
-            child: const Text('Logout'),
-          ),
-        ],
-      ),
+  Widget _buildStoreManagerError(Failure failure) {
+    return AppErrorView(
+      failure: failure,
+      title: 'Could not load your store',
+      onRetry: () =>
+          context.read<StoreSelectionBloc>().add(const LoadUserStores()),
+      onSecondaryAction: () => _showLogoutDialog(context),
+      secondaryLabel: 'Logout',
     );
   }
 

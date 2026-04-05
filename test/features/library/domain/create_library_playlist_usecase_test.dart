@@ -39,6 +39,10 @@ void main() {
       expect(result, 'playlist-1');
       expect(dataSource.createCalls, 1);
       expect(dataSource.getPlaylistsCalls, 0);
+      expect(dataSource.lastCreateRequest?.toJson(), {
+        'name': 'Morning Vibes',
+        'storeId': 'store-1',
+      });
     });
 
     test('falls back to refreshed playlist list when mutation has no id',
@@ -63,6 +67,8 @@ void main() {
       expect(result, 'playlist-2');
       expect(dataSource.createCalls, 1);
       expect(dataSource.getPlaylistsCalls, 1);
+      expect(dataSource.lastSearch, 'morning vibes');
+      expect(dataSource.lastStoreId, 'store-1');
     });
 
     test('returns null when fallback list cannot find created playlist',
@@ -88,12 +94,43 @@ void main() {
       expect(dataSource.createCalls, 1);
       expect(dataSource.getPlaylistsCalls, 1);
     });
+
+    test('passes optional create fields supported by PlaylistRequest',
+        () async {
+      dataSource.createResult = const PlaylistMutationResult(
+        isSuccess: true,
+        id: 'playlist-4',
+      );
+
+      final result = await createLibraryPlaylist(
+        playlistDataSource: dataSource,
+        name: '  Morning Vibes  ',
+        storeId: ' store-1 ',
+        description: '  Soft background music  ',
+        moodId: ' mood-relax ',
+        isDefault: true,
+        trackIds: const ['track-1', ' track-2 ', 'track-1', ' '],
+      );
+
+      expect(result, 'playlist-4');
+      expect(dataSource.lastCreateRequest?.toJson(), {
+        'name': 'Morning Vibes',
+        'storeId': 'store-1',
+        'moodId': 'mood-relax',
+        'description': 'Soft background music',
+        'isDefault': true,
+        'trackIds': ['track-1', 'track-2'],
+      });
+    });
   });
 }
 
 class _FakePlaylistRemoteDataSource implements PlaylistRemoteDataSource {
   int createCalls = 0;
   int getPlaylistsCalls = 0;
+  PlaylistMutationRequest? lastCreateRequest;
+  String? lastSearch;
+  String? lastStoreId;
   PlaylistMutationResult createResult =
       const PlaylistMutationResult(isSuccess: true);
   List<ApiPlaylistModel> playlists = const [];
@@ -103,6 +140,7 @@ class _FakePlaylistRemoteDataSource implements PlaylistRemoteDataSource {
     PlaylistMutationRequest request,
   ) async {
     createCalls += 1;
+    lastCreateRequest = request;
     return createResult;
   }
 
@@ -122,6 +160,8 @@ class _FakePlaylistRemoteDataSource implements PlaylistRemoteDataSource {
     DateTime? createdTo,
   }) async {
     getPlaylistsCalls += 1;
+    lastSearch = search;
+    lastStoreId = storeId;
     return PlaylistListResponse(
       items: playlists,
       currentPage: 1,

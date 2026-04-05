@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 
+import '../../../../core/error/error_mapper.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/error/failures.dart';
 import '../../domain/entities/schedule_source.dart';
@@ -41,9 +42,19 @@ class SpaceScheduleRepositoryImpl implements SpaceScheduleRepository {
         ),
       );
     } on CacheException catch (error) {
-      return Left(CacheFailure(error.message));
+      return Left(
+        ErrorMapper.toFailure(
+          error,
+          fallbackMessage: 'Unable to load the schedule draft right now.',
+        ),
+      );
     } catch (error) {
-      return Left(ServerFailure('Failed to bootstrap schedule: $error'));
+      return Left(
+        ErrorMapper.toFailure(
+          error,
+          fallbackMessage: 'Unable to load schedule data right now.',
+        ),
+      );
     }
   }
 
@@ -64,9 +75,19 @@ class SpaceScheduleRepositoryImpl implements SpaceScheduleRepository {
       await localDataSource.saveDraftSchedule(_toScheduleModel(applied));
       return Right(applied);
     } on CacheException catch (error) {
-      return Left(CacheFailure(error.message));
+      return Left(
+        ErrorMapper.toFailure(
+          error,
+          fallbackMessage: 'Unable to apply this schedule source right now.',
+        ),
+      );
     } catch (error) {
-      return Left(ServerFailure('Failed to apply schedule source: $error'));
+      return Left(
+        ErrorMapper.toFailure(
+          error,
+          fallbackMessage: 'Unable to apply this schedule source right now.',
+        ),
+      );
     }
   }
 
@@ -78,9 +99,19 @@ class SpaceScheduleRepositoryImpl implements SpaceScheduleRepository {
       await localDataSource.saveDraftSchedule(_toScheduleModel(normalized));
       return Right(normalized);
     } on CacheException catch (error) {
-      return Left(CacheFailure(error.message));
+      return Left(
+        ErrorMapper.toFailure(
+          error,
+          fallbackMessage: 'Unable to save the schedule right now.',
+        ),
+      );
     } catch (error) {
-      return Left(ServerFailure('Failed to save schedule: $error'));
+      return Left(
+        ErrorMapper.toFailure(
+          error,
+          fallbackMessage: 'Unable to save the schedule right now.',
+        ),
+      );
     }
   }
 
@@ -111,9 +142,19 @@ class SpaceScheduleRepositoryImpl implements SpaceScheduleRepository {
       await localDataSource.saveLibrarySources([source, ...existing]);
       return Right(source);
     } on CacheException catch (error) {
-      return Left(CacheFailure(error.message));
+      return Left(
+        ErrorMapper.toFailure(
+          error,
+          fallbackMessage: 'Unable to save this schedule to your library.',
+        ),
+      );
     } catch (error) {
-      return Left(ServerFailure('Failed to save schedule to library: $error'));
+      return Left(
+        ErrorMapper.toFailure(
+          error,
+          fallbackMessage: 'Unable to save this schedule to your library.',
+        ),
+      );
     }
   }
 
@@ -134,9 +175,19 @@ class SpaceScheduleRepositoryImpl implements SpaceScheduleRepository {
       await localDataSource.saveDraftSchedule(_toScheduleModel(updated));
       return Right(updated);
     } on CacheException catch (error) {
-      return Left(CacheFailure(error.message));
+      return Left(
+        ErrorMapper.toFailure(
+          error,
+          fallbackMessage: 'Unable to remove this schedule slot right now.',
+        ),
+      );
     } catch (error) {
-      return Left(ServerFailure('Failed to delete slot: $error'));
+      return Left(
+        ErrorMapper.toFailure(
+          error,
+          fallbackMessage: 'Unable to remove this schedule slot right now.',
+        ),
+      );
     }
   }
 

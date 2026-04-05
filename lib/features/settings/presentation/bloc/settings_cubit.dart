@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/error/error_mapper.dart';
 import '../../domain/usecases/get_settings_snapshot.dart';
 import 'settings_state.dart';
 
@@ -18,7 +19,7 @@ class SettingsCubit extends Cubit<SettingsState> {
       (failure) {
         emit(state.copyWith(
           status: SettingsStatus.error,
-          errorMessage: failure.message,
+          errorMessage: ErrorMapper.displayMessageForFailure(failure),
         ));
       },
       (snapshot) {

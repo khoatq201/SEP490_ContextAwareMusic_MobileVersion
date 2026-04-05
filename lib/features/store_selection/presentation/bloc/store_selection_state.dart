@@ -1,4 +1,6 @@
 import 'package:equatable/equatable.dart';
+
+import '../../../../core/error/failures.dart';
 import '../../domain/entities/store_summary.dart';
 
 abstract class StoreSelectionState extends Equatable {
@@ -13,15 +15,15 @@ class StoreSelectionInitial extends StoreSelectionState {}
 class StoreSelectionLoading extends StoreSelectionState {}
 
 class StoreSelectionLoaded extends StoreSelectionState {
-  final List<StoreSummary> stores;
-  final List<StoreSummary> filteredStores;
-  final String searchQuery;
-
   const StoreSelectionLoaded({
     required this.stores,
     required this.filteredStores,
     this.searchQuery = '',
   });
+
+  final List<StoreSummary> stores;
+  final List<StoreSummary> filteredStores;
+  final String searchQuery;
 
   @override
   List<Object?> get props => [stores, filteredStores, searchQuery];
@@ -40,18 +42,20 @@ class StoreSelectionLoaded extends StoreSelectionState {
 }
 
 class StoreSelectionError extends StoreSelectionState {
-  final String message;
+  const StoreSelectionError(this.failure);
 
-  const StoreSelectionError(this.message);
+  final Failure failure;
+
+  String get message => failure.message;
 
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [failure];
 }
 
 class StoreSelected extends StoreSelectionState {
-  final String storeId;
-
   const StoreSelected(this.storeId);
+
+  final String storeId;
 
   @override
   List<Object?> get props => [storeId];

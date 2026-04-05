@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/error/error_mapper.dart';
 import '../../../../core/enums/playback_command_enum.dart';
 import '../../../../core/enums/queue_insert_mode_enum.dart';
 import '../../../../core/session/session_cubit.dart';
@@ -100,10 +101,11 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
 
     bootstrapResult.fold(
       (failure) {
+        final displayMessage = ErrorMapper.displayMessageForFailure(failure);
         _debugLog('bootstrap failed: ${failure.message}');
         emit(state.copyWith(
           status: CamsStatus.error,
-          errorMessage: failure.message,
+          errorMessage: displayMessage,
           isHubConnected: runtime.isConnected,
         ));
       },
@@ -143,7 +145,8 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     result.fold(
       (failure) => emit(state.copyWith(
         isOverriding: false,
-        errorMessage: 'Override failed: ${failure.message}',
+        errorMessage:
+            'Override failed: ${ErrorMapper.displayMessageForFailure(failure)}',
       )),
       (response) async {
         emit(state.copyWith(
@@ -187,7 +190,8 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
         _debugLog('playPlaylist failed: ${failure.message}');
         emit(state.copyWith(
           isOverriding: false,
-          errorMessage: 'Play playlist failed: ${failure.message}',
+          errorMessage:
+              'Play playlist failed: ${ErrorMapper.displayMessageForFailure(failure)}',
         ));
       },
       (_) {
@@ -231,7 +235,8 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
         _debugLog('playTrack failed: ${failure.message}');
         emit(state.copyWith(
           isOverriding: false,
-          errorMessage: 'Play track failed: ${failure.message}',
+          errorMessage:
+              'Play track failed: ${ErrorMapper.displayMessageForFailure(failure)}',
         ));
       },
       (_) {
@@ -257,7 +262,8 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
 
     result.fold(
       (failure) => emit(state.copyWith(
-        errorMessage: 'Reorder queue failed: ${failure.message}',
+        errorMessage:
+            'Reorder queue failed: ${ErrorMapper.displayMessageForFailure(failure)}',
       )),
       (_) {},
     );
@@ -276,7 +282,8 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
 
     result.fold(
       (failure) => emit(state.copyWith(
-        errorMessage: 'Remove queue item failed: ${failure.message}',
+        errorMessage:
+            'Remove queue item failed: ${ErrorMapper.displayMessageForFailure(failure)}',
       )),
       (_) {},
     );
@@ -290,7 +297,8 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     final result = await runtime.clearQueueItems();
     result.fold(
       (failure) => emit(state.copyWith(
-        errorMessage: 'Clear queue failed: ${failure.message}',
+        errorMessage:
+            'Clear queue failed: ${ErrorMapper.displayMessageForFailure(failure)}',
       )),
       (_) {},
     );
@@ -311,7 +319,8 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
 
     result.fold(
       (failure) => emit(state.copyWith(
-        errorMessage: 'Update audio settings failed: ${failure.message}',
+        errorMessage:
+            'Update audio settings failed: ${ErrorMapper.displayMessageForFailure(failure)}',
       )),
       (_) {},
     );
@@ -335,7 +344,8 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     result.fold(
       (failure) => emit(state.copyWith(
         isOverriding: false,
-        errorMessage: 'Cancel override failed: ${failure.message}',
+        errorMessage:
+            'Cancel override failed: ${ErrorMapper.displayMessageForFailure(failure)}',
       )),
       (_) async {
         emit(state.copyWith(
@@ -377,7 +387,8 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
           'message=${failure.message}',
         );
         emit(state.copyWith(
-          errorMessage: 'Command failed: ${failure.message}',
+          errorMessage:
+              'Command failed: ${ErrorMapper.displayMessageForFailure(failure)}',
         ));
       },
       (_) {
@@ -511,7 +522,9 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     if (event.silent) return;
 
     result.fold(
-      (failure) => emit(state.copyWith(errorMessage: failure.message)),
+      (failure) => emit(state.copyWith(
+        errorMessage: ErrorMapper.displayMessageForFailure(failure),
+      )),
       (playbackState) => _emitRuntimeState(
         emit,
         playbackState,

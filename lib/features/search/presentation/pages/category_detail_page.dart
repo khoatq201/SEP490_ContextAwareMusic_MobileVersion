@@ -6,6 +6,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
+import '../../../../core/widgets/app_error_view.dart';
 import '../../../../injection_container.dart';
 import '../../../home/domain/entities/playlist_entity.dart';
 import '../bloc/category_detail_cubit.dart';
@@ -25,6 +26,7 @@ class CategoryDetailPage extends StatelessWidget {
     return BlocProvider(
       create: (_) => sl<CategoryDetailCubit>()..load(categoryId),
       child: _CategoryDetailView(
+        categoryId: categoryId,
         categoryName: categoryName ?? 'Category',
       ),
     );
@@ -32,8 +34,12 @@ class CategoryDetailPage extends StatelessWidget {
 }
 
 class _CategoryDetailView extends StatelessWidget {
+  final String categoryId;
   final String categoryName;
-  const _CategoryDetailView({required this.categoryName});
+  const _CategoryDetailView({
+    required this.categoryId,
+    required this.categoryName,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -83,25 +89,13 @@ class _CategoryDetailView extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
           if (state.status == CategoryDetailStatus.error) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error_outline,
-                      size: 64,
-                      color: isDark
-                          ? AppColors.textDarkTertiary
-                          : AppColors.textTertiary),
-                  const SizedBox(height: 12),
-                  Text(
-                    state.errorMessage ?? 'An error occurred',
-                    style: TextStyle(
-                        color: isDark
-                            ? AppColors.textDarkSecondary
-                            : AppColors.textSecondary),
-                  ),
-                ],
-              ),
+            return AppErrorView(
+              failure: state.failure,
+              title: 'Category unavailable',
+              onRetry: () =>
+                  context.read<CategoryDetailCubit>().load(categoryId),
+              onSecondaryAction: () => context.pop(),
+              secondaryLabel: 'Go back',
             );
           }
 

@@ -30,6 +30,7 @@ import 'core/presentation/component_showcase_page.dart';
 import 'core/presentation/theme_showcase_page.dart';
 import 'core/presentation/theme_demo_page.dart';
 import 'core/presentation/main_shell_page.dart';
+import 'core/widgets/app_error_view.dart';
 import 'features/home/presentation/pages/home_tab_page.dart';
 import 'features/playlists/presentation/pages/playlist_detail_loader.dart';
 import 'features/search/presentation/pages/search_tab_page.dart';
@@ -412,11 +413,12 @@ class AppRouter {
             return MaterialPage(
               fullscreenDialog: true,
               child: Scaffold(
-                body: Center(
-                  child: Text(
-                    'Missing schedule context',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
+                body: AppErrorView(
+                  title: 'Schedule unavailable',
+                  message:
+                      'The schedule page is missing the space information it needs.',
+                  onSecondaryAction: () => Navigator.of(context).maybePop(),
+                  secondaryLabel: 'Go back',
                 ),
               ),
             );
@@ -455,11 +457,12 @@ class AppRouter {
             return MaterialPage(
               fullscreenDialog: true,
               child: Scaffold(
-                body: Center(
-                  child: Text(
-                    'Missing hub provisioning context',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
+                body: AppErrorView(
+                  title: 'Hub setup unavailable',
+                  message:
+                      'The hub setup page is missing the space information it needs.',
+                  onSecondaryAction: () => Navigator.of(context).maybePop(),
+                  secondaryLabel: 'Go back',
                 ),
               ),
             );
@@ -529,8 +532,14 @@ class AppRouter {
         ],
       ),
     ],
-    errorBuilder: (context, state) => const Scaffold(
-      body: Center(child: Text('Page not found')),
+    errorBuilder: (context, state) => Scaffold(
+      body: AppErrorView(
+        title: 'Page not found',
+        message:
+            'The page you requested is unavailable or the link is no longer valid.',
+        onSecondaryAction: () => context.go('/home'),
+        secondaryLabel: 'Go home',
+      ),
     ),
   );
 }

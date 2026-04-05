@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-import '../../core/error/exceptions.dart';
+import '../error/error_mapper.dart';
+import '../error/exceptions.dart';
+import '../presentation/app_feedback.dart';
+import 'app_feedback_presenter.dart';
+import 'app_inline_error_card.dart';
 import '../../features/home/domain/entities/playlist_entity.dart';
 import '../../features/home/domain/entities/song_entity.dart';
 import '../../features/playlists/data/datasources/playlist_remote_datasource.dart';
@@ -61,7 +65,10 @@ class _SelectPlaylistBottomSheetState extends State<SelectPlaylistBottomSheet> {
       if (!mounted) return;
       setState(() {
         _loadingPlaylists = false;
-        _errorMessage = e.message;
+        _errorMessage = ErrorMapper.sanitizeMessageForDisplay(
+          e.message,
+          kind: e.kind,
+        );
       });
     } catch (_) {
       if (!mounted) return;
@@ -97,7 +104,12 @@ class _SelectPlaylistBottomSheetState extends State<SelectPlaylistBottomSheet> {
       );
     } on ServerException catch (e) {
       if (!mounted) return;
-      _showErrorSnackBar(e.message);
+      _showErrorSnackBar(
+        ErrorMapper.sanitizeMessageForDisplay(
+          e.message,
+          kind: e.kind,
+        ),
+      );
     } catch (_) {
       if (!mounted) return;
       _showErrorSnackBar('Failed to add song to playlist.');
@@ -109,16 +121,9 @@ class _SelectPlaylistBottomSheetState extends State<SelectPlaylistBottomSheet> {
   }
 
   void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-        ),
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
+    AppFeedbackPresenter.show(
+      context,
+      AppFeedback.error(message),
     );
   }
 
@@ -236,32 +241,11 @@ class _SelectPlaylistBottomSheetState extends State<SelectPlaylistBottomSheet> {
     if (_errorMessage != null) {
       return Padding(
         padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 32,
-              color: textMuted,
-            ),
-            const SizedBox(height: 10),
-            Text(
-              _errorMessage!,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
-                color: textMuted,
-                fontSize: 12,
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextButton(
-              onPressed: _loadPlaylists,
-              child: Text(
-                'Retry',
-                style: GoogleFonts.inter(fontWeight: FontWeight.w700),
-              ),
-            ),
-          ],
+        child: AppInlineErrorCard(
+          title: 'Cannot load playlists',
+          message: _errorMessage!,
+          onRetry: _loadPlaylists,
+          retryLabel: 'Retry',
         ),
       );
     }

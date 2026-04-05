@@ -11,6 +11,7 @@ import '../../../../core/player/player_bloc.dart';
 import '../../../../core/player/player_event.dart';
 import '../../../../core/player/local_preview_feedback.dart';
 import '../../../../core/session/session_cubit.dart';
+import '../../../../core/widgets/app_error_view.dart';
 import '../../../../core/widgets/song_list_tile.dart';
 import '../../../../injection_container.dart';
 import '../../../space_control/domain/entities/track.dart';
@@ -26,13 +27,15 @@ class ArtistDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => sl<ArtistDetailCubit>()..load(artistId),
-      child: const _ArtistDetailView(),
+      child: _ArtistDetailView(artistId: artistId),
     );
   }
 }
 
 class _ArtistDetailView extends StatelessWidget {
-  const _ArtistDetailView();
+  const _ArtistDetailView({required this.artistId});
+
+  final String artistId;
 
   @override
   Widget build(BuildContext context) {
@@ -47,21 +50,13 @@ class _ArtistDetailView extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
           if (state.status == ArtistDetailStatus.error) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error_outline, size: 64, color: palette.textMuted),
-                  const SizedBox(height: 12),
-                  Text(state.errorMessage ?? 'An error occurred',
-                      style: TextStyle(color: palette.textMuted)),
-                  const SizedBox(height: 16),
-                  TextButton(
-                    onPressed: () => context.pop(),
-                    child: const Text('Go back'),
-                  ),
-                ],
-              ),
+            return AppErrorView(
+              failure: state.failure,
+              title: 'Artist unavailable',
+              onRetry: () =>
+                  context.read<ArtistDetailCubit>().load(artistId),
+              onSecondaryAction: () => context.pop(),
+              secondaryLabel: 'Go back',
             );
           }
 

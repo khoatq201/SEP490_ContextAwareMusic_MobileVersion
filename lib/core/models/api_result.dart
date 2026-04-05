@@ -1,3 +1,6 @@
+import '../enums/error_code_enum.dart';
+import '../error/api_error_details.dart';
+
 /// Generic wrapper for all API responses from the backend.
 ///
 /// The backend always wraps responses in:
@@ -36,9 +39,18 @@ class ApiResult<T> {
     );
   }
 
+  ErrorCodeEnum get parsedErrorCode => ErrorCodeEnum.fromString(errorCode);
+
+  ApiErrorDetails get errorDetails => ApiErrorDetails(
+        message: message,
+        errors: errors ?? const [],
+        backendCode: errorCode,
+      );
+
+  String? get primaryError => errorDetails.primaryMessage;
+
   /// Returns a user-friendly error message.
   String get userFriendlyError {
-    if (errors != null && errors!.isNotEmpty) return errors!.first;
-    return message ?? 'An error occurred.';
+    return primaryError ?? 'Something unexpected happened. Please try again.';
   }
 }

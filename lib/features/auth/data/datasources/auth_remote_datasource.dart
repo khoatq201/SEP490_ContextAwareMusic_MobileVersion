@@ -1,33 +1,28 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../../../core/constants/api_constants.dart';
+import '../../../../core/error/error_mapper.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/models/api_result.dart';
 import '../../../../core/network/dio_client.dart';
-import '../../../../core/constants/api_constants.dart';
 import '../../../../core/services/local_storage_service.dart';
 import '../models/auth_response_model.dart';
 import '../models/profile_response_model.dart';
 
-/// Contract for auth-related API calls.
 abstract class AuthRemoteDataSource {
-  /// POST /api/auth/login
   Future<AuthResponseModel> login({
     required String email,
     required String password,
     bool rememberMe = false,
   });
 
-  /// POST /api/auth/logout
   Future<void> logout();
 
-  /// GET /api/auth/profile
   Future<ProfileResponseModel> getProfile();
 
-  /// POST /api/auth/refresh-token
   Future<AuthResponseModel> refreshToken();
 
-  /// POST /api/auth/change-password
   Future<void> changePassword({
     required String currentPassword,
     required String newPassword,
@@ -36,13 +31,13 @@ abstract class AuthRemoteDataSource {
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
-  final DioClient dioClient;
-  final LocalStorageService localStorage;
-
   AuthRemoteDataSourceImpl({
     required this.dioClient,
     required this.localStorage,
   });
+
+  final DioClient dioClient;
+  final LocalStorageService localStorage;
 
   @override
   Future<AuthResponseModel> login({
@@ -75,51 +70,81 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       );
 
       if (!apiResult.isSuccess || apiResult.data == null) {
-        throw ServerException(apiResult.userFriendlyError);
+        throw ErrorMapper.fromApiErrorDetails(
+          apiResult.errorDetails,
+          fallbackMessage: 'Login failed. Please check your credentials.',
+        );
       }
 
       return apiResult.data!;
-    } on DioException catch (e) {
-      _throwApiError(
-        e,
+    } on DioException catch (error) {
+      throw ErrorMapper.fromDioException(
+        error,
         fallbackMessage: 'Login failed. Please check your credentials.',
+      );
+    } on AppException {
+      rethrow;
+    } catch (error, stackTrace) {
+      throw ErrorMapper.toException(
+        error,
+        fallbackMessage: 'Login failed. Please try again.',
+        stackTrace: stackTrace,
       );
     }
   }
 
   @override
   Future<void> logout() async {
-    final response = await dioClient.post(ApiConstants.logout);
+    try {
+      final response = await dioClient.post(ApiConstants.logout);
 
-    final apiResult = ApiResult<void>.fromJson(
-      response.data as Map<String, dynamic>,
-    );
+      final apiResult = ApiResult<void>.fromJson(
+        response.data as Map<String, dynamic>,
+      );
 
-    if (!apiResult.isSuccess) {
-      throw ServerException(apiResult.userFriendlyError);
+      if (!apiResult.isSuccess) {
+        throw ErrorMapper.fromApiErrorDetails(
+          apiResult.errorDetails,
+          fallbackMessage: 'We could not sign you out right now.',
+        );
+      }
+    } on DioException catch (error) {
+      throw ErrorMapper.fromDioException(
+        error,
+        fallbackMessage: 'We could not sign you out right now.',
+      );
     }
   }
 
   @override
   Future<ProfileResponseModel> getProfile() async {
-    final response = await dioClient.get(ApiConstants.profile);
+    try {
+      final response = await dioClient.get(ApiConstants.profile);
 
-    final apiResult = ApiResult<ProfileResponseModel>.fromJson(
-      response.data as Map<String, dynamic>,
-      fromData: (data) =>
-          ProfileResponseModel.fromJson(data as Map<String, dynamic>),
-    );
+      final apiResult = ApiResult<ProfileResponseModel>.fromJson(
+        response.data as Map<String, dynamic>,
+        fromData: (data) =>
+            ProfileResponseModel.fromJson(data as Map<String, dynamic>),
+      );
 
-    if (!apiResult.isSuccess || apiResult.data == null) {
-      throw ServerException(apiResult.userFriendlyError);
+      if (!apiResult.isSuccess || apiResult.data == null) {
+        throw ErrorMapper.fromApiErrorDetails(
+          apiResult.errorDetails,
+          fallbackMessage: 'We could not load your profile right now.',
+        );
+      }
+
+      return apiResult.data!;
+    } on DioException catch (error) {
+      throw ErrorMapper.fromDioException(
+        error,
+        fallbackMessage: 'We could not load your profile right now.',
+      );
     }
-
-    return apiResult.data!;
   }
 
   @override
   Future<AuthResponseModel> refreshToken() async {
-    // Backend requires the (possibly expired) access token in the header
     final expiredToken = localStorage.getManagerAuthToken();
     debugPrint(
       '[AuthRemoteDataSource] refreshToken auth header present: ${expiredToken != null && expiredToken.isNotEmpty}',
@@ -129,34 +154,44 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       label: 'before-refresh-request',
     );
 
-    final response = await dioClient.post(
-      ApiConstants.refreshToken,
-      options: Options(
-        headers: {
-          if (expiredToken != null) 'Authorization': 'Bearer $expiredToken',
-        },
-      ),
-    );
+    try {
+      final response = await dioClient.post(
+        ApiConstants.refreshToken,
+        options: Options(
+          headers: {
+            if (expiredToken != null) 'Authorization': 'Bearer $expiredToken',
+          },
+        ),
+      );
 
-    debugPrint(
-      '[AuthRemoteDataSource] refresh response set-cookie: ${response.headers['set-cookie']}',
-    );
-    await dioClient.debugDumpCookiesForPath(
-      path: ApiConstants.refreshToken,
-      label: 'after-refresh-response',
-    );
+      debugPrint(
+        '[AuthRemoteDataSource] refresh response set-cookie: ${response.headers['set-cookie']}',
+      );
+      await dioClient.debugDumpCookiesForPath(
+        path: ApiConstants.refreshToken,
+        label: 'after-refresh-response',
+      );
 
-    final apiResult = ApiResult<AuthResponseModel>.fromJson(
-      response.data as Map<String, dynamic>,
-      fromData: (data) =>
-          AuthResponseModel.fromJson(data as Map<String, dynamic>),
-    );
+      final apiResult = ApiResult<AuthResponseModel>.fromJson(
+        response.data as Map<String, dynamic>,
+        fromData: (data) =>
+            AuthResponseModel.fromJson(data as Map<String, dynamic>),
+      );
 
-    if (!apiResult.isSuccess || apiResult.data == null) {
-      throw ServerException(apiResult.userFriendlyError);
+      if (!apiResult.isSuccess || apiResult.data == null) {
+        throw ErrorMapper.fromApiErrorDetails(
+          apiResult.errorDetails,
+          fallbackMessage: 'Your session expired. Please sign in again.',
+        );
+      }
+
+      return apiResult.data!;
+    } on DioException catch (error) {
+      throw ErrorMapper.fromDioException(
+        error,
+        fallbackMessage: 'Your session expired. Please sign in again.',
+      );
     }
-
-    return apiResult.data!;
   }
 
   @override
@@ -165,34 +200,31 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     required String newPassword,
     required String confirmPassword,
   }) async {
-    final response = await dioClient.post(
-      ApiConstants.changePassword,
-      data: {
-        'currentPassword': currentPassword,
-        'newPassword': newPassword,
-        'confirmPassword': confirmPassword,
-      },
-    );
+    try {
+      final response = await dioClient.post(
+        ApiConstants.changePassword,
+        data: {
+          'currentPassword': currentPassword,
+          'newPassword': newPassword,
+          'confirmPassword': confirmPassword,
+        },
+      );
 
-    final apiResult = ApiResult<void>.fromJson(
-      response.data as Map<String, dynamic>,
-    );
+      final apiResult = ApiResult<void>.fromJson(
+        response.data as Map<String, dynamic>,
+      );
 
-    if (!apiResult.isSuccess) {
-      throw ServerException(apiResult.userFriendlyError);
+      if (!apiResult.isSuccess) {
+        throw ErrorMapper.fromApiErrorDetails(
+          apiResult.errorDetails,
+          fallbackMessage: 'We could not change your password right now.',
+        );
+      }
+    } on DioException catch (error) {
+      throw ErrorMapper.fromDioException(
+        error,
+        fallbackMessage: 'We could not change your password right now.',
+      );
     }
-  }
-
-  Never _throwApiError(
-    DioException e, {
-    required String fallbackMessage,
-  }) {
-    final responseData = e.response?.data;
-    if (responseData is Map) {
-      final json = Map<String, dynamic>.from(responseData);
-      final apiResult = ApiResult<void>.fromJson(json);
-      throw ServerException(apiResult.userFriendlyError);
-    }
-    throw ServerException(fallbackMessage);
   }
 }

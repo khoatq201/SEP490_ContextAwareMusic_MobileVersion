@@ -212,13 +212,13 @@ class HubProvisioningBloc
           clearMessage: candidates.isNotEmpty,
         ),
       );
-    } on BleProvisioningException catch (error) {
+    } on BleProvisioningException {
       emit(
         state.copyWith(
           phase: HubProvisioningPhase.failure,
           flowMode: HubProvisioningFlowMode.fullProvisioning,
           message:
-              'Unable to scan BLE devices. Turn on Bluetooth and try again.\n$error',
+              'Unable to scan CAM devices right now. Turn on Bluetooth and try again.',
         ),
       );
     }
@@ -313,14 +313,14 @@ class HubProvisioningBloc
           clearMessage: wifiCandidates.isNotEmpty,
         ),
       );
-    } on BleProvisioningException catch (error) {
+    } on BleProvisioningException {
       emit(
         state.copyWith(
           phase: HubProvisioningPhase.enterSecretCode,
           clearResolvedIdentity: true,
           wifiCandidates: const <WifiCandidate>[],
           message:
-              'Unable to read Wi-Fi networks from the selected ESP32. Check the secret code and try again.\n$error',
+              'Unable to read Wi-Fi networks from the selected ESP32. Check the secret code and try again.',
         ),
       );
     }
@@ -418,13 +418,13 @@ class HubProvisioningBloc
         ),
       );
       await _captureCurrentLocation(emit);
-    } on BleProvisioningException catch (error) {
+    } on BleProvisioningException {
       emit(
         state.copyWith(
           phase: HubProvisioningPhase.failure,
           flowMode: HubProvisioningFlowMode.fullProvisioning,
           message:
-              'Provisioning failed before the ESP32 confirmed Wi-Fi.\n$error',
+              'Provisioning failed before the ESP32 confirmed Wi-Fi. Check the network password and try again.',
         ),
       );
     }

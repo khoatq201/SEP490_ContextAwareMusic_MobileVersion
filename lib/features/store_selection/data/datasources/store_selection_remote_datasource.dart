@@ -1,20 +1,22 @@
+import 'package:dio/dio.dart';
+
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/enums/entity_status_enum.dart';
-import '../../../../core/error/exceptions.dart';
+import '../../../../core/error/error_mapper.dart';
+import '../../../../core/models/api_result.dart';
 import '../../../../core/models/pagination_result.dart';
 import '../../../../core/network/dio_client.dart';
 import '../models/store_summary_model.dart';
 
 abstract class StoreSelectionRemoteDataSource {
-  /// Fetches stores the current user has access to (backend filters by JWT).
   Future<List<StoreSummaryModel>> getUserStores();
 }
 
 class StoreSelectionRemoteDataSourceImpl
     implements StoreSelectionRemoteDataSource {
-  final DioClient dioClient;
-
   StoreSelectionRemoteDataSourceImpl({required this.dioClient});
+
+  final DioClient dioClient;
 
   @override
   Future<List<StoreSummaryModel>> getUserStores() async {
@@ -22,43 +24,47 @@ class StoreSelectionRemoteDataSourceImpl
       return _getMockStores();
     }
 
-    final response = await dioClient.get(
-      ApiConstants.getStoresEndpoint,
-      queryParameters: {'pageSize': 500},
-    );
+    try {
+      final response = await dioClient.get(
+        ApiConstants.getStoresEndpoint,
+        queryParameters: {'pageSize': 500},
+      );
 
-    final data = response.data as Map<String, dynamic>;
+      final data = response.data as Map<String, dynamic>;
+      final apiResult = ApiResult<void>.fromJson(data);
+      if (!apiResult.isSuccess) {
+        throw ErrorMapper.fromApiErrorDetails(
+          apiResult.errorDetails,
+          fallbackMessage: 'We could not load your stores right now.',
+        );
+      }
 
-    // API returns: { isSuccess, message, data: null, currentPage, pageSize, totalItems, ..., items: [...] }
-    // OR: { isSuccess, data: { currentPage, ..., items: [...] } }
-    // Handle both: pagination at root level or nested under 'data'.
-    final bool isSuccess = data['isSuccess'] as bool? ?? false;
-    if (!isSuccess) {
-      throw ServerException(
-        data['message'] as String? ?? 'Failed to load stores',
+      final Map<String, dynamic> paginatedData;
+      if (data.containsKey('items')) {
+        paginatedData = data;
+      } else if (data['data'] is Map<String, dynamic>) {
+        paginatedData = data['data'] as Map<String, dynamic>;
+      } else {
+        throw ErrorMapper.fromApiResponsePayload(
+          data,
+          fallbackMessage: 'Unexpected response format for stores.',
+        );
+      }
+
+      final paginationResult = PaginationResult<StoreSummaryModel>.fromJson(
+        paginatedData,
+        fromItemJson: StoreSummaryModel.fromJson,
+      );
+
+      return paginationResult.items;
+    } on DioException catch (error) {
+      throw ErrorMapper.fromDioException(
+        error,
+        fallbackMessage: 'We could not load your stores right now.',
       );
     }
-
-    // Determine where the paginated data lives
-    final Map<String, dynamic> paginatedData;
-    if (data.containsKey('items')) {
-      // Pagination fields are at root level
-      paginatedData = data;
-    } else if (data['data'] is Map<String, dynamic>) {
-      paginatedData = data['data'] as Map<String, dynamic>;
-    } else {
-      throw ServerException('Unexpected response format for stores');
-    }
-
-    final paginationResult = PaginationResult<StoreSummaryModel>.fromJson(
-      paginatedData,
-      fromItemJson: StoreSummaryModel.fromJson,
-    );
-
-    return paginationResult.items;
   }
 
-  /// Mock data for development.
   Future<List<StoreSummaryModel>> _getMockStores() async {
     await Future.delayed(const Duration(milliseconds: 500));
     return const [

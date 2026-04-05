@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/presentation/app_feedback.dart';
+import '../../../../core/widgets/app_feedback_presenter.dart';
 
 /// Forgot Password page — placeholder until backend supports password reset.
 class ForgotPasswordPage extends StatefulWidget {
@@ -22,13 +24,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
   void _handleSubmit() {
     if (_formKey.currentState?.validate() ?? false) {
-      // TODO: Integrate when backend adds forgot-password endpoint
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Password reset is not available yet. Please contact your administrator.',
-          ),
-          backgroundColor: Colors.orange,
+      AppFeedbackPresenter.show(
+        context,
+        AppFeedback.warning(
+          'Password reset is not available yet. Please contact your administrator.',
+          title: 'Feature unavailable',
         ),
       );
     }

@@ -1,16 +1,18 @@
+import 'package:dio/dio.dart';
+
+import '../../../../core/constants/api_constants.dart';
+import '../../../../core/error/error_mapper.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/models/api_result.dart';
 import '../../../../core/network/dio_client.dart';
-import '../../../../core/constants/api_constants.dart';
 import '../models/pairing_result_model.dart';
 import 'device_pairing_remote_datasource.dart';
 
-/// Real API implementation of [DevicePairingRemoteDataSource].
 class DevicePairingRemoteDataSourceImpl
     implements DevicePairingRemoteDataSource {
-  final DioClient dioClient;
-
   DevicePairingRemoteDataSourceImpl({required this.dioClient});
+
+  final DioClient dioClient;
 
   @override
   Future<PairingResultModel> pairDevice({
@@ -50,12 +52,26 @@ class DevicePairingRemoteDataSourceImpl
       );
 
       if (!apiResult.isSuccess || apiResult.data == null) {
-        throw ServerException(apiResult.userFriendlyError);
+        throw ErrorMapper.fromApiErrorDetails(
+          apiResult.errorDetails,
+          fallbackMessage: 'Pairing failed. Please check the code and try again.',
+        );
       }
 
       return apiResult.data!;
-    } catch (e) {
-      throw ServerException('Failed to pair device: $e');
+    } on DioException catch (error) {
+      throw ErrorMapper.fromDioException(
+        error,
+        fallbackMessage: 'Pairing failed. Please check the code and try again.',
+      );
+    } on AppException {
+      rethrow;
+    } catch (error, stackTrace) {
+      throw ErrorMapper.toException(
+        error,
+        fallbackMessage: 'We could not pair this device right now.',
+        stackTrace: stackTrace,
+      );
     }
   }
 }

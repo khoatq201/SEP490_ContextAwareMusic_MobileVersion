@@ -12,6 +12,8 @@ import '../../../../core/player/player_event.dart';
 import '../../../../core/player/local_preview_feedback.dart';
 import '../../../../core/presentation/shell_layout_metrics.dart';
 import '../../../../core/session/session_cubit.dart';
+import '../../../../core/widgets/app_error_view.dart';
+import '../../../../core/widgets/app_inline_error_card.dart';
 import '../../../../core/widgets/song_list_tile.dart';
 import '../../../../injection_container.dart';
 import '../../../home/domain/entities/playlist_entity.dart';
@@ -238,6 +240,22 @@ class _SearchViewState extends State<_SearchView> {
       );
     }
 
+    if (state.status == SearchStatus.failure && state.failure != null) {
+      return SliverFillRemaining(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spacingMd),
+          child: AppErrorView(
+            failure: state.failure,
+            title: 'Search unavailable',
+            message: state.failure!.message,
+            onRetry: () => context
+                .read<SearchBloc>()
+                .add(QueryChangedEvent(state.query)),
+          ),
+        ),
+      );
+    }
+
     if (state.results.isEmpty) {
       return SliverFillRemaining(
         child: Center(
@@ -447,11 +465,11 @@ class _BrowseCategoriesSliver extends StatelessWidget {
           if (state.status == SearchStatus.loading)
             const _CategoryGridSkeleton()
           else if (state.status == SearchStatus.failure)
-            Center(
-              child: Text(
-                state.errorMessage ?? 'Something went wrong.',
-                style: const TextStyle(color: AppColors.error),
-              ),
+            AppInlineErrorCard(
+              failure: state.failure,
+              title: 'Browse unavailable',
+              onRetry: () =>
+                  context.read<SearchBloc>().add(const LoadCategoriesEvent()),
             )
           else
             _CategoryGrid(categories: state.categories, isDark: isDark),

@@ -24,7 +24,7 @@ class StoreSelectionBloc
     final result = await getUserStores();
 
     result.fold(
-      (failure) => emit(StoreSelectionError(failure.message)),
+      (failure) => emit(StoreSelectionError(failure)),
       (stores) => emit(StoreSelectionLoaded(
         stores: stores,
         filteredStores: stores,

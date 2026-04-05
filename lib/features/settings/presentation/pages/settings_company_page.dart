@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/widgets/app_error_view.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../bloc/settings_cubit.dart';
@@ -62,11 +63,10 @@ class SettingsCompanyPage extends StatelessWidget {
 
             if (state.status == SettingsStatus.error ||
                 state.snapshot == null) {
-              return Center(
-                child: Text(
-                  state.errorMessage ?? 'Cannot load company data.',
-                  style: GoogleFonts.inter(color: palette.textSecondary),
-                ),
+              return AppErrorView(
+                title: 'Company data unavailable',
+                message: state.errorMessage ?? 'Cannot load company data.',
+                onRetry: () => context.read<SettingsCubit>().load(),
               );
             }
 
