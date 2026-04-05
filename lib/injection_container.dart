@@ -298,7 +298,7 @@ Future<void> initializeDependencies() async {
   );
   sl.registerLazySingleton<ProvisioningIdentityResolver>(
     () => const PrefixProvisioningIdentityResolver(
-      blePrefix: 'CAM',
+      blePrefix: '_cams',
       sharedProofOfPossession: 'cam-shared-pop',
     ),
   );
