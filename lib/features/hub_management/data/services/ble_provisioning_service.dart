@@ -17,6 +17,12 @@ abstract class BleProvisioningService {
     required String ssid,
     required String passphrase,
   });
+
+  Future<Uint8List> sendCustomData(
+    EspProvisioningIdentity identity, {
+    required String endpoint,
+    required Uint8List payload,
+  });
 }
 
 class FlutterBleProvisioningService implements BleProvisioningService {
@@ -78,6 +84,26 @@ class FlutterBleProvisioningService implements BleProvisioningService {
         passphrase,
       );
       return result ?? false;
+    } on PlatformException catch (error) {
+      throw BleProvisioningException(_describeError(error));
+    } catch (error) {
+      throw BleProvisioningException(error.toString());
+    }
+  }
+
+  @override
+  Future<Uint8List> sendCustomData(
+    EspProvisioningIdentity identity, {
+    required String endpoint,
+    required Uint8List payload,
+  }) async {
+    try {
+      return await _plugin.sendReceiveCustomData(
+        identity.bleDeviceName,
+        identity.proofOfPossession,
+        endpoint,
+        payload,
+      );
     } on PlatformException catch (error) {
       throw BleProvisioningException(_describeError(error));
     } catch (error) {

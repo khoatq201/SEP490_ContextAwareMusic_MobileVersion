@@ -4,26 +4,30 @@ import '../../domain/entities/esp_provisioning_identity.dart';
 abstract class ProvisioningIdentityResolver {
   String get blePrefix;
 
-  Future<EspProvisioningIdentity> resolve(BleCandidate candidate);
+  Future<EspProvisioningIdentity> resolve(
+    BleCandidate candidate, {
+    required String proofOfPossession,
+  });
 }
 
 class PrefixProvisioningIdentityResolver
     implements ProvisioningIdentityResolver {
   const PrefixProvisioningIdentityResolver({
     required this.blePrefix,
-    required this.sharedProofOfPossession,
   });
 
   @override
   final String blePrefix;
-  final String sharedProofOfPossession;
 
   @override
-  Future<EspProvisioningIdentity> resolve(BleCandidate candidate) async {
+  Future<EspProvisioningIdentity> resolve(
+    BleCandidate candidate, {
+    required String proofOfPossession,
+  }) async {
     return EspProvisioningIdentity(
       blePrefix: blePrefix,
       bleDeviceName: candidate.bleDeviceName,
-      proofOfPossession: sharedProofOfPossession,
+      proofOfPossession: proofOfPossession.trim(),
       source: EspProvisioningIdentitySource.blePrefixScan,
     );
   }

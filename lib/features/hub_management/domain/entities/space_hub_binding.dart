@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import 'hub_device_location.dart';
+
 enum SpaceHubBindingStatus {
   bound,
   syncPending,
@@ -30,6 +32,40 @@ extension SpaceHubBindingStatusX on SpaceHubBindingStatus {
   }
 }
 
+enum HubDeviceLocationStatus {
+  unknown,
+  configured,
+  deviceSyncPending,
+}
+
+extension HubDeviceLocationStatusX on HubDeviceLocationStatus {
+  String get apiValue {
+    switch (this) {
+      case HubDeviceLocationStatus.unknown:
+        return 'unknown';
+      case HubDeviceLocationStatus.configured:
+        return 'configured';
+      case HubDeviceLocationStatus.deviceSyncPending:
+        return 'deviceSyncPending';
+    }
+  }
+
+  String get displayLabel {
+    switch (this) {
+      case HubDeviceLocationStatus.unknown:
+        return 'Not configured';
+      case HubDeviceLocationStatus.configured:
+        return 'Configured';
+      case HubDeviceLocationStatus.deviceSyncPending:
+        return 'Device sync pending';
+    }
+  }
+
+  bool get isConfigured => this == HubDeviceLocationStatus.configured;
+
+  bool get isPending => this == HubDeviceLocationStatus.deviceSyncPending;
+}
+
 enum HubProvisioningMethod {
   blePrefixScan,
   qrCode,
@@ -58,6 +94,10 @@ class SpaceHubBinding extends Equatable {
     required this.provisionedAtUtc,
     required this.status,
     this.lastError,
+    this.deviceLocation,
+    this.deviceLocationStatus = HubDeviceLocationStatus.unknown,
+    this.deviceLocationLastError,
+    this.deviceLocationUpdatedAtUtc,
   });
 
   final String spaceId;
@@ -67,6 +107,10 @@ class SpaceHubBinding extends Equatable {
   final DateTime provisionedAtUtc;
   final SpaceHubBindingStatus status;
   final String? lastError;
+  final HubDeviceLocation? deviceLocation;
+  final HubDeviceLocationStatus deviceLocationStatus;
+  final String? deviceLocationLastError;
+  final DateTime? deviceLocationUpdatedAtUtc;
 
   SpaceHubBinding copyWith({
     String? spaceId,
@@ -76,6 +120,13 @@ class SpaceHubBinding extends Equatable {
     DateTime? provisionedAtUtc,
     SpaceHubBindingStatus? status,
     String? lastError,
+    HubDeviceLocation? deviceLocation,
+    bool clearDeviceLocation = false,
+    HubDeviceLocationStatus? deviceLocationStatus,
+    String? deviceLocationLastError,
+    bool clearDeviceLocationLastError = false,
+    DateTime? deviceLocationUpdatedAtUtc,
+    bool clearDeviceLocationUpdatedAtUtc = false,
     bool clearLastError = false,
   }) {
     return SpaceHubBinding(
@@ -86,12 +137,24 @@ class SpaceHubBinding extends Equatable {
       provisionedAtUtc: provisionedAtUtc ?? this.provisionedAtUtc,
       status: status ?? this.status,
       lastError: clearLastError ? null : (lastError ?? this.lastError),
+      deviceLocation:
+          clearDeviceLocation ? null : (deviceLocation ?? this.deviceLocation),
+      deviceLocationStatus: deviceLocationStatus ?? this.deviceLocationStatus,
+      deviceLocationLastError: clearDeviceLocationLastError
+          ? null
+          : (deviceLocationLastError ?? this.deviceLocationLastError),
+      deviceLocationUpdatedAtUtc: clearDeviceLocationUpdatedAtUtc
+          ? null
+          : (deviceLocationUpdatedAtUtc ?? this.deviceLocationUpdatedAtUtc),
     );
   }
 
   bool get isBound => status == SpaceHubBindingStatus.bound;
   bool get isSyncPending => status == SpaceHubBindingStatus.syncPending;
   bool get hasFailure => status == SpaceHubBindingStatus.failed;
+  bool get hasConfiguredDeviceLocation => deviceLocation != null;
+  bool get isDeviceLocationConfigured => deviceLocationStatus.isConfigured;
+  bool get isDeviceLocationSyncPending => deviceLocationStatus.isPending;
 
   @override
   List<Object?> get props => [
@@ -102,5 +165,9 @@ class SpaceHubBinding extends Equatable {
         provisionedAtUtc,
         status,
         lastError,
+        deviceLocation,
+        deviceLocationStatus,
+        deviceLocationLastError,
+        deviceLocationUpdatedAtUtc,
       ];
 }

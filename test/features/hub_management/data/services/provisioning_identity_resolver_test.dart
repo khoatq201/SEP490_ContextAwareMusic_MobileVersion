@@ -7,22 +7,19 @@ import 'package:cams_store_manager/features/hub_management/domain/entities/esp_p
 void main() {
   group('PrefixProvisioningIdentityResolver', () {
     test('exposes the configured BLE prefix', () {
-      const resolver = PrefixProvisioningIdentityResolver(
-        blePrefix: 'CAM',
-        sharedProofOfPossession: 'shared-pop',
-      );
+      const resolver = PrefixProvisioningIdentityResolver(blePrefix: 'CAM');
 
       expect(resolver.blePrefix, 'CAM');
     });
 
-    test('resolves a BLE candidate into a provisioning identity', () async {
-      const resolver = PrefixProvisioningIdentityResolver(
-        blePrefix: 'CAM',
-        sharedProofOfPossession: 'shared-pop',
-      );
+    test('resolves a BLE candidate with the provided secret code', () async {
+      const resolver = PrefixProvisioningIdentityResolver(blePrefix: 'CAM');
       const candidate = BleCandidate(bleDeviceName: 'CAM-ESP32-01');
 
-      final identity = await resolver.resolve(candidate);
+      final identity = await resolver.resolve(
+        candidate,
+        proofOfPossession: 'shared-pop',
+      );
 
       expect(
         identity,

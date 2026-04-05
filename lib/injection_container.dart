@@ -33,6 +33,7 @@ import 'features/hub_management/data/datasources/space_hub_stub_datasource.dart'
 import 'features/hub_management/data/repositories/space_hub_repository_impl.dart';
 import 'features/hub_management/data/services/ble_permission_service.dart';
 import 'features/hub_management/data/services/ble_provisioning_service.dart';
+import 'features/hub_management/data/services/location_capture_service.dart';
 import 'features/hub_management/data/services/provisioning_identity_resolver.dart';
 import 'features/hub_management/domain/repositories/space_hub_repository.dart';
 import 'features/hub_management/domain/usecases/space_hub_usecases.dart';
@@ -296,10 +297,12 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton<BlePermissionService>(
     () => PermissionHandlerBlePermissionService(),
   );
+  sl.registerLazySingleton<LocationCaptureService>(
+    () => GeolocatorLocationCaptureService(),
+  );
   sl.registerLazySingleton<ProvisioningIdentityResolver>(
     () => const PrefixProvisioningIdentityResolver(
-      blePrefix: '_cams',
-      sharedProofOfPossession: 'cam-shared-pop',
+      blePrefix: 'CAM',
     ),
   );
 
@@ -327,6 +330,7 @@ Future<void> initializeDependencies() async {
       restartSpaceHub: sl(),
       bleProvisioningService: sl(),
       blePermissionService: sl(),
+      locationCaptureService: sl(),
       identityResolver: sl(),
     ),
   );

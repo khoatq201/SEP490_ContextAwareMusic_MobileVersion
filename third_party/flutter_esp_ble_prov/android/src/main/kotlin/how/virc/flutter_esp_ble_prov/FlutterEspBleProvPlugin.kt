@@ -16,6 +16,7 @@ import androidx.core.app.ActivityCompat
 import com.espressif.provisioning.*
 import com.espressif.provisioning.listeners.BleScanListener
 import com.espressif.provisioning.listeners.ProvisionListener
+import com.espressif.provisioning.listeners.ResponseListener
 import com.espressif.provisioning.listeners.WiFiScanListener
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
@@ -60,6 +61,14 @@ class CallContext(val call: MethodCall, val result: Result) {
    */
   fun arg(name: String): String? {
     val v = call.argument<String>(name)
+    if (v == null) {
+      result.error("E0", "Missing argument: $name", "The argument $name was not provided")
+    }
+    return v
+  }
+
+  fun bytesArg(name: String): ByteArray? {
+    val v = call.argument<ByteArray>(name)
     if (v == null) {
       result.error("E0", "Missing argument: $name", "The argument $name was not provided")
     }
@@ -144,6 +153,7 @@ class Boss {
   private val scanBleMethod = "scanBleDevices"
   private val scanWifiMethod = "scanWifiNetworks"
   private val provisionWifiMethod = "provisionWifi"
+  private val customDataMethod = "sendReceiveCustomData"
   private val platformVersionMethod = "getPlatformVersion"
 
   /**
@@ -161,9 +171,13 @@ class Boss {
   private val bleScanner: BleScanManager = BleScanManager(this)
   private val wifiScanner: WifiScanManager = WifiScanManager(this)
   private val wifiProvisioner: WifiProvisionManager = WifiProvisionManager(this)
+  private val customDataManager: CustomDataManager = CustomDataManager(this)
 
   private lateinit var platformContext: Context
   lateinit var platformActivity: Activity
+  private var activeEspDevice: ESPDevice? = null
+  private var activeDeviceName: String? = null
+  private var activeProofOfPossession: String? = null
 
   val espManager: ESPProvisionManager get() = ESPProvisionManager.getInstance(platformContext)
 
@@ -174,6 +188,24 @@ class Boss {
 
   fun connector(deviceName: String): BleConnector? {
     return devices[deviceName]
+  }
+
+  fun markActiveSession(deviceName: String, proofOfPossession: String, esp: ESPDevice) {
+    activeEspDevice = esp
+    activeDeviceName = deviceName
+    activeProofOfPossession = proofOfPossession
+  }
+
+  fun clearActiveSession(disconnect: Boolean = false) {
+    if (disconnect) {
+      try {
+        activeEspDevice?.disconnectDevice()
+      } catch (_: Exception) {
+      }
+    }
+    activeEspDevice = null
+    activeDeviceName = null
+    activeProofOfPossession = null
   }
 
   /**
@@ -198,6 +230,38 @@ class Boss {
     esp.connectBLEDevice(conn.device, conn.primaryServiceUuid)
   }
 
+  fun withEspDevice(
+    deviceName: String,
+    proofOfPossession: String,
+    ctx: CallContext,
+    onReady: (ESPDevice) -> Unit,
+  ) {
+    val cachedEsp = activeEspDevice
+    if (
+      cachedEsp != null &&
+      activeDeviceName == deviceName &&
+      activeProofOfPossession == proofOfPossession
+    ) {
+      onReady(cachedEsp)
+      return
+    }
+
+    val conn = connector(deviceName)
+    if (conn == null) {
+      ctx.result.error(
+        "BLE_DEVICE_NOT_READY",
+        "No BLE connector is available for $deviceName",
+        "Scan BLE devices again before continuing",
+      )
+      return
+    }
+
+    connect(conn, proofOfPossession) { esp ->
+      markActiveSession(deviceName, proofOfPossession, esp)
+      onReady(esp)
+    }
+  }
+
   fun call(call: MethodCall, result: Result) {
     permissionManager.ensure(fun(granted: Boolean) {
       if (!granted) {
@@ -214,6 +278,7 @@ class Boss {
         scanBleMethod -> bleScanner.call(ctx)
         scanWifiMethod -> wifiScanner.call(ctx)
         provisionWifiMethod -> wifiProvisioner.call(ctx)
+        customDataMethod -> customDataManager.call(ctx)
         else -> result.notImplemented()
       }
     })
@@ -289,9 +354,8 @@ class WifiScanManager(boss: Boss) : ActionManager(boss) {
   override fun call(ctx: CallContext) {
     val name = ctx.arg("deviceName") ?: return
     val proofOfPossession = ctx.arg("proofOfPossession") ?: return
-    val conn = boss.connector(name) ?: return
     boss.d("esp connect: start")
-    boss.connect(conn, proofOfPossession) { esp ->
+    boss.withEspDevice(name, proofOfPossession, ctx) { esp ->
       boss.d("scanNetworks: start")
       esp.scanNetworks(object : WiFiScanListener {
         override fun onWifiListReceived(wifiList: ArrayList<WiFiAccessPoint>?) {
@@ -303,10 +367,12 @@ class WifiScanManager(boss: Boss) : ActionManager(boss) {
           }
           boss.d("scanNetworks: complete 2 ${boss.networks}")
           esp.disconnectDevice()
+          boss.clearActiveSession()
         }
 
         override fun onWiFiScanFailed(e: java.lang.Exception?) {
           boss.e("scanNetworks: error $e")
+          boss.clearActiveSession(disconnect = true)
           ctx.result.error("E1", "WiFi scan failed", "Exception details $e")
         }
       })
@@ -322,13 +388,14 @@ class WifiProvisionManager(boss: Boss) : ActionManager(boss) {
     val passphrase = ctx.arg("passphrase") ?: return
     val deviceName = ctx.arg("deviceName") ?: return
     val proofOfPossession = ctx.arg("proofOfPossession") ?: return
-    val conn = boss.connector(deviceName) ?: return
 
-    boss.connect(conn, proofOfPossession) { esp ->
+    boss.withEspDevice(deviceName, proofOfPossession, ctx) { esp ->
       boss.d("provision: start")
       esp.provision(ssid, passphrase, object : ProvisionListener {
         override fun createSessionFailed(e: java.lang.Exception?) {
           boss.e("wifiprovision createSessionFailed")
+          boss.clearActiveSession(disconnect = true)
+          ctx.result.success(false)
         }
 
         override fun wifiConfigSent() {
@@ -337,6 +404,7 @@ class WifiProvisionManager(boss: Boss) : ActionManager(boss) {
 
         override fun wifiConfigFailed(e: java.lang.Exception?) {
           boss.e("wifiConfiFailed $e")
+          boss.clearActiveSession(disconnect = true)
           ctx.result.success(false)
         }
 
@@ -346,21 +414,25 @@ class WifiProvisionManager(boss: Boss) : ActionManager(boss) {
 
         override fun wifiConfigApplyFailed(e: java.lang.Exception?) {
           boss.e("wifiConfigApplyFailed $e")
+          boss.clearActiveSession(disconnect = true)
           ctx.result.success(false)
         }
 
         override fun provisioningFailedFromDevice(failureReason: ESPConstants.ProvisionFailureReason?) {
           boss.e("provisioningFailedFromDevice $failureReason")
+          boss.clearActiveSession(disconnect = true)
           ctx.result.success(false)
         }
 
         override fun deviceProvisioningSuccess() {
           boss.d("deviceProvisioningSuccess")
+          boss.markActiveSession(deviceName, proofOfPossession, esp)
           ctx.result.success(true)
         }
 
         override fun onProvisioningFailed(e: java.lang.Exception?) {
           boss.e("onProvisioningFailed")
+          boss.clearActiveSession(disconnect = true)
           ctx.result.success(false)
         }
 
@@ -368,6 +440,38 @@ class WifiProvisionManager(boss: Boss) : ActionManager(boss) {
     }
   }
 
+}
+
+
+class CustomDataManager(boss: Boss) : ActionManager(boss) {
+  override fun call(ctx: CallContext) {
+    val deviceName = ctx.arg("deviceName") ?: return
+    val proofOfPossession = ctx.arg("proofOfPossession") ?: return
+    val endpointName = ctx.arg("endpointName") ?: return
+    val data = ctx.bytesArg("data") ?: return
+
+    boss.withEspDevice(deviceName, proofOfPossession, ctx) { esp ->
+      boss.d("customData: send to $endpointName")
+      esp.sendDataToCustomEndPoint(endpointName, data, object : ResponseListener {
+        override fun onSuccess(returnData: ByteArray?) {
+          Handler(Looper.getMainLooper()).post {
+            ctx.result.success(returnData ?: ByteArray(0))
+          }
+          boss.clearActiveSession(disconnect = true)
+        }
+
+        override fun onFailure(e: java.lang.Exception?) {
+          boss.e("customData: failure $e")
+          boss.clearActiveSession(disconnect = true)
+          ctx.result.error(
+            "CUSTOM_DATA_FAILED",
+            "Custom data exchange failed",
+            "Exception details $e",
+          )
+        }
+      })
+    }
+  }
 }
 
 

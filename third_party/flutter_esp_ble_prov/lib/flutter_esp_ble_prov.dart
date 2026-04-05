@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'src/flutter_esp_ble_prov_platform_interface.dart';
 
 /// Plugin provides core functionality to provision ESP32 devices over BLE
@@ -27,6 +29,21 @@ class FlutterEspBleProv {
       String ssid, String passphrase) {
     return FlutterEspBleProvPlatform.instance
         .provisionWifi(deviceName, proofOfPossession, ssid, passphrase);
+  }
+
+  /// Sends bytes to a custom endpoint and returns the response bytes.
+  Future<Uint8List> sendReceiveCustomData(
+    String deviceName,
+    String proofOfPossession,
+    String endpointName,
+    Uint8List data,
+  ) {
+    return FlutterEspBleProvPlatform.instance.sendReceiveCustomData(
+      deviceName,
+      proofOfPossession,
+      endpointName,
+      data,
+    );
   }
 
   /// Returns the native platform version
