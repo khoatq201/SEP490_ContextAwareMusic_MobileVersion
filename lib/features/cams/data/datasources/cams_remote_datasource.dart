@@ -19,6 +19,7 @@ abstract class CamsRemoteDataSource {
     String? playlistId,
     String? moodId,
     bool? isClearManagerSelectedQueues,
+    bool? isCutOver,
     String? reason,
     bool usePlaybackDeviceScope = false,
   });
@@ -125,6 +126,7 @@ class CamsRemoteDataSourceImpl implements CamsRemoteDataSource {
     String? playlistId,
     String? moodId,
     bool? isClearManagerSelectedQueues,
+    bool? isCutOver,
     String? reason,
     bool usePlaybackDeviceScope = false,
   }) async {
@@ -139,6 +141,7 @@ class CamsRemoteDataSourceImpl implements CamsRemoteDataSource {
           if (moodId != null) 'moodId': moodId,
           if (isClearManagerSelectedQueues != null)
             'isClearManagerSelectedQueues': isClearManagerSelectedQueues,
+          if (isCutOver != null) 'isCutOver': isCutOver,
           if (reason != null) 'reason': reason,
         },
       );

@@ -18,6 +18,7 @@ abstract class CamsRepository {
     String? playlistId,
     String? moodId,
     bool? isClearManagerSelectedQueues,
+    bool? isCutOver,
     String? reason,
     bool usePlaybackDeviceScope = false,
   });
@@ -119,6 +120,7 @@ class CamsRepositoryImpl implements CamsRepository {
     String? playlistId,
     String? moodId,
     bool? isClearManagerSelectedQueues,
+    bool? isCutOver,
     String? reason,
     bool usePlaybackDeviceScope = false,
   }) async {
@@ -129,6 +131,7 @@ class CamsRepositoryImpl implements CamsRepository {
         playlistId: playlistId,
         moodId: moodId,
         isClearManagerSelectedQueues: isClearManagerSelectedQueues,
+        isCutOver: isCutOver,
         reason: reason,
         usePlaybackDeviceScope: usePlaybackDeviceScope,
       );

@@ -38,6 +38,47 @@ class CamsOverrideMood extends CamsPlaybackEvent {
   List<Object?> get props => [moodId, reason];
 }
 
+/// Apply a manual override using one source: tracks, playlist, or mood.
+class CamsApplyOverride extends CamsPlaybackEvent {
+  final List<String>? trackIds;
+  final String? playlistId;
+  final String? moodId;
+  final bool isClearManagerSelectedQueues;
+  final bool isCutOver;
+  final String? reason;
+
+  const CamsApplyOverride({
+    this.trackIds,
+    this.playlistId,
+    this.moodId,
+    this.isClearManagerSelectedQueues = false,
+    this.isCutOver = false,
+    this.reason,
+  });
+
+  bool get hasValidSourceSelection {
+    final hasTracks = trackIds != null && trackIds!.isNotEmpty;
+    final hasPlaylist = playlistId != null && playlistId!.trim().isNotEmpty;
+    final hasMood = moodId != null && moodId!.trim().isNotEmpty;
+    final selectedCount = [
+      hasTracks,
+      hasPlaylist,
+      hasMood,
+    ].where((value) => value).length;
+    return selectedCount == 1;
+  }
+
+  @override
+  List<Object?> get props => [
+        trackIds,
+        playlistId,
+        moodId,
+        isClearManagerSelectedQueues,
+        isCutOver,
+        reason,
+      ];
+}
+
 /// Queue-native playlist request.
 class CamsPlayPlaylist extends CamsPlaybackEvent {
   final String playlistId;

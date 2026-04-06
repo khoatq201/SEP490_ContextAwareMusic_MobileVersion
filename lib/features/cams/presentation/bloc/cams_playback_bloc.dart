@@ -37,6 +37,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     on<CamsInitPlayback>(_onInit);
     on<CamsDisposePlayback>(_onDispose);
     on<CamsOverrideMood>(_onOverrideMood);
+    on<CamsApplyOverride>(_onApplyOverride);
     on<CamsPlayPlaylist>(_onPlayPlaylist);
     on<CamsPlayTrack>(_onPlayTrack);
     on<CamsReorderQueue>(_onReorderQueue);
@@ -129,6 +130,44 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     CamsOverrideMood event,
     Emitter<CamsPlaybackState> emit,
   ) async {
+    await _submitOverride(
+      emit,
+      moodId: event.moodId,
+      reason: event.reason,
+    );
+  }
+
+  Future<void> _onApplyOverride(
+    CamsApplyOverride event,
+    Emitter<CamsPlaybackState> emit,
+  ) async {
+    if (!event.hasValidSourceSelection) {
+      emit(state.copyWith(
+        errorMessage: 'Select exactly one override source before applying.',
+      ));
+      return;
+    }
+
+    await _submitOverride(
+      emit,
+      trackIds: event.trackIds,
+      playlistId: event.playlistId,
+      moodId: event.moodId,
+      isClearManagerSelectedQueues: event.isClearManagerSelectedQueues,
+      isCutOver: event.isCutOver,
+      reason: event.reason,
+    );
+  }
+
+  Future<void> _submitOverride(
+    Emitter<CamsPlaybackState> emit, {
+    List<String>? trackIds,
+    String? playlistId,
+    String? moodId,
+    bool? isClearManagerSelectedQueues,
+    bool? isCutOver,
+    String? reason,
+  }) async {
     if (!_hasActiveSessionScope('overrideMood')) return;
     final spaceId = state.spaceId;
     if (spaceId == null || spaceId.isEmpty) return;
@@ -137,8 +176,12 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
 
     final result = await overrideSpace(
       spaceId: spaceId,
-      moodId: event.moodId,
-      reason: event.reason,
+      trackIds: trackIds,
+      playlistId: playlistId,
+      moodId: moodId,
+      isClearManagerSelectedQueues: isClearManagerSelectedQueues,
+      isCutOver: isCutOver,
+      reason: reason,
       usePlaybackDeviceScope: sessionCubit.state.isPlaybackDevice,
     );
 
