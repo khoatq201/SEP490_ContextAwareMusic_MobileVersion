@@ -17,43 +17,10 @@ import '../player_state.dart' as ps;
 class FullScreenPlayerPage extends StatelessWidget {
   const FullScreenPlayerPage({super.key});
 
-  static const double _minimumRemoteRestartSeekSeconds = 0.001;
-
   String _fmt(int sec) {
     final m = sec ~/ 60;
     final s = sec % 60;
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
-  }
-
-  double _remoteRestartSeekPosition(ps.PlayerState state) {
-    final trackStartOffsetSeconds = state.currentTrackStartOffset.toDouble();
-    if (trackStartOffsetSeconds > 0) {
-      return trackStartOffsetSeconds;
-    }
-    return _minimumRemoteRestartSeekSeconds;
-  }
-
-  void _dispatchRemoteSkipBack(BuildContext context, ps.PlayerState state) {
-    final playbackState = context.read<CamsPlaybackBloc>().state.playbackState;
-    final previousQueueItem = playbackState?.previousQueueItem;
-    final shouldRestartCurrentTrack = state.displayPositionPrecise > 3;
-
-    if (shouldRestartCurrentTrack || previousQueueItem == null) {
-      context.read<CamsPlaybackBloc>().add(
-            CamsSendCommand(
-              command: PlaybackCommandEnum.seek,
-              seekPositionSeconds: _remoteRestartSeekPosition(state),
-            ),
-          );
-      return;
-    }
-
-    context.read<CamsPlaybackBloc>().add(
-          CamsSendCommand(
-            command: PlaybackCommandEnum.skipToTrack,
-            targetQueueItemId: previousQueueItem.queueItemId,
-          ),
-        );
   }
 
   @override
@@ -316,7 +283,11 @@ class FullScreenPlayerPage extends StatelessWidget {
                     GestureDetector(
                       onTap: () {
                         if (useRemoteControls) {
-                          _dispatchRemoteSkipBack(context, state);
+                          context.read<CamsPlaybackBloc>().add(
+                                const CamsSendCommand(
+                                  command: PlaybackCommandEnum.skipPrevious,
+                                ),
+                              );
                           return;
                         }
                         context
@@ -374,18 +345,18 @@ class FullScreenPlayerPage extends StatelessWidget {
                     GestureDetector(
                       onTap: state.hasNext
                           ? () {
-                              if (useRemoteControls) {
-                                context.read<CamsPlaybackBloc>().add(
-                                      const CamsSendCommand(
-                                        command: PlaybackCommandEnum.skipNext,
-                                      ),
-                                    );
-                                return;
-                              }
-                              context
-                                  .read<PlayerBloc>()
-                                  .add(const PlayerSkipRequested());
-                            }
+                        if (useRemoteControls) {
+                          context.read<CamsPlaybackBloc>().add(
+                                const CamsSendCommand(
+                                  command: PlaybackCommandEnum.skipNext,
+                                ),
+                              );
+                          return;
+                        }
+                        context
+                            .read<PlayerBloc>()
+                            .add(const PlayerSkipRequested());
+                      }
                           : null,
                       child: Container(
                         width: 52,

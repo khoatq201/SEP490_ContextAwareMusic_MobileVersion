@@ -203,30 +203,6 @@ class SpacePlaybackState extends Equatable {
     return null;
   }
 
-  List<SpaceQueueStateItem> get sortedQueueItems {
-    final sortedItems = [...spaceQueueItems]
-      ..sort((a, b) => a.position.compareTo(b.position));
-    return List<SpaceQueueStateItem>.unmodifiable(sortedItems);
-  }
-
-  SpaceQueueStateItem? get focusedQueueItem {
-    final sortedItems = sortedQueueItems;
-    final focusedIndex = _resolveFocusedQueueIndex(sortedItems);
-    if (focusedIndex < 0 || focusedIndex >= sortedItems.length) {
-      return null;
-    }
-    return sortedItems[focusedIndex];
-  }
-
-  SpaceQueueStateItem? get previousQueueItem {
-    final sortedItems = sortedQueueItems;
-    final focusedIndex = _resolveFocusedQueueIndex(sortedItems);
-    if (focusedIndex <= 0 || focusedIndex >= sortedItems.length) {
-      return null;
-    }
-    return sortedItems[focusedIndex - 1];
-  }
-
   String? get effectiveQueueItemId {
     if (currentQueueItemId != null && currentQueueItemId!.isNotEmpty) {
       return currentQueueItemId;
@@ -325,52 +301,6 @@ class SpacePlaybackState extends Equatable {
       return totalDurationSeconds;
     }
     return safeOffset;
-  }
-
-  int _resolveFocusedQueueIndex(List<SpaceQueueStateItem> sortedItems) {
-    if (sortedItems.isEmpty) return -1;
-
-    final currentQueueItemId = this.currentQueueItemId;
-    if (currentQueueItemId != null && currentQueueItemId.isNotEmpty) {
-      final currentIndex = sortedItems.indexWhere(
-        (item) => item.queueItemId == currentQueueItemId,
-      );
-      if (currentIndex >= 0) {
-        return currentIndex;
-      }
-    }
-
-    final playingIndex = sortedItems.indexWhere(
-      (item) => item.queueStatus == queueStatusPlaying,
-    );
-    if (playingIndex >= 0) {
-      return playingIndex;
-    }
-
-    final pendingQueueItemId = this.pendingQueueItemId;
-    if (pendingQueueItemId != null && pendingQueueItemId.isNotEmpty) {
-      final pendingIndex = sortedItems.indexWhere(
-        (item) => item.queueItemId == pendingQueueItemId,
-      );
-      if (pendingIndex >= 0) {
-        return pendingIndex;
-      }
-    }
-
-    final currentTrackName = this.currentTrackName?.trim().toLowerCase();
-    if (currentTrackName != null && currentTrackName.isNotEmpty) {
-      final currentTrackIndex = sortedItems.indexWhere((item) {
-        final trackName = item.trackName?.trim().toLowerCase();
-        return trackName != null && trackName == currentTrackName;
-      });
-      if (currentTrackIndex >= 0) {
-        return currentTrackIndex;
-      }
-    }
-
-    return sortedItems.indexWhere(
-      (item) => item.queueStatus == queueStatusPending,
-    );
   }
 
   @override

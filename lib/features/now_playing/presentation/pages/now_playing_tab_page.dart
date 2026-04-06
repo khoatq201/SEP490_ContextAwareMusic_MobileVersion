@@ -25,7 +25,6 @@ import '../../../../features/cams/presentation/bloc/cams_playback_event.dart';
 import '../../../../features/cams/presentation/bloc/cams_playback_state.dart';
 import '../../../../features/moods/domain/entities/mood.dart';
 import '../models/queue_sheet_view_data.dart';
-import '../widgets/queue_management_sheets.dart';
 import '../../../../features/space_control/domain/entities/space.dart';
 import '../../../../features/space_control/domain/entities/sensor_data.dart';
 import '../../../../features/space_control/presentation/bloc/music_control_bloc.dart';
@@ -44,45 +43,8 @@ class NowPlayingTabPage extends StatefulWidget {
 }
 
 class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
-  static const double _minimumRemoteRestartSeekSeconds = 0.001;
-
   double _volume = 0.6;
   bool _isShuffleOn = false;
-
-  double _remoteRestartSeekPosition(ps.PlayerState playerState) {
-    final trackStartOffsetSeconds =
-        playerState.currentTrackStartOffset.toDouble();
-    if (trackStartOffsetSeconds > 0) {
-      return trackStartOffsetSeconds;
-    }
-    return _minimumRemoteRestartSeekSeconds;
-  }
-
-  void _dispatchRemoteSkipBack(
-    BuildContext context, {
-    required ps.PlayerState playerState,
-    required CamsPlaybackState camsState,
-  }) {
-    final previousQueueItem = camsState.playbackState?.previousQueueItem;
-    final shouldRestartCurrentTrack = playerState.displayPositionPrecise > 3;
-
-    if (shouldRestartCurrentTrack || previousQueueItem == null) {
-      context.read<CamsPlaybackBloc>().add(
-            CamsSendCommand(
-              command: PlaybackCommandEnum.seek,
-              seekPositionSeconds: _remoteRestartSeekPosition(playerState),
-            ),
-          );
-      return;
-    }
-
-    context.read<CamsPlaybackBloc>().add(
-          CamsSendCommand(
-            command: PlaybackCommandEnum.skipToTrack,
-            targetQueueItemId: previousQueueItem.queueItemId,
-          ),
-        );
-  }
 
   bool _hasRemoteNext(
     CamsPlaybackState camsState,
@@ -401,11 +363,11 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                   },
                   onSkipBack: () {
                     if (useRemoteControls) {
-                      _dispatchRemoteSkipBack(
-                        context,
-                        playerState: playerState,
-                        camsState: camsState,
-                      );
+                      context
+                          .read<CamsPlaybackBloc>()
+                          .add(const CamsSendCommand(
+                            command: PlaybackCommandEnum.skipPrevious,
+                          ));
                       return;
                     }
                     context
@@ -476,11 +438,6 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                     isOverriding: camsState.isOverriding,
                     isPreparing: camsState.isPreparing,
                     lastOverrideResponse: camsState.lastOverrideResponse,
-                    onOpenOverrideSheet: () => _showOverrideMusicSheet(
-                      context,
-                      palette,
-                      camsState.moods,
-                    ),
                   ).animate().fadeIn(duration: 450.ms).slideY(begin: 0.12),
 
                 const SizedBox(height: 100), // breathing space
@@ -605,18 +562,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                   icon: LucideIcons.listEnd,
                   label: 'Add to queue',
                   palette: palette,
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    if (track?.id != null && track!.id.isNotEmpty) {
-                      _showAddToQueueSheet(
-                        ctx,
-                        palette,
-                        initialTrackId: track.id,
-                      );
-                    } else {
-                      _showAddToQueueSheet(ctx, palette);
-                    }
-                  }),
+                  onTap: () => Navigator.pop(ctx)),
               _SheetOption(
                   icon: LucideIcons.disc,
                   label: 'Go to album',
@@ -653,65 +599,6 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
         builder: (_, controller) => _QueueSheet(
           palette: palette,
           controller: controller,
-          onOpenAddToQueue: () => _showAddToQueueSheet(ctx, palette),
-        ),
-      ),
-    );
-  }
-
-  void _showAddToQueueSheet(
-    BuildContext ctx,
-    _NPPalette palette, {
-    String? initialTrackId,
-  }) {
-    showModalBottomSheet(
-      context: ctx,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      isDismissible: true,
-      enableDrag: true,
-      backgroundColor: palette.isDark ? palette.card : Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (sheetContext) => FractionallySizedBox(
-        heightFactor: 0.88,
-        child: Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
-          ),
-          child: NowPlayingAddToQueueSheet(
-            initialTrackId: initialTrackId,
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showOverrideMusicSheet(
-    BuildContext ctx,
-    _NPPalette palette,
-    List<Mood> moods,
-  ) {
-    showModalBottomSheet(
-      context: ctx,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      isDismissible: true,
-      enableDrag: true,
-      backgroundColor: palette.isDark ? palette.card : Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (sheetContext) => FractionallySizedBox(
-        heightFactor: 0.9,
-        child: Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
-          ),
-          child: NowPlayingOverrideMusicSheet(
-            moods: moods,
-          ),
         ),
       ),
     );
@@ -722,12 +609,10 @@ class _QueueSheet extends StatelessWidget {
   const _QueueSheet({
     required this.palette,
     required this.controller,
-    required this.onOpenAddToQueue,
   });
 
   final _NPPalette palette;
   final ScrollController controller;
-  final VoidCallback onOpenAddToQueue;
 
   void _dispatchQueueReorder(
     BuildContext context,
@@ -839,6 +724,7 @@ class _QueueSheet extends StatelessWidget {
             );
             final playback = camsState.playbackState;
             final currentTrack = queueData.currentItem;
+            final upNext = queueData.upNext;
 
             return SafeArea(
               child: CustomScrollView(
@@ -861,85 +747,39 @@ class _QueueSheet extends StatelessWidget {
                         ),
                         Padding(
                           padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Row(
                             children: [
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Expanded(
-                                    child: Text('Queue',
-                                        style: GoogleFonts.poppins(
-                                          color: palette.textPrimary,
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.w700,
-                                        )),
-                                  ),
-                                  TextButton(
-                                    onPressed: () => Navigator.of(
-                                      context,
-                                      rootNavigator: true,
-                                    ).pop(),
-                                    child: Text('Close',
-                                        style: GoogleFonts.inter(
-                                          color: palette.textMuted,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                        )),
-                                  ),
-                                ],
-                              ),
-                              if (queueData.isFromCams) ...[
-                                const SizedBox(height: 8),
-                                Align(
-                                  alignment: Alignment.centerRight,
-                                  child: Wrap(
-                                    spacing: 8,
-                                    runSpacing: 8,
-                                    alignment: WrapAlignment.end,
-                                    children: [
-                                      TextButton.icon(
-                                        onPressed: () {
-                                          Navigator.of(
-                                            context,
-                                            rootNavigator: true,
-                                          ).pop();
-                                          Future.microtask(onOpenAddToQueue);
-                                        },
-                                        icon: const Icon(
-                                          Icons.queue_music,
-                                          size: 16,
-                                        ),
-                                        label: const Text('Add'),
-                                        style: TextButton.styleFrom(
-                                          foregroundColor: palette.textMuted,
-                                          textStyle: GoogleFonts.inter(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ),
-                                      if (queueData.items.isNotEmpty)
-                                        TextButton.icon(
-                                          onPressed: () =>
-                                              _confirmAndClearQueue(context),
-                                          icon: const Icon(
-                                            Icons.clear_all,
-                                            size: 16,
-                                          ),
-                                          label: const Text('Clear'),
-                                          style: TextButton.styleFrom(
-                                            foregroundColor: palette.textMuted,
-                                            textStyle: GoogleFonts.inter(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ),
-                                    ],
+                              Text('Queue',
+                                  style: GoogleFonts.poppins(
+                                    color: palette.textPrimary,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                  )),
+                              const Spacer(),
+                              if (queueData.isFromCams &&
+                                  queueData.items.isNotEmpty)
+                                TextButton.icon(
+                                  onPressed: () =>
+                                      _confirmAndClearQueue(context),
+                                  icon: const Icon(Icons.clear_all, size: 16),
+                                  label: const Text('Clear'),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: palette.textMuted,
+                                    textStyle: GoogleFonts.inter(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                 ),
-                              ],
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: Text('Close',
+                                    style: GoogleFonts.inter(
+                                      color: palette.textMuted,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    )),
+                              ),
                             ],
                           ),
                         ),
@@ -986,10 +826,76 @@ class _QueueSheet extends StatelessWidget {
                               },
                             ),
                           ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                          child: Text('Now playing',
+                              style: GoogleFonts.inter(
+                                color: palette.textMuted,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              )),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: _QueueTrackTile(
+                            title: currentTrack?.title ?? 'No track',
+                            artist: currentTrack?.artist ?? '',
+                            artUrl: currentTrack?.artUrl,
+                            isPlaying: true,
+                            isPending: currentTrack?.isPending ?? false,
+                            meta: currentTrack?.metaLabel,
+                            palette: palette,
+                          ),
+                        ),
+                        if (queueData.pendingNotInQueueLabel != null)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: palette.overlay,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: palette.border),
+                              ),
+                              child: Row(
+                                children: [
+                                  SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: palette.accent,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      queueData.pendingNotInQueueLabel!,
+                                      style: GoogleFonts.inter(
+                                        color: palette.textMuted,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                          child: Text('Up next',
+                              style: GoogleFonts.poppins(
+                                color: palette.textPrimary,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              )),
+                        ),
                       ],
                     ),
                   ),
-                  if (!queueData.hasVisibleItems)
+                  if (upNext.isEmpty)
                     SliverFillRemaining(
                       hasScrollBody: false,
                       child: Center(
@@ -1007,68 +913,67 @@ class _QueueSheet extends StatelessWidget {
                         ),
                       ),
                     )
-                  else ...[
-                    if (queueData.played.isNotEmpty)
-                      ..._buildSectionSlivers(
-                        context,
-                        title: 'Played',
-                        items: queueData.played,
-                        queueData: queueData,
-                      ),
-                    if (currentTrack != null)
-                      ..._buildSectionSlivers(
-                        context,
-                        title: 'Now playing',
-                        items: [currentTrack],
-                        queueData: queueData,
-                        isCurrentSection: true,
-                      ),
-                    if (queueData.pendingNotInQueueLabel != null)
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: palette.overlay,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: palette.border),
-                            ),
-                            child: Row(
-                              children: [
-                                SizedBox(
-                                  width: 14,
-                                  height: 14,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: palette.accent,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    queueData.pendingNotInQueueLabel!,
-                                    style: GoogleFonts.inter(
-                                      color: palette.textMuted,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                  else
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (_, i) {
+                            final queuedTrack = upNext[i];
+                            final fullQueueIndex = queueData.currentIndex >= 0
+                                ? queueData.currentIndex + i + 1
+                                : i;
+                            final minMovableIndex = queueData.currentIndex >= 0
+                                ? queueData.currentIndex + 1
+                                : 0;
+                            final canMoveUp = fullQueueIndex > minMovableIndex;
+                            final canMoveDown =
+                                fullQueueIndex < queueData.items.length - 1;
+                            final canManageQueue = queueData.isFromCams &&
+                                queuedTrack.queueItemId != null &&
+                                queuedTrack.queueItemId!.isNotEmpty;
+
+                            return _QueueTrackTile(
+                              title: queuedTrack.title,
+                              artist: queuedTrack.artist,
+                              artUrl: queuedTrack.artUrl,
+                              isPlaying: false,
+                              isPending: queuedTrack.isPending,
+                              meta: queuedTrack.metaLabel,
+                              palette: palette,
+                              trailing: canManageQueue
+                                  ? _QueueTrackActions(
+                                      palette: palette,
+                                      canMoveUp: canMoveUp,
+                                      canMoveDown: canMoveDown,
+                                      onMoveUp: canMoveUp
+                                          ? () => _dispatchQueueReorder(
+                                                context,
+                                                queueData,
+                                                fullQueueIndex,
+                                                fullQueueIndex - 1,
+                                              )
+                                          : null,
+                                      onMoveDown: canMoveDown
+                                          ? () => _dispatchQueueReorder(
+                                                context,
+                                                queueData,
+                                                fullQueueIndex,
+                                                fullQueueIndex + 1,
+                                              )
+                                          : null,
+                                      onRemove: () => _dispatchRemoveQueueItem(
+                                        context,
+                                        queuedTrack,
+                                      ),
+                                    )
+                                  : null,
+                            );
+                          },
+                          childCount: upNext.length,
                         ),
                       ),
-                    ..._buildSectionSlivers(
-                      context,
-                      title: 'Up next',
-                      items: queueData.upNext,
-                      queueData: queueData,
-                      emptyMessage: queueData.upNextEmptyMessage,
                     ),
-                  ],
                   const SliverToBoxAdapter(
                     child: SizedBox(height: 12),
                   ),
@@ -1079,145 +984,6 @@ class _QueueSheet extends StatelessWidget {
         );
       },
     );
-  }
-
-  List<Widget> _buildSectionSlivers(
-    BuildContext context, {
-    required String title,
-    required List<QueueSheetItem> items,
-    required QueueSheetViewData queueData,
-    bool isCurrentSection = false,
-    String? emptyMessage,
-  }) {
-    final slivers = <Widget>[
-      SliverToBoxAdapter(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-          child: Text(
-            title,
-            style: isCurrentSection
-                ? GoogleFonts.inter(
-                    color: palette.textMuted,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  )
-                : GoogleFonts.poppins(
-                    color: palette.textPrimary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-          ),
-        ),
-      ),
-    ];
-
-    if (items.isEmpty) {
-      if (emptyMessage != null && emptyMessage.isNotEmpty) {
-        slivers.add(
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: palette.overlay,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: palette.border),
-                ),
-                child: Text(
-                  emptyMessage,
-                  style: GoogleFonts.inter(
-                    color: palette.textMuted,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      }
-      return slivers;
-    }
-
-    slivers.add(
-      SliverPadding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        sliver: SliverList(
-          delegate: SliverChildBuilderDelegate(
-            (_, index) {
-              final queuedTrack = items[index];
-              final canManageQueue = queueData.isFromCams &&
-                  queuedTrack.queueItemId != null &&
-                  queuedTrack.queueItemId!.isNotEmpty;
-
-              Widget? trailing;
-              if (canManageQueue && queuedTrack.isUpNext) {
-                final fullQueueIndex = queuedTrack.listIndex;
-                final minMovableIndex = queueData.currentIndex >= 0
-                    ? queueData.currentIndex + 1
-                    : 0;
-                final canMoveUp = fullQueueIndex > minMovableIndex;
-                final canMoveDown = fullQueueIndex < queueData.items.length - 1;
-                trailing = _QueueTrackActions(
-                  palette: palette,
-                  canMoveUp: canMoveUp,
-                  canMoveDown: canMoveDown,
-                  onMoveUp: canMoveUp
-                      ? () => _dispatchQueueReorder(
-                            context,
-                            queueData,
-                            fullQueueIndex,
-                            fullQueueIndex - 1,
-                          )
-                      : null,
-                  onMoveDown: canMoveDown
-                      ? () => _dispatchQueueReorder(
-                            context,
-                            queueData,
-                            fullQueueIndex,
-                            fullQueueIndex + 1,
-                          )
-                      : null,
-                  onRemove: () => _dispatchRemoveQueueItem(
-                    context,
-                    queuedTrack,
-                  ),
-                );
-              } else if (canManageQueue && queuedTrack.isPlayed) {
-                trailing = _QueueTrackActions(
-                  palette: palette,
-                  canMoveUp: false,
-                  canMoveDown: false,
-                  onMoveUp: null,
-                  onMoveDown: null,
-                  onRemove: () => _dispatchRemoveQueueItem(
-                    context,
-                    queuedTrack,
-                  ),
-                  showReorderButtons: false,
-                );
-              }
-
-              return _QueueTrackTile(
-                title: queuedTrack.title,
-                artist: queuedTrack.artist,
-                artUrl: queuedTrack.artUrl,
-                isPlaying: queuedTrack.isCurrent,
-                isPending: queuedTrack.isPending,
-                meta: queuedTrack.metaLabel,
-                palette: palette,
-                trailing: trailing,
-              );
-            },
-            childCount: items.length,
-          ),
-        ),
-      ),
-    );
-
-    return slivers;
   }
 }
 
@@ -1984,7 +1750,6 @@ class _QueueTrackActions extends StatelessWidget {
     required this.onMoveUp,
     required this.onMoveDown,
     required this.onRemove,
-    this.showReorderButtons = true,
   });
 
   final _NPPalette palette;
@@ -1993,37 +1758,34 @@ class _QueueTrackActions extends StatelessWidget {
   final VoidCallback? onMoveUp;
   final VoidCallback? onMoveDown;
   final VoidCallback onRemove;
-  final bool showReorderButtons;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (showReorderButtons) ...[
-          IconButton(
-            tooltip: 'Move up',
-            constraints: const BoxConstraints.tightFor(width: 28, height: 28),
-            padding: EdgeInsets.zero,
-            onPressed: canMoveUp ? onMoveUp : null,
-            icon: Icon(
-              LucideIcons.chevronUp,
-              size: 16,
-              color: canMoveUp ? palette.textMuted : palette.border,
-            ),
+        IconButton(
+          tooltip: 'Move up',
+          constraints: const BoxConstraints.tightFor(width: 28, height: 28),
+          padding: EdgeInsets.zero,
+          onPressed: canMoveUp ? onMoveUp : null,
+          icon: Icon(
+            LucideIcons.chevronUp,
+            size: 16,
+            color: canMoveUp ? palette.textMuted : palette.border,
           ),
-          IconButton(
-            tooltip: 'Move down',
-            constraints: const BoxConstraints.tightFor(width: 28, height: 28),
-            padding: EdgeInsets.zero,
-            onPressed: canMoveDown ? onMoveDown : null,
-            icon: Icon(
-              LucideIcons.chevronDown,
-              size: 16,
-              color: canMoveDown ? palette.textMuted : palette.border,
-            ),
+        ),
+        IconButton(
+          tooltip: 'Move down',
+          constraints: const BoxConstraints.tightFor(width: 28, height: 28),
+          padding: EdgeInsets.zero,
+          onPressed: canMoveDown ? onMoveDown : null,
+          icon: Icon(
+            LucideIcons.chevronDown,
+            size: 16,
+            color: canMoveDown ? palette.textMuted : palette.border,
           ),
-        ],
+        ),
         IconButton(
           tooltip: 'Remove',
           constraints: const BoxConstraints.tightFor(width: 28, height: 28),
@@ -2395,7 +2157,7 @@ class _AiExplainabilityPanel extends StatelessWidget {
   }
 }
 
-class _OverrideMoodCTA extends StatelessWidget {
+class _OverrideMoodCTA extends StatefulWidget {
   const _OverrideMoodCTA({
     required this.spaceId,
     required this.currentMood,
@@ -2405,7 +2167,6 @@ class _OverrideMoodCTA extends StatelessWidget {
     required this.isOverriding,
     required this.isPreparing,
     this.lastOverrideResponse,
-    required this.onOpenOverrideSheet,
   });
 
   final String spaceId;
@@ -2416,32 +2177,43 @@ class _OverrideMoodCTA extends StatelessWidget {
   final bool isOverriding;
   final bool isPreparing;
   final OverrideResponse? lastOverrideResponse;
-  final VoidCallback onOpenOverrideSheet;
+
+  @override
+  State<_OverrideMoodCTA> createState() => _OverrideMoodCTAState();
+}
+
+class _OverrideMoodCTAState extends State<_OverrideMoodCTA> {
+  bool _manualSelectionOpen = false;
+
+  bool get _isManualMode => widget.hasActiveOverride || _manualSelectionOpen;
+
+  @override
+  void initState() {
+    super.initState();
+    _manualSelectionOpen = widget.hasActiveOverride;
+  }
+
+  @override
+  void didUpdateWidget(covariant _OverrideMoodCTA oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.hasActiveOverride && !_manualSelectionOpen) {
+      _manualSelectionOpen = true;
+    } else if (!widget.hasActiveOverride && oldWidget.hasActiveOverride) {
+      _manualSelectionOpen = false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final statusLabel = hasActiveOverride ? 'Manual Override' : 'Auto Mode';
-    final subtitle = hasActiveOverride
-        ? 'Tracks, playlist, or mood are currently overriding CAMS playback.'
-        : 'CAMS is auto-adjusting playback. You can take over with tracks, a playlist, or a mood.';
-    final ctaLabel = hasActiveOverride ? 'Change override' : 'Open override';
-    final overrideSummary = lastOverrideResponse == null
-        ? null
-        : (lastOverrideResponse!.moodName?.trim().isNotEmpty == true)
-            ? 'Latest override mood: ${lastOverrideResponse!.moodName!.trim()}'
-            : (lastOverrideResponse!.playlistName?.trim().isNotEmpty == true)
-                ? 'Latest override playlist: ${lastOverrideResponse!.playlistName!.trim()}'
-                : lastOverrideResponse!.isAckOnly
-                    ? 'Manual override acknowledged by CAMS.'
-                    : null;
+    final pendingTranscode = widget.isPreparing;
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
       decoration: BoxDecoration(
-        color: palette.card,
+        color: widget.palette.card,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: palette.border),
+        border: Border.all(color: widget.palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2453,18 +2225,20 @@ class _OverrideMoodCTA extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      statusLabel,
+                      _isManualMode ? 'Manual Mode' : 'Auto Mode',
                       style: GoogleFonts.poppins(
-                        color: palette.textPrimary,
+                        color: widget.palette.textPrimary,
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      subtitle,
+                      _isManualMode
+                          ? 'Select mood to override CAMS playback'
+                          : 'CAMS is auto-adjusting playlist and mood',
                       style: GoogleFonts.inter(
-                        color: palette.textMuted,
+                        color: widget.palette.textMuted,
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
@@ -2472,48 +2246,60 @@ class _OverrideMoodCTA extends StatelessWidget {
                   ],
                 ),
               ),
-              ElevatedButton.icon(
-                onPressed: isOverriding ? null : onOpenOverrideSheet,
-                icon: const Icon(Icons.tune, size: 16),
-                label: Text(ctaLabel),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: palette.accent,
-                  foregroundColor: palette.textOnAccent,
-                  textStyle: GoogleFonts.inter(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
+              GestureDetector(
+                onTap: widget.isOverriding ? null : () => _onToggle(context),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  width: 52,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    color: _isManualMode
+                        ? widget.palette.accent.withOpacity(0.30)
+                        : widget.palette.overlay,
+                    border: Border.all(color: widget.palette.border),
+                  ),
+                  child: Stack(
+                    children: [
+                      AnimatedAlign(
+                        duration: const Duration(milliseconds: 250),
+                        alignment: _isManualMode
+                            ? Alignment.centerRight
+                            : Alignment.centerLeft,
+                        child: Container(
+                          width: 22,
+                          height: 22,
+                          margin: const EdgeInsets.symmetric(horizontal: 3),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _isManualMode
+                                ? widget.palette.accent
+                                : widget.palette.textMuted.withOpacity(0.6),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ],
           ),
-          if (currentMood != null) ...[
+          if (widget.currentMood != null) ...[
             const SizedBox(height: 10),
             Text(
-              'Current mood: ${currentMood!.toUpperCase()}',
+              'Current mood: ${widget.currentMood!.toUpperCase()}',
               style: GoogleFonts.inter(
-                color: palette.textPrimary,
+                color: widget.palette.textPrimary,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
             ),
           ],
-          if (overrideSummary != null) ...[
-            const SizedBox(height: 10),
-            Text(
-              overrideSummary,
-              style: GoogleFonts.inter(
-                color: palette.textMuted,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-          if (isOverriding || isPreparing) ...[
+          if (widget.isOverriding || pendingTranscode) ...[
             const SizedBox(height: 10),
             Row(
               children: [
-                if (isOverriding)
+                if (widget.isOverriding)
                   const SizedBox(
                     width: 14,
                     height: 14,
@@ -2523,16 +2309,16 @@ class _OverrideMoodCTA extends StatelessWidget {
                   Icon(
                     LucideIcons.loader,
                     size: 14,
-                    color: palette.textMuted,
+                    color: widget.palette.textMuted,
                   ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    isOverriding
+                    widget.isOverriding
                         ? 'Applying override...'
                         : 'Preparing next stream. Playback will continue automatically.',
                     style: GoogleFonts.inter(
-                      color: palette.textMuted,
+                      color: widget.palette.textMuted,
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                     ),
@@ -2541,61 +2327,70 @@ class _OverrideMoodCTA extends StatelessWidget {
               ],
             ),
           ],
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: palette.overlay,
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: palette.border),
+          if (_isManualMode) ...[
+            const SizedBox(height: 12),
+            if (widget.moods.isEmpty)
+              Text(
+                'No moods available.',
+                style: GoogleFonts.inter(
+                  color: widget.palette.textMuted,
+                  fontSize: 12,
                 ),
-                child: Text(
-                  '${moods.length} moods available',
-                  style: GoogleFonts.inter(
-                    color: palette.textMuted,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              if (hasActiveOverride)
-                TextButton.icon(
-                  onPressed: isOverriding
-                      ? null
-                      : () => context
-                          .read<CamsPlaybackBloc>()
-                          .add(const CamsCancelOverride()),
-                  icon: const Icon(Icons.close, size: 16),
-                  label: const Text('Cancel override'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: palette.textMuted,
-                    textStyle: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
+              )
+            else
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: widget.moods.map((mood) {
+                  final selected = widget.currentMood != null &&
+                      widget.currentMood!.toLowerCase() ==
+                          mood.name.toLowerCase();
+                  return ChoiceChip(
+                    label: Text(
+                      mood.name.toUpperCase(),
+                      style: GoogleFonts.inter(
+                        color: selected
+                            ? widget.palette.textOnAccent
+                            : widget.palette.textPrimary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  ),
-                ),
-            ],
-          ),
-          if (hasActiveOverride && currentMood != null) ...[
-            const SizedBox(height: 10),
-            Text(
-              'Tap "$ctaLabel" to switch source or replace the current manual selection.',
-              style: GoogleFonts.inter(
-                color: palette.textMuted,
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
+                    selected: selected,
+                    selectedColor: widget.palette.accent,
+                    backgroundColor: widget.palette.overlay,
+                    side: BorderSide(
+                      color: selected
+                          ? widget.palette.accent
+                          : widget.palette.border,
+                    ),
+                    onSelected: widget.isOverriding
+                        ? null
+                        : (_) {
+                            context
+                                .read<CamsPlaybackBloc>()
+                                .add(CamsOverrideMood(moodId: mood.id));
+                          },
+                  );
+                }).toList(),
               ),
-            ),
           ],
         ],
       ),
     );
+  }
+
+  void _onToggle(BuildContext context) {
+    if (_isManualMode) {
+      if (widget.hasActiveOverride) {
+        context.read<CamsPlaybackBloc>().add(const CamsCancelOverride());
+      } else {
+        setState(() => _manualSelectionOpen = false);
+      }
+      return;
+    }
+
+    setState(() => _manualSelectionOpen = true);
   }
 }
 

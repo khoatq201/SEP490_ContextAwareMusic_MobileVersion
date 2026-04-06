@@ -583,7 +583,7 @@ class QueueFirstPlaybackRuntime {
             ? normalizedState
             : _copyWithQueue(
                 source: normalizedState,
-                queueItems: _sortQueueItems(queueItems),
+                queueItems: _reindexQueueItems(queueItems),
               ),
       );
     }
@@ -656,20 +656,35 @@ class QueueFirstPlaybackRuntime {
   }
 
   bool _shouldHydrateQueueSnapshot(SpacePlaybackState playbackState) {
+    if (playbackState.spaceQueueItems.isNotEmpty) return false;
+
     final hasQueueIdentity =
         (playbackState.currentQueueItemId?.isNotEmpty ?? false) ||
             (playbackState.pendingQueueItemId?.isNotEmpty ?? false);
-    return playbackState.spaceQueueItems.isNotEmpty ||
-        hasQueueIdentity ||
-        playbackState.hasPlayableHls;
+    if (hasQueueIdentity) return true;
+
+    return playbackState.hasPlayableHls;
   }
 
-  List<SpaceQueueStateItem> _sortQueueItems(
+  List<SpaceQueueStateItem> _reindexQueueItems(
     List<SpaceQueueStateItem> queueItems,
   ) {
     final sortedItems = [...queueItems]
       ..sort((a, b) => a.position.compareTo(b.position));
-    return List<SpaceQueueStateItem>.unmodifiable(sortedItems);
+
+    return List<SpaceQueueStateItem>.generate(sortedItems.length, (index) {
+      final item = sortedItems[index];
+      return SpaceQueueStateItem(
+        queueItemId: item.queueItemId,
+        trackId: item.trackId,
+        trackName: item.trackName,
+        position: index + 1,
+        queueStatus: item.queueStatus,
+        source: item.source,
+        hlsUrl: item.hlsUrl,
+        isReadyToStream: item.isReadyToStream,
+      );
+    }, growable: false);
   }
 
   SpacePlaybackState _copyWithQueue({

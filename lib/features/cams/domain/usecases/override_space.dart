@@ -14,7 +14,6 @@ class OverrideSpace {
     String? playlistId,
     String? moodId,
     bool? isClearManagerSelectedQueues,
-    bool? isCutOver,
     String? reason,
     bool usePlaybackDeviceScope = false,
   }) {
@@ -24,7 +23,6 @@ class OverrideSpace {
       playlistId: playlistId,
       moodId: moodId,
       isClearManagerSelectedQueues: isClearManagerSelectedQueues,
-      isCutOver: isCutOver,
       reason: reason,
       usePlaybackDeviceScope: usePlaybackDeviceScope,
     );
