@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cams_store_manager/core/enums/playback_command_enum.dart';
 import 'package:cams_store_manager/core/enums/queue_insert_mode_enum.dart';
+import 'package:cams_store_manager/core/enums/entity_status_enum.dart';
+import 'package:cams_store_manager/core/enums/space_type_enum.dart';
 import 'package:cams_store_manager/core/enums/transition_type_enum.dart';
 import 'package:cams_store_manager/core/error/failures.dart';
 import 'package:cams_store_manager/core/services/local_storage_service.dart';
@@ -31,6 +33,8 @@ import 'package:cams_store_manager/features/cams/presentation/bloc/cams_playback
 import 'package:cams_store_manager/features/moods/data/repositories/mood_repository_impl.dart';
 import 'package:cams_store_manager/features/moods/domain/entities/mood.dart';
 import 'package:cams_store_manager/features/moods/domain/usecases/get_moods.dart';
+import 'package:cams_store_manager/features/space_control/domain/entities/space.dart';
+import 'package:cams_store_manager/features/store_dashboard/domain/entities/store.dart';
 
 void main() {
   group('CamsPlaybackBloc queue-first behavior', () {
@@ -46,6 +50,18 @@ void main() {
       moodRepository = _FakeMoodRepository();
       storeHubService = _FakeStoreHubService();
       sessionCubit = SessionCubit(localStorage: _InMemoryLocalStorageService());
+      sessionCubit.changeStore(const Store(
+        id: 'store-1',
+        name: 'Store 1',
+        brandId: 'brand-1',
+      ));
+      sessionCubit.changeSpace(const Space(
+        id: 'space-1',
+        name: 'Space 1',
+        storeId: 'store-1',
+        type: SpaceTypeEnum.hall,
+        status: EntityStatusEnum.active,
+      ));
       runtime = QueueFirstPlaybackRuntime(
         getSpaceState: GetSpaceState(repository),
         queueTracks: QueueTracks(repository),
@@ -182,6 +198,156 @@ void main() {
       expect(request.playlistId, isNull);
       expect(request.reason, 'Manual vibe test');
       expect(bloc.state.isOverriding, isFalse);
+    });
+
+    test('applies generic track override payload', () async {
+      await _initBloc(bloc);
+
+      bloc.add(const CamsApplyOverride(
+        trackIds: ['track-11', 'track-12'],
+        isClearManagerSelectedQueues: true,
+        isCutOver: true,
+        reason: 'Manual deck takeover',
+      ));
+
+      await _waitUntil(() => repository.lastOverrideRequest != null);
+      final request = repository.lastOverrideRequest!;
+
+      expect(request.spaceId, 'space-1');
+      expect(request.trackIds, ['track-11', 'track-12']);
+      expect(request.playlistId, isNull);
+      expect(request.moodId, isNull);
+      expect(request.isClearManagerSelectedQueues, isTrue);
+      expect(request.isCutOver, isTrue);
+      expect(request.reason, 'Manual deck takeover');
+    });
+
+    test('applies generic playlist override payload', () async {
+      await _initBloc(bloc);
+
+      bloc.add(const CamsApplyOverride(
+        playlistId: 'playlist-override-1',
+        reason: 'Manual playlist takeover',
+      ));
+
+      await _waitUntil(() => repository.lastOverrideRequest != null);
+      final request = repository.lastOverrideRequest!;
+
+      expect(request.trackIds, isNull);
+      expect(request.playlistId, 'playlist-override-1');
+      expect(request.moodId, isNull);
+      expect(request.isCutOver, isFalse);
+      expect(request.reason, 'Manual playlist takeover');
+    });
+
+    test(
+        'hydrates authoritative queue snapshot when state sync payload is partial',
+        () async {
+      await _initBloc(bloc);
+      repository.getQueueResult = const Right([
+        SpaceQueueStateItem(
+          queueItemId: 'queue-1',
+          trackId: 'track-1',
+          trackName: 'Track One',
+          position: 1,
+          queueStatus: SpacePlaybackState.queueStatusPlayed,
+          source: 1,
+        ),
+        SpaceQueueStateItem(
+          queueItemId: 'queue-2',
+          trackId: 'track-2',
+          trackName: 'Track Two',
+          position: 2,
+          queueStatus: SpacePlaybackState.queueStatusPlaying,
+          source: 1,
+        ),
+        SpaceQueueStateItem(
+          queueItemId: 'queue-3',
+          trackId: 'track-3',
+          trackName: 'Track Three',
+          position: 3,
+          queueStatus: SpacePlaybackState.queueStatusPending,
+          source: 1,
+        ),
+      ]);
+
+      storeHubService.emitStateSync(
+        const SpacePlaybackStateModel(
+          spaceId: 'space-1',
+          currentQueueItemId: 'queue-2',
+          pendingQueueItemId: 'queue-3',
+          spaceQueueItems: [
+            SpaceQueueStateItem(
+              queueItemId: 'queue-2',
+              trackId: 'track-2',
+              trackName: 'Track Two',
+              position: 1,
+              queueStatus: SpacePlaybackState.queueStatusPlaying,
+              source: 1,
+            ),
+            SpaceQueueStateItem(
+              queueItemId: 'queue-3',
+              trackId: 'track-3',
+              trackName: 'Track Three',
+              position: 2,
+              queueStatus: SpacePlaybackState.queueStatusPending,
+              source: 1,
+            ),
+          ],
+        ),
+      );
+
+      await _waitUntil(
+        () => (bloc.state.playbackState?.spaceQueueItems.length ?? 0) == 3,
+      );
+
+      expect(repository.getQueueCallCount, greaterThanOrEqualTo(1));
+      expect(
+        bloc.state.playbackState?.spaceQueueItems
+            .map((item) => item.queueItemId)
+            .toList(),
+        ['queue-1', 'queue-2', 'queue-3'],
+      );
+      expect(
+        bloc.state.playbackState?.spaceQueueItems.first.queueStatus,
+        SpacePlaybackState.queueStatusPlayed,
+      );
+    });
+
+    test('rejects generic override when multiple sources are selected',
+        () async {
+      await _initBloc(bloc);
+
+      bloc.add(const CamsApplyOverride(
+        trackIds: ['track-1'],
+        playlistId: 'playlist-1',
+      ));
+      await _nextTick();
+
+      expect(repository.lastOverrideRequest, isNull);
+      expect(
+        bloc.state.errorMessage,
+        'Select exactly one override source before applying.',
+      );
+    });
+
+    test('cancels override and refreshes playback state', () async {
+      repository.getSpaceStateResult = const Right(
+        SpacePlaybackState(
+          spaceId: 'space-1',
+          isManualOverride: false,
+          moodName: 'Recovered',
+        ),
+      );
+      await _initBloc(bloc);
+
+      bloc.add(const CamsCancelOverride());
+      await _waitUntil(() => repository.cancelOverrideCallCount == 1);
+      await _waitUntil(() => repository.getSpaceStateCallCount >= 2);
+
+      expect(repository.cancelOverrideCallCount, 1);
+      expect(bloc.state.isOverriding, isFalse);
+      expect(bloc.state.lastOverrideResponse, isNull);
     });
 
     test('treats pendingQueueItemId as preparing active state', () async {
@@ -708,6 +874,7 @@ class _FakeCamsRepository implements CamsRepository {
   _UpdateAudioStateRequest? lastUpdateAudioStateRequest;
   int getSpaceStateCallCount = 0;
   int getQueueCallCount = 0;
+  int cancelOverrideCallCount = 0;
   int clearQueueCallCount = 0;
   final List<Either<Failure, SpacePlaybackState>> _queuedGetSpaceStateResults =
       [];
@@ -767,6 +934,7 @@ class _FakeCamsRepository implements CamsRepository {
     String? playlistId,
     String? moodId,
     bool? isClearManagerSelectedQueues,
+    bool? isCutOver,
     String? reason,
     bool usePlaybackDeviceScope = false,
   }) async {
@@ -776,6 +944,7 @@ class _FakeCamsRepository implements CamsRepository {
       playlistId: playlistId,
       moodId: moodId,
       isClearManagerSelectedQueues: isClearManagerSelectedQueues,
+      isCutOver: isCutOver,
       reason: reason,
       usePlaybackDeviceScope: usePlaybackDeviceScope,
     );
@@ -803,6 +972,7 @@ class _FakeCamsRepository implements CamsRepository {
     String spaceId, {
     bool usePlaybackDeviceScope = false,
   }) async {
+    cancelOverrideCallCount += 1;
     return cancelOverrideResult;
   }
 
@@ -991,6 +1161,7 @@ class _OverrideRequest {
   final String? playlistId;
   final String? moodId;
   final bool? isClearManagerSelectedQueues;
+  final bool? isCutOver;
   final String? reason;
   final bool usePlaybackDeviceScope;
 
@@ -1000,6 +1171,7 @@ class _OverrideRequest {
     required this.playlistId,
     required this.moodId,
     required this.isClearManagerSelectedQueues,
+    required this.isCutOver,
     required this.reason,
     required this.usePlaybackDeviceScope,
   });

@@ -129,6 +129,7 @@ class _FakeCamsRepository implements CamsRepository {
     String? playlistId,
     String? moodId,
     bool? isClearManagerSelectedQueues,
+    bool? isCutOver,
     String? reason,
     bool usePlaybackDeviceScope = false,
   }) async {

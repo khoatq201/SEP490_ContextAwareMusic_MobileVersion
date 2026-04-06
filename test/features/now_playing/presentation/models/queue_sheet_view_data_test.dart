@@ -9,7 +9,8 @@ import 'package:cams_store_manager/features/space_control/domain/entities/track.
 
 void main() {
   group('QueueSheetViewData', () {
-    test('prioritizes CAMS queue snapshot and sorts by queue position', () {
+    test('keeps played, current, and up-next sections from CAMS queue order',
+        () {
       const playerState = ps.PlayerState(
         queue: [
           Track(
@@ -28,21 +29,30 @@ void main() {
             moodTags: [],
             albumArt: 'https://img/track-2.jpg',
           ),
+          Track(
+            id: 'track-3',
+            title: 'Track Three',
+            artist: 'Artist Three',
+            fileUrl: '',
+            moodTags: [],
+            albumArt: 'https://img/track-3.jpg',
+          ),
         ],
       );
 
       const camsState = CamsPlaybackState(
         playbackState: SpacePlaybackState(
           spaceId: 'space-1',
-          currentQueueItemId: 'queue-1',
+          currentQueueItemId: 'queue-2',
+          pendingQueueItemId: 'queue-3',
           queueEndBehavior: 2,
           spaceQueueItems: [
             SpaceQueueStateItem(
-              queueItemId: 'queue-2',
-              trackId: 'track-2',
-              trackName: 'Track Two',
-              position: 2,
-              queueStatus: 1,
+              queueItemId: 'queue-3',
+              trackId: 'track-3',
+              trackName: 'Track Three',
+              position: 3,
+              queueStatus: SpacePlaybackState.queueStatusPending,
               source: 1,
             ),
             SpaceQueueStateItem(
@@ -50,7 +60,15 @@ void main() {
               trackId: 'track-1',
               trackName: 'Track One',
               position: 1,
-              queueStatus: 1,
+              queueStatus: SpacePlaybackState.queueStatusPlayed,
+              source: 1,
+            ),
+            SpaceQueueStateItem(
+              queueItemId: 'queue-2',
+              trackId: 'track-2',
+              trackName: 'Track Two',
+              position: 2,
+              queueStatus: SpacePlaybackState.queueStatusPlaying,
               source: 1,
               isReadyToStream: true,
             ),
@@ -64,30 +82,79 @@ void main() {
       );
 
       expect(viewData.isFromCams, isTrue);
-      expect(viewData.items, hasLength(2));
-      expect(viewData.items.first.queueItemId, 'queue-1');
-      expect(viewData.items.first.trackId, 'track-1');
-      expect(viewData.currentItem?.queueItemId, 'queue-1');
-      expect(viewData.upNext, hasLength(1));
-      expect(viewData.upNext.first.queueItemId, 'queue-2');
-      expect(viewData.summaryLabel, contains('2 tracks'));
+      expect(viewData.items.map((item) => item.queueItemId).toList(), [
+        'queue-1',
+        'queue-2',
+        'queue-3',
+      ]);
+      expect(viewData.played.map((item) => item.queueItemId).toList(), [
+        'queue-1',
+      ]);
+      expect(viewData.currentItem?.queueItemId, 'queue-2');
+      expect(viewData.upNext.map((item) => item.queueItemId).toList(), [
+        'queue-3',
+      ]);
+      expect(viewData.summaryLabel, contains('3 tracks'));
       expect(viewData.summaryLabel, contains('Repeat one'));
     });
 
-    test('exposes pending state even when pending item is not in queue list',
+    test(
+        'falls back to current queue item identity when statuses do not mark history',
         () {
-      const playerState = ps.PlayerState();
+      const playerState = ps.PlayerState(
+        queue: [
+          Track(
+            id: 'track-1',
+            title: 'Track One',
+            artist: 'Artist One',
+            fileUrl: '',
+            moodTags: [],
+          ),
+          Track(
+            id: 'track-2',
+            title: 'Track Two',
+            artist: 'Artist Two',
+            fileUrl: '',
+            moodTags: [],
+          ),
+          Track(
+            id: 'track-3',
+            title: 'Track Three',
+            artist: 'Artist Three',
+            fileUrl: '',
+            moodTags: [],
+          ),
+        ],
+      );
+
       const camsState = CamsPlaybackState(
         playbackState: SpacePlaybackState(
           spaceId: 'space-1',
-          pendingQueueItemId: 'pending-queue-item',
+          currentQueueItemId: 'queue-2',
+          pendingQueueItemId: 'queue-3',
           spaceQueueItems: [
             SpaceQueueStateItem(
               queueItemId: 'queue-1',
               trackId: 'track-1',
               trackName: 'Track One',
               position: 1,
-              queueStatus: 1,
+              queueStatus: 0,
+              source: 1,
+            ),
+            SpaceQueueStateItem(
+              queueItemId: 'queue-2',
+              trackId: 'track-2',
+              trackName: 'Track Two',
+              position: 2,
+              queueStatus: 0,
+              source: 1,
+            ),
+            SpaceQueueStateItem(
+              queueItemId: 'queue-3',
+              trackId: 'track-3',
+              trackName: 'Track Three',
+              position: 3,
+              queueStatus: 0,
               source: 1,
             ),
           ],
@@ -99,12 +166,118 @@ void main() {
         camsState: camsState,
       );
 
-      expect(viewData.isFromCams, isTrue);
-      expect(viewData.pendingNotInQueueLabel, 'Preparing next queue item...');
-      expect(viewData.currentItem?.title, 'Track One');
+      expect(viewData.played.single.queueItemId, 'queue-1');
+      expect(viewData.current.single.queueItemId, 'queue-2');
+      expect(viewData.upNext.single.queueItemId, 'queue-3');
+      expect(viewData.upNextEmptyMessage, 'No upcoming tracks in queue.');
     });
 
-    test('falls back to local queue when CAMS queue snapshot is empty', () {
+    test('keeps played items from authoritative queue snapshots', () {
+      const playerState = ps.PlayerState(
+        queue: [
+          Track(
+            id: 'track-1',
+            title: 'Track One',
+            artist: 'Artist One',
+            fileUrl: '',
+            moodTags: [],
+          ),
+          Track(
+            id: 'track-2',
+            title: 'Track Two',
+            artist: 'Artist Two',
+            fileUrl: '',
+            moodTags: [],
+          ),
+          Track(
+            id: 'track-3',
+            title: 'Track Three',
+            artist: 'Artist Three',
+            fileUrl: '',
+            moodTags: [],
+          ),
+        ],
+      );
+
+      const camsState = CamsPlaybackState(
+        playbackState: SpacePlaybackState(
+          spaceId: 'space-1',
+          currentQueueItemId: 'queue-2',
+          pendingQueueItemId: 'queue-3',
+          spaceQueueItems: [
+            SpaceQueueStateItem(
+              queueItemId: 'queue-1',
+              trackId: 'track-1',
+              trackName: 'Track One',
+              position: 1,
+              queueStatus: SpacePlaybackState.queueStatusPlayed,
+              source: 1,
+            ),
+            SpaceQueueStateItem(
+              queueItemId: 'queue-2',
+              trackId: 'track-2',
+              trackName: 'Track Two',
+              position: 2,
+              queueStatus: SpacePlaybackState.queueStatusPlaying,
+              source: 1,
+            ),
+            SpaceQueueStateItem(
+              queueItemId: 'queue-3',
+              trackId: 'track-3',
+              trackName: 'Track Three',
+              position: 3,
+              queueStatus: SpacePlaybackState.queueStatusPending,
+              source: 1,
+            ),
+          ],
+        ),
+      );
+
+      final viewData = QueueSheetViewData.resolve(
+        playerState: playerState,
+        camsState: camsState,
+      );
+
+      expect(viewData.played.map((item) => item.queueItemId).toList(), [
+        'queue-1',
+      ]);
+      expect(viewData.played.single.isHistoryOnly, isFalse);
+      expect(viewData.current.single.queueItemId, 'queue-2');
+      expect(viewData.upNext.single.queueItemId, 'queue-3');
+    });
+
+    test('exposes pending label even when pending item is not in queue list',
+        () {
+      const playerState = ps.PlayerState();
+      const camsState = CamsPlaybackState(
+        playbackState: SpacePlaybackState(
+          spaceId: 'space-1',
+          currentQueueItemId: 'queue-1',
+          pendingQueueItemId: 'pending-queue-item',
+          spaceQueueItems: [
+            SpaceQueueStateItem(
+              queueItemId: 'queue-1',
+              trackId: 'track-1',
+              trackName: 'Track One',
+              position: 1,
+              queueStatus: SpacePlaybackState.queueStatusPlaying,
+              source: 1,
+            ),
+          ],
+        ),
+      );
+
+      final viewData = QueueSheetViewData.resolve(
+        playerState: playerState,
+        camsState: camsState,
+      );
+
+      expect(viewData.pendingNotInQueueLabel, 'Preparing next queue item...');
+      expect(viewData.currentItem?.queueItemId, 'queue-1');
+      expect(viewData.upNext, isEmpty);
+    });
+
+    test('falls back to local queue sections when CAMS queue is unavailable', () {
       const playerState = ps.PlayerState(
         currentIndex: 1,
         queue: [
@@ -135,7 +308,7 @@ void main() {
       );
 
       expect(viewData.isFromCams, isFalse);
-      expect(viewData.items, hasLength(2));
+      expect(viewData.played.single.trackId, 'track-1');
       expect(viewData.currentItem?.trackId, 'track-2');
       expect(viewData.upNext, isEmpty);
       expect(viewData.summaryLabel, '2 tracks in local queue');
