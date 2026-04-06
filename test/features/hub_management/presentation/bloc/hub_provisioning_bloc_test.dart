@@ -433,7 +433,7 @@ void main() {
       bleProvisioningService.customDataResult =
           Uint8List.fromList(const [123, 125]);
       locationCaptureService.captureError = const LocationCaptureException(
-        'Location permission was denied. You can still enter the location manually.',
+        'Location permission was denied. Try again, or open app settings if Android no longer shows the location prompt.',
       );
 
       bloc.add(
@@ -473,7 +473,10 @@ void main() {
             bloc.state.message != null,
       );
 
-      expect(bloc.state.message, contains('enter the location manually'));
+      expect(
+        bloc.state.message,
+        contains('Android no longer shows the location prompt'),
+      );
 
       bloc.add(
         const HubProvisioningLocationSubmitted(

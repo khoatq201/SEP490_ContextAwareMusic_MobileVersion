@@ -1,0 +1,91 @@
+/* Custom FullCalendar styles */
+
+.fc {
+  .fc-theme-standard .fc-scrollgrid {
+    border: 1px solid var(--ant-color-border-secondary);
+  }
+
+  .fc-theme-standard td,
+  .fc-theme-standard th {
+    border-color: var(--ant-color-border-secondary);
+  }
+
+  .fc-col-header-cell {
+    background-color: var(--ant-color-bg-layout);
+    font-weight: 600;
+    padding: 12px 0;
+
+    .fc-col-header-cell-cushion {
+      color: var(--ant-color-text);
+    }
+  }
+
+  .fc-timegrid-slot {
+    height: 6em;
+  }
+
+  .fc-event {
+    cursor: pointer;
+    border-radius: 4px;
+  }
+
+  .fc-event:hover {
+    opacity: 0.9;
+  }
+
+  .fc-timegrid-now-indicator-line {
+    border-color: var(--ant-color-highlight);
+    border-width: 1px;
+    position: relative;
+
+    &::before {
+      content: '';
+      width: 7px;
+      height: 7px;
+      flex-shrink: 0;
+      position: absolute;
+      border-radius: 100%;
+      background-color: var(--ant-color-highlight);
+      left: -1px;
+      bottom: 0;
+      transform: translateY(50%);
+    }
+    &::after {
+      content: '';
+      width: 7px;
+      height: 7px;
+      flex-shrink: 0;
+      position: absolute;
+      border-radius: 100%;
+      background-color: var(--ant-color-highlight);
+      right: -0.5px;
+      bottom: 0;
+      transform: translateY(50%);
+    }
+  }
+
+  .fc-timegrid-now-indicator-arrow > div {
+    display: none;
+  }
+
+  .fc-timegrid-col,
+  .fc-daygrid-day {
+    &.fc-day-today {
+      background-color: var(--ant-color-primary-bg) !important;
+    }
+  }
+
+  .fc-day-past {
+    background-color: var(--ant-color-bg-container-disabled) !important;
+    opacity: 0.6;
+  }
+
+  .fc-day-past .fc-timegrid-col-bg {
+    background-color: var(--ant-color-bg-container-disabled) !important;
+  }
+
+  .fc-day-past .fc-timegrid-col-frame {
+    pointer-events: none;
+    cursor: not-allowed;
+  }
+}

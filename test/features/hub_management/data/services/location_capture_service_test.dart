@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import 'package:cams_store_manager/features/hub_management/data/services/location_capture_service.dart';
 import 'package:cams_store_manager/features/hub_management/domain/entities/hub_device_location.dart';
@@ -9,6 +10,8 @@ void main() {
   group('GeolocatorLocationCaptureService', () {
     test('captures GPS location and reverse geocodes the city', () async {
       final service = GeolocatorLocationCaptureService(
+        checkSystemPermission: () async => PermissionStatus.granted,
+        requestSystemPermission: () async => PermissionStatus.granted,
         isLocationServiceEnabled: () async => true,
         checkPermission: () async => LocationPermission.whileInUse,
         requestPermission: () async => LocationPermission.whileInUse,
@@ -31,6 +34,8 @@ void main() {
 
     test('throws when location permission is denied', () async {
       final service = GeolocatorLocationCaptureService(
+        checkSystemPermission: () async => PermissionStatus.denied,
+        requestSystemPermission: () async => PermissionStatus.denied,
         isLocationServiceEnabled: () async => true,
         checkPermission: () async => LocationPermission.denied,
         requestPermission: () async => LocationPermission.denied,
@@ -43,7 +48,30 @@ void main() {
           isA<LocationCaptureException>().having(
             (error) => error.message,
             'message',
-            contains('enter the location manually'),
+            contains('Android no longer shows the location prompt'),
+          ),
+        ),
+      );
+    });
+
+    test('throws a dedicated message when location is permanently denied',
+        () async {
+      final service = GeolocatorLocationCaptureService(
+        checkSystemPermission: () async => PermissionStatus.permanentlyDenied,
+        requestSystemPermission: () async => PermissionStatus.permanentlyDenied,
+        isLocationServiceEnabled: () async => true,
+        checkPermission: () async => LocationPermission.deniedForever,
+        requestPermission: () async => LocationPermission.deniedForever,
+        getCurrentPosition: () async => _position(),
+      );
+
+      await expectLater(
+        service.captureCurrentLocation(),
+        throwsA(
+          isA<LocationCaptureException>().having(
+            (error) => error.message,
+            'message',
+            contains('permanently denied'),
           ),
         ),
       );
@@ -51,6 +79,8 @@ void main() {
 
     test('throws when location services are disabled', () async {
       final service = GeolocatorLocationCaptureService(
+        checkSystemPermission: () async => PermissionStatus.granted,
+        requestSystemPermission: () async => PermissionStatus.granted,
         isLocationServiceEnabled: () async => false,
         checkPermission: () async => LocationPermission.whileInUse,
         requestPermission: () async => LocationPermission.whileInUse,
@@ -71,6 +101,8 @@ void main() {
 
     test('falls back to Unknown city when reverse geocode fails', () async {
       final service = GeolocatorLocationCaptureService(
+        checkSystemPermission: () async => PermissionStatus.granted,
+        requestSystemPermission: () async => PermissionStatus.granted,
         isLocationServiceEnabled: () async => true,
         checkPermission: () async => LocationPermission.whileInUse,
         requestPermission: () async => LocationPermission.whileInUse,

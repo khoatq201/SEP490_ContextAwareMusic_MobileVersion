@@ -45,6 +45,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     on<CamsClearQueue>(_onClearQueue);
     on<CamsUpdateAudioState>(_onUpdateAudioState);
     on<CamsCancelOverride>(_onCancelOverride);
+    on<CamsPreviousTapped>(_onPreviousTapped);
     on<CamsSendCommand>(_onSendCommand);
     on<CamsPlayStreamReceived>(_onLegacyPlayStream);
     on<CamsPlaybackCommandReceived>(_onLegacyPlaybackCommand);
@@ -65,6 +66,10 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
 
   StreamSubscription<SpacePlaybackState>? _runtimePlaybackStateSub;
   StreamSubscription<ConnectionStatus>? _runtimeConnectionSub;
+  DateTime? _lastPreviousTapAtUtc;
+  String? _lastPreviousTapIdentity;
+  static const double _minimumRemoteRestartSeekSeconds = 0.001;
+  static const Duration _previousTapJumpThreshold = Duration(milliseconds: 900);
 
   Future<void> _onInit(
     CamsInitPlayback event,
@@ -406,6 +411,15 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     Emitter<CamsPlaybackState> emit,
   ) async {
     if (!_hasActiveSessionScope('sendCommand:${event.command.name}')) return;
+    if (_isLegacyOptimisticCommand(event.command)) {
+      _emitPlaybackCommandRelay(
+        emit,
+        command: event.command,
+        seekPositionSeconds: event.seekPositionSeconds,
+        targetQueueItemId: event.targetQueueItemId,
+        targetTrackId: event.targetTrackId,
+      );
+    }
     _traceLog(
       'API_COMMAND_SENT '
       'spaceId=${state.spaceId ?? '-'} '
@@ -441,6 +455,47 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
           'command=${event.command.name}',
         );
       },
+    );
+  }
+
+  void _onPreviousTapped(
+    CamsPreviousTapped event,
+    Emitter<CamsPlaybackState> emit,
+  ) {
+    if (!_hasActiveSessionScope('previousTap')) return;
+
+    final playbackState = state.playbackState;
+    if (playbackState == null || !playbackState.hasPlayableHls) {
+      return;
+    }
+
+    final nowUtc = DateTime.now().toUtc();
+    final currentIdentity = _previousTapIdentity(playbackState);
+    final previousQueueItem = playbackState.previousQueueItem;
+    final shouldJumpToPrevious = previousQueueItem != null &&
+        _lastPreviousTapAtUtc != null &&
+        _lastPreviousTapIdentity == currentIdentity &&
+        nowUtc.difference(_lastPreviousTapAtUtc!) <= _previousTapJumpThreshold;
+
+    if (shouldJumpToPrevious) {
+      _lastPreviousTapAtUtc = null;
+      _lastPreviousTapIdentity = null;
+      add(
+        CamsSendCommand(
+          command: PlaybackCommandEnum.skipToTrack,
+          targetQueueItemId: previousQueueItem.queueItemId,
+        ),
+      );
+      return;
+    }
+
+    _lastPreviousTapAtUtc = nowUtc;
+    _lastPreviousTapIdentity = currentIdentity;
+    add(
+      const CamsSendCommand(
+        command: PlaybackCommandEnum.seek,
+        seekPositionSeconds: _minimumRemoteRestartSeekSeconds,
+      ),
     );
   }
 
@@ -504,22 +559,13 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
       return;
     }
 
-    emit(state.copyWith(
-      lastPlaybackCommand: event.command,
-      lastSeekPositionSeconds: _shouldPersistSeekPosition(event.command)
-          ? event.seekPositionSeconds
-          : null,
-      clearLastSeekPosition: !_shouldPersistSeekPosition(event.command),
-      lastTargetQueueItemId: _shouldPersistTargetTrackId(event.command)
-          ? event.targetQueueItemId
-          : null,
-      clearLastTargetQueueItemId: !_shouldPersistTargetTrackId(event.command),
-      lastTargetTrackId: _shouldPersistTargetTrackId(event.command)
-          ? event.targetTrackId
-          : null,
-      clearLastTargetTrackId: !_shouldPersistTargetTrackId(event.command),
-      commandSequence: state.commandSequence + 1,
-    ));
+    _emitPlaybackCommandRelay(
+      emit,
+      command: event.command,
+      seekPositionSeconds: event.seekPositionSeconds,
+      targetQueueItemId: event.targetQueueItemId,
+      targetTrackId: event.targetTrackId,
+    );
   }
 
   void _onRuntimePlaybackStateUpdated(
@@ -679,6 +725,37 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
         command == PlaybackCommandEnum.seek ||
         command == PlaybackCommandEnum.seekForward ||
         command == PlaybackCommandEnum.seekBackward;
+  }
+
+  String _previousTapIdentity(SpacePlaybackState playbackState) {
+    return [
+      playbackState.spaceId.toLowerCase(),
+      playbackState.effectiveQueueItemId ?? '',
+      playbackState.effectiveHlsUrl ?? '',
+      playbackState.focusedQueueItem?.trackId ?? '',
+    ].join('|');
+  }
+
+  void _emitPlaybackCommandRelay(
+    Emitter<CamsPlaybackState> emit, {
+    required PlaybackCommandEnum command,
+    double? seekPositionSeconds,
+    String? targetQueueItemId,
+    String? targetTrackId,
+  }) {
+    emit(state.copyWith(
+      lastPlaybackCommand: command,
+      lastSeekPositionSeconds:
+          _shouldPersistSeekPosition(command) ? seekPositionSeconds : null,
+      clearLastSeekPosition: !_shouldPersistSeekPosition(command),
+      lastTargetQueueItemId:
+          _shouldPersistTargetTrackId(command) ? targetQueueItemId : null,
+      clearLastTargetQueueItemId: !_shouldPersistTargetTrackId(command),
+      lastTargetTrackId:
+          _shouldPersistTargetTrackId(command) ? targetTrackId : null,
+      clearLastTargetTrackId: !_shouldPersistTargetTrackId(command),
+      commandSequence: state.commandSequence + 1,
+    ));
   }
 
   bool _shouldPersistSeekPosition(PlaybackCommandEnum command) {

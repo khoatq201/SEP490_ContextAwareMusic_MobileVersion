@@ -47,23 +47,54 @@ class SpaceHubPage extends StatefulWidget {
 }
 
 class _SpaceHubPageState extends State<SpaceHubPage> {
+  final _pageScrollController = ScrollController();
   final _secretCodeController = TextEditingController();
   final _ssidController = TextEditingController();
   final _passwordController = TextEditingController();
   final _cityController = TextEditingController();
   final _latitudeController = TextEditingController();
   final _longitudeController = TextEditingController();
+  final _secretCodeFocusNode = FocusNode();
+  final _ssidFocusNode = FocusNode();
+  final _passwordFocusNode = FocusNode();
+  final _cityFocusNode = FocusNode();
+  final _latitudeFocusNode = FocusNode();
+  final _longitudeFocusNode = FocusNode();
+  final _secretCodeFieldKey = GlobalKey();
+  final _ssidFieldKey = GlobalKey();
+  final _passwordFieldKey = GlobalKey();
+  final _cityFieldKey = GlobalKey();
+  final _latitudeFieldKey = GlobalKey();
+  final _longitudeFieldKey = GlobalKey();
   bool _obscureSecretCode = true;
   bool _obscurePassword = true;
 
   @override
+  void initState() {
+    super.initState();
+    _attachFocusListener(_secretCodeFocusNode, _secretCodeFieldKey);
+    _attachFocusListener(_ssidFocusNode, _ssidFieldKey);
+    _attachFocusListener(_passwordFocusNode, _passwordFieldKey);
+    _attachFocusListener(_cityFocusNode, _cityFieldKey);
+    _attachFocusListener(_latitudeFocusNode, _latitudeFieldKey);
+    _attachFocusListener(_longitudeFocusNode, _longitudeFieldKey);
+  }
+
+  @override
   void dispose() {
+    _pageScrollController.dispose();
     _secretCodeController.dispose();
     _ssidController.dispose();
     _passwordController.dispose();
     _cityController.dispose();
     _latitudeController.dispose();
     _longitudeController.dispose();
+    _secretCodeFocusNode.dispose();
+    _ssidFocusNode.dispose();
+    _passwordFocusNode.dispose();
+    _cityFocusNode.dispose();
+    _latitudeFocusNode.dispose();
+    _longitudeFocusNode.dispose();
     super.dispose();
   }
 
@@ -78,6 +109,7 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
       builder: (context, state) {
         return Scaffold(
           backgroundColor: palette.bg,
+          resizeToAvoidBottomInset: false,
           appBar: AppBar(
             backgroundColor: palette.bg,
             surfaceTintColor: Colors.transparent,
@@ -111,48 +143,57 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
               ],
             ),
           ),
-          body: ListView(
-            padding: EdgeInsets.fromLTRB(
-              16,
-              12,
-              16,
-              MediaQuery.of(context).padding.bottom + 24,
+          body: AnimatedPadding(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOutCubic,
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
             ),
-            children: [
-              if (state.message != null &&
-                  state.message!.trim().isNotEmpty) ...[
-                AppStatusBanner(
-                  title: state.phase == HubProvisioningPhase.failure
-                      ? 'Setup needs attention'
-                      : (state.binding?.isSyncPending ?? false) ||
-                              (state.binding?.isDeviceLocationSyncPending ??
-                                  false)
-                          ? 'Sync pending'
-                          : 'Hub status',
-                  message: state.message!,
-                  tone: state.phase == HubProvisioningPhase.failure
-                      ? AppStatusTone.error
-                      : (state.binding?.isSyncPending ?? false) ||
-                              (state.binding?.isDeviceLocationSyncPending ??
-                                  false)
-                          ? AppStatusTone.warning
-                          : AppStatusTone.info,
+            child: ListView(
+              controller: _pageScrollController,
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: EdgeInsets.fromLTRB(
+                16,
+                12,
+                16,
+                MediaQuery.of(context).padding.bottom + 24,
+              ),
+              children: [
+                if (state.message != null &&
+                    state.message!.trim().isNotEmpty) ...[
+                  AppStatusBanner(
+                    title: state.phase == HubProvisioningPhase.failure
+                        ? 'Setup needs attention'
+                        : (state.binding?.isSyncPending ?? false) ||
+                                (state.binding?.isDeviceLocationSyncPending ??
+                                    false)
+                            ? 'Sync pending'
+                            : 'Hub status',
+                    message: state.message!,
+                    tone: state.phase == HubProvisioningPhase.failure
+                        ? AppStatusTone.error
+                        : (state.binding?.isSyncPending ?? false) ||
+                                (state.binding?.isDeviceLocationSyncPending ??
+                                    false)
+                            ? AppStatusTone.warning
+                            : AppStatusTone.info,
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                _SpaceContextCard(
+                  palette: palette,
+                  storeId: widget.storeId,
+                  spaceId: widget.spaceId,
+                  prefixHint: 'CAM',
                 ),
                 const SizedBox(height: 16),
+                if (state.binding != null) ...[
+                  _BindingCard(binding: state.binding!, palette: palette),
+                  const SizedBox(height: 16),
+                ],
+                ..._buildPhaseContent(context, state, palette),
               ],
-              _SpaceContextCard(
-                palette: palette,
-                storeId: widget.storeId,
-                spaceId: widget.spaceId,
-                prefixHint: 'CAM',
-              ),
-              const SizedBox(height: 16),
-              if (state.binding != null) ...[
-                _BindingCard(binding: state.binding!, palette: palette),
-                const SizedBox(height: 16),
-              ],
-              ..._buildPhaseContent(context, state, palette),
-            ],
+            ),
           ),
         );
       },
@@ -275,7 +316,9 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
             palette: palette,
             device: state.selectedBleCandidate,
             isLocationOnlyFlow: state.isUpdateLocationOnly,
+            secretCodeFieldKey: _secretCodeFieldKey,
             secretCodeController: _secretCodeController,
+            secretCodeFocusNode: _secretCodeFocusNode,
             obscureSecretCode: _obscureSecretCode,
             onToggleSecretCode: () {
               setState(() => _obscureSecretCode = !_obscureSecretCode);
@@ -306,8 +349,12 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
             palette: palette,
             device: state.selectedBleCandidate,
             wifiCandidates: state.wifiCandidates,
+            ssidFieldKey: _ssidFieldKey,
             ssidController: _ssidController,
+            ssidFocusNode: _ssidFocusNode,
+            passwordFieldKey: _passwordFieldKey,
             passwordController: _passwordController,
+            passwordFocusNode: _passwordFocusNode,
             obscurePassword: _obscurePassword,
             onWifiSelected: (candidate) =>
                 _ssidController.text = candidate.ssid,
@@ -346,9 +393,15 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
           _LocationReviewCard(
             palette: palette,
             draftLocation: state.draftLocation,
+            cityFieldKey: _cityFieldKey,
             cityController: _cityController,
+            cityFocusNode: _cityFocusNode,
+            latitudeFieldKey: _latitudeFieldKey,
             latitudeController: _latitudeController,
+            latitudeFocusNode: _latitudeFocusNode,
+            longitudeFieldKey: _longitudeFieldKey,
             longitudeController: _longitudeController,
+            longitudeFocusNode: _longitudeFocusNode,
             onUseCurrentLocation: () => context
                 .read<HubProvisioningBloc>()
                 .add(const HubProvisioningUseCurrentLocationRequested()),
@@ -486,6 +539,23 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
     _longitudeController.text = location.longitude.toStringAsFixed(6);
   }
 
+  void _attachFocusListener(FocusNode focusNode, GlobalKey fieldKey) {
+    focusNode.addListener(() {
+      if (!focusNode.hasFocus) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final fieldContext = fieldKey.currentContext;
+        if (fieldContext == null) return;
+        Scrollable.ensureVisible(
+          fieldContext,
+          alignment: 0.22,
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+        );
+      });
+    });
+  }
+
   HubDeviceLocation? _buildDraftLocation(HubProvisioningState state) {
     final latitude = _tryParseDouble(_latitudeController.text);
     final longitude = _tryParseDouble(_longitudeController.text);
@@ -605,6 +675,7 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
   }
 
   void _submitSecretCode(BuildContext context) {
+    FocusScope.of(context).unfocus();
     context.read<HubProvisioningBloc>().add(
           HubProvisioningSecretCodeSubmitted(
             secretCode: _secretCodeController.text.trim(),
@@ -613,6 +684,7 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
   }
 
   void _submitCredentials(BuildContext context) {
+    FocusScope.of(context).unfocus();
     final ssid = _ssidController.text.trim();
     final passphrase = _passwordController.text;
     if (ssid.isEmpty) {
@@ -643,6 +715,7 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
   }
 
   void _submitLocation(BuildContext context) {
+    FocusScope.of(context).unfocus();
     final state = context.read<HubProvisioningBloc>().state;
     final latitude = _tryParseDouble(_latitudeController.text);
     final longitude = _tryParseDouble(_longitudeController.text);
@@ -1099,7 +1172,9 @@ class _SecretCodeCard extends StatelessWidget {
     required this.palette,
     required this.device,
     required this.isLocationOnlyFlow,
+    required this.secretCodeFieldKey,
     required this.secretCodeController,
+    required this.secretCodeFocusNode,
     required this.obscureSecretCode,
     required this.onToggleSecretCode,
     required this.onChooseDifferentDevice,
@@ -1109,7 +1184,9 @@ class _SecretCodeCard extends StatelessWidget {
   final _HubPalette palette;
   final BleCandidate? device;
   final bool isLocationOnlyFlow;
+  final GlobalKey secretCodeFieldKey;
   final TextEditingController secretCodeController;
+  final FocusNode secretCodeFocusNode;
   final bool obscureSecretCode;
   final VoidCallback onToggleSecretCode;
   final VoidCallback onChooseDifferentDevice;
@@ -1161,19 +1238,24 @@ class _SecretCodeCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          TextField(
-            controller: secretCodeController,
-            obscureText: obscureSecretCode,
-            textInputAction: TextInputAction.done,
-            onSubmitted: (_) => onSubmit(),
-            decoration: InputDecoration(
-              labelText: 'Secret code',
-              hintText: 'Enter PoP / provisioning code',
-              suffixIcon: IconButton(
-                onPressed: onToggleSecretCode,
-                icon: Icon(
-                  obscureSecretCode ? LucideIcons.eye : LucideIcons.eyeOff,
-                  size: 18,
+          Container(
+            key: secretCodeFieldKey,
+            child: TextField(
+              controller: secretCodeController,
+              focusNode: secretCodeFocusNode,
+              obscureText: obscureSecretCode,
+              textInputAction: TextInputAction.done,
+              scrollPadding: const EdgeInsets.only(bottom: 180),
+              onSubmitted: (_) => onSubmit(),
+              decoration: InputDecoration(
+                labelText: 'Secret code',
+                hintText: 'Enter PoP / provisioning code',
+                suffixIcon: IconButton(
+                  onPressed: onToggleSecretCode,
+                  icon: Icon(
+                    obscureSecretCode ? LucideIcons.eye : LucideIcons.eyeOff,
+                    size: 18,
+                  ),
                 ),
               ),
             ),
@@ -1198,9 +1280,15 @@ class _LocationReviewCard extends StatelessWidget {
   const _LocationReviewCard({
     required this.palette,
     required this.draftLocation,
+    required this.cityFieldKey,
     required this.cityController,
+    required this.cityFocusNode,
+    required this.latitudeFieldKey,
     required this.latitudeController,
+    required this.latitudeFocusNode,
+    required this.longitudeFieldKey,
     required this.longitudeController,
+    required this.longitudeFocusNode,
     required this.onUseCurrentLocation,
     required this.onChangeEsp,
     required this.onSubmit,
@@ -1208,9 +1296,15 @@ class _LocationReviewCard extends StatelessWidget {
 
   final _HubPalette palette;
   final HubDeviceLocation? draftLocation;
+  final GlobalKey cityFieldKey;
   final TextEditingController cityController;
+  final FocusNode cityFocusNode;
+  final GlobalKey latitudeFieldKey;
   final TextEditingController latitudeController;
+  final FocusNode latitudeFocusNode;
+  final GlobalKey longitudeFieldKey;
   final TextEditingController longitudeController;
+  final FocusNode longitudeFocusNode;
   final VoidCallback onUseCurrentLocation;
   final VoidCallback onChangeEsp;
   final VoidCallback onSubmit;
@@ -1262,35 +1356,54 @@ class _LocationReviewCard extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 16),
-          TextField(
-            controller: cityController,
-            decoration: const InputDecoration(
-              labelText: 'City',
-              hintText: 'City or area name',
+          Container(
+            key: cityFieldKey,
+            child: TextField(
+              controller: cityController,
+              focusNode: cityFocusNode,
+              textInputAction: TextInputAction.next,
+              scrollPadding: const EdgeInsets.only(bottom: 180),
+              decoration: const InputDecoration(
+                labelText: 'Area / city',
+                hintText: 'District, city, or area name',
+              ),
             ),
           ),
           const SizedBox(height: 12),
-          TextField(
-            controller: latitudeController,
-            keyboardType: const TextInputType.numberWithOptions(
-              decimal: true,
-              signed: true,
-            ),
-            decoration: const InputDecoration(
-              labelText: 'Latitude',
-              hintText: '10.77690',
+          Container(
+            key: latitudeFieldKey,
+            child: TextField(
+              controller: latitudeController,
+              focusNode: latitudeFocusNode,
+              textInputAction: TextInputAction.next,
+              scrollPadding: const EdgeInsets.only(bottom: 180),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+                signed: true,
+              ),
+              decoration: const InputDecoration(
+                labelText: 'Latitude',
+                hintText: '10.77690',
+              ),
             ),
           ),
           const SizedBox(height: 12),
-          TextField(
-            controller: longitudeController,
-            keyboardType: const TextInputType.numberWithOptions(
-              decimal: true,
-              signed: true,
-            ),
-            decoration: const InputDecoration(
-              labelText: 'Longitude',
-              hintText: '106.70090',
+          Container(
+            key: longitudeFieldKey,
+            child: TextField(
+              controller: longitudeController,
+              focusNode: longitudeFocusNode,
+              textInputAction: TextInputAction.done,
+              scrollPadding: const EdgeInsets.only(bottom: 180),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+                signed: true,
+              ),
+              onSubmitted: (_) => onSubmit(),
+              decoration: const InputDecoration(
+                labelText: 'Longitude',
+                hintText: '106.70090',
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -1321,8 +1434,12 @@ class _WifiFormCard extends StatelessWidget {
     required this.palette,
     required this.device,
     required this.wifiCandidates,
+    required this.ssidFieldKey,
     required this.ssidController,
+    required this.ssidFocusNode,
+    required this.passwordFieldKey,
     required this.passwordController,
+    required this.passwordFocusNode,
     required this.obscurePassword,
     required this.onWifiSelected,
     required this.onTogglePassword,
@@ -1333,8 +1450,12 @@ class _WifiFormCard extends StatelessWidget {
   final _HubPalette palette;
   final BleCandidate? device;
   final List<WifiCandidate> wifiCandidates;
+  final GlobalKey ssidFieldKey;
   final TextEditingController ssidController;
+  final FocusNode ssidFocusNode;
+  final GlobalKey passwordFieldKey;
   final TextEditingController passwordController;
+  final FocusNode passwordFocusNode;
   final bool obscurePassword;
   final ValueChanged<WifiCandidate> onWifiSelected;
   final VoidCallback onTogglePassword;
@@ -1402,24 +1523,37 @@ class _WifiFormCard extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 16),
-          TextField(
-            controller: ssidController,
-            decoration: const InputDecoration(
-              labelText: 'Wi-Fi SSID',
-              hintText: 'Choose from scan or type manually',
+          Container(
+            key: ssidFieldKey,
+            child: TextField(
+              controller: ssidController,
+              focusNode: ssidFocusNode,
+              textInputAction: TextInputAction.next,
+              scrollPadding: const EdgeInsets.only(bottom: 180),
+              decoration: const InputDecoration(
+                labelText: 'Wi-Fi SSID',
+                hintText: 'Choose from scan or type manually',
+              ),
             ),
           ),
           const SizedBox(height: 12),
-          TextField(
-            controller: passwordController,
-            obscureText: obscurePassword,
-            decoration: InputDecoration(
-              labelText: 'Wi-Fi password',
-              suffixIcon: IconButton(
-                onPressed: onTogglePassword,
-                icon: Icon(
-                  obscurePassword ? LucideIcons.eye : LucideIcons.eyeOff,
-                  size: 18,
+          Container(
+            key: passwordFieldKey,
+            child: TextField(
+              controller: passwordController,
+              focusNode: passwordFocusNode,
+              obscureText: obscurePassword,
+              textInputAction: TextInputAction.done,
+              scrollPadding: const EdgeInsets.only(bottom: 180),
+              onSubmitted: (_) => onSubmit(),
+              decoration: InputDecoration(
+                labelText: 'Wi-Fi password',
+                suffixIcon: IconButton(
+                  onPressed: onTogglePassword,
+                  icon: Icon(
+                    obscurePassword ? LucideIcons.eye : LucideIcons.eyeOff,
+                    size: 18,
+                  ),
                 ),
               ),
             ),
@@ -1572,61 +1706,6 @@ class _ProgressCard extends StatelessWidget {
                   ),
                 ),
               ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MessageBanner extends StatelessWidget {
-  const _MessageBanner({
-    required this.message,
-    required this.palette,
-    this.isError = false,
-    this.isWarning = false,
-  });
-
-  final String message;
-  final _HubPalette palette;
-  final bool isError;
-  final bool isWarning;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = isError
-        ? AppColors.error
-        : isWarning
-            ? AppColors.warning
-            : palette.accent;
-    final icon = isError
-        ? Icons.warning_amber_rounded
-        : isWarning
-            ? Icons.cloud_sync_outlined
-            : LucideIcons.badgeInfo;
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.32)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: color, size: 18),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              message,
-              style: GoogleFonts.inter(
-                color: palette.textPrimary,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                height: 1.45,
-              ),
             ),
           ),
         ],

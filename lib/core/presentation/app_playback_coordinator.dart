@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -78,6 +77,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
   static const Duration _hlsReloadThreshold = Duration(seconds: 16);
   static const Duration _hlsRecoveryCooldown = Duration(seconds: 10);
   static const Duration _hlsStartupGrace = Duration(seconds: 12);
+  static const double _sameRemoteStreamDriftToleranceSeconds = 1.5;
 
   @override
   void initState() {
@@ -453,6 +453,47 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
       }
       return;
     }
+
+    if (_canKeepCurrentRemoteStream(
+      playerState: playerBloc.state,
+      playbackState: playbackState,
+    )) {
+      final shouldBePlaying = !playbackState.isPaused;
+      final driftSeconds = _remotePositionDriftSeconds(
+        playerState: playerBloc.state,
+        playbackState: playbackState,
+      );
+      _lastAppliedRemotePlaybackSignature = remotePlaybackSignature;
+      if (playerBloc.state.isPlaying != shouldBePlaying) {
+        final command = playbackState.isPaused
+            ? PlaybackCommandEnum.pause
+            : PlaybackCommandEnum.resume;
+        _debugLog(
+          'same remote HLS snapshot -> apply ${command.name} without restarting player '
+          'queueItemId=${playbackState.effectiveQueueItemId ?? '-'} '
+          'drift=${driftSeconds.toStringAsFixed(2)}',
+        );
+        _addPlayerEvent(PlayerRemoteCommandApplied(
+          command: command,
+          playLocally: session.isPlaybackDevice,
+        ));
+      } else {
+        _debugLog(
+          'same remote HLS snapshot -> keep current player '
+          'queueItemId=${playbackState.effectiveQueueItemId ?? '-'} '
+          'drift=${driftSeconds.toStringAsFixed(2)}',
+        );
+      }
+      _addPlayerEvent(PlayerAudioSettingsApplied(
+        volumePercent: playbackState.volumePercent,
+        isMuted: playbackState.isMuted,
+      ));
+      if (!session.isPlaybackDevice) {
+        _pushManagerPositionSnapshot(playbackState);
+      }
+      return;
+    }
+
     _lastAppliedRemotePlaybackSignature = remotePlaybackSignature;
 
     _debugLog(
@@ -493,6 +534,57 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
       playbackState.isPaused ? '1' : '0',
       playbackState.effectiveSeekOffset.round().toString(),
     ].join('|');
+  }
+
+  bool _canKeepCurrentRemoteStream({
+    required PlayerState playerState,
+    required SpacePlaybackState playbackState,
+  }) {
+    if (!playerState.isSyncedCamsPlayback) {
+      return false;
+    }
+
+    final incomingHlsUrl = playbackState.effectiveHlsUrl;
+    if (incomingHlsUrl == null ||
+        incomingHlsUrl.isEmpty ||
+        playerState.hlsUrl != incomingHlsUrl) {
+      return false;
+    }
+
+    final incomingQueueItemId = playbackState.effectiveQueueItemId;
+    final currentQueueItemId = playerState.currentQueueItemId;
+    if (incomingQueueItemId != null &&
+        incomingQueueItemId.isNotEmpty &&
+        currentQueueItemId != null &&
+        currentQueueItemId.isNotEmpty &&
+        currentQueueItemId != incomingQueueItemId) {
+      return false;
+    }
+
+    final incomingTrackId = _resolveCurrentTrackId(playbackState);
+    final currentTrackId = playerState.currentTrackId;
+    if (incomingTrackId != null &&
+        incomingTrackId.isNotEmpty &&
+        currentTrackId != null &&
+        currentTrackId.isNotEmpty &&
+        currentTrackId != incomingTrackId) {
+      return false;
+    }
+
+    return _remotePositionDriftSeconds(
+          playerState: playerState,
+          playbackState: playbackState,
+        ) <=
+        _sameRemoteStreamDriftToleranceSeconds;
+  }
+
+  double _remotePositionDriftSeconds({
+    required PlayerState playerState,
+    required SpacePlaybackState playbackState,
+  }) {
+    return (playerState.currentPositionPrecise -
+            playbackState.effectiveSeekOffset)
+        .abs();
   }
 
   String? _resolveCurrentTrackId(SpacePlaybackState playbackState) {
@@ -1253,132 +1345,9 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
         'queue=[$queuePreview]';
   }
 
-  Widget _buildDebugAuthButton(BuildContext context) {
-    final session = context.watch<SessionCubit>().state;
-    final localStorage = sl<LocalStorageService>();
-    final isPlaybackDevice = session.isPlaybackDevice;
-    final hasDeviceAccessToken =
-        localStorage.getDeviceAccessToken()?.isNotEmpty ?? false;
-    final hasDeviceRefreshToken =
-        localStorage.getDeviceRefreshToken()?.isNotEmpty ?? false;
-
-    final backgroundColor = isPlaybackDevice
-        ? Colors.orangeAccent.withValues(alpha: 0.95)
-        : Colors.blueGrey.withValues(alpha: 0.92);
-
-    return Material(
-      color: backgroundColor,
-      borderRadius: BorderRadius.circular(999),
-      elevation: 6,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(999),
-        onTap: () => _showDebugAuthSheet(context),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.bug_report_outlined, size: 16),
-              const SizedBox(width: 6),
-              Text(
-                'AUTH ${isPlaybackDevice ? "PD" : "RC"} '
-                '${hasDeviceAccessToken ? "A" : "-"}'
-                '${hasDeviceRefreshToken ? "R" : "-"}',
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _showDebugAuthSheet(BuildContext context) async {
-    final sheetContext = AppRouter.rootNavigatorKey.currentContext ?? context;
-    final session = context.read<SessionCubit>().state;
-    final localStorage = sl<LocalStorageService>();
-    final deviceSession = localStorage.getDeviceSession();
-
-    String formatExpiry(DateTime? value) {
-      return value?.toUtc().toIso8601String() ?? 'null';
-    }
-
-    final details = <MapEntry<String, String>>[
-      MapEntry('session.appMode', session.appMode.name),
-      MapEntry('session.role', session.currentRole.label),
-      MapEntry('session.storeId', session.currentStore?.id ?? 'null'),
-      MapEntry('session.spaceId', session.currentSpace?.id ?? 'null'),
-      MapEntry(
-        'activeSessionMode',
-        localStorage.getActiveSessionMode() ?? 'null',
-      ),
-      MapEntry(
-        'hasManagerToken',
-        ((localStorage.getManagerAuthToken()?.isNotEmpty ?? false)).toString(),
-      ),
-      MapEntry(
-        'managerExpiryUtc',
-        formatExpiry(localStorage.getManagerAccessTokenExpiry()),
-      ),
-      MapEntry(
-        'hasDeviceAccessToken',
-        ((localStorage.getDeviceAccessToken()?.isNotEmpty ?? false)).toString(),
-      ),
-      MapEntry(
-        'deviceAccessExpiryUtc',
-        formatExpiry(localStorage.getDeviceAccessTokenExpiry()),
-      ),
-      MapEntry(
-        'hasDeviceRefreshToken',
-        ((localStorage.getDeviceRefreshToken()?.isNotEmpty ?? false))
-            .toString(),
-      ),
-      MapEntry(
-        'deviceSessionKeys',
-        deviceSession?.keys.join(', ') ?? '(none)',
-      ),
-    ];
-
-    await showModalBottomSheet<void>(
-      context: sheetContext,
-      useRootNavigator: true,
-      showDragHandle: true,
-      builder: (context) {
-        return SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-            shrinkWrap: true,
-            children: [
-              Text(
-                'Playback Auth Debug',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 12),
-              for (final entry in details) ...[
-                Text(
-                  entry.key,
-                  style: Theme.of(context).textTheme.labelMedium,
-                ),
-                const SizedBox(height: 2),
-                SelectableText(
-                  entry.value,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 12),
-              ],
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final content = MultiBlocListener(
+    return MultiBlocListener(
       listeners: [
         BlocListener<SessionCubit, SessionState>(
           listenWhen: (previous, current) =>
@@ -1428,6 +1397,23 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
           },
           listener: (context, camsState) => _syncCamsState(camsState),
         ),
+        BlocListener<CamsPlaybackBloc, CamsPlaybackState>(
+          listenWhen: (previous, current) =>
+              previous.commandSequence != current.commandSequence,
+          listener: (context, camsState) {
+            final command = camsState.lastPlaybackCommand;
+            if (command == null) return;
+
+            final session = context.read<SessionCubit>().state;
+            _addPlayerEvent(PlayerRemoteCommandApplied(
+              command: command,
+              positionSeconds: camsState.lastSeekPositionSeconds,
+              targetQueueItemId: camsState.lastTargetQueueItemId,
+              targetTrackId: camsState.lastTargetTrackId,
+              playLocally: session.isPlaybackDevice,
+            ));
+          },
+        ),
         BlocListener<PlayerBloc, PlayerState>(
           listenWhen: (previous, current) =>
               previous.hlsCompletionSequence != current.hlsCompletionSequence,
@@ -1476,23 +1462,6 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
         ),
       ],
       child: widget.child,
-    );
-
-    if (!kDebugMode || !sl.isRegistered<LocalStorageService>()) {
-      return content;
-    }
-
-    return Stack(
-      children: [
-        content,
-        Positioned(
-          top: 16,
-          right: 16,
-          child: SafeArea(
-            child: _buildDebugAuthButton(context),
-          ),
-        ),
-      ],
     );
   }
 }

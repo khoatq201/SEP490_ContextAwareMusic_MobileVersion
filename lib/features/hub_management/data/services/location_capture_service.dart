@@ -1,5 +1,6 @@
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../../domain/entities/hub_device_location.dart';
 
@@ -14,13 +15,19 @@ abstract class LocationCaptureService {
 
 class GeolocatorLocationCaptureService implements LocationCaptureService {
   GeolocatorLocationCaptureService({
+    Future<PermissionStatus> Function()? checkSystemPermission,
+    Future<PermissionStatus> Function()? requestSystemPermission,
     Future<bool> Function()? isLocationServiceEnabled,
     Future<LocationPermission> Function()? checkPermission,
     Future<LocationPermission> Function()? requestPermission,
     Future<Position> Function()? getCurrentPosition,
     Future<List<Placemark>> Function(double latitude, double longitude)?
         placemarkFromCoordinatesFn,
-  })  : _isLocationServiceEnabled =
+  })  : _checkSystemPermission =
+            checkSystemPermission ?? (() => Permission.location.status),
+        _requestSystemPermission =
+            requestSystemPermission ?? (() => Permission.location.request()),
+        _isLocationServiceEnabled =
             isLocationServiceEnabled ?? Geolocator.isLocationServiceEnabled,
         _checkPermission = checkPermission ?? Geolocator.checkPermission,
         _requestPermission = requestPermission ?? Geolocator.requestPermission,
@@ -31,6 +38,8 @@ class GeolocatorLocationCaptureService implements LocationCaptureService {
         _placemarkFromCoordinatesFn =
             placemarkFromCoordinatesFn ?? placemarkFromCoordinates;
 
+  final Future<PermissionStatus> Function() _checkSystemPermission;
+  final Future<PermissionStatus> Function() _requestSystemPermission;
   final Future<bool> Function() _isLocationServiceEnabled;
   final Future<LocationPermission> Function() _checkPermission;
   final Future<LocationPermission> Function() _requestPermission;
@@ -47,15 +56,37 @@ class GeolocatorLocationCaptureService implements LocationCaptureService {
       );
     }
 
+    var systemPermission = await _checkSystemPermission();
+    if (!systemPermission.isGranted && !systemPermission.isLimited) {
+      systemPermission = await _requestSystemPermission();
+    }
+
+    if (systemPermission.isPermanentlyDenied) {
+      throw const LocationCaptureException(
+        'Location permission is permanently denied. Open app settings to allow location access.',
+      );
+    }
+
+    if (!systemPermission.isGranted && !systemPermission.isLimited) {
+      throw const LocationCaptureException(
+        'Location permission was denied. Try again, or open app settings if Android no longer shows the location prompt.',
+      );
+    }
+
     var permission = await _checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await _requestPermission();
     }
 
-    if (permission == LocationPermission.denied ||
-        permission == LocationPermission.deniedForever) {
+    if (permission == LocationPermission.denied) {
       throw const LocationCaptureException(
-        'Location permission was denied. You can still enter the location manually.',
+        'Location permission was denied. Try again, or open app settings if Android no longer shows the location prompt.',
+      );
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      throw const LocationCaptureException(
+        'Location permission is permanently denied. Open app settings to allow location access.',
       );
     }
 
@@ -90,15 +121,27 @@ class GeolocatorLocationCaptureService implements LocationCaptureService {
     }
 
     final primary = placemarks.first;
-    final value = [
+    final parts = [
+      primary.subLocality,
       primary.locality,
       primary.subAdministrativeArea,
       primary.administrativeArea,
-    ].firstWhere(
-      (item) => item != null && item.trim().isNotEmpty,
-      orElse: () => 'Unknown',
-    );
-    return value ?? 'Unknown';
+    ]
+        .whereType<String>()
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .toList(growable: false);
+    if (parts.isEmpty) {
+      return 'Unknown';
+    }
+
+    final uniqueParts = <String>[];
+    for (final part in parts) {
+      if (!uniqueParts.contains(part)) {
+        uniqueParts.add(part);
+      }
+    }
+    return uniqueParts.take(3).join(', ');
   }
 }
 

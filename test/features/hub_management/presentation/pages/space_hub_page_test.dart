@@ -63,6 +63,10 @@ void main() {
         ),
       );
       await tester.pump();
+      await tester.scrollUntilVisible(
+        find.text('Reconfigure Wi-Fi'),
+        250,
+      );
 
       expect(find.text('Current hub binding'), findsOneWidget);
       expect(find.text('Reconfigure Wi-Fi'), findsOneWidget);
@@ -86,6 +90,10 @@ void main() {
         ),
       );
       await tester.pump();
+      await tester.scrollUntilVisible(
+        find.text('Retry sync'),
+        250,
+      );
 
       expect(find.text('Retry sync'), findsOneWidget);
       expect(find.text('Sync pending'), findsWidgets);
@@ -115,6 +123,10 @@ void main() {
         ),
       );
       await tester.pump();
+      await tester.scrollUntilVisible(
+        find.text('Retry location sync'),
+        250,
+      );
 
       expect(find.text('Location sync'), findsOneWidget);
       expect(find.text('Ho Chi Minh City'), findsOneWidget);

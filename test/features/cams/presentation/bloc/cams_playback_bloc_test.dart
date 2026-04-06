@@ -479,6 +479,95 @@ void main() {
       expect(bloc.state.playbackState?.currentTrackName, 'Track A');
     });
 
+    test(
+        'single previous tap restarts current stream and quick double tap jumps back',
+        () async {
+      await _initBloc(bloc);
+
+      const playbackState = SpacePlaybackState(
+        spaceId: 'space-1',
+        currentQueueItemId: 'queue-2',
+        currentTrackName: 'Track Two',
+        hlsUrl: 'https://stream.example.com/current.m3u8',
+        spaceQueueItems: [
+          SpaceQueueStateItem(
+            queueItemId: 'queue-1',
+            trackId: 'track-1',
+            trackName: 'Track One',
+            position: 1,
+            queueStatus: SpacePlaybackState.queueStatusPlayed,
+            source: 1,
+          ),
+          SpaceQueueStateItem(
+            queueItemId: 'queue-2',
+            trackId: 'track-2',
+            trackName: 'Track Two',
+            position: 2,
+            queueStatus: SpacePlaybackState.queueStatusPlaying,
+            source: 1,
+          ),
+        ],
+      );
+
+      bloc.add(
+        const CamsStateSyncReceived(playbackState: playbackState),
+      );
+      await _nextTick();
+
+      bloc.add(const CamsPreviousTapped());
+      await _waitUntil(() => repository.lastSendCommandRequest != null);
+
+      expect(
+        repository.lastSendCommandRequest?.command,
+        PlaybackCommandEnum.seek,
+      );
+      expect(
+        repository.lastSendCommandRequest?.seekPositionSeconds,
+        0.001,
+      );
+
+      repository.lastSendCommandRequest = null;
+      bloc.add(const CamsStateSyncReceived(playbackState: playbackState));
+      await _nextTick();
+
+      bloc.add(const CamsPreviousTapped());
+      await _waitUntil(() => repository.lastSendCommandRequest != null);
+
+      expect(
+        repository.lastSendCommandRequest?.command,
+        PlaybackCommandEnum.skipToTrack,
+      );
+      expect(
+        repository.lastSendCommandRequest?.targetQueueItemId,
+        'queue-1',
+      );
+    });
+
+    test('relays pause command immediately before API acknowledgement',
+        () async {
+      await _initBloc(bloc);
+
+      final previous = bloc.state;
+      final sendCommandCompleter = Completer<Either<Failure, void>>();
+      repository.sendCommandCompleter = sendCommandCompleter;
+
+      bloc.add(const CamsSendCommand(
+        command: PlaybackCommandEnum.pause,
+      ));
+
+      await _waitUntil(
+        () => bloc.state.commandSequence == previous.commandSequence + 1,
+      );
+
+      expect(bloc.state.lastPlaybackCommand, PlaybackCommandEnum.pause);
+      expect(bloc.state.lastSeekPositionSeconds, isNull);
+      expect(bloc.state.lastTargetQueueItemId, isNull);
+      expect(bloc.state.lastTargetTrackId, isNull);
+
+      sendCommandCompleter.complete(const Right(null));
+      await _nextTick();
+    });
+
     test('seek command clears stale target ids from command relay', () async {
       await _initBloc(bloc);
 
@@ -860,6 +949,7 @@ class _FakeCamsRepository implements CamsRepository {
   Either<Failure, void> queuePlaylistResult = const Right(null);
   Either<Failure, void> queueTracksResult = const Right(null);
   Either<Failure, void> sendCommandResult = const Right(null);
+  Completer<Either<Failure, void>>? sendCommandCompleter;
   Either<Failure, void> cancelOverrideResult = const Right(null);
   Either<Failure, List<SpaceQueueStateItem>> getQueueResult = const Right([]);
   Either<Failure, OverrideResponse> overrideSpaceResult = const Right(
@@ -868,6 +958,7 @@ class _FakeCamsRepository implements CamsRepository {
 
   _QueuePlaylistRequest? lastQueuePlaylistRequest;
   _QueueTracksRequest? lastQueueTracksRequest;
+  _SendPlaybackCommandRequest? lastSendCommandRequest;
   _OverrideRequest? lastOverrideRequest;
   _ReorderQueueRequest? lastReorderQueueRequest;
   _RemoveQueueItemsRequest? lastRemoveQueueItemsRequest;
@@ -985,6 +1076,19 @@ class _FakeCamsRepository implements CamsRepository {
     String? targetTrackId,
     bool usePlaybackDeviceScope = false,
   }) async {
+    lastSendCommandRequest = _SendPlaybackCommandRequest(
+      spaceId: spaceId,
+      command: command,
+      seekPositionSeconds: seekPositionSeconds,
+      targetQueueItemId: targetQueueItemId,
+      targetTrackId: targetTrackId,
+      usePlaybackDeviceScope: usePlaybackDeviceScope,
+    );
+    final pendingCompleter = sendCommandCompleter;
+    if (pendingCompleter != null) {
+      sendCommandCompleter = null;
+      return pendingCompleter.future;
+    }
     return sendCommandResult;
   }
 
@@ -1175,6 +1279,24 @@ class _OverrideRequest {
     required this.reason,
     required this.usePlaybackDeviceScope,
   });
+}
+
+class _SendPlaybackCommandRequest {
+  const _SendPlaybackCommandRequest({
+    required this.spaceId,
+    required this.command,
+    required this.seekPositionSeconds,
+    required this.targetQueueItemId,
+    required this.targetTrackId,
+    required this.usePlaybackDeviceScope,
+  });
+
+  final String spaceId;
+  final PlaybackCommandEnum command;
+  final double? seekPositionSeconds;
+  final String? targetQueueItemId;
+  final String? targetTrackId;
+  final bool usePlaybackDeviceScope;
 }
 
 class _ReorderQueueRequest {

@@ -82,6 +82,19 @@ class QueueSheetViewData {
   bool get hasVisibleItems =>
       played.isNotEmpty || current.isNotEmpty || upNext.isNotEmpty;
 
+  List<QueueSheetItem> get reorderablePendingItems {
+    if (!isFromCams) return const <QueueSheetItem>[];
+
+    return upNext
+        .where(
+          (item) =>
+              item.queueItemId != null &&
+              item.queueItemId!.isNotEmpty &&
+              item.queueStatus == SpacePlaybackState.queueStatusPending,
+        )
+        .toList(growable: false);
+  }
+
   static QueueSheetViewData resolve({
     required ps.PlayerState playerState,
     required CamsPlaybackState camsState,

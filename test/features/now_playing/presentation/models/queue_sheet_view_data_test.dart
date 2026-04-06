@@ -246,6 +246,70 @@ void main() {
       expect(viewData.upNext.single.queueItemId, 'queue-3');
     });
 
+    test('exposes only pending queue ids for reorder payloads', () {
+      const playerState = ps.PlayerState();
+      const camsState = CamsPlaybackState(
+        playbackState: SpacePlaybackState(
+          spaceId: 'space-1',
+          currentQueueItemId: 'queue-2',
+          spaceQueueItems: [
+            SpaceQueueStateItem(
+              queueItemId: 'queue-1',
+              trackId: 'track-1',
+              trackName: 'Track One',
+              position: 1,
+              queueStatus: SpacePlaybackState.queueStatusPlayed,
+              source: 1,
+            ),
+            SpaceQueueStateItem(
+              queueItemId: 'queue-2',
+              trackId: 'track-2',
+              trackName: 'Track Two',
+              position: 2,
+              queueStatus: SpacePlaybackState.queueStatusPlaying,
+              source: 1,
+            ),
+            SpaceQueueStateItem(
+              queueItemId: 'queue-3',
+              trackId: 'track-3',
+              trackName: 'Track Three',
+              position: 3,
+              queueStatus: SpacePlaybackState.queueStatusPending,
+              source: 1,
+            ),
+            SpaceQueueStateItem(
+              queueItemId: 'queue-4',
+              trackId: 'track-4',
+              trackName: 'Track Four',
+              position: 4,
+              queueStatus: SpacePlaybackState.queueStatusPending,
+              source: 1,
+            ),
+            SpaceQueueStateItem(
+              queueItemId: 'queue-5',
+              trackId: 'track-5',
+              trackName: 'Track Five',
+              position: 5,
+              queueStatus: SpacePlaybackState.queueStatusSkipped,
+              source: 1,
+            ),
+          ],
+        ),
+      );
+
+      final viewData = QueueSheetViewData.resolve(
+        playerState: playerState,
+        camsState: camsState,
+      );
+
+      expect(
+        viewData.reorderablePendingItems
+            .map((item) => item.queueItemId)
+            .toList(),
+        ['queue-3', 'queue-4'],
+      );
+    });
+
     test('exposes pending label even when pending item is not in queue list',
         () {
       const playerState = ps.PlayerState();
@@ -277,7 +341,8 @@ void main() {
       expect(viewData.upNext, isEmpty);
     });
 
-    test('falls back to local queue sections when CAMS queue is unavailable', () {
+    test('falls back to local queue sections when CAMS queue is unavailable',
+        () {
       const playerState = ps.PlayerState(
         currentIndex: 1,
         queue: [

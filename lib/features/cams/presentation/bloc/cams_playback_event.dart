@@ -190,6 +190,14 @@ class CamsCancelOverride extends CamsPlaybackEvent {
   const CamsCancelOverride();
 }
 
+/// Handle a transport-style "previous" tap.
+///
+/// Single tap restarts the current stream from the beginning.
+/// A second tap within a short window jumps to the previous queue item.
+class CamsPreviousTapped extends CamsPlaybackEvent {
+  const CamsPreviousTapped();
+}
+
 /// Send a playback command (Pause/Resume/Seek/Skip).
 class CamsSendCommand extends CamsPlaybackEvent {
   final PlaybackCommandEnum command;

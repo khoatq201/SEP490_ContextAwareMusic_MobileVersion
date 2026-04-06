@@ -44,44 +44,11 @@ class NowPlayingTabPage extends StatefulWidget {
 }
 
 class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
-  static const double _minimumRemoteRestartSeekSeconds = 0.001;
-
   double _volume = 0.6;
   bool _isShuffleOn = false;
 
-  double _remoteRestartSeekPosition(ps.PlayerState playerState) {
-    final trackStartOffsetSeconds =
-        playerState.currentTrackStartOffset.toDouble();
-    if (trackStartOffsetSeconds > 0) {
-      return trackStartOffsetSeconds;
-    }
-    return _minimumRemoteRestartSeekSeconds;
-  }
-
-  void _dispatchRemoteSkipBack(
-    BuildContext context, {
-    required ps.PlayerState playerState,
-    required CamsPlaybackState camsState,
-  }) {
-    final previousQueueItem = camsState.playbackState?.previousQueueItem;
-    final shouldRestartCurrentTrack = playerState.displayPositionPrecise > 3;
-
-    if (shouldRestartCurrentTrack || previousQueueItem == null) {
-      context.read<CamsPlaybackBloc>().add(
-            CamsSendCommand(
-              command: PlaybackCommandEnum.seek,
-              seekPositionSeconds: _remoteRestartSeekPosition(playerState),
-            ),
-          );
-      return;
-    }
-
-    context.read<CamsPlaybackBloc>().add(
-          CamsSendCommand(
-            command: PlaybackCommandEnum.skipToTrack,
-            targetQueueItemId: previousQueueItem.queueItemId,
-          ),
-        );
+  void _dispatchRemoteSkipBack(BuildContext context) {
+    context.read<CamsPlaybackBloc>().add(const CamsPreviousTapped());
   }
 
   bool _hasRemoteNext(
@@ -384,7 +351,10 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                   volume: effectiveVolume,
                   palette: palette,
                   hasNext: hasNextForControls,
-                  hasPrevious: playerState.hasPrevious || displayPosition > 3,
+                  hasPrevious: useRemoteControls
+                      ? playerState.hasTrack ||
+                          (camsState.playbackState?.hasPlayableHls ?? false)
+                      : playerState.hasPrevious || displayPosition > 3,
                   onShuffle: () => setState(() => _isShuffleOn = !_isShuffleOn),
                   onPlayPause: () {
                     if (useRemoteControls) {
@@ -401,11 +371,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                   },
                   onSkipBack: () {
                     if (useRemoteControls) {
-                      _dispatchRemoteSkipBack(
-                        context,
-                        playerState: playerState,
-                        camsState: camsState,
-                      );
+                      _dispatchRemoteSkipBack(context);
                       return;
                     }
                     context
@@ -735,24 +701,26 @@ class _QueueSheet extends StatelessWidget {
     int fromIndex,
     int toIndex,
   ) {
+    final reorderableItems = data.reorderablePendingItems;
     if (!data.isFromCams ||
         fromIndex < 0 ||
         toIndex < 0 ||
-        fromIndex >= data.items.length ||
-        toIndex >= data.items.length ||
+        fromIndex >= reorderableItems.length ||
+        toIndex >= reorderableItems.length ||
         fromIndex == toIndex) {
       return;
     }
 
-    final queueItemIds = data.items
+    final queueItemIds = reorderableItems
         .map((item) => item.queueItemId)
         .whereType<String>()
         .toList(growable: true);
-    if (queueItemIds.length != data.items.length) {
+    if (queueItemIds.length != reorderableItems.length) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content:
-              Text('Cannot reorder queue because some queue ids are missing.'),
+          content: Text(
+            'Cannot reorder pending queue because some queue ids are missing.',
+          ),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -1154,12 +1122,13 @@ class _QueueSheet extends StatelessWidget {
 
               Widget? trailing;
               if (canManageQueue && queuedTrack.isUpNext) {
-                final fullQueueIndex = queuedTrack.listIndex;
-                final minMovableIndex = queueData.currentIndex >= 0
-                    ? queueData.currentIndex + 1
-                    : 0;
-                final canMoveUp = fullQueueIndex > minMovableIndex;
-                final canMoveDown = fullQueueIndex < queueData.items.length - 1;
+                final reorderableItems = queueData.reorderablePendingItems;
+                final reorderableIndex = reorderableItems.indexWhere(
+                  (item) => item.queueItemId == queuedTrack.queueItemId,
+                );
+                final canMoveUp = reorderableIndex > 0;
+                final canMoveDown = reorderableIndex >= 0 &&
+                    reorderableIndex < reorderableItems.length - 1;
                 trailing = _QueueTrackActions(
                   palette: palette,
                   canMoveUp: canMoveUp,
@@ -1168,16 +1137,16 @@ class _QueueSheet extends StatelessWidget {
                       ? () => _dispatchQueueReorder(
                             context,
                             queueData,
-                            fullQueueIndex,
-                            fullQueueIndex - 1,
+                            reorderableIndex,
+                            reorderableIndex - 1,
                           )
                       : null,
                   onMoveDown: canMoveDown
                       ? () => _dispatchQueueReorder(
                             context,
                             queueData,
-                            fullQueueIndex,
-                            fullQueueIndex + 1,
+                            reorderableIndex,
+                            reorderableIndex + 1,
                           )
                       : null,
                   onRemove: () => _dispatchRemoveQueueItem(
