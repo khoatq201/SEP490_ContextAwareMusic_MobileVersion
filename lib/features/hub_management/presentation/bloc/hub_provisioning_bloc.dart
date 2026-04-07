@@ -308,7 +308,7 @@ class HubProvisioningBloc
           phase: HubProvisioningPhase.enterWifi,
           wifiCandidates: wifiCandidates,
           message: wifiCandidates.isEmpty
-              ? 'No Wi-Fi networks were returned by the ESP32. You can still enter an SSID manually.'
+              ? 'No Wi-Fi networks were returned by the ESP32. This list comes from the device, not the phone, so hidden, weak, or 5 GHz networks may not appear. You can still enter a 2.4 GHz SSID manually.'
               : null,
           clearMessage: wifiCandidates.isNotEmpty,
         ),
@@ -320,7 +320,7 @@ class HubProvisioningBloc
           clearResolvedIdentity: true,
           wifiCandidates: const <WifiCandidate>[],
           message:
-              'Unable to read Wi-Fi networks from the selected ESP32. Check the secret code and try again.',
+              'Unable to read Wi-Fi networks from the selected ESP32. Check the secret code and try again. This scan is performed by the ESP32 itself, so move closer to the device and confirm it is still in provisioning mode.',
         ),
       );
     }

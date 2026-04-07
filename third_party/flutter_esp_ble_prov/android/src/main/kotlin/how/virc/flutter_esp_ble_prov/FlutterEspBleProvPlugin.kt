@@ -29,6 +29,7 @@ import io.flutter.plugin.common.PluginRegistry
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
+import java.util.concurrent.atomic.AtomicBoolean
 
 
 /**
@@ -148,6 +149,8 @@ abstract class ActionManager(val boss: Boss) {
 class Boss {
 
   private val logTag = "FlutterEspBleProv"
+  val mainHandler = Handler(Looper.getMainLooper())
+  private val connectTimeoutMs = 12_000L
 
   // Method names as called from Flutter across the channel.
   private val scanBleMethod = "scanBleDevices"
@@ -212,32 +215,78 @@ class Boss {
    * Connect to a named device with proofOfPossession string, and once connected, execute the
    * callback.
    */
-  fun connect(conn: BleConnector, proofOfPossession: String, onConnectCallback: (ESPDevice) -> Unit) {
+  fun connect(
+    conn: BleConnector,
+    proofOfPossession: String,
+    onConnectCallback: (ESPDevice) -> Unit,
+    onFailureCallback: (String) -> Unit,
+  ) {
     val esp = espManager.createESPDevice(ESPConstants.TransportType.TRANSPORT_BLE, ESPConstants.SecurityType.SECURITY_1)
-    EventBus.getDefault().register(object {
+    val didResolve = AtomicBoolean(false)
+    lateinit var listener: Any
+    val timeoutRunnable = Runnable {
+      if (!didResolve.compareAndSet(false, true)) {
+        return@Runnable
+      }
+
+      try {
+        EventBus.getDefault().unregister(listener)
+      } catch (_: Exception) {
+      }
+      try {
+        esp.disconnectDevice()
+      } catch (_: Exception) {
+      }
+      onFailureCallback(
+        "Timed out while connecting to ${conn.device.name ?: conn.device.address}",
+      )
+    }
+
+    listener = object {
       @Subscribe(threadMode = ThreadMode.MAIN)
       fun onEvent(event: DeviceConnectionEvent) {
         d("bus event $event ${event.eventType}")
         when (event.eventType) {
           ESPConstants.EVENT_DEVICE_CONNECTED -> {
+            if (!didResolve.compareAndSet(false, true)) {
+              return
+            }
+            mainHandler.removeCallbacks(timeoutRunnable)
             EventBus.getDefault().unregister(this)
             esp.proofOfPossession = proofOfPossession
             onConnectCallback(esp)
           }
         }
       }
-    })
-    esp.connectBLEDevice(conn.device, conn.primaryServiceUuid)
+    }
+    EventBus.getDefault().register(listener)
+    mainHandler.postDelayed(timeoutRunnable, connectTimeoutMs)
+
+    try {
+      esp.connectBLEDevice(conn.device, conn.primaryServiceUuid)
+    } catch (e: Exception) {
+      if (!didResolve.compareAndSet(false, true)) {
+        return
+      }
+      mainHandler.removeCallbacks(timeoutRunnable)
+      try {
+        EventBus.getDefault().unregister(listener)
+      } catch (_: Exception) {
+      }
+      onFailureCallback("Failed to start the BLE connection: $e")
+    }
   }
 
   fun withEspDevice(
     deviceName: String,
     proofOfPossession: String,
     ctx: CallContext,
+    reuseActiveSession: Boolean = true,
     onReady: (ESPDevice) -> Unit,
   ) {
     val cachedEsp = activeEspDevice
     if (
+      reuseActiveSession &&
       cachedEsp != null &&
       activeDeviceName == deviceName &&
       activeProofOfPossession == proofOfPossession
@@ -256,10 +305,22 @@ class Boss {
       return
     }
 
-    connect(conn, proofOfPossession) { esp ->
-      markActiveSession(deviceName, proofOfPossession, esp)
-      onReady(esp)
-    }
+    connect(
+      conn,
+      proofOfPossession,
+      onConnectCallback = { esp ->
+        markActiveSession(deviceName, proofOfPossession, esp)
+        onReady(esp)
+      },
+      onFailureCallback = { message ->
+        clearActiveSession(disconnect = true)
+        ctx.result.error(
+          "BLE_CONNECT_FAILED",
+          "Unable to connect to $deviceName",
+          message,
+        )
+      },
+    )
   }
 
   fun call(call: MethodCall, result: Result) {
@@ -351,31 +412,134 @@ class BleScanManager(boss: Boss) : ActionManager(boss) {
 }
 
 class WifiScanManager(boss: Boss) : ActionManager(boss) {
+  private val wifiScanTimeoutMs = 18_000L
+
   override fun call(ctx: CallContext) {
     val name = ctx.arg("deviceName") ?: return
     val proofOfPossession = ctx.arg("proofOfPossession") ?: return
-    boss.d("esp connect: start")
-    boss.withEspDevice(name, proofOfPossession, ctx) { esp ->
+    scanNetworks(
+      ctx = ctx,
+      deviceName = name,
+      proofOfPossession = proofOfPossession,
+      reuseActiveSession = true,
+      allowReconnectRetry = true,
+    )
+  }
+
+  private fun scanNetworks(
+    ctx: CallContext,
+    deviceName: String,
+    proofOfPossession: String,
+    reuseActiveSession: Boolean,
+    allowReconnectRetry: Boolean,
+  ) {
+    boss.networks.clear()
+    boss.d("scanNetworks: preparing reuseActiveSession=$reuseActiveSession")
+    boss.withEspDevice(
+      deviceName,
+      proofOfPossession,
+      ctx,
+      reuseActiveSession = reuseActiveSession,
+    ) { esp ->
       boss.d("scanNetworks: start")
-      esp.scanNetworks(object : WiFiScanListener {
-        override fun onWifiListReceived(wifiList: ArrayList<WiFiAccessPoint>?) {
-          wifiList ?: return
-          wifiList.forEach { boss.networks.add(it.wifiName) }
-          boss.d("scanNetworks: complete ${boss.networks}")
-          Handler(Looper.getMainLooper()).post {
-            ctx.result.success(ArrayList<String>(boss.networks))
-          }
-          boss.d("scanNetworks: complete 2 ${boss.networks}")
-          esp.disconnectDevice()
-          boss.clearActiveSession()
+      val didComplete = AtomicBoolean(false)
+      val timeoutRunnable = Runnable {
+        if (!didComplete.compareAndSet(false, true)) {
+          return@Runnable
         }
 
-        override fun onWiFiScanFailed(e: java.lang.Exception?) {
-          boss.e("scanNetworks: error $e")
-          boss.clearActiveSession(disconnect = true)
-          ctx.result.error("E1", "WiFi scan failed", "Exception details $e")
+        boss.e("scanNetworks: timeout waiting for Wi-Fi list")
+        boss.clearActiveSession(disconnect = true)
+
+        if (allowReconnectRetry) {
+          boss.d("scanNetworks: retrying with a fresh BLE session")
+          scanNetworks(
+            ctx = ctx,
+            deviceName = deviceName,
+            proofOfPossession = proofOfPossession,
+            reuseActiveSession = false,
+            allowReconnectRetry = false,
+          )
+          return@Runnable
         }
-      })
+
+        ctx.result.error(
+          "WIFI_SCAN_TIMEOUT",
+          "Wi-Fi scan timed out",
+          "The ESP32 did not return nearby Wi-Fi networks within ${wifiScanTimeoutMs / 1000} seconds",
+        )
+      }
+
+      boss.mainHandler.postDelayed(timeoutRunnable, wifiScanTimeoutMs)
+
+      try {
+        esp.scanNetworks(object : WiFiScanListener {
+          override fun onWifiListReceived(wifiList: ArrayList<WiFiAccessPoint>?) {
+            if (!didComplete.compareAndSet(false, true)) {
+              return
+            }
+
+            boss.mainHandler.removeCallbacks(timeoutRunnable)
+            boss.networks.clear()
+            wifiList
+              ?.mapNotNull { it.wifiName?.trim() }
+              ?.filter { it.isNotEmpty() }
+              ?.forEach { boss.networks.add(it) }
+            boss.d("scanNetworks: complete ${boss.networks}")
+            boss.mainHandler.post {
+              ctx.result.success(ArrayList<String>(boss.networks))
+            }
+            esp.disconnectDevice()
+            boss.clearActiveSession()
+          }
+
+          override fun onWiFiScanFailed(e: java.lang.Exception?) {
+            if (!didComplete.compareAndSet(false, true)) {
+              return
+            }
+
+            boss.mainHandler.removeCallbacks(timeoutRunnable)
+            boss.e("scanNetworks: error $e")
+            boss.clearActiveSession(disconnect = true)
+
+            if (allowReconnectRetry) {
+              boss.d("scanNetworks: retrying after scan failure with a fresh BLE session")
+              scanNetworks(
+                ctx = ctx,
+                deviceName = deviceName,
+                proofOfPossession = proofOfPossession,
+                reuseActiveSession = false,
+                allowReconnectRetry = false,
+              )
+              return
+            }
+
+            ctx.result.error("E1", "WiFi scan failed", "Exception details $e")
+          }
+        })
+      } catch (e: Exception) {
+        if (!didComplete.compareAndSet(false, true)) {
+          return@withEspDevice
+        }
+
+        boss.mainHandler.removeCallbacks(timeoutRunnable)
+        boss.e("scanNetworks: threw $e")
+        boss.clearActiveSession(disconnect = true)
+
+        if (allowReconnectRetry) {
+          boss.d("scanNetworks: retrying after synchronous failure with a fresh BLE session")
+          scanNetworks(
+            ctx = ctx,
+            deviceName = deviceName,
+            proofOfPossession = proofOfPossession,
+            reuseActiveSession = false,
+            allowReconnectRetry = false,
+          )
+          return@withEspDevice
+        }
+
+        ctx.result.error("E1", "WiFi scan failed", "Exception details $e")
+      }
     }
   }
 }
@@ -444,32 +608,149 @@ class WifiProvisionManager(boss: Boss) : ActionManager(boss) {
 
 
 class CustomDataManager(boss: Boss) : ActionManager(boss) {
+  private val customDataTimeoutMs = 15_000L
+
   override fun call(ctx: CallContext) {
     val deviceName = ctx.arg("deviceName") ?: return
     val proofOfPossession = ctx.arg("proofOfPossession") ?: return
     val endpointName = ctx.arg("endpointName") ?: return
     val data = ctx.bytesArg("data") ?: return
 
-    boss.withEspDevice(deviceName, proofOfPossession, ctx) { esp ->
-      boss.d("customData: send to $endpointName")
-      esp.sendDataToCustomEndPoint(endpointName, data, object : ResponseListener {
-        override fun onSuccess(returnData: ByteArray?) {
-          Handler(Looper.getMainLooper()).post {
-            ctx.result.success(returnData ?: ByteArray(0))
-          }
-          boss.clearActiveSession(disconnect = true)
+    sendCustomData(
+      ctx = ctx,
+      deviceName = deviceName,
+      proofOfPossession = proofOfPossession,
+      endpointName = endpointName,
+      data = data,
+      reuseActiveSession = true,
+      allowReconnectRetry = true,
+    )
+  }
+
+  private fun sendCustomData(
+    ctx: CallContext,
+    deviceName: String,
+    proofOfPossession: String,
+    endpointName: String,
+    data: ByteArray,
+    reuseActiveSession: Boolean,
+    allowReconnectRetry: Boolean,
+  ) {
+    boss.withEspDevice(
+      deviceName,
+      proofOfPossession,
+      ctx,
+      reuseActiveSession = reuseActiveSession,
+    ) { esp ->
+      boss.d(
+        "customData: send to $endpointName reuseActiveSession=$reuseActiveSession",
+      )
+
+      val didComplete = AtomicBoolean(false)
+      val timeoutRunnable = Runnable {
+        if (!didComplete.compareAndSet(false, true)) {
+          return@Runnable
         }
 
-        override fun onFailure(e: java.lang.Exception?) {
-          boss.e("customData: failure $e")
-          boss.clearActiveSession(disconnect = true)
-          ctx.result.error(
-            "CUSTOM_DATA_FAILED",
-            "Custom data exchange failed",
-            "Exception details $e",
+        boss.e("customData: timeout waiting for response from $endpointName")
+        boss.clearActiveSession(disconnect = true)
+
+        if (allowReconnectRetry && reuseActiveSession) {
+          boss.d("customData: retrying $endpointName with a fresh BLE session")
+          sendCustomData(
+            ctx = ctx,
+            deviceName = deviceName,
+            proofOfPossession = proofOfPossession,
+            endpointName = endpointName,
+            data = data,
+            reuseActiveSession = false,
+            allowReconnectRetry = false,
           )
+          return@Runnable
         }
-      })
+
+        ctx.result.error(
+          "CUSTOM_DATA_TIMEOUT",
+          "Timed out waiting for the ESP32 response",
+          "The ESP32 did not acknowledge $endpointName within ${customDataTimeoutMs / 1000} seconds",
+        )
+      }
+
+      boss.mainHandler.postDelayed(timeoutRunnable, customDataTimeoutMs)
+
+      try {
+        esp.sendDataToCustomEndPoint(endpointName, data, object : ResponseListener {
+          override fun onSuccess(returnData: ByteArray?) {
+            if (!didComplete.compareAndSet(false, true)) {
+              return
+            }
+
+            boss.mainHandler.removeCallbacks(timeoutRunnable)
+            boss.mainHandler.post {
+              ctx.result.success(returnData ?: ByteArray(0))
+            }
+            boss.clearActiveSession(disconnect = true)
+          }
+
+          override fun onFailure(e: java.lang.Exception?) {
+            if (!didComplete.compareAndSet(false, true)) {
+              return
+            }
+
+            boss.mainHandler.removeCallbacks(timeoutRunnable)
+            boss.e("customData: failure $e")
+            boss.clearActiveSession(disconnect = true)
+
+            if (allowReconnectRetry && reuseActiveSession) {
+              boss.d("customData: retrying $endpointName after failure with a fresh BLE session")
+              sendCustomData(
+                ctx = ctx,
+                deviceName = deviceName,
+                proofOfPossession = proofOfPossession,
+                endpointName = endpointName,
+                data = data,
+                reuseActiveSession = false,
+                allowReconnectRetry = false,
+              )
+              return
+            }
+
+            ctx.result.error(
+              "CUSTOM_DATA_FAILED",
+              "Custom data exchange failed",
+              "Exception details $e",
+            )
+          }
+        })
+      } catch (e: Exception) {
+        if (!didComplete.compareAndSet(false, true)) {
+          return@withEspDevice
+        }
+
+        boss.mainHandler.removeCallbacks(timeoutRunnable)
+        boss.e("customData: send threw $e")
+        boss.clearActiveSession(disconnect = true)
+
+        if (allowReconnectRetry && reuseActiveSession) {
+          boss.d("customData: retrying $endpointName after synchronous failure with a fresh BLE session")
+          sendCustomData(
+            ctx = ctx,
+            deviceName = deviceName,
+            proofOfPossession = proofOfPossession,
+            endpointName = endpointName,
+            data = data,
+            reuseActiveSession = false,
+            allowReconnectRetry = false,
+          )
+          return@withEspDevice
+        }
+
+        ctx.result.error(
+          "CUSTOM_DATA_FAILED",
+          "Custom data exchange failed",
+          "Exception details $e",
+        )
+      }
     }
   }
 }
