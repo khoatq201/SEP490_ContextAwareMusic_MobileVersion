@@ -70,7 +70,6 @@ void main() {
 
       expect(find.text('Current hub binding'), findsOneWidget);
       expect(find.text('Reconfigure Wi-Fi'), findsOneWidget);
-      expect(find.text('Update location'), findsOneWidget);
       expect(find.text('Restart hub'), findsOneWidget);
       expect(find.text('Unbind'), findsOneWidget);
       expect(find.text('Retry sync'), findsNothing);
@@ -99,41 +98,6 @@ void main() {
       expect(find.text('Sync pending'), findsWidgets);
     });
 
-    testWidgets('renders location summary and retry location sync action', (
-      tester,
-    ) async {
-      await tester.pumpWidget(_buildTestApp(bloc));
-      bloc.push(
-        HubProvisioningState(
-          phase: HubProvisioningPhase.success,
-          spaceId: 'space-1',
-          storeId: 'store-1',
-          spaceName: 'Main Hall',
-          binding: _binding(
-            deviceLocationStatus: HubDeviceLocationStatus.deviceSyncPending,
-            deviceLocationLastError: 'custom-location failed',
-            deviceLocation: HubDeviceLocation(
-              latitude: 10.7769,
-              longitude: 106.7009,
-              city: 'Ho Chi Minh City',
-              source: HubDeviceLocationSource.phoneGps,
-              capturedAtUtc: DateTime.utc(2026, 4, 4, 10, 5),
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
-      await tester.scrollUntilVisible(
-        find.text('Retry location sync'),
-        250,
-      );
-
-      expect(find.text('Location sync'), findsOneWidget);
-      expect(find.text('Ho Chi Minh City'), findsOneWidget);
-      expect(find.text('10.77690, 106.70090'), findsOneWidget);
-      expect(find.text('Retry location sync'), findsOneWidget);
-    });
-
     testWidgets('renders secret code form after selecting a device', (
       tester,
     ) async {
@@ -153,32 +117,6 @@ void main() {
       expect(find.text('Read Wi-Fi from ESP32'), findsOneWidget);
       expect(find.textContaining('Selected device:'), findsOneWidget);
     });
-
-    testWidgets('renders location review card', (tester) async {
-      await tester.pumpWidget(_buildTestApp(bloc));
-      bloc.push(
-        HubProvisioningState(
-          phase: HubProvisioningPhase.reviewLocation,
-          flowMode: HubProvisioningFlowMode.fullProvisioning,
-          spaceId: 'space-1',
-          storeId: 'store-1',
-          spaceName: 'Main Hall',
-          draftLocation: HubDeviceLocation(
-            latitude: 10.7769,
-            longitude: 106.7009,
-            city: 'Ho Chi Minh City',
-            source: HubDeviceLocationSource.phoneGps,
-            capturedAtUtc: DateTime.utc(2026, 4, 4, 10, 5),
-          ),
-        ),
-      );
-      await tester.pump();
-
-      expect(find.text('Device location'), findsOneWidget);
-      expect(find.text('Use current location'), findsOneWidget);
-      expect(find.text('Save to ESP'), findsOneWidget);
-      expect(find.text('Current source: Phone GPS'), findsOneWidget);
-    });
   });
 }
 
@@ -197,10 +135,6 @@ Widget _buildTestApp(HubProvisioningBloc bloc) {
 
 SpaceHubBinding _binding({
   SpaceHubBindingStatus status = SpaceHubBindingStatus.bound,
-  HubDeviceLocationStatus deviceLocationStatus =
-      HubDeviceLocationStatus.unknown,
-  HubDeviceLocation? deviceLocation,
-  String? deviceLocationLastError,
 }) {
   return SpaceHubBinding(
     spaceId: 'space-1',
@@ -209,10 +143,6 @@ SpaceHubBinding _binding({
     provisioningMethod: HubProvisioningMethod.blePrefixScan,
     provisionedAtUtc: DateTime.parse('2026-04-04T10:00:00.000Z'),
     status: status,
-    deviceLocation: deviceLocation,
-    deviceLocationStatus: deviceLocationStatus,
-    deviceLocationLastError: deviceLocationLastError,
-    deviceLocationUpdatedAtUtc: deviceLocation?.capturedAtUtc,
   );
 }
 

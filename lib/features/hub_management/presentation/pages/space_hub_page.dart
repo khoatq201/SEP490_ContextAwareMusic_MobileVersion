@@ -8,7 +8,6 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/presentation/app_error_presentation.dart';
 import '../../../../core/widgets/app_status_banner.dart';
 import '../../domain/entities/ble_candidate.dart';
-import '../../domain/entities/hub_device_location.dart';
 import '../../domain/entities/space_hub_binding.dart';
 import '../../domain/entities/wifi_candidate.dart';
 import '../bloc/hub_provisioning_bloc.dart';
@@ -51,21 +50,12 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
   final _secretCodeController = TextEditingController();
   final _ssidController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _cityController = TextEditingController();
-  final _latitudeController = TextEditingController();
-  final _longitudeController = TextEditingController();
   final _secretCodeFocusNode = FocusNode();
   final _ssidFocusNode = FocusNode();
   final _passwordFocusNode = FocusNode();
-  final _cityFocusNode = FocusNode();
-  final _latitudeFocusNode = FocusNode();
-  final _longitudeFocusNode = FocusNode();
   final _secretCodeFieldKey = GlobalKey();
   final _ssidFieldKey = GlobalKey();
   final _passwordFieldKey = GlobalKey();
-  final _cityFieldKey = GlobalKey();
-  final _latitudeFieldKey = GlobalKey();
-  final _longitudeFieldKey = GlobalKey();
   bool _obscureSecretCode = true;
   bool _obscurePassword = true;
 
@@ -75,9 +65,6 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
     _attachFocusListener(_secretCodeFocusNode, _secretCodeFieldKey);
     _attachFocusListener(_ssidFocusNode, _ssidFieldKey);
     _attachFocusListener(_passwordFocusNode, _passwordFieldKey);
-    _attachFocusListener(_cityFocusNode, _cityFieldKey);
-    _attachFocusListener(_latitudeFocusNode, _latitudeFieldKey);
-    _attachFocusListener(_longitudeFocusNode, _longitudeFieldKey);
   }
 
   @override
@@ -86,15 +73,9 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
     _secretCodeController.dispose();
     _ssidController.dispose();
     _passwordController.dispose();
-    _cityController.dispose();
-    _latitudeController.dispose();
-    _longitudeController.dispose();
     _secretCodeFocusNode.dispose();
     _ssidFocusNode.dispose();
     _passwordFocusNode.dispose();
-    _cityFocusNode.dispose();
-    _latitudeFocusNode.dispose();
-    _longitudeFocusNode.dispose();
     super.dispose();
   }
 
@@ -102,10 +83,7 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
   Widget build(BuildContext context) {
     final palette = _HubPalette.of(context);
 
-    return BlocConsumer<HubProvisioningBloc, HubProvisioningState>(
-      listenWhen: (previous, current) =>
-          previous.draftLocation != current.draftLocation,
-      listener: (_, state) => _syncLocationControllers(state.draftLocation),
+    return BlocBuilder<HubProvisioningBloc, HubProvisioningState>(
       builder: (context, state) {
         return Scaffold(
           backgroundColor: palette.bg,
@@ -164,17 +142,13 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
                   AppStatusBanner(
                     title: state.phase == HubProvisioningPhase.failure
                         ? 'Setup needs attention'
-                        : (state.binding?.isSyncPending ?? false) ||
-                                (state.binding?.isDeviceLocationSyncPending ??
-                                    false)
+                        : (state.binding?.isSyncPending ?? false)
                             ? 'Sync pending'
                             : 'Hub status',
                     message: state.message!,
                     tone: state.phase == HubProvisioningPhase.failure
                         ? AppStatusTone.error
-                        : (state.binding?.isSyncPending ?? false) ||
-                                (state.binding?.isDeviceLocationSyncPending ??
-                                    false)
+                        : (state.binding?.isSyncPending ?? false)
                             ? AppStatusTone.warning
                             : AppStatusTone.info,
                   ),
@@ -256,9 +230,8 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
           _ProgressCard(
             palette: palette,
             title: 'Scanning for CAM devices',
-            subtitle: state.isUpdateLocationOnly
-                ? 'Make sure the ESP32 is powered on and advertising provisioning over BLE so the app can update its device location.'
-                : 'Make sure the ESP32 is powered on and advertising provisioning over BLE.',
+            subtitle:
+                'Make sure the ESP32 is powered on and advertising provisioning over BLE.',
           ),
         ];
       case HubProvisioningPhase.selectDevice:
@@ -266,13 +239,7 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
           _BleCandidatesCard(
             palette: palette,
             candidates: state.bleCandidates,
-            onRescan: () => _startBleScan(
-              context,
-              state,
-              initialLocation: state.isUpdateLocationOnly
-                  ? _buildDraftLocation(state)
-                  : null,
-            ),
+            onRescan: () => _startBleScan(context, state),
             onSelected: (candidate) => _selectBleCandidate(context, candidate),
           ),
           const SizedBox(height: 16),
@@ -285,20 +252,6 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
                 state,
                 flowMode: HubProvisioningFlowMode.fullProvisioning,
               ),
-              onUpdateLocation: () => _startBleScan(
-                context,
-                state,
-                flowMode: HubProvisioningFlowMode.updateLocationOnly,
-              ),
-              onRetryLocationSync: state.binding!.isDeviceLocationSyncPending
-                  ? () => _startBleScan(
-                        context,
-                        state,
-                        flowMode: HubProvisioningFlowMode.updateLocationOnly,
-                        initialLocation: state.binding?.deviceLocation ??
-                            _buildDraftLocation(state),
-                      )
-                  : null,
               onRetrySync: state.binding!.isSyncPending
                   ? () => context
                       .read<HubProvisioningBloc>()
@@ -315,7 +268,6 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
           _SecretCodeCard(
             palette: palette,
             device: state.selectedBleCandidate,
-            isLocationOnlyFlow: state.isUpdateLocationOnly,
             secretCodeFieldKey: _secretCodeFieldKey,
             secretCodeController: _secretCodeController,
             secretCodeFocusNode: _secretCodeFocusNode,
@@ -323,13 +275,7 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
             onToggleSecretCode: () {
               setState(() => _obscureSecretCode = !_obscureSecretCode);
             },
-            onChooseDifferentDevice: () => _startBleScan(
-              context,
-              state,
-              initialLocation: state.isUpdateLocationOnly
-                  ? _buildDraftLocation(state)
-                  : null,
-            ),
+            onChooseDifferentDevice: () => _startBleScan(context, state),
             onSubmit: () => _submitSecretCode(context),
           ),
         ];
@@ -379,47 +325,13 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
           ),
         ];
       case HubProvisioningPhase.resolvingLocation:
-        return [
-          _ProgressCard(
-            palette: palette,
-            title: 'Resolving device location',
-            subtitle: state.isUpdateLocationOnly
-                ? 'Capturing the current location so it can be reviewed before sending it to the ESP32.'
-                : 'Wi-Fi is ready. Capturing the current location before sending it to the ESP32.',
-          ),
-        ];
       case HubProvisioningPhase.reviewLocation:
-        return [
-          _LocationReviewCard(
-            palette: palette,
-            draftLocation: state.draftLocation,
-            cityFieldKey: _cityFieldKey,
-            cityController: _cityController,
-            cityFocusNode: _cityFocusNode,
-            latitudeFieldKey: _latitudeFieldKey,
-            latitudeController: _latitudeController,
-            latitudeFocusNode: _latitudeFocusNode,
-            longitudeFieldKey: _longitudeFieldKey,
-            longitudeController: _longitudeController,
-            longitudeFocusNode: _longitudeFocusNode,
-            onUseCurrentLocation: () => context
-                .read<HubProvisioningBloc>()
-                .add(const HubProvisioningUseCurrentLocationRequested()),
-            onChangeEsp: () => _startBleScan(
-              context,
-              state,
-              initialLocation: _buildDraftLocation(state),
-            ),
-            onSubmit: () => _submitLocation(context),
-          ),
-        ];
       case HubProvisioningPhase.sendingLocation:
         return [
           _ProgressCard(
             palette: palette,
-            title: 'Sending location to ESP32',
-            subtitle:
-                'Updating the device through the custom-location endpoint.',
+            title: 'Finalizing Wi-Fi setup',
+            subtitle: 'Preparing the hub binding for this space.',
           ),
         ];
       case HubProvisioningPhase.syncing:
@@ -427,8 +339,7 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
           _ProgressCard(
             palette: palette,
             title: 'Syncing hub binding',
-            subtitle:
-                'Saving the hub relationship and device location to the backend-style stub.',
+            subtitle: 'Saving the hub relationship to the backend-style stub.',
           ),
         ];
       case HubProvisioningPhase.success:
@@ -455,20 +366,6 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
                 state,
                 flowMode: HubProvisioningFlowMode.fullProvisioning,
               ),
-              onUpdateLocation: () => _startBleScan(
-                context,
-                state,
-                flowMode: HubProvisioningFlowMode.updateLocationOnly,
-              ),
-              onRetryLocationSync: state.binding!.isDeviceLocationSyncPending
-                  ? () => _startBleScan(
-                        context,
-                        state,
-                        flowMode: HubProvisioningFlowMode.updateLocationOnly,
-                        initialLocation: state.binding?.deviceLocation ??
-                            _buildDraftLocation(state),
-                      )
-                  : null,
               onRetrySync: state.binding!.isSyncPending
                   ? () => context
                       .read<HubProvisioningBloc>()
@@ -504,20 +401,6 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
                 state,
                 flowMode: HubProvisioningFlowMode.fullProvisioning,
               ),
-              onUpdateLocation: () => _startBleScan(
-                context,
-                state,
-                flowMode: HubProvisioningFlowMode.updateLocationOnly,
-              ),
-              onRetryLocationSync: state.binding!.isDeviceLocationSyncPending
-                  ? () => _startBleScan(
-                        context,
-                        state,
-                        flowMode: HubProvisioningFlowMode.updateLocationOnly,
-                        initialLocation: state.binding?.deviceLocation ??
-                            _buildDraftLocation(state),
-                      )
-                  : null,
               onRetrySync: state.binding!.isSyncPending
                   ? () => context
                       .read<HubProvisioningBloc>()
@@ -530,13 +413,6 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
             ),
         ];
     }
-  }
-
-  void _syncLocationControllers(HubDeviceLocation? location) {
-    if (location == null) return;
-    _cityController.text = location.city;
-    _latitudeController.text = location.latitude.toStringAsFixed(6);
-    _longitudeController.text = location.longitude.toStringAsFixed(6);
   }
 
   void _attachFocusListener(FocusNode focusNode, GlobalKey fieldKey) {
@@ -556,72 +432,14 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
     });
   }
 
-  HubDeviceLocation? _buildDraftLocation(HubProvisioningState state) {
-    final latitude = _tryParseDouble(_latitudeController.text);
-    final longitude = _tryParseDouble(_longitudeController.text);
-    if (latitude == null || longitude == null) {
-      return state.draftLocation;
-    }
-
-    final original = state.draftLocation;
-    final source = _resolveLocationSource(
-      state,
-      latitude: latitude,
-      longitude: longitude,
-      city: _cityController.text.trim(),
-    );
-    return HubDeviceLocation(
-      latitude: latitude,
-      longitude: longitude,
-      city: _cityController.text.trim(),
-      source: source,
-      capturedAtUtc: original?.capturedAtUtc ?? DateTime.now().toUtc(),
-    );
-  }
-
-  void _clearLocationControllers() {
-    _cityController.clear();
-    _latitudeController.clear();
-    _longitudeController.clear();
-  }
-
-  HubDeviceLocationSource _resolveLocationSource(
-    HubProvisioningState state, {
-    required double latitude,
-    required double longitude,
-    required String city,
-  }) {
-    final draft = state.draftLocation;
-    if (draft == null) {
-      return HubDeviceLocationSource.manual;
-    }
-
-    final sameLatitude = (draft.latitude - latitude).abs() < 0.000001;
-    final sameLongitude = (draft.longitude - longitude).abs() < 0.000001;
-    final sameCity = draft.city.trim() == city.trim();
-    return sameLatitude && sameLongitude && sameCity
-        ? draft.source
-        : HubDeviceLocationSource.manual;
-  }
-
-  double? _tryParseDouble(String raw) {
-    return double.tryParse(raw.trim().replaceAll(',', '.'));
-  }
-
   void _startBleScan(
     BuildContext context,
     HubProvisioningState state, {
     HubProvisioningFlowMode? flowMode,
-    HubDeviceLocation? initialLocation,
   }) {
     _secretCodeController.clear();
     _ssidController.clear();
     _passwordController.clear();
-    if (initialLocation == null) {
-      _clearLocationControllers();
-    } else {
-      _syncLocationControllers(initialLocation);
-    }
     setState(() {
       _obscureSecretCode = true;
       _obscurePassword = true;
@@ -629,7 +447,6 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
     context.read<HubProvisioningBloc>().add(
           HubProvisioningBleScanRequested(
             flowMode: flowMode ?? state.flowMode,
-            initialLocation: initialLocation,
           ),
         );
   }
@@ -713,40 +530,6 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
           ),
         );
   }
-
-  void _submitLocation(BuildContext context) {
-    FocusScope.of(context).unfocus();
-    final state = context.read<HubProvisioningBloc>().state;
-    final latitude = _tryParseDouble(_latitudeController.text);
-    final longitude = _tryParseDouble(_longitudeController.text);
-    if (latitude == null || longitude == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Enter valid latitude and longitude before saving the device location.',
-          ),
-        ),
-      );
-      return;
-    }
-
-    final city = _cityController.text.trim();
-    final source = _resolveLocationSource(
-      state,
-      latitude: latitude,
-      longitude: longitude,
-      city: city,
-    );
-
-    context.read<HubProvisioningBloc>().add(
-          HubProvisioningLocationSubmitted(
-            city: city,
-            latitude: latitude,
-            longitude: longitude,
-            source: source,
-          ),
-        );
-  }
 }
 
 class _SpaceContextCard extends StatelessWidget {
@@ -818,11 +601,6 @@ class _BindingCard extends StatelessWidget {
         : binding.isSyncPending
             ? AppColors.warning
             : AppColors.error;
-    final locationStatusColor = binding.isDeviceLocationSyncPending
-        ? AppColors.warning
-        : binding.isDeviceLocationConfigured
-            ? AppColors.success
-            : palette.textMuted;
 
     return _SectionCard(
       palette: palette,
@@ -900,33 +678,6 @@ class _BindingCard extends StatelessWidget {
             label: 'Method',
             value: binding.provisioningMethod.apiValue,
           ),
-          _InfoRow(
-            palette: palette,
-            icon: Icons.location_on_outlined,
-            label: 'Location sync',
-            value: binding.deviceLocationStatus.displayLabel,
-            valueColor: locationStatusColor,
-          ),
-          if (binding.deviceLocation != null) ...[
-            _InfoRow(
-              palette: palette,
-              icon: LucideIcons.mapPin,
-              label: 'City',
-              value: binding.deviceLocation!.displayCity,
-            ),
-            _InfoRow(
-              palette: palette,
-              icon: LucideIcons.locateFixed,
-              label: 'Coordinates',
-              value: binding.deviceLocation!.displayCoordinates,
-            ),
-            _InfoRow(
-              palette: palette,
-              icon: LucideIcons.navigation,
-              label: 'Source',
-              value: binding.deviceLocation!.source.displayLabel,
-            ),
-          ],
         ],
       ),
     );
@@ -1171,7 +922,6 @@ class _SecretCodeCard extends StatelessWidget {
   const _SecretCodeCard({
     required this.palette,
     required this.device,
-    required this.isLocationOnlyFlow,
     required this.secretCodeFieldKey,
     required this.secretCodeController,
     required this.secretCodeFocusNode,
@@ -1183,7 +933,6 @@ class _SecretCodeCard extends StatelessWidget {
 
   final _HubPalette palette;
   final BleCandidate? device;
-  final bool isLocationOnlyFlow;
   final GlobalKey secretCodeFieldKey;
   final TextEditingController secretCodeController;
   final FocusNode secretCodeFocusNode;
@@ -1264,164 +1013,7 @@ class _SecretCodeCard extends StatelessWidget {
           FilledButton.icon(
             onPressed: onSubmit,
             icon: const Icon(LucideIcons.keyRound, size: 18),
-            label: Text(
-              isLocationOnlyFlow
-                  ? 'Continue to device location'
-                  : 'Read Wi-Fi from ESP32',
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LocationReviewCard extends StatelessWidget {
-  const _LocationReviewCard({
-    required this.palette,
-    required this.draftLocation,
-    required this.cityFieldKey,
-    required this.cityController,
-    required this.cityFocusNode,
-    required this.latitudeFieldKey,
-    required this.latitudeController,
-    required this.latitudeFocusNode,
-    required this.longitudeFieldKey,
-    required this.longitudeController,
-    required this.longitudeFocusNode,
-    required this.onUseCurrentLocation,
-    required this.onChangeEsp,
-    required this.onSubmit,
-  });
-
-  final _HubPalette palette;
-  final HubDeviceLocation? draftLocation;
-  final GlobalKey cityFieldKey;
-  final TextEditingController cityController;
-  final FocusNode cityFocusNode;
-  final GlobalKey latitudeFieldKey;
-  final TextEditingController latitudeController;
-  final FocusNode latitudeFocusNode;
-  final GlobalKey longitudeFieldKey;
-  final TextEditingController longitudeController;
-  final FocusNode longitudeFocusNode;
-  final VoidCallback onUseCurrentLocation;
-  final VoidCallback onChangeEsp;
-  final VoidCallback onSubmit;
-
-  @override
-  Widget build(BuildContext context) {
-    return _SectionCard(
-      palette: palette,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Device location',
-                  style: GoogleFonts.poppins(
-                    color: palette.textPrimary,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              TextButton.icon(
-                onPressed: onChangeEsp,
-                icon: const Icon(Icons.swap_horiz_rounded, size: 16),
-                label: const Text('Change ESP'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Review the location before sending it to the ESP32. You can keep the current GPS result or edit the city and coordinates manually.',
-            style: GoogleFonts.inter(
-              color: palette.textMuted,
-              fontSize: 13,
-              height: 1.5,
-            ),
-          ),
-          if (draftLocation != null) ...[
-            const SizedBox(height: 10),
-            Text(
-              'Current source: ${draftLocation!.source.displayLabel}',
-              style: GoogleFonts.inter(
-                color: palette.textMuted,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-          const SizedBox(height: 16),
-          Container(
-            key: cityFieldKey,
-            child: TextField(
-              controller: cityController,
-              focusNode: cityFocusNode,
-              textInputAction: TextInputAction.next,
-              scrollPadding: const EdgeInsets.only(bottom: 180),
-              decoration: const InputDecoration(
-                labelText: 'Area / city',
-                hintText: 'District, city, or area name',
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            key: latitudeFieldKey,
-            child: TextField(
-              controller: latitudeController,
-              focusNode: latitudeFocusNode,
-              textInputAction: TextInputAction.next,
-              scrollPadding: const EdgeInsets.only(bottom: 180),
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-                signed: true,
-              ),
-              decoration: const InputDecoration(
-                labelText: 'Latitude',
-                hintText: '10.77690',
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            key: longitudeFieldKey,
-            child: TextField(
-              controller: longitudeController,
-              focusNode: longitudeFocusNode,
-              textInputAction: TextInputAction.done,
-              scrollPadding: const EdgeInsets.only(bottom: 180),
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-                signed: true,
-              ),
-              onSubmitted: (_) => onSubmit(),
-              decoration: const InputDecoration(
-                labelText: 'Longitude',
-                hintText: '106.70090',
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              OutlinedButton.icon(
-                onPressed: onUseCurrentLocation,
-                icon: const Icon(Icons.my_location_outlined, size: 18),
-                label: const Text('Use current location'),
-              ),
-              FilledButton.icon(
-                onPressed: onSubmit,
-                icon: const Icon(Icons.location_searching_rounded, size: 18),
-                label: const Text('Save to ESP'),
-              ),
-            ],
+            label: const Text('Read Wi-Fi from ESP32'),
           ),
         ],
       ),
@@ -1575,8 +1167,6 @@ class _BindingActions extends StatelessWidget {
     required this.palette,
     required this.binding,
     required this.onRescan,
-    required this.onUpdateLocation,
-    required this.onRetryLocationSync,
     required this.onRetrySync,
     required this.onRestart,
     required this.onDelete,
@@ -1585,8 +1175,6 @@ class _BindingActions extends StatelessWidget {
   final _HubPalette palette;
   final SpaceHubBinding? binding;
   final VoidCallback onRescan;
-  final VoidCallback? onUpdateLocation;
-  final VoidCallback? onRetryLocationSync;
   final VoidCallback? onRetrySync;
   final VoidCallback onRestart;
   final VoidCallback onDelete;
@@ -1617,19 +1205,6 @@ class _BindingActions extends StatelessWidget {
                 label:
                     Text(binding == null ? 'Start scan' : 'Reconfigure Wi-Fi'),
               ),
-              if (binding != null && onUpdateLocation != null)
-                OutlinedButton.icon(
-                  onPressed: onUpdateLocation,
-                  icon: const Icon(Icons.location_on_outlined, size: 18),
-                  label: const Text('Update location'),
-                ),
-              if (binding?.isDeviceLocationSyncPending == true &&
-                  onRetryLocationSync != null)
-                OutlinedButton.icon(
-                  onPressed: onRetryLocationSync,
-                  icon: const Icon(LucideIcons.mapPin, size: 18),
-                  label: const Text('Retry location sync'),
-                ),
               if (onRetrySync != null)
                 OutlinedButton.icon(
                   onPressed: onRetrySync,
@@ -1743,14 +1318,12 @@ class _InfoRow extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.value,
-    this.valueColor,
   });
 
   final _HubPalette palette;
   final IconData icon;
   final String label;
   final String value;
-  final Color? valueColor;
 
   @override
   Widget build(BuildContext context) {
@@ -1776,7 +1349,7 @@ class _InfoRow extends StatelessWidget {
               value,
               textAlign: TextAlign.right,
               style: GoogleFonts.inter(
-                color: valueColor ?? palette.textPrimary,
+                color: palette.textPrimary,
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
               ),

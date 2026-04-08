@@ -1,6 +1,4 @@
-import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -9,7 +7,6 @@ import '../../data/services/ble_provisioning_service.dart';
 import '../../data/services/location_capture_service.dart';
 import '../../data/services/provisioning_identity_resolver.dart';
 import '../../domain/entities/ble_candidate.dart';
-import '../../domain/entities/hub_device_location.dart';
 import '../../domain/entities/space_hub_binding.dart';
 import '../../domain/entities/wifi_candidate.dart';
 import '../../domain/usecases/space_hub_usecases.dart';
@@ -35,11 +32,7 @@ class HubProvisioningBloc
     on<HubProvisioningBleScanRequested>(_onBleScanRequested);
     on<HubProvisioningBleCandidateSelected>(_onBleCandidateSelected);
     on<HubProvisioningSecretCodeSubmitted>(_onSecretCodeSubmitted);
-    on<HubProvisioningUseCurrentLocationRequested>(
-      _onUseCurrentLocationRequested,
-    );
     on<HubProvisioningCredentialsSubmitted>(_onCredentialsSubmitted);
-    on<HubProvisioningLocationSubmitted>(_onLocationSubmitted);
     on<HubProvisioningRetrySyncRequested>(_onRetrySyncRequested);
     on<HubProvisioningDeleteBindingRequested>(_onDeleteBindingRequested);
     on<HubProvisioningRestartRequested>(_onRestartRequested);
@@ -130,13 +123,7 @@ class HubProvisioningBloc
   ) async {
     final permissionStatus = await blePermissionService.requestPermissions();
     if (permissionStatus == BlePermissionRequirementStatus.granted) {
-      add(
-        HubProvisioningBleScanRequested(
-          flowMode: state.flowMode,
-          initialLocation:
-              state.isUpdateLocationOnly ? state.draftLocation : null,
-        ),
-      );
+      add(const HubProvisioningBleScanRequested());
       return;
     }
 
@@ -191,8 +178,7 @@ class HubProvisioningBloc
         clearSelectedBleCandidate: true,
         clearResolvedIdentity: true,
         clearPendingWifiSsid: true,
-        draftLocation: event.initialLocation,
-        clearDraftLocation: event.initialLocation == null,
+        clearDraftLocation: true,
         bleCandidates: const <BleCandidate>[],
         wifiCandidates: const <WifiCandidate>[],
       ),
@@ -274,23 +260,6 @@ class HubProvisioningBloc
       proofOfPossession: secretCode,
     );
 
-    if (state.isUpdateLocationOnly) {
-      emit(
-        state.copyWith(
-          phase: state.draftLocation == null
-              ? HubProvisioningPhase.resolvingLocation
-              : HubProvisioningPhase.reviewLocation,
-          resolvedIdentity: identity,
-          clearMessage: true,
-        ),
-      );
-
-      if (state.draftLocation == null) {
-        await _captureCurrentLocation(emit);
-      }
-      return;
-    }
-
     emit(
       state.copyWith(
         phase: HubProvisioningPhase.scanningWifi,
@@ -324,31 +293,6 @@ class HubProvisioningBloc
         ),
       );
     }
-  }
-
-  Future<void> _onUseCurrentLocationRequested(
-    HubProvisioningUseCurrentLocationRequested event,
-    Emitter<HubProvisioningState> emit,
-  ) async {
-    final identity = state.resolvedIdentity;
-    if (identity == null) {
-      emit(
-        state.copyWith(
-          phase: HubProvisioningPhase.enterSecretCode,
-          message:
-              'Enter the secret code before capturing the device location.',
-        ),
-      );
-      return;
-    }
-
-    emit(
-      state.copyWith(
-        phase: HubProvisioningPhase.resolvingLocation,
-        clearMessage: true,
-      ),
-    );
-    await _captureCurrentLocation(emit);
   }
 
   Future<void> _onCredentialsSubmitted(
@@ -409,15 +353,11 @@ class HubProvisioningBloc
         return;
       }
 
-      emit(
-        state.copyWith(
-          phase: HubProvisioningPhase.resolvingLocation,
-          pendingWifiSsid: event.ssid,
-          clearDraftLocation: true,
-          clearMessage: true,
-        ),
+      await _persistBindingAfterWifiProvisioning(
+        emit,
+        candidate: candidate,
+        wifiSsid: event.ssid,
       );
-      await _captureCurrentLocation(emit);
     } on BleProvisioningException {
       emit(
         state.copyWith(
@@ -426,59 +366,6 @@ class HubProvisioningBloc
           message:
               'Provisioning failed before the ESP32 confirmed Wi-Fi. Check the network password and try again.',
         ),
-      );
-    }
-  }
-
-  Future<void> _onLocationSubmitted(
-    HubProvisioningLocationSubmitted event,
-    Emitter<HubProvisioningState> emit,
-  ) async {
-    final identity = state.resolvedIdentity;
-    if (identity == null) {
-      emit(
-        state.copyWith(
-          phase: HubProvisioningPhase.enterSecretCode,
-          message: 'Enter the secret code before saving the device location.',
-        ),
-      );
-      return;
-    }
-
-    final location = HubDeviceLocation(
-      latitude: event.latitude,
-      longitude: event.longitude,
-      city: event.city.trim(),
-      source: event.source,
-      capturedAtUtc: DateTime.now().toUtc(),
-    );
-
-    emit(
-      state.copyWith(
-        phase: HubProvisioningPhase.sendingLocation,
-        draftLocation: location,
-        clearMessage: true,
-      ),
-    );
-
-    try {
-      await bleProvisioningService.sendCustomData(
-        identity,
-        endpoint: 'custom-location',
-        payload: _buildLocationPayload(location),
-      );
-
-      await _persistBindingAfterLocationAttempt(
-        emit,
-        location: location,
-        deviceLocationStatus: HubDeviceLocationStatus.configured,
-      );
-    } on BleProvisioningException catch (error) {
-      await _persistBindingAfterLocationAttempt(
-        emit,
-        location: location,
-        deviceLocationStatus: HubDeviceLocationStatus.deviceSyncPending,
-        deviceLocationLastError: error.message,
       );
     }
   }
@@ -509,7 +396,6 @@ class HubProvisioningBloc
     final result = await upsertSpaceHubBinding(
       binding.copyWith(
         clearLastError: true,
-        clearDeviceLocationLastError: !binding.isDeviceLocationSyncPending,
       ),
     );
     result.fold(
@@ -528,9 +414,7 @@ class HubProvisioningBloc
           didMutateBinding: true,
           message: savedBinding.isSyncPending
               ? 'Sync is still pending. You can retry again later without resending Wi-Fi credentials.'
-              : savedBinding.isDeviceLocationSyncPending
-                  ? 'Backend sync succeeded. Device location still needs to be sent to the ESP32.'
-                  : 'Hub binding synced successfully.',
+              : 'Hub binding synced successfully.',
         ),
       ),
     );
@@ -590,67 +474,21 @@ class HubProvisioningBloc
     );
   }
 
-  Future<void> _captureCurrentLocation(
-    Emitter<HubProvisioningState> emit,
-  ) async {
-    try {
-      final location = await locationCaptureService.captureCurrentLocation();
-      emit(
-        state.copyWith(
-          phase: HubProvisioningPhase.reviewLocation,
-          draftLocation: location,
-          message: location.city.trim().isEmpty ||
-                  location.displayCity == 'Unknown'
-              ? 'Current coordinates were captured. Update the city if needed before saving to the ESP32.'
-              : null,
-          clearMessage: location.city.trim().isNotEmpty &&
-              location.displayCity != 'Unknown',
-        ),
-      );
-    } on LocationCaptureException catch (error) {
-      emit(
-        state.copyWith(
-          phase: HubProvisioningPhase.reviewLocation,
-          message: error.message,
-        ),
-      );
-    } catch (_) {
-      emit(
-        state.copyWith(
-          phase: HubProvisioningPhase.reviewLocation,
-          message:
-              'Unable to capture the current location automatically. You can still enter the location manually.',
-        ),
-      );
-    }
-  }
-
-  Future<void> _persistBindingAfterLocationAttempt(
+  Future<void> _persistBindingAfterWifiProvisioning(
     Emitter<HubProvisioningState> emit, {
-    required HubDeviceLocation location,
-    required HubDeviceLocationStatus deviceLocationStatus,
-    String? deviceLocationLastError,
+    required BleCandidate candidate,
+    required String wifiSsid,
   }) async {
-    final didConfigureWifiNow =
-        state.flowMode == HubProvisioningFlowMode.fullProvisioning;
-    final bindingToSave = _buildBindingForLocationAttempt(
-      location: location,
-      deviceLocationStatus: deviceLocationStatus,
-      deviceLocationLastError: deviceLocationLastError,
+    final bindingToSave = _buildBindingToSave(
+      candidate: candidate,
+      wifiSsid: wifiSsid,
     );
-    if (bindingToSave == null) {
-      emit(
-        state.copyWith(
-          phase: HubProvisioningPhase.failure,
-          flowMode: HubProvisioningFlowMode.fullProvisioning,
-          message:
-              'The hub configuration completed locally, but the binding payload could not be assembled.',
-        ),
-      );
-      return;
-    }
-
-    emit(state.copyWith(phase: HubProvisioningPhase.syncing));
+    emit(
+      state.copyWith(
+        phase: HubProvisioningPhase.syncing,
+        pendingWifiSsid: wifiSsid,
+      ),
+    );
     final bindingResult = await upsertSpaceHubBinding(bindingToSave);
     bindingResult.fold(
       (failure) => emit(
@@ -669,93 +507,60 @@ class HubProvisioningBloc
           clearSelectedBleCandidate: true,
           clearResolvedIdentity: true,
           clearPendingWifiSsid: true,
-          draftLocation: binding.deviceLocation ?? location,
+          clearDraftLocation: true,
           bleCandidates: const <BleCandidate>[],
           wifiCandidates: const <WifiCandidate>[],
-          message: _buildSuccessMessage(
-            binding,
-            didConfigureWifiNow: didConfigureWifiNow,
-          ),
+          message: _buildSuccessMessage(binding),
         ),
       ),
     );
   }
 
-  SpaceHubBinding? _buildBindingForLocationAttempt({
-    required HubDeviceLocation location,
-    required HubDeviceLocationStatus deviceLocationStatus,
-    String? deviceLocationLastError,
+  SpaceHubBinding _buildBindingToSave({
+    required BleCandidate candidate,
+    required String wifiSsid,
   }) {
-    final locationUpdatedAtUtc = DateTime.now().toUtc();
     final existingBinding = state.binding;
     if (existingBinding != null) {
       return existingBinding.copyWith(
+        bleDeviceName: candidate.bleDeviceName,
+        wifiSsid: wifiSsid.trim(),
+        provisionedAtUtc: DateTime.now().toUtc(),
         status: SpaceHubBindingStatus.bound,
-        deviceLocation: location,
-        deviceLocationStatus: deviceLocationStatus,
-        deviceLocationLastError: deviceLocationLastError,
-        clearDeviceLocationLastError: deviceLocationLastError == null,
-        deviceLocationUpdatedAtUtc: locationUpdatedAtUtc,
+        clearLastError: true,
+        clearDeviceLocation: true,
+        deviceLocationStatus: HubDeviceLocationStatus.unknown,
+        clearDeviceLocationLastError: true,
+        clearDeviceLocationUpdatedAtUtc: true,
       );
     }
 
-    final candidate = state.selectedBleCandidate;
-    final wifiSsid = state.pendingWifiSsid?.trim();
-    if (candidate == null || wifiSsid == null || wifiSsid.isEmpty) {
-      return null;
+    if (wifiSsid.trim().isEmpty) {
+      throw StateError('Missing selected BLE device or Wi-Fi SSID');
     }
 
     return SpaceHubBinding(
       spaceId: state.spaceId,
       bleDeviceName: candidate.bleDeviceName,
-      wifiSsid: wifiSsid,
+      wifiSsid: wifiSsid.trim(),
       provisioningMethod: HubProvisioningMethod.blePrefixScan,
       provisionedAtUtc: DateTime.now().toUtc(),
       status: SpaceHubBindingStatus.bound,
-      deviceLocation: location,
-      deviceLocationStatus: deviceLocationStatus,
-      deviceLocationLastError: deviceLocationLastError,
-      deviceLocationUpdatedAtUtc: locationUpdatedAtUtc,
+      deviceLocationStatus: HubDeviceLocationStatus.unknown,
     );
-  }
-
-  Uint8List _buildLocationPayload(HubDeviceLocation location) {
-    final payload = jsonEncode(
-      {
-        'lat': location.latitude,
-        'lon': location.longitude,
-        'city': location.displayCity,
-      },
-    );
-    return Uint8List.fromList(utf8.encode(payload));
   }
 
   String? _buildExistingBindingMessage(SpaceHubBinding binding) {
-    if (binding.isDeviceLocationSyncPending) {
-      return 'Hub binding is ready, but device location still needs to be sent to the ESP32.';
-    }
     if (binding.isSyncPending) {
       return 'Provisioned locally. Backend sync is still pending.';
     }
     return null;
   }
 
-  String _buildSuccessMessage(
-    SpaceHubBinding binding, {
-    required bool didConfigureWifiNow,
-  }) {
-    if (binding.isDeviceLocationSyncPending) {
-      return didConfigureWifiNow
-          ? 'Wi-Fi was sent to the ESP32. Device location still needs to be synced.'
-          : 'Device location was saved locally and still needs to be sent to the ESP32.';
-    }
+  String _buildSuccessMessage(SpaceHubBinding binding) {
     if (binding.isSyncPending) {
-      return didConfigureWifiNow
-          ? 'ESP32 configured with Wi-Fi and device location. Backend sync is still pending.'
-          : 'Device location updated on the ESP32. Backend sync is still pending.';
+      return 'ESP32 configured with Wi-Fi. Backend sync is still pending.';
     }
-    return didConfigureWifiNow
-        ? 'ESP32 configured with Wi-Fi and device location for this space.'
-        : 'Device location updated successfully.';
+    return 'ESP32 configured with Wi-Fi for this space.';
   }
 }

@@ -202,22 +202,11 @@ void main() {
         WifiCandidate(ssid: 'Store WiFi'),
       ];
       bleProvisioningService.provisionResult = true;
-      bleProvisioningService.customDataResult =
-          Uint8List.fromList(const [123, 125]);
       repository.upsertResults = [
         Right(
-          _binding(
-            status: SpaceHubBindingStatus.syncPending,
-            deviceLocationStatus: HubDeviceLocationStatus.configured,
-            deviceLocation: _sampleLocation(),
-          ),
+          _binding(status: SpaceHubBindingStatus.syncPending),
         ),
-        Right(
-          _binding(
-            deviceLocationStatus: HubDeviceLocationStatus.configured,
-            deviceLocation: _sampleLocation(),
-          ),
-        ),
+        Right(_binding()),
       ];
 
       bloc.add(
@@ -254,22 +243,9 @@ void main() {
           passphrase: 'super-secret',
         ),
       );
-      await _waitUntil(
-        () => bloc.state.phase == HubProvisioningPhase.reviewLocation,
-      );
-
-      bloc.add(
-        const HubProvisioningLocationSubmitted(
-          city: 'Ho Chi Minh City',
-          latitude: 10.7769,
-          longitude: 106.7009,
-          source: HubDeviceLocationSource.phoneGps,
-        ),
-      );
       await _waitUntil(() => bloc.state.phase == HubProvisioningPhase.success);
 
       expect(bloc.state.binding?.isSyncPending, isTrue);
-      expect(bloc.state.binding?.isDeviceLocationConfigured, isTrue);
       expect(repository.upsertCallCount, 1);
 
       bloc.add(const HubProvisioningRetrySyncRequested());
@@ -281,218 +257,8 @@ void main() {
 
       expect(repository.upsertCallCount, 2);
       expect(bleProvisioningService.provisionCallCount, 1);
-      expect(bleProvisioningService.sendCustomDataCallCount, 1);
+      expect(bleProvisioningService.sendCustomDataCallCount, 0);
       expect(bloc.state.message, contains('synced successfully'));
-    });
-
-    test('marks location sync pending when custom BLE send fails', () async {
-      blePermissionService.checkStatusValue =
-          BlePermissionRequirementStatus.granted;
-      bleProvisioningService.scanDevicesResult = const [
-        BleCandidate(bleDeviceName: 'CAM-ESP32-01'),
-      ];
-      bleProvisioningService.scanWifiResult = const [
-        WifiCandidate(ssid: 'Store WiFi'),
-      ];
-      bleProvisioningService.provisionResult = true;
-      bleProvisioningService.sendCustomDataError =
-          BleProvisioningException('custom location failed');
-
-      bloc.add(
-        const HubProvisioningStarted(
-          spaceId: 'space-1',
-          storeId: 'store-1',
-          spaceName: 'Main Hall',
-        ),
-      );
-      await _waitUntil(
-        () => bloc.state.phase == HubProvisioningPhase.selectDevice,
-      );
-
-      bloc.add(
-        const HubProvisioningBleCandidateSelected(
-          BleCandidate(bleDeviceName: 'CAM-ESP32-01'),
-        ),
-      );
-      await _waitUntil(
-        () => bloc.state.phase == HubProvisioningPhase.enterSecretCode,
-      );
-      bloc.add(
-        const HubProvisioningSecretCodeSubmitted(
-          secretCode: 'secret-123',
-        ),
-      );
-      await _waitUntil(
-        () => bloc.state.phase == HubProvisioningPhase.enterWifi,
-      );
-
-      bloc.add(
-        const HubProvisioningCredentialsSubmitted(
-          ssid: 'Store WiFi',
-          passphrase: 'super-secret',
-        ),
-      );
-      await _waitUntil(
-        () => bloc.state.phase == HubProvisioningPhase.reviewLocation,
-      );
-
-      bloc.add(
-        const HubProvisioningLocationSubmitted(
-          city: 'Ho Chi Minh City',
-          latitude: 10.7769,
-          longitude: 106.7009,
-          source: HubDeviceLocationSource.phoneGps,
-        ),
-      );
-      await _waitUntil(() => bloc.state.phase == HubProvisioningPhase.success);
-
-      expect(bloc.state.binding?.isDeviceLocationSyncPending, isTrue);
-      expect(
-        bloc.state.binding?.deviceLocationLastError,
-        'custom location failed',
-      );
-      expect(bloc.state.message, contains('still needs to be synced'));
-      expect(bleProvisioningService.provisionCallCount, 1);
-      expect(bleProvisioningService.sendCustomDataCallCount, 1);
-    });
-
-    test('update-location-only flow skips Wi-Fi entry', () async {
-      repository.bindingForGet = _binding(
-        deviceLocationStatus: HubDeviceLocationStatus.configured,
-        deviceLocation: _sampleLocation(),
-      );
-      blePermissionService.checkStatusValue =
-          BlePermissionRequirementStatus.granted;
-      bleProvisioningService.scanDevicesResult = const [
-        BleCandidate(bleDeviceName: 'CAM-ESP32-02'),
-      ];
-      bleProvisioningService.customDataResult =
-          Uint8List.fromList(const [123, 125]);
-
-      bloc.add(
-        const HubProvisioningStarted(
-          spaceId: 'space-1',
-          storeId: 'store-1',
-          spaceName: 'Main Hall',
-        ),
-      );
-      await _waitUntil(() => bloc.state.phase == HubProvisioningPhase.success);
-
-      bloc.add(
-        const HubProvisioningBleScanRequested(
-          flowMode: HubProvisioningFlowMode.updateLocationOnly,
-        ),
-      );
-      await _waitUntil(
-        () => bloc.state.phase == HubProvisioningPhase.selectDevice,
-      );
-
-      bloc.add(
-        const HubProvisioningBleCandidateSelected(
-          BleCandidate(bleDeviceName: 'CAM-ESP32-02'),
-        ),
-      );
-      await _waitUntil(
-        () => bloc.state.phase == HubProvisioningPhase.enterSecretCode,
-      );
-      bloc.add(
-        const HubProvisioningSecretCodeSubmitted(
-          secretCode: 'secret-123',
-        ),
-      );
-      await _waitUntil(
-        () => bloc.state.phase == HubProvisioningPhase.reviewLocation,
-      );
-
-      expect(bloc.state.isUpdateLocationOnly, isTrue);
-      expect(bloc.state.pendingWifiSsid, isNull);
-      expect(bleProvisioningService.provisionCallCount, 0);
-
-      bloc.add(
-        const HubProvisioningLocationSubmitted(
-          city: 'Da Nang',
-          latitude: 16.0471,
-          longitude: 108.2062,
-          source: HubDeviceLocationSource.phoneGps,
-        ),
-      );
-      await _waitUntil(() => bloc.state.phase == HubProvisioningPhase.success);
-
-      expect(bleProvisioningService.provisionCallCount, 0);
-      expect(bleProvisioningService.sendCustomDataCallCount, 1);
-      expect(bloc.state.binding?.deviceLocation?.city, 'Da Nang');
-    });
-
-    test('allows manual location submit when GPS capture fails', () async {
-      repository.bindingForGet = _binding();
-      blePermissionService.checkStatusValue =
-          BlePermissionRequirementStatus.granted;
-      bleProvisioningService.scanDevicesResult = const [
-        BleCandidate(bleDeviceName: 'CAM-ESP32-01'),
-      ];
-      bleProvisioningService.customDataResult =
-          Uint8List.fromList(const [123, 125]);
-      locationCaptureService.captureError = const LocationCaptureException(
-        'Location permission was denied. Try again, or open app settings if Android no longer shows the location prompt.',
-      );
-
-      bloc.add(
-        const HubProvisioningStarted(
-          spaceId: 'space-1',
-          storeId: 'store-1',
-          spaceName: 'Main Hall',
-        ),
-      );
-      await _waitUntil(() => bloc.state.phase == HubProvisioningPhase.success);
-
-      bloc.add(
-        const HubProvisioningBleScanRequested(
-          flowMode: HubProvisioningFlowMode.updateLocationOnly,
-        ),
-      );
-      await _waitUntil(
-        () => bloc.state.phase == HubProvisioningPhase.selectDevice,
-      );
-
-      bloc.add(
-        const HubProvisioningBleCandidateSelected(
-          BleCandidate(bleDeviceName: 'CAM-ESP32-01'),
-        ),
-      );
-      await _waitUntil(
-        () => bloc.state.phase == HubProvisioningPhase.enterSecretCode,
-      );
-      bloc.add(
-        const HubProvisioningSecretCodeSubmitted(
-          secretCode: 'secret-123',
-        ),
-      );
-      await _waitUntil(
-        () =>
-            bloc.state.phase == HubProvisioningPhase.reviewLocation &&
-            bloc.state.message != null,
-      );
-
-      expect(
-        bloc.state.message,
-        contains('Android no longer shows the location prompt'),
-      );
-
-      bloc.add(
-        const HubProvisioningLocationSubmitted(
-          city: 'Manual City',
-          latitude: 11.1111,
-          longitude: 106.2222,
-          source: HubDeviceLocationSource.manual,
-        ),
-      );
-      await _waitUntil(() => bloc.state.phase == HubProvisioningPhase.success);
-
-      expect(bloc.state.binding?.deviceLocation?.city, 'Manual City');
-      expect(
-        bloc.state.binding?.deviceLocation?.source,
-        HubDeviceLocationSource.manual,
-      );
     });
 
     test('can delete an existing hub binding', () async {
