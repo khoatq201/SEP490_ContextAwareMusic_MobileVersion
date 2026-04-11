@@ -169,6 +169,7 @@ class _LoginPageV2State extends State<LoginPageV2>
                                   ),
                                 ],
                                 TextFormField(
+                                  key: const ValueKey('login_email_field'),
                                   controller: _emailController,
                                   validator: _validateEmail,
                                   keyboardType: TextInputType.emailAddress,
@@ -181,6 +182,7 @@ class _LoginPageV2State extends State<LoginPageV2>
                                 ),
                                 const SizedBox(height: AppDimensions.spacingMd),
                                 TextFormField(
+                                  key: const ValueKey('login_password_field'),
                                   controller: _passwordController,
                                   validator: _validatePassword,
                                   obscureText: !_isPasswordVisible,
@@ -260,6 +262,7 @@ class _LoginPageV2State extends State<LoginPageV2>
                                   height: AppDimensions.buttonHeightLg,
                                   width: double.infinity,
                                   child: ElevatedButton.icon(
+                                    key: const ValueKey('login_submit_button'),
                                     onPressed: isLoading ? null : _handleLogin,
                                     icon: isLoading
                                         ? const SizedBox.shrink()

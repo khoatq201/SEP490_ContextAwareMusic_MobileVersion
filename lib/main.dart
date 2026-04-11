@@ -28,6 +28,8 @@ import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/bloc/auth_event.dart';
 import 'features/auth/presentation/bloc/auth_state.dart';
 
+const bool _isE2ERun = bool.fromEnvironment('E2E_RUN', defaultValue: false);
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -78,37 +80,45 @@ class _MyAppState extends State<MyApp> {
     final hasDeviceRefreshToken =
         localStorage.getDeviceRefreshToken()?.isNotEmpty ?? false;
     final isDeviceTokenExpired = localStorage.isDeviceTokenExpired();
-    debugPrint(
-      '[PlaybackAuthDebug] hydratePlaybackDeviceSession '
-      'hasDeviceSession=${currentSession != null} '
-      'activeSessionMode=${localStorage.getActiveSessionMode() ?? 'null'} '
-      'deviceTokenExpired=$isDeviceTokenExpired '
-      'hasDeviceRefreshToken=$hasDeviceRefreshToken',
-    );
+    if (!_isE2ERun) {
+      debugPrint(
+        '[PlaybackAuthDebug] hydratePlaybackDeviceSession '
+        'hasDeviceSession=${currentSession != null} '
+        'activeSessionMode=${localStorage.getActiveSessionMode() ?? 'null'} '
+        'deviceTokenExpired=$isDeviceTokenExpired '
+        'hasDeviceRefreshToken=$hasDeviceRefreshToken',
+      );
+    }
     if (currentSession == null) {
       return null;
     }
 
     if (isDeviceTokenExpired && !hasDeviceRefreshToken) {
-      debugPrint(
-        '[PlaybackAuthDebug] playback-device session cannot be restored '
-        'because access token is expired and no refresh token is stored.',
-      );
+      if (!_isE2ERun) {
+        debugPrint(
+          '[PlaybackAuthDebug] playback-device session cannot be restored '
+          'because access token is expired and no refresh token is stored.',
+        );
+      }
       return null;
     }
 
     if (isDeviceTokenExpired && hasDeviceRefreshToken) {
-      debugPrint(
-        '[PlaybackAuthDebug] playback-device access token is expired; '
-        'attempting immediate device refresh during startup.',
-      );
+      if (!_isE2ERun) {
+        debugPrint(
+          '[PlaybackAuthDebug] playback-device access token is expired; '
+          'attempting immediate device refresh during startup.',
+        );
+      }
       final refreshedToken =
           await sl<DioClient>().refreshPlaybackDeviceTokenIfNeeded(force: true);
       if (refreshedToken == null || refreshedToken.isEmpty) {
-        debugPrint(
-          '[PlaybackAuthDebug] startup device refresh failed; '
-          'playback-device session cannot be restored.',
-        );
+        if (!_isE2ERun) {
+          debugPrint(
+            '[PlaybackAuthDebug] startup device refresh failed; '
+            'playback-device session cannot be restored.',
+          );
+        }
         return null;
       }
     }
@@ -163,10 +173,12 @@ class _MyAppState extends State<MyApp> {
     const currentBaseUrl = ApiConstants.baseUrl;
 
     if (previousBaseUrl != null && previousBaseUrl != currentBaseUrl) {
-      debugPrint(
-        'API base URL changed: $previousBaseUrl -> $currentBaseUrl. '
-        'Clearing auth token, cached user and cookies.',
-      );
+      if (!_isE2ERun) {
+        debugPrint(
+          'API base URL changed: $previousBaseUrl -> $currentBaseUrl. '
+          'Clearing auth token, cached user and cookies.',
+        );
+      }
       await localStorage.clearAllAuthSessions();
       await dioClient.clearCookies();
     }
@@ -180,11 +192,14 @@ class _MyAppState extends State<MyApp> {
   Future<void> _initializeApp() async {
     WidgetsFlutterBinding.ensureInitialized();
 
-    debugPrint('API base URL: ${ApiConstants.baseUrl}');
-    debugPrint('useMockData: ${ApiConstants.useMockData}');
+    if (!_isE2ERun) {
+      debugPrint('API base URL: ${ApiConstants.baseUrl}');
+      debugPrint('useMockData: ${ApiConstants.useMockData}');
+    }
 
     // Initialize dependency injection
     await initializeDependencies();
+    AppRouter.resetRouter();
 
     // Initialize local storage
     final localStorage = sl<LocalStorageService>();
@@ -205,13 +220,15 @@ class _MyAppState extends State<MyApp> {
     final hasRestorablePlaybackSession = deviceSession != null &&
         deviceSession['storeId'] != null &&
         deviceSession['spaceId'] != null;
-    debugPrint(
-      '[PlaybackAuthDebug] initializeApp '
-      'hasRestorablePlaybackSession=$hasRestorablePlaybackSession '
-      'activeSessionMode=${localStorage.getActiveSessionMode() ?? 'null'} '
-      'hasDeviceAccessToken=${(localStorage.getDeviceAccessToken()?.isNotEmpty ?? false)} '
-      'hasDeviceRefreshToken=${(localStorage.getDeviceRefreshToken()?.isNotEmpty ?? false)}',
-    );
+    if (!_isE2ERun) {
+      debugPrint(
+        '[PlaybackAuthDebug] initializeApp '
+        'hasRestorablePlaybackSession=$hasRestorablePlaybackSession '
+        'activeSessionMode=${localStorage.getActiveSessionMode() ?? 'null'} '
+        'hasDeviceAccessToken=${(localStorage.getDeviceAccessToken()?.isNotEmpty ?? false)} '
+        'hasDeviceRefreshToken=${(localStorage.getDeviceRefreshToken()?.isNotEmpty ?? false)}',
+      );
+    }
 
     if (hasRestorablePlaybackSession) {
       await localStorage.saveDeviceSession(deviceSession);
@@ -269,10 +286,14 @@ class _MyAppState extends State<MyApp> {
           clientId: 'cams_manager_${DateTime.now().millisecondsSinceEpoch}',
         );
       } catch (e) {
-        debugPrint('MQTT connection failed: $e');
+        if (!_isE2ERun) {
+          debugPrint('MQTT connection failed: $e');
+        }
       }
     } else {
-      debugPrint('🎨 Demo mode enabled — MQTT connection skipped');
+      if (!_isE2ERun) {
+        debugPrint('🎨 Demo mode enabled — MQTT connection skipped');
+      }
     }
 
     setState(() {

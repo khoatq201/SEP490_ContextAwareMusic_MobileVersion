@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:audio_service/audio_service.dart';
+import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart' as ja;
 
 import '../../features/space_control/domain/entities/track.dart';
@@ -86,17 +87,28 @@ class PlaybackNotificationService {
     required AudioPlayerService audioPlayerService,
   }) async {
     final handler = CamsAudioHandler();
-    await AudioService.init(
-      builder: () => handler,
-      config: const AudioServiceConfig(
-        androidNotificationChannelId: _channelId,
-        androidNotificationChannelName: _channelName,
-        androidNotificationChannelDescription: _channelDescription,
-        androidNotificationOngoing: true,
-        androidResumeOnClick: true,
-        preloadArtwork: false,
-      ),
-    );
+    try {
+      // Check if AudioService is already running
+      final isRunning = AudioService.running;
+      if (!isRunning) {
+        await AudioService.init(
+          builder: () => handler,
+          config: const AudioServiceConfig(
+            androidNotificationChannelId: _channelId,
+            androidNotificationChannelName: _channelName,
+            androidNotificationChannelDescription: _channelDescription,
+            androidNotificationOngoing: true,
+            androidResumeOnClick: true,
+            preloadArtwork: false,
+          ),
+        );
+      }
+    } catch (e) {
+      // AudioService already initialized or errored, continue gracefully
+      debugPrint(
+        'AudioService.init already initialized or errored; continuing: $e',
+      );
+    }
     return PlaybackNotificationService._(
       handler: handler,
       audioPlayerService: audioPlayerService,

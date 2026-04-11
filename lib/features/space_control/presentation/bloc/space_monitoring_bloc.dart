@@ -52,38 +52,50 @@ class SpaceMonitoringBloc
           space: space,
         ));
 
-        // Subscribe to real-time updates
-        _spaceStatusSubscription = subscribeToSpaceStatus(
-          event.storeId,
-          event.spaceId,
-        ).listen(
-          (space) => add(SpaceStatusUpdated(space)),
-          onError: (error) {
-            emit(state.copyWith(
-              status: SpaceMonitoringStatus.error,
-              errorMessage: ErrorMapper.sanitizeMessageForDisplay(
-                '$error',
-                kind: FailureKind.mqtt,
-              ),
-            ));
-          },
-        );
+        try {
+          _spaceStatusSubscription?.cancel();
+          _sensorDataSubscription?.cancel();
 
-        _sensorDataSubscription = subscribeToSensorData(
-          event.storeId,
-          event.spaceId,
-        ).listen(
-          (sensorData) => add(SensorDataUpdated(sensorData)),
-          onError: (error) {
-            emit(state.copyWith(
-              status: SpaceMonitoringStatus.error,
-              errorMessage: ErrorMapper.sanitizeMessageForDisplay(
-                '$error',
-                kind: FailureKind.mqtt,
-              ),
-            ));
-          },
-        );
+          _spaceStatusSubscription = subscribeToSpaceStatus(
+            event.storeId,
+            event.spaceId,
+          ).listen(
+            (space) => add(SpaceStatusUpdated(space)),
+            onError: (error) {
+              emit(state.copyWith(
+                status: SpaceMonitoringStatus.error,
+                errorMessage: ErrorMapper.sanitizeMessageForDisplay(
+                  '$error',
+                  kind: FailureKind.mqtt,
+                ),
+              ));
+            },
+          );
+
+          _sensorDataSubscription = subscribeToSensorData(
+            event.storeId,
+            event.spaceId,
+          ).listen(
+            (sensorData) => add(SensorDataUpdated(sensorData)),
+            onError: (error) {
+              emit(state.copyWith(
+                status: SpaceMonitoringStatus.error,
+                errorMessage: ErrorMapper.sanitizeMessageForDisplay(
+                  '$error',
+                  kind: FailureKind.mqtt,
+                ),
+              ));
+            },
+          );
+        } catch (error) {
+          emit(state.copyWith(
+            status: SpaceMonitoringStatus.error,
+            errorMessage: ErrorMapper.sanitizeMessageForDisplay(
+              '$error',
+              kind: FailureKind.mqtt,
+            ),
+          ));
+        }
       },
     );
   }

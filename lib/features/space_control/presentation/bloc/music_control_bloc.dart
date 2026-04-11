@@ -27,25 +27,32 @@ class MusicControlBloc extends Bloc<MusicControlEvent, MusicControlState> {
     on<MusicPlayerStateUpdated>(_onMusicPlayerStateUpdated);
   }
 
-  void _onStartMusicMonitoring(
+  Future<void> _onStartMusicMonitoring(
     StartMusicMonitoring event,
     Emitter<MusicControlState> emit,
-  ) {
+  ) async {
     emit(state.copyWith(status: MusicControlStatus.loading));
+    await _musicPlayerStateSubscription?.cancel();
 
-    // Subscribe to music player state updates
-    _musicPlayerStateSubscription = subscribeMusicPlayerState(
-      event.storeId,
-      event.spaceId,
-    ).listen(
-      (playerState) => add(MusicPlayerStateUpdated(playerState)),
-      onError: (error) {
-        emit(state.copyWith(
-          status: MusicControlStatus.error,
-          errorMessage: 'Failed to receive music player updates: $error',
-        ));
-      },
-    );
+    try {
+      _musicPlayerStateSubscription = subscribeMusicPlayerState(
+        event.storeId,
+        event.spaceId,
+      ).listen(
+        (playerState) => add(MusicPlayerStateUpdated(playerState)),
+        onError: (error) {
+          emit(state.copyWith(
+            status: MusicControlStatus.error,
+            errorMessage: 'Failed to receive music player updates: $error',
+          ));
+        },
+      );
+    } catch (error) {
+      emit(state.copyWith(
+        status: MusicControlStatus.error,
+        errorMessage: 'Failed to start music monitoring: $error',
+      ));
+    }
   }
 
   void _onStopMusicMonitoring(

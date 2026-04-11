@@ -10,6 +10,8 @@ import '../constants/api_constants.dart';
 import '../error/exceptions.dart';
 import '../services/local_storage_service.dart';
 
+const bool _isE2ERun = bool.fromEnvironment('E2E_RUN', defaultValue: false);
+
 class DioClient {
   late final Dio _dio;
   final LocalStorageService _localStorage;
@@ -130,6 +132,9 @@ class DioClient {
   }
 
   void _log(String message) {
+    if (_isE2ERun) {
+      return;
+    }
     developer.log(message, name: 'DioClient');
     debugPrint('[DioClient] $message');
   }
@@ -152,11 +157,13 @@ class DioClient {
       ),
     );
 
-    _dio.interceptors.add(LogInterceptor(
-      requestBody: true,
-      responseBody: true,
-      error: true,
-    ));
+    if (!_isE2ERun) {
+      _dio.interceptors.add(LogInterceptor(
+        requestBody: true,
+        responseBody: true,
+        error: true,
+      ));
+    }
 
     // NOTE: CookieManager is added in initCookieJar() and MUST be called
     // before the auth interceptor below so cookies are attached first.

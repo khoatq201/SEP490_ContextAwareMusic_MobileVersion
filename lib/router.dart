@@ -90,7 +90,7 @@ class AppRouter {
     return '/store-selection';
   }
 
-  static GoRouter router = GoRouter(
+  static GoRouter buildRouter() => GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/welcome',
     refreshListenable: GoRouterRefreshStream([
@@ -542,4 +542,15 @@ class AppRouter {
       ),
     ),
   );
+
+  static GoRouter router = buildRouter();
+
+  static void resetRouter() {
+    try {
+      router.dispose();
+    } catch (_) {
+      // Ignore repeated disposal while E2E cold-restart logic swaps app trees.
+    }
+    router = buildRouter();
+  }
 }

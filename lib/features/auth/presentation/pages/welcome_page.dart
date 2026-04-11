@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -413,6 +412,7 @@ class _BottomActions extends StatelessWidget {
             width: double.infinity,
             height: 54,
             child: OutlinedButton(
+              key: const ValueKey('welcome_login_button'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.white,
                 side: const BorderSide(color: Colors.white38, width: 1.5),

@@ -46,14 +46,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       rememberMe: event.rememberMe,
     );
 
-    result.fold(
-      (failure) => emit(
-        state.copyWith(
-          status: AuthStatus.error,
-          failure: failure,
-          clearFeedback: true,
-        ),
-      ),
+    await result.fold<Future<void>>(
+      (failure) async {
+        emit(
+          state.copyWith(
+            status: AuthStatus.error,
+            failure: failure,
+            clearFeedback: true,
+          ),
+        );
+      },
       (user) async {
         sessionCubit.setRoleFromString(user.role);
         await sessionCubit.restoreSelectionFromStorage();
