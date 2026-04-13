@@ -23,12 +23,14 @@ class EspProvisioningIdentity extends Equatable {
   const EspProvisioningIdentity({
     required this.blePrefix,
     required this.bleDeviceName,
+    required this.deviceId,
     required this.proofOfPossession,
     required this.source,
   });
 
   final String blePrefix;
   final String bleDeviceName;
+  final String deviceId;
   final String proofOfPossession;
   final EspProvisioningIdentitySource source;
 
@@ -36,6 +38,7 @@ class EspProvisioningIdentity extends Equatable {
   List<Object?> get props => [
         blePrefix,
         bleDeviceName,
+        deviceId,
         proofOfPossession,
         source,
       ];

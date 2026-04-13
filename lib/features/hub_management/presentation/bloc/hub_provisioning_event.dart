@@ -80,6 +80,25 @@ class HubProvisioningCredentialsSubmitted extends HubProvisioningEvent {
   List<Object?> get props => [ssid, passphrase];
 }
 
+class HubProvisioningNvrConfigSubmitted extends HubProvisioningEvent {
+  const HubProvisioningNvrConfigSubmitted({
+    required this.mode,
+    required this.username,
+    required this.password,
+    required this.host,
+    required this.port,
+  });
+
+  final String mode;
+  final String username;
+  final String password;
+  final String host;
+  final int port;
+
+  @override
+  List<Object?> get props => [mode, username, password, host, port];
+}
+
 class HubProvisioningLocationSubmitted extends HubProvisioningEvent {
   const HubProvisioningLocationSubmitted({
     required this.city,

@@ -50,14 +50,28 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
   final _secretCodeController = TextEditingController();
   final _ssidController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _nvrUsernameController = TextEditingController(text: 'admin');
+  final _nvrPasswordController = TextEditingController();
+  final _nvrHostController = TextEditingController();
+  final _nvrPortController = TextEditingController(text: '80');
   final _secretCodeFocusNode = FocusNode();
   final _ssidFocusNode = FocusNode();
   final _passwordFocusNode = FocusNode();
+  final _nvrUsernameFocusNode = FocusNode();
+  final _nvrPasswordFocusNode = FocusNode();
+  final _nvrHostFocusNode = FocusNode();
+  final _nvrPortFocusNode = FocusNode();
   final _secretCodeFieldKey = GlobalKey();
   final _ssidFieldKey = GlobalKey();
   final _passwordFieldKey = GlobalKey();
+  final _nvrUsernameFieldKey = GlobalKey();
+  final _nvrPasswordFieldKey = GlobalKey();
+  final _nvrHostFieldKey = GlobalKey();
+  final _nvrPortFieldKey = GlobalKey();
   bool _obscureSecretCode = true;
   bool _obscurePassword = true;
+  bool _obscureNvrPassword = true;
+  bool _useDirectNvr = false;
 
   @override
   void initState() {
@@ -65,6 +79,10 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
     _attachFocusListener(_secretCodeFocusNode, _secretCodeFieldKey);
     _attachFocusListener(_ssidFocusNode, _ssidFieldKey);
     _attachFocusListener(_passwordFocusNode, _passwordFieldKey);
+    _attachFocusListener(_nvrUsernameFocusNode, _nvrUsernameFieldKey);
+    _attachFocusListener(_nvrPasswordFocusNode, _nvrPasswordFieldKey);
+    _attachFocusListener(_nvrHostFocusNode, _nvrHostFieldKey);
+    _attachFocusListener(_nvrPortFocusNode, _nvrPortFieldKey);
   }
 
   @override
@@ -73,9 +91,17 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
     _secretCodeController.dispose();
     _ssidController.dispose();
     _passwordController.dispose();
+    _nvrUsernameController.dispose();
+    _nvrPasswordController.dispose();
+    _nvrHostController.dispose();
+    _nvrPortController.dispose();
     _secretCodeFocusNode.dispose();
     _ssidFocusNode.dispose();
     _passwordFocusNode.dispose();
+    _nvrUsernameFocusNode.dispose();
+    _nvrPasswordFocusNode.dispose();
+    _nvrHostFocusNode.dispose();
+    _nvrPortFocusNode.dispose();
     super.dispose();
   }
 
@@ -324,6 +350,43 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
                 'The ESP32 is attempting to join ${_ssidController.text.trim().isEmpty ? 'the selected Wi-Fi network' : _ssidController.text.trim()}.',
           ),
         ];
+      case HubProvisioningPhase.enterNvrConfig:
+        return [
+          _NvrConfigCard(
+            palette: palette,
+            deviceId: state.resolvedIdentity?.deviceId,
+            useDirectNvr: _useDirectNvr,
+            usernameFieldKey: _nvrUsernameFieldKey,
+            usernameController: _nvrUsernameController,
+            usernameFocusNode: _nvrUsernameFocusNode,
+            passwordFieldKey: _nvrPasswordFieldKey,
+            passwordController: _nvrPasswordController,
+            passwordFocusNode: _nvrPasswordFocusNode,
+            hostFieldKey: _nvrHostFieldKey,
+            hostController: _nvrHostController,
+            hostFocusNode: _nvrHostFocusNode,
+            portFieldKey: _nvrPortFieldKey,
+            portController: _nvrPortController,
+            portFocusNode: _nvrPortFocusNode,
+            obscurePassword: _obscureNvrPassword,
+            onToggleDirectMode: (value) {
+              setState(() => _useDirectNvr = value);
+            },
+            onTogglePassword: () {
+              setState(() => _obscureNvrPassword = !_obscureNvrPassword);
+            },
+            onSubmit: () => _submitNvrConfig(context),
+          ),
+        ];
+      case HubProvisioningPhase.sendingNvrConfig:
+        return [
+          _ProgressCard(
+            palette: palette,
+            title: 'Sending NVR and Wi-Fi configuration',
+            subtitle:
+                'The ESP32 is storing the NVR source and Wi-Fi credentials, then joining the selected network.',
+          ),
+        ];
       case HubProvisioningPhase.resolvingLocation:
       case HubProvisioningPhase.reviewLocation:
       case HubProvisioningPhase.sendingLocation:
@@ -440,9 +503,15 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
     _secretCodeController.clear();
     _ssidController.clear();
     _passwordController.clear();
+    _nvrUsernameController.text = 'admin';
+    _nvrPasswordController.clear();
+    _nvrHostController.clear();
+    _nvrPortController.text = '80';
     setState(() {
       _obscureSecretCode = true;
       _obscurePassword = true;
+      _obscureNvrPassword = true;
+      _useDirectNvr = false;
     });
     context.read<HubProvisioningBloc>().add(
           HubProvisioningBleScanRequested(
@@ -455,9 +524,15 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
     _secretCodeController.clear();
     _ssidController.clear();
     _passwordController.clear();
+    _nvrUsernameController.text = 'admin';
+    _nvrPasswordController.clear();
+    _nvrHostController.clear();
+    _nvrPortController.text = '80';
     setState(() {
       _obscureSecretCode = true;
       _obscurePassword = true;
+      _obscureNvrPassword = true;
+      _useDirectNvr = false;
     });
     context
         .read<HubProvisioningBloc>()
@@ -527,6 +602,42 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
           HubProvisioningCredentialsSubmitted(
             ssid: ssid,
             passphrase: passphrase,
+          ),
+        );
+  }
+
+  void _submitNvrConfig(BuildContext context) {
+    FocusScope.of(context).unfocus();
+    final username = _nvrUsernameController.text.trim();
+    final password = _nvrPasswordController.text;
+    final host = _nvrHostController.text.trim();
+    final port = int.tryParse(_nvrPortController.text.trim()) ?? 80;
+
+    if (username.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Enter the NVR username and password.'),
+        ),
+      );
+      return;
+    }
+
+    if (_useDirectNvr && host.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Enter the direct NVR host or forwarded router IP.'),
+        ),
+      );
+      return;
+    }
+
+    context.read<HubProvisioningBloc>().add(
+          HubProvisioningNvrConfigSubmitted(
+            mode: _useDirectNvr ? 'direct' : 'auto',
+            username: username,
+            password: password,
+            host: host,
+            port: port,
           ),
         );
   }
@@ -1155,6 +1266,184 @@ class _WifiFormCard extends StatelessWidget {
             onPressed: onSubmit,
             icon: const Icon(Icons.wifi_tethering_rounded, size: 18),
             label: const Text('Send credentials to ESP32'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NvrConfigCard extends StatelessWidget {
+  const _NvrConfigCard({
+    required this.palette,
+    required this.deviceId,
+    required this.useDirectNvr,
+    required this.usernameFieldKey,
+    required this.usernameController,
+    required this.usernameFocusNode,
+    required this.passwordFieldKey,
+    required this.passwordController,
+    required this.passwordFocusNode,
+    required this.hostFieldKey,
+    required this.hostController,
+    required this.hostFocusNode,
+    required this.portFieldKey,
+    required this.portController,
+    required this.portFocusNode,
+    required this.obscurePassword,
+    required this.onToggleDirectMode,
+    required this.onTogglePassword,
+    required this.onSubmit,
+  });
+
+  final _HubPalette palette;
+  final String? deviceId;
+  final bool useDirectNvr;
+  final GlobalKey usernameFieldKey;
+  final TextEditingController usernameController;
+  final FocusNode usernameFocusNode;
+  final GlobalKey passwordFieldKey;
+  final TextEditingController passwordController;
+  final FocusNode passwordFocusNode;
+  final GlobalKey hostFieldKey;
+  final TextEditingController hostController;
+  final FocusNode hostFocusNode;
+  final GlobalKey portFieldKey;
+  final TextEditingController portController;
+  final FocusNode portFocusNode;
+  final bool obscurePassword;
+  final ValueChanged<bool> onToggleDirectMode;
+  final VoidCallback onTogglePassword;
+  final VoidCallback onSubmit;
+
+  @override
+  Widget build(BuildContext context) {
+    return _SectionCard(
+      palette: palette,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Configure NVR source',
+            style: GoogleFonts.poppins(
+              color: palette.textPrimary,
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Device ID: ${deviceId ?? 'unknown'}',
+            style: GoogleFonts.inter(
+              color: palette.textMuted,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            useDirectNvr
+                ? 'Development mode uses the host and port you enter, for example a forwarded NVR endpoint.'
+                : 'Auto mode lets the ESP32 discover an IMOU/Dahua NVR on the same LAN after Wi-Fi connects.',
+            style: GoogleFonts.inter(
+              color: palette.textMuted,
+              fontSize: 13,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SwitchListTile.adaptive(
+            contentPadding: EdgeInsets.zero,
+            value: useDirectNvr,
+            title: Text(
+              'Development direct NVR mode',
+              style: GoogleFonts.inter(
+                color: palette.textPrimary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            subtitle: Text(
+              'Use this for external forwarding, e.g. 192.168.1.237:18080.',
+              style: GoogleFonts.inter(color: palette.textMuted, fontSize: 12),
+            ),
+            onChanged: onToggleDirectMode,
+          ),
+          const SizedBox(height: 12),
+          Container(
+            key: usernameFieldKey,
+            child: TextField(
+              controller: usernameController,
+              focusNode: usernameFocusNode,
+              textInputAction: TextInputAction.next,
+              scrollPadding: const EdgeInsets.only(bottom: 180),
+              decoration: const InputDecoration(
+                labelText: 'NVR username',
+                hintText: 'admin or least-privilege user',
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            key: passwordFieldKey,
+            child: TextField(
+              controller: passwordController,
+              focusNode: passwordFocusNode,
+              obscureText: obscurePassword,
+              textInputAction:
+                  useDirectNvr ? TextInputAction.next : TextInputAction.done,
+              scrollPadding: const EdgeInsets.only(bottom: 180),
+              onSubmitted: (_) {
+                if (!useDirectNvr) onSubmit();
+              },
+              decoration: InputDecoration(
+                labelText: 'NVR password',
+                suffixIcon: IconButton(
+                  onPressed: onTogglePassword,
+                  icon: Icon(
+                    obscurePassword ? LucideIcons.eye : LucideIcons.eyeOff,
+                    size: 18,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          if (useDirectNvr) ...[
+            const SizedBox(height: 12),
+            Container(
+              key: hostFieldKey,
+              child: TextField(
+                controller: hostController,
+                focusNode: hostFocusNode,
+                textInputAction: TextInputAction.next,
+                scrollPadding: const EdgeInsets.only(bottom: 180),
+                decoration: const InputDecoration(
+                  labelText: 'Direct NVR host',
+                  hintText: '192.168.2.23 or 192.168.1.237',
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              key: portFieldKey,
+              child: TextField(
+                controller: portController,
+                focusNode: portFocusNode,
+                keyboardType: TextInputType.number,
+                textInputAction: TextInputAction.done,
+                scrollPadding: const EdgeInsets.only(bottom: 180),
+                onSubmitted: (_) => onSubmit(),
+                decoration: const InputDecoration(
+                  labelText: 'Direct NVR port',
+                  hintText: '80 or forwarded port such as 18080',
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            onPressed: onSubmit,
+            icon: const Icon(LucideIcons.serverCog, size: 18),
+            label: const Text('Save NVR config to ESP32'),
           ),
         ],
       ),
