@@ -27,8 +27,18 @@ class PrefixProvisioningIdentityResolver
     return EspProvisioningIdentity(
       blePrefix: blePrefix,
       bleDeviceName: candidate.bleDeviceName,
+      deviceId: _deriveDeviceId(candidate.bleDeviceName),
       proofOfPossession: proofOfPossession.trim(),
       source: EspProvisioningIdentitySource.blePrefixScan,
     );
+  }
+
+  String _deriveDeviceId(String bleDeviceName) {
+    final normalized = bleDeviceName
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
+        .replaceAll(RegExp(r'^_+|_+$'), '');
+    return normalized.isEmpty ? 'cams_esp32' : normalized;
   }
 }
