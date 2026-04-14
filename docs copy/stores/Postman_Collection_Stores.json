@@ -1,0 +1,678 @@
+{
+  "info": {
+    "name": "Log.AI-CAMS — Stores",
+    "_postman_id": "a2b3c4d5-e6f7-8901-bcde-f01234567891",
+    "description": "Store Management API — CMS (React & Flutter)\n\nBase URL: {{baseUrl}}\nAuth: Bearer {{accessToken}}\n\nEndpoints:\n  GET    /api/stores\n  GET    /api/stores/{id}\n  POST   /api/stores\n  PUT    /api/stores/{id}\n  DELETE /api/stores/{id}\n  PUT    /api/stores/{id}/toggle-status\n\nSee: docs/stores/API_Stores.md",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://localhost:7001",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Stores",
+      "item": [
+        {
+          "name": "Get Stores (Paginated)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "vi-VN",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/stores?page=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "stores"],
+              "query": [
+                { "key": "page", "value": "1", "description": "Current page (default: 1)" },
+                { "key": "pageSize", "value": "10", "description": "Items per page (default: 10, max: 500)" },
+                { "key": "search", "value": "", "description": "Full-text search on name, address, city, district, contactNumber", "disabled": true },
+                { "key": "sortBy", "value": "", "description": "Field to sort by", "disabled": true },
+                { "key": "isAscending", "value": "true", "description": "Sort direction (default: true = ascending)", "disabled": true },
+                { "key": "status", "value": "1", "description": "Filter by status: 0=Inactive, 1=Active, 2=Pending, 3=Rejected", "disabled": true },
+                { "key": "brandId", "value": "", "description": "⚠️ SystemAdmin only — BrandManager value is always overridden by handler", "disabled": true },
+                { "key": "city", "value": "", "description": "Filter by city", "disabled": true },
+                { "key": "district", "value": "", "description": "Filter by district", "disabled": true },
+                { "key": "createdFrom", "value": "", "description": "Filter stores created from this date (ISO 8601)", "disabled": true },
+                { "key": "createdTo", "value": "", "description": "Filter stores created up to this date (ISO 8601)", "disabled": true },
+                { "key": "storeManagerName", "value": "", "description": "Partial match on Store Manager first/last name or email", "disabled": true }
+              ]
+            },
+            "description": "Get paginated list of stores.\n\nAuth: SystemAdmin ✅, BrandManager (own brand) ✅, StoreManager ❌\n\nNotes:\n- BrandManager: brandId query param is always overridden to their own brand.\n- SystemAdmin: can pass brandId to filter by a specific brand."
+          },
+          "response": [
+            {
+              "name": "200 OK — Store list",
+              "originalRequest": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "url": {
+                  "raw": "{{baseUrl}}/api/stores?page=1&pageSize=10",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "stores"],
+                  "query": [
+                    { "key": "page", "value": "1" },
+                    { "key": "pageSize", "value": "10" }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"currentPage\": 1,\n  \"pageSize\": 10,\n  \"totalItems\": 2,\n  \"totalPages\": 1,\n  \"hasPrevious\": false,\n  \"hasNext\": false,\n  \"items\": [\n    {\n      \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n      \"brandId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n      \"name\": \"DeerCoffee Nguyễn Huệ\",\n      \"contactNumber\": \"0281234567\",\n      \"address\": \"123 Nguyễn Huệ, Phường Bến Nghé\",\n      \"city\": \"Hồ Chí Minh\",\n      \"district\": \"Quận 1\",\n      \"createdAt\": \"2025-01-15T08:00:00Z\",\n      \"updatedAt\": \"2025-02-01T10:30:00Z\",\n      \"createdBy\": \"00000000-0000-0000-0000-000000000001\",\n      \"updatedBy\": null,\n      \"status\": 1\n    },\n    {\n      \"id\": \"b2c3d4e5-f6a7-8901-bcde-f01234567891\",\n      \"brandId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n      \"name\": \"DeerCoffee Lê Lợi\",\n      \"contactNumber\": \"+84289876543\",\n      \"address\": \"456 Lê Lợi, Phường Bến Thành\",\n      \"city\": \"Hồ Chí Minh\",\n      \"district\": \"Quận 1\",\n      \"createdAt\": \"2025-01-20T09:00:00Z\",\n      \"updatedAt\": null,\n      \"createdBy\": \"00000000-0000-0000-0000-000000000001\",\n      \"updatedBy\": null,\n      \"status\": 1\n    }\n  ],\n  \"isSuccess\": true,\n  \"message\": \"Store retrieved successfully\",\n  \"errors\": null,\n  \"errorCode\": null\n}"
+            },
+            {
+              "name": "401 Unauthorized",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/stores", "host": ["{{baseUrl}}"], "path": ["api", "stores"] }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Unauthorized\",\n  \"errors\": null,\n  \"errorCode\": \"Unauthorized\"\n}"
+            },
+            {
+              "name": "403 Forbidden (StoreManager not allowed)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "url": { "raw": "{{baseUrl}}/api/stores", "host": ["{{baseUrl}}"], "path": ["api", "stores"] }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"You do not have permission to access this resource\",\n  \"errors\": null,\n  \"errorCode\": \"Forbidden\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Store By Id",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/stores/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "stores", ":id"],
+              "variable": [
+                { "key": "id", "value": "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "description": "Store ID (Guid)" }
+              ]
+            },
+            "description": "Get store detail by ID.\n\nAuth: SystemAdmin ✅, BrandManager (own brand) ✅, StoreManager (own store only) ✅\n\nAuthorization:\n- BrandManager: 403 if store.BrandId != user.BrandId\n- StoreManager: 403 if store.Id != user.StoreId"
+          },
+          "response": [
+            {
+              "name": "200 OK — Store detail",
+              "originalRequest": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "url": {
+                  "raw": "{{baseUrl}}/api/stores/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "stores", ":id"],
+                  "variable": [{ "key": "id", "value": "a1b2c3d4-e5f6-7890-abcd-ef1234567890" }]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Store retrieved successfully\",\n  \"data\": {\n    \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    \"brandId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"name\": \"DeerCoffee Nguyễn Huệ\",\n    \"contactNumber\": \"0281234567\",\n    \"address\": \"123 Nguyễn Huệ, Phường Bến Nghé\",\n    \"city\": \"Hồ Chí Minh\",\n    \"district\": \"Quận 1\",\n    \"latitude\": 10.7769,\n    \"longitude\": 106.7009,\n    \"mapUrl\": \"https://maps.google.com/?q=10.7769,106.7009\",\n    \"timeZone\": \"Asia/Ho_Chi_Minh\",\n    \"areaSquareMeters\": 120.5,\n    \"maxCapacity\": 80,\n    \"firestoreCollectionPath\": \"stores/a1b2c3d4-e5f6-7890-abcd-ef1234567890/sensors\",\n    \"currentMood\": null,\n    \"lastMoodUpdateAt\": null,\n    \"createdAt\": \"2025-01-15T08:00:00Z\",\n    \"updatedAt\": \"2025-02-01T10:30:00Z\",\n    \"createdBy\": \"00000000-0000-0000-0000-000000000001\",\n    \"updatedBy\": \"00000000-0000-0000-0000-000000000002\",\n    \"status\": 1\n  },\n  \"errors\": null,\n  \"errorCode\": null\n}"
+            },
+            {
+              "name": "401 Unauthorized",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/stores/:id", "host": ["{{baseUrl}}"], "path": ["api", "stores", ":id"], "variable": [{ "key": "id", "value": "a1b2c3d4-e5f6-7890-abcd-ef1234567890" }] }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Unauthorized\",\n  \"errors\": null,\n  \"errorCode\": \"Unauthorized\"\n}"
+            },
+            {
+              "name": "403 Forbidden (wrong brand or store)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "url": { "raw": "{{baseUrl}}/api/stores/:id", "host": ["{{baseUrl}}"], "path": ["api", "stores", ":id"], "variable": [{ "key": "id", "value": "a1b2c3d4-e5f6-7890-abcd-ef1234567890" }] }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"You do not have permission to access this resource\",\n  \"errors\": null,\n  \"errorCode\": \"Forbidden\"\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "url": { "raw": "{{baseUrl}}/api/stores/:id", "host": ["{{baseUrl}}"], "path": ["api", "stores", ":id"], "variable": [{ "key": "id", "value": "00000000-0000-0000-0000-000000000000" }] }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Store not found\",\n  \"data\": null,\n  \"errors\": null,\n  \"errorCode\": \"NotFound\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Store",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"DeerCoffee Điện Biên Phủ\",\n  \"address\": \"789 Điện Biên Phủ, Phường 25\",\n  \"city\": \"Hồ Chí Minh\",\n  \"district\": \"Bình Thạnh\",\n  \"contactNumber\": \"+84283456789\",\n  \"latitude\": 10.8028,\n  \"longitude\": 106.7154,\n  \"mapUrl\": \"https://maps.google.com/?q=10.8028,106.7154\",\n  \"timeZone\": \"Asia/Ho_Chi_Minh\",\n  \"areaSquareMeters\": 95.0,\n  \"maxCapacity\": 60\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/stores",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "stores"]
+            },
+            "description": "Create a new store.\n\nAuth: BrandManager only ✅ (SystemAdmin ❌, StoreManager ❌)\n\nNotes:\n- brandId is NOT in the request body — always inferred from the authenticated BrandManager's session.\n- firestoreCollectionPath is NOT in the request body — managed by AI/IoT pipeline (read-only).\n- name must be unique within the brand.\n- contactNumber (if provided) must be unique within the brand.\n- timeZone: IANA timezone ID (e.g. \"Asia/Ho_Chi_Minh\")."
+          },
+          "response": [
+            {
+              "name": "200 OK — Store created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+                  { "key": "Content-Type", "value": "application/json", "type": "text" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"DeerCoffee Điện Biên Phủ\",\n  \"address\": \"789 Điện Biên Phủ, Phường 25\",\n  \"city\": \"Hồ Chí Minh\",\n  \"district\": \"Bình Thạnh\",\n  \"contactNumber\": \"+84283456789\",\n  \"latitude\": 10.8028,\n  \"longitude\": 106.7154,\n  \"mapUrl\": \"https://maps.google.com/?q=10.8028,106.7154\",\n  \"timeZone\": \"Asia/Ho_Chi_Minh\",\n  \"areaSquareMeters\": 95.0,\n  \"maxCapacity\": 60\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": { "raw": "{{baseUrl}}/api/stores", "host": ["{{baseUrl}}"], "path": ["api", "stores"] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Store created successfully\",\n  \"errors\": null,\n  \"errorCode\": null\n}"
+            },
+            {
+              "name": "400 Validation Failed — name required",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+                  { "key": "Content-Type", "value": "application/json", "type": "text" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"address\": \"789 Điện Biên Phủ\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": { "raw": "{{baseUrl}}/api/stores", "host": ["{{baseUrl}}"], "path": ["api", "stores"] }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Validation failed\",\n  \"errors\": [\n    {\n      \"field\": \"Name\",\n      \"message\": \"Store Name is required\"\n    }\n  ],\n  \"errorCode\": \"ValidationFailed\"\n}"
+            },
+            {
+              "name": "400 Validation Failed — invalid phone",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+                  { "key": "Content-Type", "value": "application/json", "type": "text" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"DeerCoffee Test\",\n  \"contactNumber\": \"not-a-phone\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": { "raw": "{{baseUrl}}/api/stores", "host": ["{{baseUrl}}"], "path": ["api", "stores"] }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Validation failed\",\n  \"errors\": [\n    {\n      \"field\": \"ContactNumber\",\n      \"message\": \"Store Contact Number is not a valid phone number\"\n    }\n  ],\n  \"errorCode\": \"ValidationFailed\"\n}"
+            },
+            {
+              "name": "400 Validation Failed — invalid timezone",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+                  { "key": "Content-Type", "value": "application/json", "type": "text" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"DeerCoffee Test\",\n  \"timeZone\": \"InvalidTimezone/Fake\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": { "raw": "{{baseUrl}}/api/stores", "host": ["{{baseUrl}}"], "path": ["api", "stores"] }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Validation failed\",\n  \"errors\": [\n    {\n      \"field\": \"TimeZone\",\n      \"message\": \"Store Time Zone is not a valid timezone\"\n    }\n  ],\n  \"errorCode\": \"ValidationFailed\"\n}"
+            },
+            {
+              "name": "401 Unauthorized",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json", "type": "text" }],
+                "body": { "mode": "raw", "raw": "{\"name\": \"Test\"}", "options": { "raw": { "language": "json" } } },
+                "url": { "raw": "{{baseUrl}}/api/stores", "host": ["{{baseUrl}}"], "path": ["api", "stores"] }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Unauthorized\",\n  \"errors\": null,\n  \"errorCode\": \"Unauthorized\"\n}"
+            },
+            {
+              "name": "403 Forbidden (not BrandManager)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+                  { "key": "Content-Type", "value": "application/json", "type": "text" }
+                ],
+                "body": { "mode": "raw", "raw": "{\"name\": \"Test\"}", "options": { "raw": { "language": "json" } } },
+                "url": { "raw": "{{baseUrl}}/api/stores", "host": ["{{baseUrl}}"], "path": ["api", "stores"] }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"You do not have permission to access this resource\",\n  \"errors\": null,\n  \"errorCode\": \"Forbidden\"\n}"
+            },
+            {
+              "name": "404 Not Found (Brand of BrandManager not found)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+                  { "key": "Content-Type", "value": "application/json", "type": "text" }
+                ],
+                "body": { "mode": "raw", "raw": "{\"name\": \"Test\"}", "options": { "raw": { "language": "json" } } },
+                "url": { "raw": "{{baseUrl}}/api/stores", "host": ["{{baseUrl}}"], "path": ["api", "stores"] }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Brand not found\",\n  \"errors\": null,\n  \"errorCode\": \"NotFound\"\n}"
+            },
+            {
+              "name": "422 Business Rule — Name already exists",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+                  { "key": "Content-Type", "value": "application/json", "type": "text" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"DeerCoffee Nguyễn Huệ\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": { "raw": "{{baseUrl}}/api/stores", "host": ["{{baseUrl}}"], "path": ["api", "stores"] }
+              },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Store already exists with Name\",\n  \"errors\": null,\n  \"errorCode\": \"BusinessRuleViolation\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Store",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"address\": \"789B Điện Biên Phủ, Phường 25\",\n  \"maxCapacity\": 75\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/stores/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "stores", ":id"],
+              "variable": [
+                { "key": "id", "value": "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "description": "Store ID (Guid)" }
+              ]
+            },
+            "description": "Update store fields (partial update / patch semantics).\n\nAuth: BrandManager only ✅ (SystemAdmin ❌, StoreManager ❌)\n\nNotes:\n- Only send fields you want to change. Omitted/null fields keep their current value.\n- brandId is NOT in the request body — handler enforces brand ownership.\n- Name and ContactNumber uniqueness is checked only if their values actually change (self-collision excluded).\n- timeZone: IANA timezone ID if updating (e.g. \"Asia/Ho_Chi_Minh\")."
+          },
+          "response": [
+            {
+              "name": "200 OK — Store updated",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+                  { "key": "Content-Type", "value": "application/json", "type": "text" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"address\": \"789B Điện Biên Phủ, Phường 25\",\n  \"maxCapacity\": 75\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": { "raw": "{{baseUrl}}/api/stores/:id", "host": ["{{baseUrl}}"], "path": ["api", "stores", ":id"], "variable": [{ "key": "id", "value": "a1b2c3d4-e5f6-7890-abcd-ef1234567890" }] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Store updated successfully\",\n  \"errors\": null,\n  \"errorCode\": null\n}"
+            },
+            {
+              "name": "400 Validation Failed",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+                  { "key": "Content-Type", "value": "application/json", "type": "text" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"latitude\": 999\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": { "raw": "{{baseUrl}}/api/stores/:id", "host": ["{{baseUrl}}"], "path": ["api", "stores", ":id"], "variable": [{ "key": "id", "value": "a1b2c3d4-e5f6-7890-abcd-ef1234567890" }] }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Validation failed\",\n  \"errors\": [\n    {\n      \"field\": \"Latitude\",\n      \"message\": \"Store Latitude must be between -90 and 90\"\n    }\n  ],\n  \"errorCode\": \"ValidationFailed\"\n}"
+            },
+            {
+              "name": "401 Unauthorized",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [{ "key": "Content-Type", "value": "application/json", "type": "text" }],
+                "body": { "mode": "raw", "raw": "{}", "options": { "raw": { "language": "json" } } },
+                "url": { "raw": "{{baseUrl}}/api/stores/:id", "host": ["{{baseUrl}}"], "path": ["api", "stores", ":id"], "variable": [{ "key": "id", "value": "a1b2c3d4-e5f6-7890-abcd-ef1234567890" }] }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Unauthorized\",\n  \"errors\": null,\n  \"errorCode\": \"Unauthorized\"\n}"
+            },
+            {
+              "name": "403 Forbidden (wrong brand)",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+                  { "key": "Content-Type", "value": "application/json", "type": "text" }
+                ],
+                "body": { "mode": "raw", "raw": "{}", "options": { "raw": { "language": "json" } } },
+                "url": { "raw": "{{baseUrl}}/api/stores/:id", "host": ["{{baseUrl}}"], "path": ["api", "stores", ":id"], "variable": [{ "key": "id", "value": "a1b2c3d4-e5f6-7890-abcd-ef1234567890" }] }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"You do not have permission to access this resource\",\n  \"errors\": null,\n  \"errorCode\": \"Forbidden\"\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+                  { "key": "Content-Type", "value": "application/json", "type": "text" }
+                ],
+                "body": { "mode": "raw", "raw": "{}", "options": { "raw": { "language": "json" } } },
+                "url": { "raw": "{{baseUrl}}/api/stores/:id", "host": ["{{baseUrl}}"], "path": ["api", "stores", ":id"], "variable": [{ "key": "id", "value": "00000000-0000-0000-0000-000000000000" }] }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Store not found\",\n  \"errors\": null,\n  \"errorCode\": \"NotFound\"\n}"
+            },
+            {
+              "name": "422 Business Rule — ContactNumber conflict",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+                  { "key": "Content-Type", "value": "application/json", "type": "text" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"contactNumber\": \"+84289876543\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": { "raw": "{{baseUrl}}/api/stores/:id", "host": ["{{baseUrl}}"], "path": ["api", "stores", ":id"], "variable": [{ "key": "id", "value": "a1b2c3d4-e5f6-7890-abcd-ef1234567890" }] }
+              },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Store already exists with ContactNumber\",\n  \"errors\": null,\n  \"errorCode\": \"BusinessRuleViolation\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Store",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/stores/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "stores", ":id"],
+              "variable": [
+                { "key": "id", "value": "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "description": "Store ID (Guid)" }
+              ]
+            },
+            "description": "Soft-delete a store.\n\nAuth: BrandManager only ✅ (SystemAdmin ❌, StoreManager ❌)\n\nBusiness Rules:\n- FAILS (422) if any user is assigned to this store (user.StoreId == store.Id).\n- FAILS (422) if any active Space belongs to this store (Space.StoreId == store.Id && Space.Status == Active)."
+          },
+          "response": [
+            {
+              "name": "200 OK — Store deleted",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "url": { "raw": "{{baseUrl}}/api/stores/:id", "host": ["{{baseUrl}}"], "path": ["api", "stores", ":id"], "variable": [{ "key": "id", "value": "a1b2c3d4-e5f6-7890-abcd-ef1234567890" }] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Store deleted successfully\",\n  \"errors\": null,\n  \"errorCode\": null\n}"
+            },
+            {
+              "name": "401 Unauthorized",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/stores/:id", "host": ["{{baseUrl}}"], "path": ["api", "stores", ":id"], "variable": [{ "key": "id", "value": "a1b2c3d4-e5f6-7890-abcd-ef1234567890" }] }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Unauthorized\",\n  \"errors\": null,\n  \"errorCode\": \"Unauthorized\"\n}"
+            },
+            {
+              "name": "403 Forbidden (wrong brand)",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "url": { "raw": "{{baseUrl}}/api/stores/:id", "host": ["{{baseUrl}}"], "path": ["api", "stores", ":id"], "variable": [{ "key": "id", "value": "a1b2c3d4-e5f6-7890-abcd-ef1234567890" }] }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"You do not have permission to access this resource\",\n  \"errors\": null,\n  \"errorCode\": \"Forbidden\"\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "url": { "raw": "{{baseUrl}}/api/stores/:id", "host": ["{{baseUrl}}"], "path": ["api", "stores", ":id"], "variable": [{ "key": "id", "value": "00000000-0000-0000-0000-000000000000" }] }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Store not found\",\n  \"errors\": null,\n  \"errorCode\": \"NotFound\"\n}"
+            },
+            {
+              "name": "422 Business Rule — Has assigned users",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "url": { "raw": "{{baseUrl}}/api/stores/:id", "host": ["{{baseUrl}}"], "path": ["api", "stores", ":id"], "variable": [{ "key": "id", "value": "a1b2c3d4-e5f6-7890-abcd-ef1234567890" }] }
+              },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Cannot delete store with assigned users\",\n  \"errors\": null,\n  \"errorCode\": \"BusinessRuleViolation\"\n}"
+            },
+            {
+              "name": "422 Business Rule — Has active spaces",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "url": { "raw": "{{baseUrl}}/api/stores/:id", "host": ["{{baseUrl}}"], "path": ["api", "stores", ":id"], "variable": [{ "key": "id", "value": "a1b2c3d4-e5f6-7890-abcd-ef1234567890" }] }
+              },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Cannot delete store with active spaces\",\n  \"errors\": null,\n  \"errorCode\": \"BusinessRuleViolation\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Toggle Store Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }
+            ],
+            "body": {
+              "mode": "none"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/stores/:id/toggle-status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "stores", ":id", "toggle-status"],
+              "variable": [
+                { "key": "id", "value": "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "description": "Store ID (Guid)" }
+              ]
+            },
+            "description": "Toggle store status: Active ↔ Inactive.\n\nAuth: BrandManager only ✅ (SystemAdmin ❌, StoreManager ❌)\n\nNotes:\n- No request body required.\n- BrandManager can only toggle stores belonging to their own brand.\n- Active → Inactive, Inactive → Active."
+          },
+          "response": [
+            {
+              "name": "200 OK — Status toggled",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "url": { "raw": "{{baseUrl}}/api/stores/:id/toggle-status", "host": ["{{baseUrl}}"], "path": ["api", "stores", ":id", "toggle-status"], "variable": [{ "key": "id", "value": "a1b2c3d4-e5f6-7890-abcd-ef1234567890" }] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Store status has been updated successfully\",\n  \"errors\": null,\n  \"errorCode\": null\n}"
+            },
+            {
+              "name": "401 Unauthorized",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/stores/:id/toggle-status", "host": ["{{baseUrl}}"], "path": ["api", "stores", ":id", "toggle-status"], "variable": [{ "key": "id", "value": "a1b2c3d4-e5f6-7890-abcd-ef1234567890" }] }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Unauthorized\",\n  \"errors\": null,\n  \"errorCode\": \"Unauthorized\"\n}"
+            },
+            {
+              "name": "403 Forbidden (wrong brand)",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "url": { "raw": "{{baseUrl}}/api/stores/:id/toggle-status", "host": ["{{baseUrl}}"], "path": ["api", "stores", ":id", "toggle-status"], "variable": [{ "key": "id", "value": "a1b2c3d4-e5f6-7890-abcd-ef1234567890" }] }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"You do not have permission to access this resource\",\n  \"errors\": null,\n  \"errorCode\": \"Forbidden\"\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "url": { "raw": "{{baseUrl}}/api/stores/:id/toggle-status", "host": ["{{baseUrl}}"], "path": ["api", "stores", ":id", "toggle-status"], "variable": [{ "key": "id", "value": "00000000-0000-0000-0000-000000000000" }] }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Store not found\",\n  \"errors\": null,\n  \"errorCode\": \"NotFound\"\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -38,7 +38,7 @@ class CamsOverrideMood extends CamsPlaybackEvent {
   List<Object?> get props => [moodId, reason];
 }
 
-/// Apply a manual override using one source: tracks, playlist, or mood.
+/// Apply a manual override using zero or one source: tracks, playlist, or mood.
 class CamsApplyOverride extends CamsPlaybackEvent {
   final List<String>? trackIds;
   final String? playlistId;
@@ -65,7 +65,7 @@ class CamsApplyOverride extends CamsPlaybackEvent {
       hasPlaylist,
       hasMood,
     ].where((value) => value).length;
-    return selectedCount == 1;
+    return selectedCount <= 1;
   }
 
   @override

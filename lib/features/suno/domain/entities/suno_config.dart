@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 
 import '../../../../core/enums/ai_generation_mode_enum.dart';
 import '../../../../core/enums/store_fuzzy_override_level_enum.dart';
+import 'suno_brand_music_profile.dart';
 
 class SunoConfig extends Equatable {
   final String? brandId;
@@ -9,6 +10,7 @@ class SunoConfig extends Equatable {
   final String? sunoDefaultPlaylistId;
   final AiGenerationModeEnum? aiGenerationMode;
   final List<AiGenerationModeEnum> availableGenerationModes;
+  final SunoBrandMusicProfile? brandMusicProfile;
   final String? fuzzyProfileTemplate;
   final List<String> availableFuzzyProfileTemplates;
   final int? recommendedBpmMin;
@@ -22,6 +24,7 @@ class SunoConfig extends Equatable {
     this.sunoDefaultPlaylistId,
     this.aiGenerationMode,
     this.availableGenerationModes = const [],
+    this.brandMusicProfile,
     this.fuzzyProfileTemplate,
     this.availableFuzzyProfileTemplates = const [],
     this.recommendedBpmMin,
@@ -33,6 +36,7 @@ class SunoConfig extends Equatable {
   bool get supportsAdvancedGeneration =>
       aiGenerationMode != null ||
       availableGenerationModes.isNotEmpty ||
+      brandMusicProfile?.hasAnyData == true ||
       (fuzzyProfileTemplate?.trim().isNotEmpty ?? false) ||
       availableFuzzyProfileTemplates.isNotEmpty ||
       recommendedBpmMin != null ||
@@ -45,6 +49,7 @@ class SunoConfig extends Equatable {
     String? sunoDefaultPlaylistId,
     AiGenerationModeEnum? aiGenerationMode,
     List<AiGenerationModeEnum>? availableGenerationModes,
+    SunoBrandMusicProfile? brandMusicProfile,
     String? fuzzyProfileTemplate,
     List<String>? availableFuzzyProfileTemplates,
     int? recommendedBpmMin,
@@ -60,6 +65,7 @@ class SunoConfig extends Equatable {
       aiGenerationMode: aiGenerationMode ?? this.aiGenerationMode,
       availableGenerationModes:
           availableGenerationModes ?? this.availableGenerationModes,
+      brandMusicProfile: brandMusicProfile ?? this.brandMusicProfile,
       fuzzyProfileTemplate: fuzzyProfileTemplate ?? this.fuzzyProfileTemplate,
       availableFuzzyProfileTemplates:
           availableFuzzyProfileTemplates ?? this.availableFuzzyProfileTemplates,
@@ -77,6 +83,7 @@ class SunoConfig extends Equatable {
         sunoDefaultPlaylistId,
         aiGenerationMode,
         availableGenerationModes,
+        brandMusicProfile,
         fuzzyProfileTemplate,
         availableFuzzyProfileTemplates,
         recommendedBpmMin,

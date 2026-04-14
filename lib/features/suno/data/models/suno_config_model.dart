@@ -1,6 +1,7 @@
-import '../../domain/entities/suno_config.dart';
 import '../../../../core/enums/ai_generation_mode_enum.dart';
 import '../../../../core/enums/store_fuzzy_override_level_enum.dart';
+import '../../domain/entities/suno_config.dart';
+import 'suno_brand_music_profile_model.dart';
 
 class SunoConfigModel extends SunoConfig {
   const SunoConfigModel({
@@ -9,6 +10,7 @@ class SunoConfigModel extends SunoConfig {
     super.sunoDefaultPlaylistId,
     super.aiGenerationMode,
     super.availableGenerationModes,
+    super.brandMusicProfile,
     super.fuzzyProfileTemplate,
     super.availableFuzzyProfileTemplates,
     super.recommendedBpmMin,
@@ -18,17 +20,21 @@ class SunoConfigModel extends SunoConfig {
   });
 
   factory SunoConfigModel.fromJson(Map<String, dynamic> json) {
+    final brandMusicProfile = SunoBrandMusicProfileModel.fromRootJson(json);
+
     return SunoConfigModel(
       brandId: json['brandId']?.toString(),
       sunoPromptTemplate: json['sunoPromptTemplate']?.toString(),
       sunoDefaultPlaylistId: json['sunoDefaultPlaylistId']?.toString(),
       aiGenerationMode: _readGenerationMode(json),
       availableGenerationModes: _readGenerationModes(json),
+      brandMusicProfile: brandMusicProfile,
       fuzzyProfileTemplate: _readString(json, const [
         'fuzzyProfileTemplate',
         'defaultFuzzyProfileTemplate',
         'brandMusicProfileTemplate',
-      ]),
+      ]) ??
+          brandMusicProfile?.fuzzyProfileTemplate,
       availableFuzzyProfileTemplates: _readStringList(json, const [
         'availableFuzzyProfileTemplates',
         'fuzzyProfileTemplates',
@@ -46,7 +52,8 @@ class SunoConfigModel extends SunoConfig {
         'recommendedBpmTarget',
         'defaultRecommendedBpmTarget',
       ]),
-      fuzzyOverrideLevel: _readOverrideLevel(json),
+      fuzzyOverrideLevel:
+          _readOverrideLevel(json) ?? brandMusicProfile?.storeOverrideLevel,
     );
   }
 

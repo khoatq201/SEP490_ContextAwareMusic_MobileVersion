@@ -148,7 +148,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
   ) async {
     if (!event.hasValidSourceSelection) {
       emit(state.copyWith(
-        errorMessage: 'Select exactly one override source before applying.',
+        errorMessage: 'Select at most one override source before applying.',
       ));
       return;
     }

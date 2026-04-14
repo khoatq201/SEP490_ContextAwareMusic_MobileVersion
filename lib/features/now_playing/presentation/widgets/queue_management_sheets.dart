@@ -706,14 +706,7 @@ class _NowPlayingOverrideMusicSheetState
   }
 
   bool get _canSubmit {
-    switch (_sourceTab) {
-      case _MusicSourceTab.tracks:
-        return _selectedTrackIds.isNotEmpty;
-      case _MusicSourceTab.playlist:
-        return _selectedPlaylistId != null && _selectedPlaylistId!.isNotEmpty;
-      case _MusicSourceTab.mood:
-        return _selectedMoodId != null && _selectedMoodId!.isNotEmpty;
-    }
+    return true;
   }
 
   List<ApiTrack> get _filteredTracks {
@@ -873,7 +866,7 @@ class _NowPlayingOverrideMusicSheetState
             _SheetHeader(
               title: 'Override space music',
               subtitle:
-                  'Pick exactly one source. Tracks can contain multiple selections, but playlist and mood stay single-select.',
+                  'You can apply an override without choosing a source, or optionally pick one source only. Tracks can contain multiple selections, but playlist and mood stay single-select.',
               palette: palette,
             ),
             const SizedBox(height: 16),

@@ -85,16 +85,19 @@ class CreateSunoGenerationRequest {
 class UpdateSunoConfigRequest {
   final String? sunoPromptTemplate;
   final String? sunoDefaultPlaylistId;
+  final AiGenerationModeEnum? aiGenerationMode;
 
   const UpdateSunoConfigRequest({
     this.sunoPromptTemplate,
     this.sunoDefaultPlaylistId,
+    this.aiGenerationMode,
   });
 
   Map<String, dynamic> toJson() {
     return {
       'sunoPromptTemplate': sunoPromptTemplate,
       'sunoDefaultPlaylistId': sunoDefaultPlaylistId,
+      if (aiGenerationMode != null) 'aiGenerationMode': aiGenerationMode!.value,
     };
   }
 }

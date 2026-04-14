@@ -1,0 +1,457 @@
+{
+  "info": {
+    "name": "Log.AI-CAMS — Tracks",
+    "_postman_id": "c4d5e6f7-a8b9-0123-deff-345678901234",
+    "description": "Track Management API — CMS (React & Flutter)\n\nBase URL: {{baseUrl}}\nAuth: Bearer {{accessToken}} (user) hoặc {{deviceAccessToken}} (PlaybackDevice)\n\nEndpoints:\n  GET    /api/tracks           SA, BM, SM, PlaybackDevice ✅ (device: scope Brand của Store session)\n  GET    /api/tracks/{id}      SA, BM, SM, PlaybackDevice ✅ (device: track.BrandId = Brand session)\n  POST   /api/tracks           BrandManager only (multipart/form-data)\n  PUT    /api/tracks/{id}      BrandManager only (multipart/form-data)\n  DELETE /api/tracks/{id}      BrandManager only\n  PUT    /api/tracks/{id}/toggle-status  BrandManager only\n\nMusicProviderEnum: Custom=0, Suno=1, ...\nEntityStatusEnum: Inactive=0, Active=1, Pending=2, Rejected=3\n\nSee: docs/tracks/API_Tracks.md",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://localhost:7001",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "trackId",
+      "value": "a1b2c3d4-0001-0000-0000-000000000001",
+      "type": "string"
+    },
+    {
+      "key": "deviceAccessToken",
+      "value": "",
+      "type": "string",
+      "description": "JWT Bearer token (PlaybackDevice). Dùng cho GET tracks / GET track by id (scope Brand của Store session)."
+    }
+  ],
+  "item": [
+    {
+      "name": "Tracks",
+      "item": [
+        {
+          "name": "Get Tracks (Paginated)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "vi-VN",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tracks?page=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tracks"],
+              "query": [
+                { "key": "page", "value": "1", "description": "Current page (default: 1)" },
+                { "key": "pageSize", "value": "10", "description": "Items per page (default: 10, max: 500)" },
+                { "key": "search", "value": "", "description": "Search by title, artist, genre", "disabled": true },
+                { "key": "sortBy", "value": "", "description": "Field to sort by (e.g. title, createdAt)", "disabled": true },
+                { "key": "isAscending", "value": "false", "description": "Sort direction (default: false = newest first)", "disabled": true },
+                { "key": "status", "value": "1", "description": "Filter by status: 0=Inactive, 1=Active, 2=Pending, 3=Rejected", "disabled": true },
+                { "key": "brandId", "value": "", "description": "⚠️ BM/SM: always overridden to their own brand. SA: free filter", "disabled": true },
+                { "key": "moodId", "value": "", "description": "Filter by mood (Guid)", "disabled": true },
+                { "key": "genre", "value": "", "description": "Filter by genre (partial match)", "disabled": true },
+                { "key": "provider", "value": "", "description": "Filter by MusicProviderEnum: 0=Custom, 1=Suno, ...", "disabled": true },
+                { "key": "isAiGenerated", "value": "", "description": "true = AI-generated only; false = manual upload only", "disabled": true },
+                { "key": "createdFrom", "value": "", "description": "Filter tracks created from this date (ISO 8601)", "disabled": true },
+                { "key": "createdTo", "value": "", "description": "Filter tracks created up to this date (ISO 8601)", "disabled": true }
+              ]
+            },
+            "description": "Get paginated list of tracks.\n\nAuth: SystemAdmin ✅, BrandManager (own brand) ✅, StoreManager (own brand) ✅ (read-only), PlaybackDevice ✅ (scope = Brand của Store session; dùng Bearer {{deviceAccessToken}}).\n\nNotes:\n- BrandManager: brandId is always overridden to their own brand.\n- StoreManager: brandId is always overridden to their own brand.\n- PlaybackDevice: brandId lấy từ Store của device session.\n- SystemAdmin: can pass brandId to filter freely.\n- Default sort: newest first (isAscending = false)."
+          },
+          "response": [
+            {
+              "name": "200 OK — Track list",
+              "originalRequest": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "url": {
+                  "raw": "{{baseUrl}}/api/tracks?page=1&pageSize=10",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "tracks"],
+                  "query": [
+                    { "key": "page", "value": "1" },
+                    { "key": "pageSize", "value": "10" }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"currentPage\": 1,\n  \"pageSize\": 10,\n  \"totalItems\": 1,\n  \"totalPages\": 1,\n  \"hasPrevious\": false,\n  \"hasNext\": false,\n  \"items\": [\n    {\n      \"id\": \"a1b2c3d4-0001-0000-0000-000000000001\",\n      \"brandId\": \"b0000000-0000-0000-0000-000000000001\",\n      \"title\": \"Summer Vibes\",\n      \"artist\": \"Studio One\",\n      \"moodId\": \"m0000000-0000-0000-0000-000000000001\",\n      \"moodName\": \"Energetic\",\n      \"genre\": \"Pop\",\n      \"provider\": 0,\n      \"durationSec\": 210,\n      \"audioUrl\": \"https://cdn.example.com/tracks/audio/summer-vibes.mp3\",\n      \"coverImageUrl\": \"https://cdn.example.com/tracks/covers/summer-vibes.jpg\",\n      \"playCount\": 42,\n      \"isAiGenerated\": false,\n      \"createdAt\": \"2026-01-15T09:00:00Z\",\n      \"updatedAt\": null,\n      \"createdBy\": \"00000000-0000-0000-0000-000000000001\",\n      \"updatedBy\": null,\n      \"status\": 1\n    }\n  ],\n  \"isSuccess\": true,\n  \"message\": \"Track retrieved successfully\",\n  \"errors\": null,\n  \"errorCode\": null\n}"
+            },
+            {
+              "name": "401 Unauthorized",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/tracks", "host": ["{{baseUrl}}"], "path": ["api", "tracks"] }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Unauthorized\",\n  \"errors\": null,\n  \"errorCode\": \"Unauthorized\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Track By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tracks/{{trackId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tracks", "{{trackId}}"]
+            },
+            "description": "Get full detail of a single track including extended music characteristics.\n\nAuth: SystemAdmin ✅, BrandManager (own brand) ✅, StoreManager (own brand) ✅, PlaybackDevice ✅ (chỉ khi track.BrandId = Brand của Store session; dùng Bearer {{deviceAccessToken}}).\n\nIncludes Mood navigation for moodName.\n\nOwnership: BrandManager/StoreManager → track.BrandId must match user.BrandId → 403. PlaybackDevice → track.BrandId must match session.BrandId → 403."
+          },
+          "response": [
+            {
+              "name": "200 OK — Track detail",
+              "originalRequest": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "url": {
+                  "raw": "{{baseUrl}}/api/tracks/{{trackId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "tracks", "{{trackId}}"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Track retrieved successfully\",\n  \"data\": {\n    \"id\": \"a1b2c3d4-0001-0000-0000-000000000001\",\n    \"brandId\": \"b0000000-0000-0000-0000-000000000001\",\n    \"title\": \"Summer Vibes\",\n    \"artist\": \"Studio One\",\n    \"moodId\": \"m0000000-0000-0000-0000-000000000001\",\n    \"moodName\": \"Energetic\",\n    \"genre\": \"Pop\",\n    \"provider\": 0,\n    \"durationSec\": 210,\n    \"audioUrl\": \"https://cdn.example.com/tracks/audio/summer-vibes.mp3\",\n    \"coverImageUrl\": \"https://cdn.example.com/tracks/covers/summer-vibes.jpg\",\n    \"playCount\": 42,\n    \"isAiGenerated\": false,\n    \"bpm\": 128,\n    \"energyLevel\": 0.85,\n    \"valence\": 0.72,\n    \"sunoClipId\": null,\n    \"generationPrompt\": null,\n    \"generatedAt\": null,\n    \"lyricsUrl\": null,\n    \"lastPlayedAt\": \"2026-03-10T14:30:00Z\",\n    \"createdAt\": \"2026-01-15T09:00:00Z\",\n    \"updatedAt\": null,\n    \"createdBy\": \"00000000-0000-0000-0000-000000000001\",\n    \"updatedBy\": null,\n    \"status\": 1\n  },\n  \"errors\": null,\n  \"errorCode\": null\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "url": {
+                  "raw": "{{baseUrl}}/api/tracks/00000000-0000-0000-0000-000000000000",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "tracks", "00000000-0000-0000-0000-000000000000"]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Track not found\",\n  \"errors\": null,\n  \"errorCode\": \"NotFound\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Tracks (PlaybackDevice)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{deviceAccessToken}}", "type": "text" },
+              { "key": "Accept-Language", "value": "vi-VN", "type": "text", "disabled": true }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tracks?page=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tracks"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "10" }
+              ]
+            },
+            "description": "Cùng endpoint GET /api/tracks; dùng token PlaybackDevice (tablet đã pair). Scope = Brand của Store session; brandId bị override từ session."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Track",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "title", "value": "Summer Vibes", "type": "text", "description": "Required. Unique per brand. Max 255 chars." },
+                { "key": "artist", "value": "Studio One", "type": "text", "description": "Optional. Max 255 chars." },
+                { "key": "moodId", "value": "", "type": "text", "description": "Optional. Guid of mood.", "disabled": true },
+                { "key": "durationSec", "value": "210", "type": "text", "description": "Optional. Must be > 0.", "disabled": true },
+                { "key": "bpm", "value": "128", "type": "text", "description": "Optional. Range: 20-300.", "disabled": true },
+                { "key": "genre", "value": "Pop", "type": "text", "description": "Optional.", "disabled": true },
+                { "key": "energyLevel", "value": "0.85", "type": "text", "description": "Optional. Range: 0.0-1.0.", "disabled": true },
+                { "key": "valence", "value": "0.72", "type": "text", "description": "Optional. Range: 0.0-1.0.", "disabled": true },
+                { "key": "provider", "value": "0", "type": "text", "description": "Optional. Default: 0=Custom.", "disabled": true },
+                { "key": "audioFile", "value": "", "type": "file", "description": "Required. Formats: .mp3/.wav/.aac/.flac/.ogg/.m4a. Max 50MB." },
+                { "key": "coverImageFile", "value": "", "type": "file", "description": "Optional. Formats: .jpg/.jpeg/.png/.webp. Max 5MB.", "disabled": true }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tracks",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tracks"]
+            },
+            "description": "Create a new track (manual upload).\n\nAuth: BrandManager only ✅\n\nNotes:\n- brandId auto-set from user.BrandId (do not send in request).\n- isAiGenerated always set to false.\n- provider defaults to Custom (0) when not provided.\n- Audio upload to S3 path 'tracks/audio/' — NON-FATAL: track created with audioUrl=null if upload fails.\n- Cover upload to S3 path 'tracks/covers/' — optional, non-fatal.\n- If DB save fails: any uploaded files are deleted in background."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    { "key": "title", "value": "Summer Vibes", "type": "text" },
+                    { "key": "audioFile", "value": "", "type": "file" }
+                  ]
+                },
+                "url": { "raw": "{{baseUrl}}/api/tracks", "host": ["{{baseUrl}}"], "path": ["api", "tracks"] }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Track created successfully\",\n  \"data\": null,\n  \"errors\": null,\n  \"errorCode\": null\n}"
+            },
+            {
+              "name": "400 Validation Failed",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "body": { "mode": "formdata", "formdata": [] },
+                "url": { "raw": "{{baseUrl}}/api/tracks", "host": ["{{baseUrl}}"], "path": ["api", "tracks"] }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Validation failed\",\n  \"errors\": [\"Title is required\", \"AudioFile is required\"],\n  \"errorCode\": \"ValidationFailed\"\n}"
+            },
+            {
+              "name": "409 Duplicate Title",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "body": { "mode": "formdata", "formdata": [{ "key": "title", "value": "Summer Vibes", "type": "text" }] },
+                "url": { "raw": "{{baseUrl}}/api/tracks", "host": ["{{baseUrl}}"], "path": ["api", "tracks"] }
+              },
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Track with this title already exists\",\n  \"errors\": null,\n  \"errorCode\": \"BusinessRuleViolation\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Track",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "title", "value": "Summer Vibes (Remix)", "type": "text", "description": "Optional. If changed, uniqueness is re-checked.", "disabled": true },
+                { "key": "artist", "value": "Studio One", "type": "text", "description": "Optional. Max 255 chars.", "disabled": true },
+                { "key": "moodId", "value": "", "type": "text", "description": "Optional. Guid of mood.", "disabled": true },
+                { "key": "durationSec", "value": "195", "type": "text", "description": "Optional. Must be > 0.", "disabled": true },
+                { "key": "bpm", "value": "132", "type": "text", "description": "Optional. Range: 20-300.", "disabled": true },
+                { "key": "genre", "value": "Pop", "type": "text", "description": "Optional.", "disabled": true },
+                { "key": "energyLevel", "value": "0.90", "type": "text", "description": "Optional. Range: 0.0-1.0.", "disabled": true },
+                { "key": "valence", "value": "0.80", "type": "text", "description": "Optional. Range: 0.0-1.0.", "disabled": true },
+                { "key": "audioFile", "value": "", "type": "file", "description": "Optional. null = keep existing. Max 50MB.", "disabled": true },
+                { "key": "coverImageFile", "value": "", "type": "file", "description": "Optional. null = keep existing. Max 5MB.", "disabled": true }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tracks/{{trackId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tracks", "{{trackId}}"]
+            },
+            "description": "Update an existing track (partial update / patch semantics).\n\nAuth: BrandManager only ✅\n\nNotes:\n- Ownership check: track.BrandId must equal user.BrandId.\n- Title uniqueness only re-checked if title actually changed.\n- Old files deleted from S3 only AFTER successful DB commit.\n- New files deleted if DB save fails (old files preserved).\n- null fields are ignored (AutoMapper null-skip)."
+          },
+          "response": [
+            {
+              "name": "200 OK — Updated",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "body": { "mode": "formdata", "formdata": [{ "key": "title", "value": "Summer Vibes (Remix)", "type": "text" }] },
+                "url": {
+                  "raw": "{{baseUrl}}/api/tracks/{{trackId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "tracks", "{{trackId}}"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Track updated successfully\",\n  \"data\": null,\n  \"errors\": null,\n  \"errorCode\": null\n}"
+            },
+            {
+              "name": "403 Forbidden",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "body": { "mode": "formdata", "formdata": [] },
+                "url": {
+                  "raw": "{{baseUrl}}/api/tracks/{{trackId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "tracks", "{{trackId}}"]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"You do not have permission to access this resource\",\n  \"errors\": null,\n  \"errorCode\": \"Forbidden\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Track",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tracks/{{trackId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tracks", "{{trackId}}"]
+            },
+            "description": "Soft-delete a track.\n\nAuth: BrandManager only ✅\n\nNotes:\n- Ownership check: track.BrandId must equal user.BrandId.\n- Business rule: CANNOT delete a track that is included in one or more playlists or space queues. Remove the track from all playlists and space queues first.\n- Soft delete: IsDeleted = true (record stays in DB).\n- S3 files (audio + cover) deleted ONLY after successful DB commit."
+          },
+          "response": [
+            {
+              "name": "200 OK — Deleted",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "url": {
+                  "raw": "{{baseUrl}}/api/tracks/{{trackId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "tracks", "{{trackId}}"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Track deleted successfully\",\n  \"data\": null,\n  \"errors\": null,\n  \"errorCode\": null\n}"
+            },
+            {
+              "name": "422 Track Used in Playlist or Space Queue",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "url": {
+                  "raw": "{{baseUrl}}/api/tracks/{{trackId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "tracks", "{{trackId}}"]
+                }
+              },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Cannot delete Track because it is currently included in one or more playlists or space queues.\",\n  \"errors\": null,\n  \"errorCode\": \"BusinessRuleViolation\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Toggle Track Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tracks/{{trackId}}/toggle-status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tracks", "{{trackId}}", "toggle-status"]
+            },
+            "description": "Toggle track status: Active (1) ↔ Inactive (0).\n\nAuth: BrandManager only ✅\n\nOwnership: track.BrandId must equal user.BrandId → 403 otherwise."
+          },
+          "response": [
+            {
+              "name": "200 OK — Status toggled",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "url": {
+                  "raw": "{{baseUrl}}/api/tracks/{{trackId}}/toggle-status",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "tracks", "{{trackId}}", "toggle-status"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": true,\n  \"message\": \"Track status toggled successfully\",\n  \"data\": null,\n  \"errors\": null,\n  \"errorCode\": null\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" }],
+                "url": {
+                  "raw": "{{baseUrl}}/api/tracks/00000000-0000-0000-0000-000000000000/toggle-status",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "tracks", "00000000-0000-0000-0000-000000000000", "toggle-status"]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"isSuccess\": false,\n  \"message\": \"Track not found\",\n  \"errors\": null,\n  \"errorCode\": \"NotFound\"\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

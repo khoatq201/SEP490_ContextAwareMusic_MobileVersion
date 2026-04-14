@@ -24,9 +24,11 @@ import '../../domain/create_library_playlist_usecase.dart';
 import '../../domain/playlist_creation_guard.dart';
 import '../../../playlists/data/datasources/playlist_remote_datasource.dart';
 import '../../../suno/data/datasources/suno_remote_datasource.dart';
+import '../../../suno/domain/entities/suno_brand_music_profile.dart';
 import '../../../suno/domain/entities/suno_config.dart';
 import '../../../suno/domain/entities/suno_generation.dart';
 import '../../../suno/domain/entities/suno_generation_status.dart';
+import '../../../suno/domain/services/brand_profile_suno_prompt.dart';
 import '../../../suno/domain/services/suno_playback_orchestrator.dart';
 import '../../../suno/domain/usecases/suno_usecases.dart';
 import '../../../tracks/data/datasources/track_remote_datasource.dart';
@@ -43,6 +45,8 @@ import '../../../tracks/domain/usecases/track_usecases.dart';
 enum _LibraryFilter { playlists, tracks, blocked }
 
 enum _TrackProviderScope { all, custom, suno }
+
+enum _SunoPromptMode { manual, brandProfile }
 
 extension _LibraryFilterLabel on _LibraryFilter {
   String get label {
@@ -2780,6 +2784,7 @@ class _GenerateSunoTrackBottomSheetState
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _artistController = TextEditingController();
+  final _genreController = TextEditingController();
   final _promptController = TextEditingController();
   final _bpmMinController = TextEditingController();
   final _bpmMaxController = TextEditingController();
@@ -2788,6 +2793,8 @@ class _GenerateSunoTrackBottomSheetState
   String? _selectedPlaylistId;
   AiGenerationModeEnum? _selectedGenerationMode;
   String? _selectedFuzzyTemplate;
+  BrandProfileSunoMood _selectedProfileMood = BrandProfileSunoMood.focus;
+  _SunoPromptMode _promptMode = _SunoPromptMode.manual;
   bool _autoAddToTargetPlaylist = true;
   bool _showAdvanced = false;
 
@@ -2796,14 +2803,40 @@ class _GenerateSunoTrackBottomSheetState
     Navigator.of(context).pop();
   }
 
+  SunoBrandMusicProfile? get _brandProfile {
+    final profile = widget.initialConfig?.brandMusicProfile;
+    return hasBrandMusicProfileData(profile) ? profile : null;
+  }
+
+  bool get _hasConfiguredPromptTemplate =>
+      widget.initialConfig?.sunoPromptTemplate?.trim().isNotEmpty ?? false;
+
+  String get _generatedPrompt {
+    final profile = _brandProfile;
+    if (profile == null) return '';
+    return buildBrandProfileSunoPrompt(
+      profile: profile,
+      mood: _selectedProfileMood,
+      title: _nullable(_titleController.text),
+      genre: _nullable(_genreController.text),
+      artist: _nullable(_artistController.text),
+      sunoPromptTemplate: widget.initialConfig?.sunoPromptTemplate,
+    );
+  }
+
   @override
   void initState() {
     super.initState();
     _selectedPlaylistId = widget.initialConfig?.sunoDefaultPlaylistId;
     _autoAddToTargetPlaylist = _selectedPlaylistId != null;
-    _promptController.text = widget.initialConfig?.sunoPromptTemplate ?? '';
+    _promptController.text = '';
     _selectedGenerationMode = widget.initialConfig?.aiGenerationMode;
+    if (_selectedGenerationMode == AiGenerationModeEnum.unknown) {
+      _selectedGenerationMode = null;
+    }
     _selectedFuzzyTemplate = widget.initialConfig?.fuzzyProfileTemplate;
+    _promptMode =
+        _brandProfile != null ? _SunoPromptMode.brandProfile : _SunoPromptMode.manual;
     if (_selectedGenerationMode == null &&
         widget.initialConfig?.availableGenerationModes.isNotEmpty == true) {
       _selectedGenerationMode =
@@ -2827,6 +2860,7 @@ class _GenerateSunoTrackBottomSheetState
   void dispose() {
     _titleController.dispose();
     _artistController.dispose();
+    _genreController.dispose();
     _promptController.dispose();
     _bpmMinController.dispose();
     _bpmMaxController.dispose();
@@ -2844,8 +2878,9 @@ class _GenerateSunoTrackBottomSheetState
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textPrimary = isDark ? Colors.white : Colors.black87;
     final textMuted = isDark ? Colors.white60 : Colors.black54;
-    final hasConfiguredPromptTemplate =
-        widget.initialConfig?.sunoPromptTemplate?.trim().isNotEmpty ?? false;
+    final brandProfile = _brandProfile;
+    final hasBrandProfile = brandProfile != null;
+    final generatedPrompt = _generatedPrompt;
     final sortedMoods = [...widget.moods]
       ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
     final generationModes = _generationModeOptions;
@@ -2855,6 +2890,8 @@ class _GenerateSunoTrackBottomSheetState
         widget.initialConfig?.recommendedBpmMin != null ||
         widget.initialConfig?.recommendedBpmMax != null ||
         widget.initialConfig?.recommendedBpmTarget != null;
+    final canSubmit =
+        _promptMode != _SunoPromptMode.brandProfile || generatedPrompt.trim().isNotEmpty;
 
     return SafeArea(
       top: false,
@@ -2933,77 +2970,307 @@ class _GenerateSunoTrackBottomSheetState
                             ],
                           ),
                           const SizedBox(height: 14),
-                          TextFormField(
-                            controller: _titleController,
-                            decoration: _editorDecoration(
-                              label: 'Title (optional)',
-                              isDark: isDark,
+                          Text(
+                            'Prompt mode',
+                            style: GoogleFonts.inter(
+                              color: textPrimary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
-                          const SizedBox(height: 12),
-                          TextFormField(
-                            controller: _artistController,
-                            decoration: _editorDecoration(
-                              label: 'Artist',
-                              isDark: isDark,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          DropdownButtonFormField<String?>(
-                            initialValue: sortedMoods
-                                    .any((mood) => mood.id == _selectedMoodId)
-                                ? _selectedMoodId
-                                : null,
-                            decoration: _editorDecoration(
-                              label: 'Mood',
-                              isDark: isDark,
-                            ),
-                            items: [
-                              const DropdownMenuItem<String?>(
-                                value: null,
-                                child: Text('No mood preference'),
-                              ),
-                              ...sortedMoods.map(
-                                (mood) => DropdownMenuItem<String?>(
-                                  value: mood.id,
-                                  child: Text(mood.name),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              ChoiceChip(
+                                label: const Text('Manual prompt'),
+                                selected: _promptMode == _SunoPromptMode.manual,
+                                onSelected: (_) => setState(
+                                  () => _promptMode = _SunoPromptMode.manual,
                                 ),
                               ),
+                              ChoiceChip(
+                                label: const Text('Brand music profile'),
+                                selected:
+                                    _promptMode == _SunoPromptMode.brandProfile,
+                                onSelected: hasBrandProfile
+                                    ? (_) => setState(
+                                          () => _promptMode =
+                                              _SunoPromptMode.brandProfile,
+                                        )
+                                    : null,
+                              ),
                             ],
-                            onChanged: (value) {
-                              setState(() => _selectedMoodId = value);
-                            },
                           ),
-                          const SizedBox(height: 12),
-                          TextFormField(
-                            controller: _promptController,
-                            maxLines: 4,
-                            decoration: _editorDecoration(
-                              label: hasConfiguredPromptTemplate
-                                  ? 'Prompt override'
-                                  : 'Prompt *',
-                              isDark: isDark,
+                          if (!hasBrandProfile) ...[
+                            const SizedBox(height: 10),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: (isDark ? Colors.white : Colors.black)
+                                    .withValues(alpha: 0.04),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Text(
+                                'Brand profile mode is unavailable for this brand because Suno config did not return a CAMS music profile snapshot yet.',
+                                style: GoogleFonts.inter(
+                                  color: textMuted,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
                             ),
-                            validator: (value) {
-                              if (hasConfiguredPromptTemplate) {
+                          ],
+                          if (_promptMode == _SunoPromptMode.brandProfile &&
+                              hasBrandProfile) ...[
+                            const SizedBox(height: 12),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: (isDark ? Colors.white : Colors.black)
+                                    .withValues(alpha: 0.04),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Using brand CAMS profile',
+                                    style: GoogleFonts.inter(
+                                      color: textPrimary,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    'Template: ${brandProfile.fuzzyProfileTemplate?.trim().isNotEmpty == true ? brandProfile.fuzzyProfileTemplate!.trim() : '-'}'
+                                    '${brandProfile.storeOverrideLevel != null ? ' | Override: ${brandProfile.storeOverrideLevel!.displayName}' : ''}',
+                                    style: GoogleFonts.inter(
+                                      color: textMuted,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'BPM guide: Chill ${_bpmBandLabel(brandProfile.chillBpmMin, brandProfile.chillBpmMax)}, '
+                                    'Focus ${_bpmBandLabel(brandProfile.focusBpmMin, brandProfile.focusBpmMax)}, '
+                                    'Energetic ${_bpmBandLabel(brandProfile.energeticBpmMin, brandProfile.energeticBpmMax)}',
+                                    style: GoogleFonts.inter(
+                                      color: textMuted,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            DropdownButtonFormField<BrandProfileSunoMood>(
+                              initialValue: _selectedProfileMood,
+                              decoration: _editorDecoration(
+                                label: 'Primary music zone',
+                                isDark: isDark,
+                              ),
+                              items: BrandProfileSunoMood.values
+                                  .map(
+                                    (mood) => DropdownMenuItem<
+                                        BrandProfileSunoMood>(
+                                      value: mood,
+                                      child: Text(
+                                        '${mood.label} (${mood.shortLabel} BPM band)',
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
+                              onChanged: (value) {
+                                if (value == null) return;
+                                setState(() => _selectedProfileMood = value);
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: _titleController,
+                              decoration: _editorDecoration(
+                                label: 'Track title',
+                                isDark: isDark,
+                              ),
+                              onChanged: (_) => setState(() {}),
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: _genreController,
+                              decoration: _editorDecoration(
+                                label: 'Genre',
+                                isDark: isDark,
+                              ),
+                              onChanged: (_) => setState(() {}),
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: _artistController,
+                              decoration: _editorDecoration(
+                                label: 'Artist / style hint',
+                                isDark: isDark,
+                              ),
+                              onChanged: (_) => setState(() {}),
+                            ),
+                            const SizedBox(height: 12),
+                            DropdownButtonFormField<String?>(
+                              initialValue: sortedMoods
+                                      .any((mood) => mood.id == _selectedMoodId)
+                                  ? _selectedMoodId
+                                  : null,
+                              decoration: _editorDecoration(
+                                label: 'Catalog mood (optional)',
+                                isDark: isDark,
+                              ),
+                              items: [
+                                const DropdownMenuItem<String?>(
+                                  value: null,
+                                  child: Text('No mood preference'),
+                                ),
+                                ...sortedMoods.map(
+                                  (mood) => DropdownMenuItem<String?>(
+                                    value: mood.id,
+                                    child: Text(mood.name),
+                                  ),
+                                ),
+                              ],
+                              onChanged: (value) {
+                                setState(() => _selectedMoodId = value);
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: (isDark ? Colors.white : Colors.black)
+                                    .withValues(alpha: 0.04),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          'Generated prompt preview',
+                                          style: GoogleFonts.inter(
+                                            color: textPrimary,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                      Text(
+                                        '${generatedPrompt.length}/4000',
+                                        style: GoogleFonts.inter(
+                                          color: textMuted,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  SelectableText(
+                                    generatedPrompt.isNotEmpty
+                                        ? generatedPrompt
+                                        : 'Adjust the profile fields to generate a prompt preview.',
+                                    style: GoogleFonts.inter(
+                                      color: generatedPrompt.isNotEmpty
+                                          ? textPrimary
+                                          : textMuted,
+                                      fontSize: 12,
+                                      height: 1.45,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ] else ...[
+                            TextFormField(
+                              controller: _titleController,
+                              decoration: _editorDecoration(
+                                label: 'Title (optional)',
+                                isDark: isDark,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: _artistController,
+                              decoration: _editorDecoration(
+                                label: 'Artist',
+                                isDark: isDark,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            DropdownButtonFormField<String?>(
+                              initialValue: sortedMoods
+                                      .any((mood) => mood.id == _selectedMoodId)
+                                  ? _selectedMoodId
+                                  : null,
+                              decoration: _editorDecoration(
+                                label: 'Mood',
+                                isDark: isDark,
+                              ),
+                              items: [
+                                const DropdownMenuItem<String?>(
+                                  value: null,
+                                  child: Text('No mood preference'),
+                                ),
+                                ...sortedMoods.map(
+                                  (mood) => DropdownMenuItem<String?>(
+                                    value: mood.id,
+                                    child: Text(mood.name),
+                                  ),
+                                ),
+                              ],
+                              onChanged: (value) {
+                                setState(() => _selectedMoodId = value);
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: _promptController,
+                              maxLines: 4,
+                              maxLength: 4000,
+                              decoration: _editorDecoration(
+                                label: _hasConfiguredPromptTemplate
+                                    ? 'Prompt override'
+                                    : 'Prompt *',
+                                isDark: isDark,
+                              ).copyWith(
+                                hintText: _hasConfiguredPromptTemplate
+                                    ? 'Leave blank to use the brand default prompt template.'
+                                    : 'Describe the music you want to generate...',
+                                alignLabelWithHint: true,
+                              ),
+                              validator: (value) {
+                                if (!_hasConfiguredPromptTemplate &&
+                                    (value?.trim().isEmpty ?? true)) {
+                                  return 'Prompt is required when no brand default prompt is configured.';
+                                }
                                 return null;
-                              }
-                              return (value?.trim().isEmpty ?? true)
-                                  ? 'Prompt is required when no brand default prompt is configured.'
-                                  : null;
-                            },
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            hasConfiguredPromptTemplate
-                                ? 'Leave this blank to use the brand default prompt template.'
-                                : 'Enter a prompt because this brand does not have a default Suno prompt yet.',
-                            style: GoogleFonts.inter(
-                              color: textMuted,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
+                              },
                             ),
-                          ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _hasConfiguredPromptTemplate
+                                  ? 'Manual mode can stay blank and the backend will resolve the default brand prompt template.'
+                                  : 'Enter a prompt because this brand does not have a default Suno prompt yet.',
+                              style: GoogleFonts.inter(
+                                color: textMuted,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                           const SizedBox(height: 12),
                           DropdownButtonFormField<String?>(
                             initialValue: widget.playlists.any((playlist) =>
@@ -3210,14 +3477,24 @@ class _GenerateSunoTrackBottomSheetState
                           SizedBox(
                             width: double.infinity,
                             child: FilledButton.icon(
-                              onPressed: () {
+                              onPressed: canSubmit
+                                  ? () {
                                 final isValid =
                                     _formKey.currentState?.validate() ?? false;
                                 if (!isValid) return;
+                                final prompt = _promptMode ==
+                                        _SunoPromptMode.brandProfile
+                                    ? _nullable(generatedPrompt)
+                                    : _nullable(_promptController.text);
+                                if (_promptMode ==
+                                        _SunoPromptMode.brandProfile &&
+                                    prompt == null) {
+                                  return;
+                                }
                                 Navigator.pop(
                                   context,
                                   CreateSunoGenerationRequest(
-                                    prompt: _nullable(_promptController.text),
+                                    prompt: prompt,
                                     title: _nullable(_titleController.text),
                                     artist: _nullable(_artistController.text),
                                     moodId: _selectedMoodId,
@@ -3235,10 +3512,11 @@ class _GenerateSunoTrackBottomSheetState
                                         _nullableInt(_bpmTargetController.text),
                                   ),
                                 );
-                              },
+                              }
+                                  : null,
                               icon: const Icon(Icons.auto_awesome_rounded,
                                   size: 18),
-                              label: const Text('Queue Generation'),
+                              label: const Text('Generate music'),
                             ),
                           ),
                         ],
@@ -3257,12 +3535,12 @@ class _GenerateSunoTrackBottomSheetState
   List<AiGenerationModeEnum> get _generationModeOptions {
     final modes = <AiGenerationModeEnum>[];
     final configuredMode = widget.initialConfig?.aiGenerationMode;
-    if (configuredMode != null) {
+    if (configuredMode != null && configuredMode != AiGenerationModeEnum.unknown) {
       modes.add(configuredMode);
     }
     for (final mode in widget.initialConfig?.availableGenerationModes ??
         const <AiGenerationModeEnum>[]) {
-      if (!modes.contains(mode)) {
+      if (mode != AiGenerationModeEnum.unknown && !modes.contains(mode)) {
         modes.add(mode);
       }
     }
@@ -3273,7 +3551,15 @@ class _GenerateSunoTrackBottomSheetState
     final templates = <String>[];
     final configuredTemplate =
         widget.initialConfig?.fuzzyProfileTemplate?.trim();
-    if (configuredTemplate != null && configuredTemplate.isNotEmpty) {
+    final profileTemplate = _brandProfile?.fuzzyProfileTemplate?.trim();
+    if (profileTemplate != null &&
+        profileTemplate.isNotEmpty &&
+        !templates.contains(profileTemplate)) {
+      templates.add(profileTemplate);
+    }
+    if (configuredTemplate != null &&
+        configuredTemplate.isNotEmpty &&
+        !templates.contains(configuredTemplate)) {
       templates.add(configuredTemplate);
     }
     for (final template
@@ -3299,6 +3585,19 @@ class _GenerateSunoTrackBottomSheetState
     if (trimmed.isEmpty) return null;
     return int.tryParse(trimmed);
   }
+
+  String _bpmBandLabel(int? min, int? max) {
+    if (min != null && max != null) {
+      return '$min-$max BPM';
+    }
+    if (min != null) {
+      return '$min+ BPM';
+    }
+    if (max != null) {
+      return 'Up to $max BPM';
+    }
+    return '-';
+  }
 }
 
 class _SunoConfigBottomSheet extends StatefulWidget {
@@ -3317,6 +3616,7 @@ class _SunoConfigBottomSheet extends StatefulWidget {
 class _SunoConfigBottomSheetState extends State<_SunoConfigBottomSheet> {
   final _promptTemplateController = TextEditingController();
   String? _selectedPlaylistId;
+  AiGenerationModeEnum? _selectedGenerationMode;
 
   void _closeSheet() {
     FocusManager.instance.primaryFocus?.unfocus();
@@ -3329,6 +3629,13 @@ class _SunoConfigBottomSheetState extends State<_SunoConfigBottomSheet> {
     _promptTemplateController.text =
         widget.currentConfig?.sunoPromptTemplate ?? '';
     _selectedPlaylistId = widget.currentConfig?.sunoDefaultPlaylistId;
+    _selectedGenerationMode = widget.currentConfig?.aiGenerationMode;
+    if (_selectedGenerationMode == AiGenerationModeEnum.unknown) {
+      _selectedGenerationMode = null;
+    }
+    if (_selectedGenerationMode == null && _generationModeOptions.isNotEmpty) {
+      _selectedGenerationMode = _generationModeOptions.first;
+    }
   }
 
   @override
@@ -3345,6 +3652,9 @@ class _SunoConfigBottomSheetState extends State<_SunoConfigBottomSheet> {
         mediaQuery.viewInsets.top -
         24;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? Colors.white : Colors.black87;
+    final textMuted = isDark ? Colors.white60 : Colors.black54;
+    final generationModes = _generationModeOptions;
 
     return SafeArea(
       top: false,
@@ -3384,14 +3694,29 @@ class _SunoConfigBottomSheetState extends State<_SunoConfigBottomSheet> {
                         ),
                         const SizedBox(height: 10),
                         Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Expanded(
-                              child: Text(
-                                'Suno Config',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Suno Config',
+                                    style: GoogleFonts.poppins(
+                                      color: textPrimary,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    'Configure the default prompt template, generation mode, and playlist for Suno jobs.',
+                                    style: GoogleFonts.inter(
+                                      color: textMuted,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -3400,11 +3725,77 @@ class _SunoConfigBottomSheetState extends State<_SunoConfigBottomSheet> {
                               onPressed: _closeSheet,
                               icon: Icon(
                                 Icons.close_rounded,
-                                color: isDark ? Colors.white : Colors.black87,
+                                color: textPrimary,
                               ),
                             ),
                           ],
                         ),
+                        const SizedBox(height: 12),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: (isDark ? Colors.white : Colors.black)
+                                .withValues(alpha: 0.04),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Prompt template variables',
+                                style: GoogleFonts.inter(
+                                  color: textPrimary,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                '{mood}, {genre}, {title}, {artist}',
+                                style: GoogleFonts.inter(
+                                  color: textMuted,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Profile mode also fills {fuzzyTemplate}, {bpmBand}, {chillBpm}, {focusBpm}, {energeticBpm}, {pressureLowMax}, {pressureCriticalMin}, {stressComfortableMax}, {stressHighMin}, {densitySparseMax}, {densityCrowdedMin}, {spaceCapacity}.',
+                                style: GoogleFonts.inter(
+                                  color: textMuted,
+                                  fontSize: 12,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (generationModes.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          DropdownButtonFormField<AiGenerationModeEnum?>(
+                            initialValue: generationModes.contains(
+                              _selectedGenerationMode,
+                            )
+                                ? _selectedGenerationMode
+                                : generationModes.first,
+                            decoration: _editorDecoration(
+                              label: 'Generation mode',
+                              isDark: isDark,
+                            ),
+                            items: generationModes
+                                .map(
+                                  (mode) =>
+                                      DropdownMenuItem<AiGenerationModeEnum?>(
+                                    value: mode,
+                                    child: Text(mode.displayName),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (value) {
+                              setState(() => _selectedGenerationMode = value);
+                            },
+                          ),
+                        ],
                         const SizedBox(height: 12),
                         TextField(
                           controller: _promptTemplateController,
@@ -3446,6 +3837,7 @@ class _SunoConfigBottomSheetState extends State<_SunoConfigBottomSheet> {
                             onPressed: () => Navigator.pop(
                               context,
                               UpdateSunoConfigRequest(
+                                aiGenerationMode: _selectedGenerationMode,
                                 sunoPromptTemplate: _nullable(
                                   _promptTemplateController.text,
                                 ),
@@ -3465,6 +3857,28 @@ class _SunoConfigBottomSheetState extends State<_SunoConfigBottomSheet> {
         ),
       ),
     );
+  }
+
+  List<AiGenerationModeEnum> get _generationModeOptions {
+    final modes = <AiGenerationModeEnum>[];
+    final configured = widget.currentConfig?.aiGenerationMode;
+    if (configured != null && configured != AiGenerationModeEnum.unknown) {
+      modes.add(configured);
+    }
+    for (final mode in widget.currentConfig?.availableGenerationModes ??
+        const <AiGenerationModeEnum>[]) {
+      if (mode == AiGenerationModeEnum.unknown || modes.contains(mode)) {
+        continue;
+      }
+      modes.add(mode);
+    }
+    if (modes.isEmpty) {
+      modes.addAll(const [
+        AiGenerationModeEnum.suno,
+        AiGenerationModeEnum.brandModel,
+      ]);
+    }
+    return modes;
   }
 }
 
@@ -4140,6 +4554,7 @@ class _CreatePlaylistBottomSheetState extends State<_CreatePlaylistBottomSheet> 
       ),
     );
   }
+
 }
 
 class _FilePickerTile extends StatelessWidget {

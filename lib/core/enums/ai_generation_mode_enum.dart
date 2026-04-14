@@ -1,7 +1,6 @@
 enum AiGenerationModeEnum {
-  suno(0),
-  brandModel(1),
-  manual(2),
+  suno(1),
+  brandModel(2),
   unknown(-1);
 
   const AiGenerationModeEnum(this.value);
@@ -33,8 +32,6 @@ enum AiGenerationModeEnum {
         return AiGenerationModeEnum.suno;
       case 'brandmodel':
         return AiGenerationModeEnum.brandModel;
-      case 'manual':
-        return AiGenerationModeEnum.manual;
       default:
         return AiGenerationModeEnum.unknown;
     }
@@ -46,8 +43,6 @@ enum AiGenerationModeEnum {
         return 'Suno';
       case AiGenerationModeEnum.brandModel:
         return 'Brand Model';
-      case AiGenerationModeEnum.manual:
-        return 'Manual';
       case AiGenerationModeEnum.unknown:
         return 'Unknown';
     }
