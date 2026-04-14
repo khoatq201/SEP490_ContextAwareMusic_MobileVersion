@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -33,6 +35,7 @@ class HubProvisioningBloc
     on<HubProvisioningBleCandidateSelected>(_onBleCandidateSelected);
     on<HubProvisioningSecretCodeSubmitted>(_onSecretCodeSubmitted);
     on<HubProvisioningCredentialsSubmitted>(_onCredentialsSubmitted);
+    on<HubProvisioningNvrConfigSubmitted>(_onNvrConfigSubmitted);
     on<HubProvisioningRetrySyncRequested>(_onRetrySyncRequested);
     on<HubProvisioningDeleteBindingRequested>(_onDeleteBindingRequested);
     on<HubProvisioningRestartRequested>(_onRestartRequested);
@@ -64,6 +67,7 @@ class HubProvisioningBloc
         clearSelectedBleCandidate: true,
         clearResolvedIdentity: true,
         clearPendingWifiSsid: true,
+        clearPendingWifiPassphrase: true,
         clearDraftLocation: true,
         bleCandidates: const <BleCandidate>[],
         wifiCandidates: const <WifiCandidate>[],
@@ -317,37 +321,68 @@ class HubProvisioningBloc
 
     emit(
       state.copyWith(
-        phase: HubProvisioningPhase.provisioning,
+        phase: HubProvisioningPhase.enterNvrConfig,
+        pendingWifiSsid: event.ssid,
+        pendingWifiPassphrase: event.passphrase,
+        message:
+            'Wi-Fi details are ready. Send NVR config first, then the app will finalize Wi-Fi provisioning.',
+      ),
+    );
+  }
+
+  Future<void> _onNvrConfigSubmitted(
+    HubProvisioningNvrConfigSubmitted event,
+    Emitter<HubProvisioningState> emit,
+  ) async {
+    final identity = state.resolvedIdentity;
+    final candidate = state.selectedBleCandidate;
+    final wifiSsid = state.pendingWifiSsid;
+    final wifiPassphrase = state.pendingWifiPassphrase;
+    if (identity == null ||
+        candidate == null ||
+        wifiSsid == null ||
+        wifiPassphrase == null) {
+      emit(
+        state.copyWith(
+          phase: HubProvisioningPhase.failure,
+          flowMode: HubProvisioningFlowMode.fullProvisioning,
+          message:
+              'Wi-Fi completed, but the BLE provisioning context was lost before NVR setup.',
+        ),
+      );
+      return;
+    }
+
+    emit(
+      state.copyWith(
+        phase: HubProvisioningPhase.sendingNvrConfig,
         clearMessage: true,
       ),
     );
 
-    try {
-      final didProvision = await bleProvisioningService.provisionWifi(
-        identity,
-        ssid: event.ssid,
-        passphrase: event.passphrase,
-      );
-      if (!didProvision) {
-        emit(
-          state.copyWith(
-            phase: HubProvisioningPhase.failure,
-            flowMode: HubProvisioningFlowMode.fullProvisioning,
-            message:
-                'The ESP32 did not confirm the Wi-Fi credentials. Check the password and try again.',
-          ),
-        );
-        return;
-      }
+    final payload = <String, Object?>{
+      'device_id': identity.deviceId,
+      'wifi_ssid': wifiSsid,
+      'wifi_passphrase': wifiPassphrase,
+      'mode': event.mode,
+      'username': event.username.trim(),
+      'password': event.password,
+      'host': event.host.trim(),
+      'port': event.port,
+    };
 
-      final candidate = state.selectedBleCandidate;
-      if (candidate == null) {
+    try {
+      final responseBytes = await bleProvisioningService.sendCustomData(
+        identity,
+        endpoint: 'nvr-config',
+        payload: Uint8List.fromList(utf8.encode(jsonEncode(payload))),
+      );
+      final response = utf8.decode(responseBytes, allowMalformed: true);
+      if (!response.contains('"ok"') && !response.contains('ok')) {
         emit(
           state.copyWith(
-            phase: HubProvisioningPhase.failure,
-            flowMode: HubProvisioningFlowMode.fullProvisioning,
-            message:
-                'Provisioning completed locally, but the selected device context was lost.',
+            phase: HubProvisioningPhase.enterNvrConfig,
+            message: 'ESP32 rejected the NVR config: $response',
           ),
         );
         return;
@@ -356,15 +391,14 @@ class HubProvisioningBloc
       await _persistBindingAfterWifiProvisioning(
         emit,
         candidate: candidate,
-        wifiSsid: event.ssid,
+        wifiSsid: wifiSsid,
       );
-    } on BleProvisioningException {
+    } on BleProvisioningException catch (error) {
       emit(
         state.copyWith(
-          phase: HubProvisioningPhase.failure,
-          flowMode: HubProvisioningFlowMode.fullProvisioning,
+          phase: HubProvisioningPhase.enterNvrConfig,
           message:
-              'Provisioning failed before the ESP32 confirmed Wi-Fi. Check the network password and try again.',
+              'Unable to send NVR config over BLE: ${error.message}. Keep the ESP32 close and try again.',
         ),
       );
     }
@@ -442,6 +476,7 @@ class HubProvisioningBloc
           clearSelectedBleCandidate: true,
           clearResolvedIdentity: true,
           clearPendingWifiSsid: true,
+          clearPendingWifiPassphrase: true,
           clearDraftLocation: true,
           bleCandidates: const <BleCandidate>[],
           wifiCandidates: const <WifiCandidate>[],

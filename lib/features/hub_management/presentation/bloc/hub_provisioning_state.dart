@@ -20,6 +20,8 @@ enum HubProvisioningPhase {
   scanningWifi,
   enterWifi,
   provisioning,
+  enterNvrConfig,
+  sendingNvrConfig,
   resolvingLocation,
   reviewLocation,
   sendingLocation,
@@ -41,6 +43,7 @@ class HubProvisioningState extends Equatable {
     this.resolvedIdentity,
     this.wifiCandidates = const <WifiCandidate>[],
     this.pendingWifiSsid,
+    this.pendingWifiPassphrase,
     this.draftLocation,
     this.message,
     this.isPermissionPermanentlyDenied = false,
@@ -58,6 +61,7 @@ class HubProvisioningState extends Equatable {
   final EspProvisioningIdentity? resolvedIdentity;
   final List<WifiCandidate> wifiCandidates;
   final String? pendingWifiSsid;
+  final String? pendingWifiPassphrase;
   final HubDeviceLocation? draftLocation;
   final String? message;
   final bool isPermissionPermanentlyDenied;
@@ -79,6 +83,8 @@ class HubProvisioningState extends Equatable {
     List<WifiCandidate>? wifiCandidates,
     String? pendingWifiSsid,
     bool clearPendingWifiSsid = false,
+    String? pendingWifiPassphrase,
+    bool clearPendingWifiPassphrase = false,
     HubDeviceLocation? draftLocation,
     bool clearDraftLocation = false,
     String? message,
@@ -104,6 +110,9 @@ class HubProvisioningState extends Equatable {
       pendingWifiSsid: clearPendingWifiSsid
           ? null
           : (pendingWifiSsid ?? this.pendingWifiSsid),
+      pendingWifiPassphrase: clearPendingWifiPassphrase
+          ? null
+          : (pendingWifiPassphrase ?? this.pendingWifiPassphrase),
       draftLocation:
           clearDraftLocation ? null : (draftLocation ?? this.draftLocation),
       message: clearMessage ? null : (message ?? this.message),
@@ -134,6 +143,7 @@ class HubProvisioningState extends Equatable {
         resolvedIdentity,
         wifiCandidates,
         pendingWifiSsid,
+        pendingWifiPassphrase,
         draftLocation,
         message,
         isPermissionPermanentlyDenied,

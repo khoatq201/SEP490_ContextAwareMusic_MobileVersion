@@ -302,7 +302,7 @@ Future<void> initializeDependencies() async {
   );
   sl.registerLazySingleton<ProvisioningIdentityResolver>(
     () => const PrefixProvisioningIdentityResolver(
-      blePrefix: 'CAM',
+      blePrefix: 'CAM_',
     ),
   );
 
