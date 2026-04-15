@@ -115,6 +115,8 @@ abstract class CamsRemoteDataSource {
 }
 
 class CamsRemoteDataSourceImpl implements CamsRemoteDataSource {
+  static const int _minimumAcceptedVolumePercent = 30;
+
   final DioClient dioClient;
 
   CamsRemoteDataSourceImpl({required this.dioClient});
@@ -230,8 +232,11 @@ class CamsRemoteDataSourceImpl implements CamsRemoteDataSource {
     int? queueEndBehavior,
     bool usePlaybackDeviceScope = false,
   }) async {
+    final normalizedVolumePercent =
+        _normalizeVolumePercentForAudioPatch(volumePercent, isMuted);
     final payload = {
-      if (volumePercent != null) 'volumePercent': volumePercent,
+      if (normalizedVolumePercent != null)
+        'volumePercent': normalizedVolumePercent,
       if (isMuted != null) 'isMuted': isMuted,
       if (queueEndBehavior != null) 'queueEndBehavior': queueEndBehavior,
     };
@@ -250,6 +255,21 @@ class CamsRemoteDataSourceImpl implements CamsRemoteDataSource {
       if (e is ServerException) rethrow;
       throw ServerException('Failed to update audio state: $e');
     }
+  }
+
+  int? _normalizeVolumePercentForAudioPatch(int? volumePercent, bool? isMuted) {
+    if (volumePercent == null) return null;
+
+    final boundedVolume = volumePercent.clamp(0, 100).toInt();
+    if (boundedVolume == 0) {
+      return isMuted == true ? null : _minimumAcceptedVolumePercent;
+    }
+
+    if (boundedVolume < _minimumAcceptedVolumePercent) {
+      return _minimumAcceptedVolumePercent;
+    }
+
+    return boundedVolume;
   }
 
   @override

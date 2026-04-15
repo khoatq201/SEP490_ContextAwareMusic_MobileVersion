@@ -786,6 +786,95 @@ void main() {
       expect(playerBloc.state.currentPosition, greaterThanOrEqualTo(25));
       expect(playerBloc.state.currentPositionPrecise, greaterThanOrEqualTo(25));
     });
+
+    testWidgets(
+        'manager sessions locally load remote HLS playback instead of synthetic-only sync',
+        (tester) async {
+      addTearDown(() async {
+        await _disposeHarness(tester);
+      });
+      trackRepository.tracksById['track-1'] = ApiTrack(
+        id: 'track-1',
+        title: 'Track One',
+        artist: 'Artist One',
+        hlsUrl: 'https://stream.example.com/t1.m3u8',
+        durationSec: 180,
+        createdAt: DateTime.utc(2026, 1, 1),
+      );
+      trackRepository.tracksById['track-2'] = ApiTrack(
+        id: 'track-2',
+        title: 'Track Two',
+        artist: 'Artist Two',
+        hlsUrl: 'https://stream.example.com/t2.m3u8',
+        durationSec: 200,
+        createdAt: DateTime.utc(2026, 1, 1),
+      );
+
+      await _pumpCoordinator(
+          tester, notificationService, sessionCubit, playerBloc, camsBloc);
+
+      camsBloc.seed(
+        SpacePlaybackState(
+          spaceId: 'space-1',
+          storeId: 'store-1',
+          currentQueueItemId: 'queue-1',
+          currentTrackName: 'Track One',
+          hlsUrl: 'https://stream.example.com/t1.m3u8',
+          startedAtUtc:
+              DateTime.now().toUtc().subtract(const Duration(seconds: 12)),
+          isPaused: false,
+          spaceQueueItems: const [
+            SpaceQueueStateItem(
+              queueItemId: 'queue-1',
+              trackId: 'track-1',
+              trackName: 'Track One',
+              position: 1,
+              queueStatus: 1,
+              source: 1,
+              hlsUrl: 'https://stream.example.com/t1.m3u8',
+              isReadyToStream: true,
+            ),
+            SpaceQueueStateItem(
+              queueItemId: 'queue-2',
+              trackId: 'track-2',
+              trackName: 'Track Two',
+              position: 2,
+              queueStatus: 0,
+              source: 1,
+              hlsUrl: 'https://stream.example.com/t2.m3u8',
+              isReadyToStream: true,
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      await _waitUntil(
+        tester,
+        () =>
+            playerBloc.state.isSyncedCamsPlayback &&
+            playerBloc.state.currentTrackId == 'track-1' &&
+            playerBloc.state.queue.length == 2 &&
+            audioService.loadCallCount >= 1,
+        timeout: const Duration(seconds: 8),
+      );
+
+      audioService.emitPosition(const Duration(seconds: 6));
+      await tester.pump();
+      await _waitUntil(
+        tester,
+        () => playerBloc.state.displayPositionPrecise >= 5.5,
+      );
+
+      expect(
+        playerBloc.state.displayPositionPrecise,
+        greaterThanOrEqualTo(5.5),
+      );
+      expect(
+        audioService.loadedUrl,
+        'https://stream.example.com/t1.m3u8',
+      );
+    });
   });
 }
 
@@ -993,6 +1082,20 @@ class _FakeAudioPlayerService extends AudioPlayerService {
   @override
   Future<void> setVolume(double volume) async {
     lastSetVolume = volume;
+  }
+
+  void emitPosition(Duration position) {
+    _position = position;
+    _positionController.add(position);
+  }
+
+  void emitDuration(Duration? duration) {
+    _durationController.add(duration);
+  }
+
+  void emitProcessingState(ProcessingState processingState) {
+    _processingState = processingState;
+    _processingController.add(processingState);
   }
 
   @override

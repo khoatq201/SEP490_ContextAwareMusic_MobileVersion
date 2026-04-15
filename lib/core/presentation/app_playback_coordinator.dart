@@ -21,6 +21,7 @@ import '../player/player_state.dart';
 import '../services/local_storage_service.dart';
 import '../session/session_cubit.dart';
 import '../session/session_state.dart';
+import '../enums/user_role.dart';
 import '../../injection_container.dart';
 import '../../router.dart';
 
@@ -212,7 +213,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
     required SessionState session,
     required PlayerState playerState,
   }) {
-    final shouldEnable = session.isPlaybackDevice &&
+    final shouldEnable = _shouldPlayRemoteAudioLocally(session) &&
         session.currentStore != null &&
         session.currentSpace != null;
 
@@ -234,6 +235,52 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
     final camsBloc = context.read<CamsPlaybackBloc>();
     if (camsBloc.isClosed) return;
     camsBloc.add(event);
+  }
+
+  bool _shouldPlayRemoteAudioLocally(SessionState session) {
+    if (session.currentSpace == null) return false;
+    if (session.isPlaybackDevice) {
+      return true;
+    }
+    if (session.currentRole == UserRole.brandManager ||
+        session.currentRole == UserRole.storeManager) {
+      return session.managerLocalPlaybackEnabled;
+    }
+    return false;
+  }
+
+  bool _shouldUseSyntheticRemoteProgress(SessionState session) {
+    return !_shouldPlayRemoteAudioLocally(session);
+  }
+
+  void _reapplyRemotePlaybackLocality({
+    required SessionState session,
+    required SpacePlaybackState? playbackState,
+  }) {
+    if (playbackState == null || !playbackState.hasPlayableHls) {
+      return;
+    }
+
+    _addPlayerEvent(PlayerHlsStarted(
+      hlsUrl: playbackState.effectiveHlsUrl!,
+      playlistName: playbackState.currentDisplayName,
+      queueItemId: playbackState.effectiveQueueItemId,
+      trackId: _resolveCurrentTrackId(playbackState) ?? playbackState.spaceId,
+      trackName: playbackState.effectiveTrackName,
+      seekOffsetSeconds: playbackState.effectiveSeekOffset,
+      isPaused: playbackState.isPaused,
+      playLocally: _shouldPlayRemoteAudioLocally(session),
+      forceReload: _shouldPlayRemoteAudioLocally(session),
+    ));
+
+    _addPlayerEvent(PlayerAudioSettingsApplied(
+      volumePercent: playbackState.volumePercent,
+      isMuted: playbackState.isMuted,
+    ));
+
+    if (_shouldUseSyntheticRemoteProgress(session)) {
+      _pushManagerPositionSnapshot(playbackState);
+    }
   }
 
   void _syncCamsState(CamsPlaybackState camsState) {
@@ -292,7 +339,8 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
         'hls=${incomingHlsUrl ?? '-'} '
         'expectedEnd=${playbackState.expectedEndAtUtc?.toUtc().toIso8601String() ?? '-'}',
       );
-      if (session.isPlaybackDevice && playerBloc.state.isPlaying) {
+      if (_shouldPlayRemoteAudioLocally(session) &&
+          playerBloc.state.isPlaying) {
         _addPlayerEvent(const PlayerRemoteCommandApplied(
           command: PlaybackCommandEnum.pause,
           playLocally: true,
@@ -302,7 +350,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
         volumePercent: playbackState.volumePercent,
         isMuted: playbackState.isMuted,
       ));
-      if (!session.isPlaybackDevice) {
+      if (_shouldUseSyntheticRemoteProgress(session)) {
         _pushManagerPositionSnapshot(playbackState);
       }
       return;
@@ -448,7 +496,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
         volumePercent: playbackState.volumePercent,
         isMuted: playbackState.isMuted,
       ));
-      if (!session.isPlaybackDevice) {
+      if (_shouldUseSyntheticRemoteProgress(session)) {
         _pushManagerPositionSnapshot(playbackState);
       }
       return;
@@ -475,7 +523,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
         );
         _addPlayerEvent(PlayerRemoteCommandApplied(
           command: command,
-          playLocally: session.isPlaybackDevice,
+          playLocally: _shouldPlayRemoteAudioLocally(session),
         ));
       } else {
         _debugLog(
@@ -488,7 +536,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
         volumePercent: playbackState.volumePercent,
         isMuted: playbackState.isMuted,
       ));
-      if (!session.isPlaybackDevice) {
+      if (_shouldUseSyntheticRemoteProgress(session)) {
         _pushManagerPositionSnapshot(playbackState);
       }
       return;
@@ -512,7 +560,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
       trackName: playbackState.effectiveTrackName,
       seekOffsetSeconds: playbackState.effectiveSeekOffset,
       isPaused: playbackState.isPaused,
-      playLocally: session.isPlaybackDevice,
+      playLocally: _shouldPlayRemoteAudioLocally(session),
     ));
 
     _addPlayerEvent(PlayerAudioSettingsApplied(
@@ -520,7 +568,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
       isMuted: playbackState.isMuted,
     ));
 
-    if (!session.isPlaybackDevice) {
+    if (_shouldUseSyntheticRemoteProgress(session)) {
       _pushManagerPositionSnapshot(playbackState);
     }
   }
@@ -835,7 +883,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
     required SessionState session,
     required SpacePlaybackState? playbackState,
   }) {
-    if (session.isPlaybackDevice ||
+    if (_shouldPlayRemoteAudioLocally(session) ||
         playbackState == null ||
         !playbackState.isStreaming) {
       _stopManagerProgressTicker();
@@ -859,7 +907,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
       final currentSession = context.read<SessionCubit>().state;
       final currentPlaybackState =
           context.read<CamsPlaybackBloc>().state.playbackState;
-      if (currentSession.isPlaybackDevice ||
+      if (_shouldPlayRemoteAudioLocally(currentSession) ||
           currentPlaybackState == null ||
           !currentPlaybackState.isStreaming ||
           currentPlaybackState.isPaused) {
@@ -1103,8 +1151,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
     required PlayerState playerState,
   }) {
     final playbackState = camsState.playbackState;
-    final shouldMonitor = session.isPlaybackDevice &&
-        session.currentSpace != null &&
+    final shouldMonitor = _shouldPlayRemoteAudioLocally(session) &&
         playbackState != null &&
         playbackState.isStreaming &&
         !playbackState.isPaused &&
@@ -1143,8 +1190,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
     final playbackState = camsState.playbackState;
     final playerState = playerBloc.state;
 
-    if (!session.isPlaybackDevice ||
-        session.currentSpace == null ||
+    if (!_shouldPlayRemoteAudioLocally(session) ||
         playbackState == null ||
         !playbackState.isStreaming ||
         playbackState.isPaused ||
@@ -1226,7 +1272,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
     if (!mounted) return;
 
     final session = context.read<SessionCubit>().state;
-    if (!session.isPlaybackDevice) return;
+    if (!_shouldPlayRemoteAudioLocally(session)) return;
 
     final playerBloc = context.read<PlayerBloc>();
     final playerState = playerBloc.state;
@@ -1368,6 +1414,31 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
             );
           },
         ),
+        BlocListener<SessionCubit, SessionState>(
+          listenWhen: (previous, current) =>
+              previous.managerLocalPlaybackEnabled !=
+              current.managerLocalPlaybackEnabled,
+          listener: (context, session) {
+            final playbackState =
+                context.read<CamsPlaybackBloc>().state.playbackState;
+            _syncNotification(
+              session: session,
+              playerState: context.read<PlayerBloc>().state,
+            );
+            _syncPlaybackHealthTicker(
+              session: session,
+              camsState: context.read<CamsPlaybackBloc>().state,
+              playerState: context.read<PlayerBloc>().state,
+            );
+            if (playbackState != null &&
+                playbackState.spaceId == session.currentSpace?.id) {
+              _reapplyRemotePlaybackLocality(
+                session: session,
+                playbackState: playbackState,
+              );
+            }
+          },
+        ),
         BlocListener<CamsPlaybackBloc, CamsPlaybackState>(
           listenWhen: (previous, current) {
             final previousPlayback = previous.playbackState;
@@ -1410,7 +1481,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
               positionSeconds: camsState.lastSeekPositionSeconds,
               targetQueueItemId: camsState.lastTargetQueueItemId,
               targetTrackId: camsState.lastTargetTrackId,
-              playLocally: session.isPlaybackDevice,
+              playLocally: _shouldPlayRemoteAudioLocally(session),
             ));
           },
         ),

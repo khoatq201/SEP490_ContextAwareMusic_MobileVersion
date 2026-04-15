@@ -156,6 +156,18 @@ class SettingsPage extends StatelessWidget {
                   themeMode: themeProvider.themeMode,
                   onChanged: themeProvider.setThemeMode,
                 ),
+                if (!isPlayback) ...[
+                  const SizedBox(height: 20),
+                  _SectionTitle(title: 'Playback', palette: palette),
+                  const SizedBox(height: 10),
+                  _ManagerPlaybackPreferenceCard(
+                    palette: palette,
+                    enabled: session.managerLocalPlaybackEnabled,
+                    onChanged: (enabled) => context
+                        .read<SessionCubit>()
+                        .setManagerLocalPlaybackEnabled(enabled),
+                  ),
+                ],
                 const SizedBox(height: 20),
                 _SectionTitle(title: 'Quick Access', palette: palette),
                 const SizedBox(height: 10),
@@ -898,6 +910,82 @@ class _ThemeModeChip extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ManagerPlaybackPreferenceCard extends StatelessWidget {
+  const _ManagerPlaybackPreferenceCard({
+    required this.palette,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final _SettingsPalette palette;
+  final bool enabled;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: palette.card,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: palette.border),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: palette.panel,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(
+              enabled ? LucideIcons.volume2 : LucideIcons.volumeX,
+              size: 18,
+              color: palette.accent,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Play CAMS audio on this manager device',
+                  style: GoogleFonts.poppins(
+                    color: palette.textPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  enabled
+                      ? 'This phone will play the live CAMS stream for the selected space.'
+                      : 'This phone will only monitor metadata and transport state without outputting audio.',
+                  style: GoogleFonts.inter(
+                    color: palette.textMuted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Switch.adaptive(
+            value: enabled,
+            onChanged: onChanged,
+            activeThumbColor: palette.accent,
+            activeTrackColor: palette.accent.withAlpha(72),
+          ),
+        ],
       ),
     );
   }

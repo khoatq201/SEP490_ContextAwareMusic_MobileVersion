@@ -651,7 +651,16 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       'playLocally=${event.playLocally}',
     );
 
-    if (!event.playLocally) return;
+    if (!event.playLocally) {
+      if (_audioService.loadedUrl != null) {
+        try {
+          await _audioService.stop();
+        } catch (_) {
+          // Best effort only; synthetic sync can continue without local audio.
+        }
+      }
+      return;
+    }
 
     try {
       // If the audio engine is at `completed` state (track just ended),
@@ -716,6 +725,9 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     Emitter<PlayerState> emit,
   ) async {
     final absolutePosition = event.positionSeconds;
+    final isSeekCommand = event.command == PlaybackCommandEnum.seek ||
+        event.command == PlaybackCommandEnum.seekForward ||
+        event.command == PlaybackCommandEnum.seekBackward;
     final shouldResolveFromTargetTrack =
         event.command == PlaybackCommandEnum.skipNext ||
             event.command == PlaybackCommandEnum.skipPrevious ||
@@ -728,6 +740,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       resolvedIndex = _findIndexForTrackId(event.targetTrackId);
     }
     if (resolvedIndex < 0 &&
+        !isSeekCommand &&
         absolutePosition != null &&
         _canResolveIndexFromOffset()) {
       resolvedIndex = _resolveIndexForOffset(absolutePosition);
@@ -744,14 +757,19 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
             resolvedTrack?.queueItemId ??
             state.currentQueueItemId)
         : state.currentQueueItemId;
-
-    final isSeekCommand = event.command == PlaybackCommandEnum.seek ||
-        event.command == PlaybackCommandEnum.seekForward ||
-        event.command == PlaybackCommandEnum.seekBackward;
     final hasUsefulSeek =
         absolutePosition != null && (isSeekCommand || absolutePosition > 0);
     final fallbackTrackOffset =
         resolvedIndex >= 0 ? _trackStartOffsetAt(resolvedIndex) : null;
+    final resolvedStatePosition = hasUsefulSeek
+        ? (isSeekCommand
+            ? _absoluteQueuePositionForTrack(
+                absolutePosition,
+                indexOverride: resolvedIndex >= 0 ? resolvedIndex : null,
+                forceQueueOffset: state.isSyncedCamsPlayback,
+              )
+            : absolutePosition)
+        : null;
 
     switch (event.command) {
       case PlaybackCommandEnum.pause:
@@ -778,10 +796,12 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
             state.isHlsMode &&
             state.hlsUrl != null &&
             state.hlsUrl!.isNotEmpty) {
-          final localSeekPosition = _relativeTrackPositionForAbsolute(
-            absolutePosition,
-            indexOverride: resolvedIndex >= 0 ? resolvedIndex : null,
-          );
+          final localSeekPosition = isSeekCommand
+              ? absolutePosition
+              : _relativeTrackPositionForAbsolute(
+                  absolutePosition,
+                  indexOverride: resolvedIndex >= 0 ? resolvedIndex : null,
+                );
           try {
             await _audioService.seek(
               Duration(milliseconds: (localSeekPosition * 1000).round()),
@@ -798,11 +818,11 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
                 : true;
 
         emit(state.copyWith(
-          currentPosition: (absolutePosition ??
+          currentPosition: (resolvedStatePosition ??
                   fallbackTrackOffset?.toDouble() ??
                   state.currentPositionPrecise)
               .floor(),
-          currentPositionPrecise: absolutePosition ??
+          currentPositionPrecise: resolvedStatePosition ??
               fallbackTrackOffset?.toDouble() ??
               state.currentPositionPrecise,
           currentIndex: resolvedIndex >= 0 ? resolvedIndex : state.currentIndex,

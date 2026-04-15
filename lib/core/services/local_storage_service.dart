@@ -7,6 +7,8 @@ class LocalStorageService {
   static const String _settingsBoxName = 'settings_box';
   static const String sessionModeManager = 'manager';
   static const String sessionModePlaybackDevice = 'playback_device';
+  static const String _managerLocalPlaybackEnabledKey =
+      'manager_local_playback_enabled';
 
   static const String _legacyTokenKey = 'token';
   static const String _legacyTokenExpiryKey = 'token_expiry';
@@ -322,6 +324,26 @@ class LocalStorageService {
       await _settingsBox.delete(key);
     } catch (e) {
       throw CacheException('Failed to remove setting');
+    }
+  }
+
+  Future<void> saveManagerLocalPlaybackEnabled(bool enabled) async {
+    try {
+      await _settingsBox.put(_managerLocalPlaybackEnabledKey, enabled);
+    } catch (e) {
+      throw CacheException('Failed to save manager playback preference');
+    }
+  }
+
+  bool getManagerLocalPlaybackEnabled() {
+    try {
+      final raw = _settingsBox.get(_managerLocalPlaybackEnabledKey);
+      if (raw is bool) {
+        return raw;
+      }
+      return true;
+    } catch (e) {
+      return true;
     }
   }
 

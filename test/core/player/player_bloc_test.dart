@@ -187,6 +187,88 @@ void main() {
       expect(bloc.state.displayPositionPrecise, closeTo(30, 0.001));
     });
 
+    test(
+        'keeps progress moving when local HLS playback switches from the first queue track to the second',
+        () async {
+      final queue = [
+        const Track(
+          id: 'track-1',
+          queueItemId: 'queue-1',
+          title: 'Track 1',
+          artist: 'Artist',
+          fileUrl: '',
+          moodTags: [],
+          duration: 180,
+          seekOffsetSeconds: 0,
+        ),
+        const Track(
+          id: 'track-2',
+          queueItemId: 'queue-2',
+          title: 'Track 2',
+          artist: 'Artist',
+          fileUrl: '',
+          moodTags: [],
+          duration: 220,
+          seekOffsetSeconds: 180,
+        ),
+      ];
+
+      bloc.add(PlayerQueueSeeded(
+        tracks: queue,
+        playlistId: 'playlist-1',
+        force: true,
+      ));
+      await _tick();
+
+      bloc.add(const PlayerHlsStarted(
+        hlsUrl: 'https://stream.example.com/t1.m3u8',
+        playlistId: 'playlist-1',
+        queueItemId: 'queue-1',
+        trackId: 'track-1',
+        trackName: 'Track 1',
+        seekOffsetSeconds: 3,
+        playLocally: true,
+      ));
+      await _tick();
+
+      expect(bloc.state.currentTrackId, 'track-1');
+      expect(bloc.state.displayPositionPrecise, closeTo(3, 0.001));
+      expect(audioService.loadedUrl, 'https://stream.example.com/t1.m3u8');
+      expect(audioService.seekCalls.last, const Duration(seconds: 3));
+
+      bloc.add(const PlayerPositionUpdated(positionSeconds: 11));
+      await _tick();
+
+      expect(bloc.state.displayPositionPrecise, closeTo(11, 0.001));
+      expect(bloc.state.currentPositionPrecise, closeTo(11, 0.001));
+
+      bloc.add(const PlayerHlsStarted(
+        hlsUrl: 'https://stream.example.com/t2.m3u8',
+        playlistId: 'playlist-1',
+        queueItemId: 'queue-2',
+        trackId: 'track-2',
+        trackName: 'Track 2',
+        seekOffsetSeconds: 4,
+        playLocally: true,
+      ));
+      await _tick();
+
+      expect(bloc.state.currentTrackId, 'track-2');
+      expect(bloc.state.currentQueueItemId, 'queue-2');
+      expect(bloc.state.currentIndex, 1);
+      expect(bloc.state.displayPositionPrecise, closeTo(4, 0.001));
+      expect(bloc.state.currentPositionPrecise, closeTo(184, 0.001));
+      expect(audioService.loadedUrl, 'https://stream.example.com/t2.m3u8');
+      expect(audioService.seekCalls.last, const Duration(seconds: 4));
+
+      bloc.add(const PlayerPositionUpdated(positionSeconds: 9));
+      await _tick();
+
+      expect(bloc.state.displayPositionPrecise, closeTo(9, 0.001));
+      expect(bloc.state.currentPositionPrecise, closeTo(189, 0.001));
+      expect(bloc.state.progress, closeTo(9 / 220, 0.001));
+    });
+
     test('maps skipToTrack without offset by targetQueueItemId', () async {
       final queue = [
         const Track(
@@ -299,6 +381,64 @@ void main() {
       expect(bloc.state.currentIndex, 0);
       expect(bloc.state.currentTrack?.id, 'track-1');
       expect(bloc.state.currentPosition, 70);
+    });
+
+    test('keeps current queue item when remote seek position is track-relative',
+        () async {
+      final queue = [
+        const Track(
+          id: 'track-1',
+          queueItemId: 'queue-1',
+          title: 'Track 1',
+          artist: 'Artist',
+          fileUrl: '',
+          moodTags: [],
+          duration: 180,
+          seekOffsetSeconds: 0,
+        ),
+        const Track(
+          id: 'track-2',
+          queueItemId: 'queue-2',
+          title: 'Track 2',
+          artist: 'Artist',
+          fileUrl: '',
+          moodTags: [],
+          duration: 220,
+          seekOffsetSeconds: 180,
+        ),
+      ];
+
+      bloc.add(PlayerQueueSeeded(
+        tracks: queue,
+        playlistId: 'playlist-1',
+        force: true,
+      ));
+      await _tick();
+
+      bloc.add(const PlayerHlsStarted(
+        hlsUrl: 'https://stream.example.com/live.m3u8',
+        playlistId: 'playlist-1',
+        queueItemId: 'queue-2',
+        trackId: 'track-2',
+        trackName: 'Track 2',
+        seekOffsetSeconds: 18,
+        playLocally: false,
+      ));
+      await _tick();
+
+      bloc.add(const PlayerRemoteCommandApplied(
+        command: PlaybackCommandEnum.seek,
+        positionSeconds: 100,
+        playLocally: false,
+      ));
+      await _tick();
+
+      expect(bloc.state.currentTrackId, 'track-2');
+      expect(bloc.state.currentIndex, 1);
+      expect(bloc.state.currentTrack?.id, 'track-2');
+      expect(bloc.state.currentQueueItemId, 'queue-2');
+      expect(bloc.state.currentPosition, 280);
+      expect(bloc.state.displayPositionPrecise, closeTo(100, 0.001));
     });
 
     test(

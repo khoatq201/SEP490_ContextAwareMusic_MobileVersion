@@ -44,6 +44,9 @@ class NowPlayingTabPage extends StatefulWidget {
 }
 
 class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
+  static const int _defaultRemoteVolumePercent = 60;
+  static const int _minimumRemoteVolumePercent = 30;
+
   double _volume = 0.6;
   bool _isShuffleOn = false;
 
@@ -81,6 +84,124 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
     }
 
     return currentIndex >= 0 && currentIndex < sortedItems.length - 1;
+  }
+
+  int _normalizeAudibleVolumePercent(int requestedVolumePercent) {
+    final boundedVolume = requestedVolumePercent.clamp(0, 100).toInt();
+    if (boundedVolume <= 0) return 0;
+    if (boundedVolume < _minimumRemoteVolumePercent) {
+      return _minimumRemoteVolumePercent;
+    }
+    return boundedVolume;
+  }
+
+  int _preferredAudibleVolumePercent(BuildContext context) {
+    final playback = context.read<CamsPlaybackBloc>().state.playbackState;
+    final playbackVolume = playback?.volumePercent;
+    if (playbackVolume != null && playbackVolume > 0) {
+      return _normalizeAudibleVolumePercent(playbackVolume);
+    }
+
+    final localVolume = (_volume * 100).round().clamp(0, 100).toInt();
+    if (localVolume > 0) {
+      return _normalizeAudibleVolumePercent(localVolume);
+    }
+
+    return _defaultRemoteVolumePercent;
+  }
+
+  void _previewLocalVolume(
+    BuildContext context, {
+    required int volumePercent,
+    required bool isMuted,
+  }) {
+    context.read<PlayerBloc>().add(
+          PlayerAudioSettingsApplied(
+            volumePercent: volumePercent.clamp(0, 100).toInt(),
+            isMuted: isMuted,
+          ),
+        );
+  }
+
+  void _dispatchAudioStatePatch(
+    BuildContext context, {
+    int? volumePercent,
+    bool? isMuted,
+    int? queueEndBehavior,
+    int? localVolumePercent,
+    bool? localIsMuted,
+  }) {
+    context.read<CamsPlaybackBloc>().add(
+          CamsUpdateAudioState(
+            volumePercent: volumePercent,
+            isMuted: isMuted,
+            queueEndBehavior: queueEndBehavior,
+          ),
+        );
+
+    if (volumePercent != null || isMuted != null) {
+      context.read<PlayerBloc>().add(
+            PlayerAudioSettingsApplied(
+              volumePercent: (localVolumePercent ?? volumePercent ?? 100)
+                  .clamp(0, 100)
+                  .toInt(),
+              isMuted: localIsMuted ?? isMuted ?? false,
+            ),
+          );
+    }
+  }
+
+  void _applyVolumeIntent(
+    BuildContext context, {
+    required int requestedVolumePercent,
+  }) {
+    final boundedVolume = requestedVolumePercent.clamp(0, 100).toInt();
+    if (boundedVolume <= 0) {
+      _applyMuteIntent(context, isMuted: true);
+      return;
+    }
+
+    final normalizedVolume = _normalizeAudibleVolumePercent(boundedVolume);
+    setState(() {
+      _volume = normalizedVolume / 100.0;
+    });
+    _dispatchAudioStatePatch(
+      context,
+      volumePercent: normalizedVolume,
+      isMuted: false,
+      localVolumePercent: normalizedVolume,
+      localIsMuted: false,
+    );
+  }
+
+  void _applyMuteIntent(
+    BuildContext context, {
+    required bool isMuted,
+  }) {
+    if (isMuted) {
+      setState(() {
+        _volume = 0;
+      });
+      _dispatchAudioStatePatch(
+        context,
+        isMuted: true,
+        localVolumePercent: 0,
+        localIsMuted: true,
+      );
+      return;
+    }
+
+    final restoredVolume = _preferredAudibleVolumePercent(context);
+    setState(() {
+      _volume = restoredVolume / 100.0;
+    });
+    _dispatchAudioStatePatch(
+      context,
+      volumePercent: restoredVolume,
+      isMuted: false,
+      localVolumePercent: restoredVolume,
+      localIsMuted: false,
+    );
   }
 
   @override
@@ -393,25 +514,21 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                     final normalized = v.clamp(0.0, 1.0);
                     setState(() => _volume = normalized);
 
-                    final volumePercent =
-                        (normalized * 100).round().clamp(0, 100).toInt();
-                    final isMuted = volumePercent == 0;
-
-                    context.read<PlayerBloc>().add(
-                          PlayerAudioSettingsApplied(
-                            volumePercent: volumePercent,
-                            isMuted: isMuted,
-                          ),
-                        );
-
                     if (useRemoteControls) {
-                      context.read<CamsPlaybackBloc>().add(
-                            CamsUpdateAudioState(
-                              volumePercent: volumePercent,
-                              isMuted: isMuted,
-                            ),
-                          );
+                      _applyVolumeIntent(
+                        context,
+                        requestedVolumePercent:
+                            (normalized * 100).round().clamp(0, 100).toInt(),
+                      );
+                      return;
                     }
+
+                    _previewLocalVolume(
+                      context,
+                      volumePercent:
+                          (normalized * 100).round().clamp(0, 100).toInt(),
+                      isMuted: normalized == 0,
+                    );
                   },
                 ),
 
@@ -685,6 +802,9 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
 }
 
 class _QueueSheet extends StatelessWidget {
+  static const int _defaultRemoteVolumePercent = 60;
+  static const int _minimumRemoteVolumePercent = 30;
+
   const _QueueSheet({
     required this.palette,
     required this.controller,
@@ -694,6 +814,81 @@ class _QueueSheet extends StatelessWidget {
   final _NPPalette palette;
   final ScrollController controller;
   final VoidCallback onOpenAddToQueue;
+
+  int _normalizeAudibleVolumePercent(int requestedVolumePercent) {
+    final boundedVolume = requestedVolumePercent.clamp(0, 100).toInt();
+    if (boundedVolume <= 0) return 0;
+    if (boundedVolume < _minimumRemoteVolumePercent) {
+      return _minimumRemoteVolumePercent;
+    }
+    return boundedVolume;
+  }
+
+  int _preferredAudibleVolumePercent(BuildContext context) {
+    final playback = context.read<CamsPlaybackBloc>().state.playbackState;
+    final playbackVolume = playback?.volumePercent;
+    if (playbackVolume != null && playbackVolume > 0) {
+      return _normalizeAudibleVolumePercent(playbackVolume);
+    }
+    return _defaultRemoteVolumePercent;
+  }
+
+  void _previewLocalVolume(
+    BuildContext context, {
+    required int volumePercent,
+    required bool isMuted,
+  }) {
+    context.read<PlayerBloc>().add(
+          PlayerAudioSettingsApplied(
+            volumePercent: volumePercent.clamp(0, 100).toInt(),
+            isMuted: isMuted,
+          ),
+        );
+  }
+
+  void _applyMuteIntent(
+    BuildContext context, {
+    required bool isMuted,
+  }) {
+    if (isMuted) {
+      _dispatchAudioStatePatch(
+        context,
+        isMuted: true,
+        localVolumePercent: 0,
+        localIsMuted: true,
+      );
+      return;
+    }
+
+    final restoredVolume = _preferredAudibleVolumePercent(context);
+    _dispatchAudioStatePatch(
+      context,
+      volumePercent: restoredVolume,
+      isMuted: false,
+      localVolumePercent: restoredVolume,
+      localIsMuted: false,
+    );
+  }
+
+  void _applyVolumeIntent(
+    BuildContext context, {
+    required int requestedVolumePercent,
+  }) {
+    final boundedVolume = requestedVolumePercent.clamp(0, 100).toInt();
+    if (boundedVolume <= 0) {
+      _applyMuteIntent(context, isMuted: true);
+      return;
+    }
+
+    final normalizedVolume = _normalizeAudibleVolumePercent(boundedVolume);
+    _dispatchAudioStatePatch(
+      context,
+      volumePercent: normalizedVolume,
+      isMuted: false,
+      localVolumePercent: normalizedVolume,
+      localIsMuted: false,
+    );
+  }
 
   void _dispatchQueueReorder(
     BuildContext context,
@@ -776,6 +971,8 @@ class _QueueSheet extends StatelessWidget {
     int? volumePercent,
     bool? isMuted,
     int? queueEndBehavior,
+    int? localVolumePercent,
+    bool? localIsMuted,
   }) {
     context.read<CamsPlaybackBloc>().add(
           CamsUpdateAudioState(
@@ -788,8 +985,10 @@ class _QueueSheet extends StatelessWidget {
     if (volumePercent != null || isMuted != null) {
       context.read<PlayerBloc>().add(
             PlayerAudioSettingsApplied(
-              volumePercent: volumePercent ?? 100,
-              isMuted: isMuted ?? false,
+              volumePercent: (localVolumePercent ?? volumePercent ?? 100)
+                  .clamp(0, 100)
+                  .toInt(),
+              isMuted: localIsMuted ?? isMuted ?? false,
             ),
           );
     }
@@ -931,19 +1130,29 @@ class _QueueSheet extends StatelessWidget {
                               isMuted: playback.isMuted,
                               queueEndBehavior: playback.queueEndBehavior,
                               onToggleMute: (nextMuted) {
-                                _dispatchAudioStatePatch(
+                                _applyMuteIntent(
                                   context,
-                                  volumePercent: playback.volumePercent,
                                   isMuted: nextMuted,
                                 );
                               },
-                              onVolumeChanged: (volumePercent) {
+                              onVolumePreviewChanged: (volumePercent) {
                                 final bounded =
                                     volumePercent.clamp(0, 100).toInt();
-                                _dispatchAudioStatePatch(
+                                final previewMuted = bounded == 0;
+                                _previewLocalVolume(
                                   context,
-                                  volumePercent: bounded,
-                                  isMuted: bounded == 0,
+                                  volumePercent: previewMuted
+                                      ? 0
+                                      : _normalizeAudibleVolumePercent(
+                                          bounded,
+                                        ),
+                                  isMuted: previewMuted,
+                                );
+                              },
+                              onVolumeChanged: (volumePercent) {
+                                _applyVolumeIntent(
+                                  context,
+                                  requestedVolumePercent: volumePercent,
                                 );
                               },
                               onQueueEndBehaviorChanged: (behavior) {
@@ -1195,13 +1404,14 @@ class _QueueSheet extends StatelessWidget {
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 // â”€â”€ Top Bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-class _QueueAudioControls extends StatelessWidget {
+class _QueueAudioControls extends StatefulWidget {
   const _QueueAudioControls({
     required this.palette,
     required this.volumePercent,
     required this.isMuted,
     required this.queueEndBehavior,
     required this.onToggleMute,
+    required this.onVolumePreviewChanged,
     required this.onVolumeChanged,
     required this.onQueueEndBehaviorChanged,
   });
@@ -1211,22 +1421,50 @@ class _QueueAudioControls extends StatelessWidget {
   final bool isMuted;
   final int queueEndBehavior;
   final ValueChanged<bool> onToggleMute;
+  final ValueChanged<int> onVolumePreviewChanged;
   final ValueChanged<int> onVolumeChanged;
   final ValueChanged<QueueEndBehaviorEnum> onQueueEndBehaviorChanged;
 
   @override
+  State<_QueueAudioControls> createState() => _QueueAudioControlsState();
+}
+
+class _QueueAudioControlsState extends State<_QueueAudioControls> {
+  double? _draftVolumePercent;
+  bool _isDragging = false;
+
+  int get _effectiveVolumePercent =>
+      widget.isMuted ? 0 : widget.volumePercent.clamp(0, 100).toInt();
+
+  @override
+  void didUpdateWidget(covariant _QueueAudioControls oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_isDragging || _draftVolumePercent == null) return;
+
+    final drift = (_effectiveVolumePercent - _draftVolumePercent!).abs();
+    if (drift <= 1) {
+      setState(() {
+        _draftVolumePercent = null;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final boundedVolume = volumePercent.clamp(0, 100).toInt();
-    final effectiveVolume = isMuted ? 0 : boundedVolume;
-    final selectedBehavior = QueueEndBehaviorEnum.fromValue(queueEndBehavior);
+    final displayedVolumePercent =
+        (_draftVolumePercent ?? _effectiveVolumePercent.toDouble())
+            .clamp(0.0, 100.0)
+            .toDouble();
+    final selectedBehavior =
+        QueueEndBehaviorEnum.fromValue(widget.queueEndBehavior);
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
       decoration: BoxDecoration(
-        color: palette.overlay,
+        color: widget.palette.overlay,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: palette.border),
+        border: Border.all(color: widget.palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1236,16 +1474,16 @@ class _QueueAudioControls extends StatelessWidget {
               Text(
                 'Audio settings',
                 style: GoogleFonts.inter(
-                  color: palette.textPrimary,
+                  color: widget.palette.textPrimary,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
               ),
               const Spacer(),
               Text(
-                '${effectiveVolume.toStringAsFixed(0)}%',
+                '${displayedVolumePercent.round()}%',
                 style: GoogleFonts.inter(
-                  color: palette.textMuted,
+                  color: widget.palette.textMuted,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
@@ -1255,12 +1493,20 @@ class _QueueAudioControls extends StatelessWidget {
                 constraints:
                     const BoxConstraints.tightFor(width: 28, height: 28),
                 padding: EdgeInsets.zero,
-                tooltip: isMuted ? 'Unmute' : 'Mute',
-                onPressed: () => onToggleMute(!isMuted),
+                tooltip: widget.isMuted ? 'Unmute' : 'Mute',
+                onPressed: () {
+                  setState(() {
+                    _draftVolumePercent = widget.isMuted
+                        ? widget.volumePercent.clamp(0, 100).toDouble()
+                        : 0;
+                    _isDragging = false;
+                  });
+                  widget.onToggleMute(!widget.isMuted);
+                },
                 icon: Icon(
-                  isMuted ? LucideIcons.volumeX : LucideIcons.volume2,
+                  widget.isMuted ? LucideIcons.volumeX : LucideIcons.volume2,
                   size: 16,
-                  color: palette.textMuted,
+                  color: widget.palette.textMuted,
                 ),
               ),
             ],
@@ -1269,17 +1515,38 @@ class _QueueAudioControls extends StatelessWidget {
             data: SliderTheme.of(context).copyWith(
               trackHeight: 3,
               thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-              activeTrackColor: palette.textPrimary,
-              inactiveTrackColor: palette.textMuted.withOpacity(0.25),
-              thumbColor: palette.textPrimary,
-              overlayColor: palette.textPrimary.withOpacity(0.15),
+              activeTrackColor: widget.palette.textPrimary,
+              inactiveTrackColor: widget.palette.textMuted.withOpacity(0.25),
+              thumbColor: widget.palette.textPrimary,
+              overlayColor: widget.palette.textPrimary.withOpacity(0.15),
             ),
             child: Slider(
-              value: effectiveVolume.toDouble(),
+              value: displayedVolumePercent,
               min: 0,
               max: 100,
               divisions: 20,
-              onChanged: (value) => onVolumeChanged(value.round()),
+              onChangeStart: (value) {
+                setState(() {
+                  _isDragging = true;
+                  _draftVolumePercent = value.clamp(0.0, 100.0).toDouble();
+                });
+              },
+              onChanged: (value) {
+                final nextValue = value.clamp(0.0, 100.0).toDouble();
+                setState(() {
+                  _draftVolumePercent = nextValue;
+                });
+                widget.onVolumePreviewChanged(nextValue.round());
+              },
+              onChangeEnd: (value) {
+                final roundedVolume =
+                    value.clamp(0.0, 100.0).round().clamp(0, 100).toInt();
+                setState(() {
+                  _isDragging = false;
+                  _draftVolumePercent = roundedVolume.toDouble();
+                });
+                widget.onVolumeChanged(roundedVolume);
+              },
             ),
           ),
           const SizedBox(height: 4),
@@ -1292,19 +1559,21 @@ class _QueueAudioControls extends StatelessWidget {
                 label: Text(
                   behavior.label,
                   style: GoogleFonts.inter(
-                    color:
-                        selected ? palette.textOnAccent : palette.textPrimary,
+                    color: selected
+                        ? widget.palette.textOnAccent
+                        : widget.palette.textPrimary,
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 selected: selected,
-                selectedColor: palette.accent,
-                backgroundColor: palette.card,
+                selectedColor: widget.palette.accent,
+                backgroundColor: widget.palette.card,
                 side: BorderSide(
-                  color: selected ? palette.accent : palette.border,
+                  color:
+                      selected ? widget.palette.accent : widget.palette.border,
                 ),
-                onSelected: (_) => onQueueEndBehaviorChanged(behavior),
+                onSelected: (_) => widget.onQueueEndBehaviorChanged(behavior),
               );
             }).toList(),
           ),

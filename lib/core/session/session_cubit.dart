@@ -30,7 +30,10 @@ class SessionCubit extends Cubit<SessionState> {
 
   SessionCubit({required LocalStorageService localStorage})
       : _localStorage = localStorage,
-        super(const SessionState.initial());
+        super(SessionState.initial(
+          managerLocalPlaybackEnabled:
+              localStorage.getManagerLocalPlaybackEnabled(),
+        ));
 
   // ------------------------ Mutators ------------------------
 
@@ -108,9 +111,22 @@ class SessionCubit extends Cubit<SessionState> {
     _persistSelectionSnapshot();
   }
 
+  Future<void> setManagerLocalPlaybackEnabled(bool enabled) async {
+    if (state.managerLocalPlaybackEnabled == enabled) return;
+    emit(state.copyWith(managerLocalPlaybackEnabled: enabled));
+    try {
+      await _localStorage.saveManagerLocalPlaybackEnabled(enabled);
+    } catch (_) {
+      // Best effort only; keep in-memory preference for this session.
+    }
+  }
+
   /// Full reset - used on logout or unpairing.
   void reset() {
-    emit(const SessionState.initial());
+    emit(SessionState.initial(
+      managerLocalPlaybackEnabled:
+          _localStorage.getManagerLocalPlaybackEnabled(),
+    ));
     unawaited(clearSelectionSnapshot());
   }
 

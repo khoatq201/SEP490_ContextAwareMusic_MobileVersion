@@ -30,18 +30,23 @@ class SessionState extends Equatable {
   /// If in playback device mode, the ID of the paired device.
   final String? pairedDeviceId;
 
+  /// Whether manager-mode sessions should also render/play CAMS audio locally.
+  final bool managerLocalPlaybackEnabled;
+
   const SessionState({
     required this.appMode,
     required this.currentRole,
     this.currentStore,
     this.currentSpace,
     this.pairedDeviceId,
+    this.managerLocalPlaybackEnabled = true,
   });
 
   /// Default initial state — defaults to [AppMode.remoteControl] and
   /// [UserRole.storeManager] with no store or space selected.
-  const SessionState.initial()
-      : appMode = AppMode.remoteControl,
+  const SessionState.initial({
+    this.managerLocalPlaybackEnabled = true,
+  })  : appMode = AppMode.remoteControl,
         currentRole = UserRole.storeManager,
         currentStore = null,
         currentSpace = null,
@@ -85,6 +90,7 @@ class SessionState extends Equatable {
     Store? currentStore,
     Space? currentSpace,
     String? pairedDeviceId,
+    bool? managerLocalPlaybackEnabled,
     bool clearStore = false,
     bool clearSpace = false,
   }) {
@@ -94,6 +100,8 @@ class SessionState extends Equatable {
       currentStore: clearStore ? null : (currentStore ?? this.currentStore),
       currentSpace: clearSpace ? null : (currentSpace ?? this.currentSpace),
       pairedDeviceId: pairedDeviceId ?? this.pairedDeviceId,
+      managerLocalPlaybackEnabled:
+          managerLocalPlaybackEnabled ?? this.managerLocalPlaybackEnabled,
     );
   }
 
@@ -106,6 +114,7 @@ class SessionState extends Equatable {
         currentStore,
         currentSpace,
         pairedDeviceId,
+        managerLocalPlaybackEnabled,
       ];
 
   @override
@@ -113,5 +122,6 @@ class SessionState extends Equatable {
       'SessionState(mode: ${appMode.name}, role: ${currentRole.label}, '
       'store: ${currentStore?.name ?? "none"}, '
       'space: ${currentSpace?.name ?? "none"}, '
-      'device: ${pairedDeviceId ?? "none"})';
+      'device: ${pairedDeviceId ?? "none"}, '
+      'managerLocalPlaybackEnabled: $managerLocalPlaybackEnabled)';
 }
