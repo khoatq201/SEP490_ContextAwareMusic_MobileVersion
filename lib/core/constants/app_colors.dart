@@ -1,56 +1,52 @@
 import 'package:flutter/material.dart';
 
-/// CAMS Theme Colors - Adaptive Retail Hub
-/// Based on: Retail Energy (Orange) + Technology Intelligence (Teal)
-/// Inspired by CAMS logo design
+/// CAMS theme colors derived from the updated login reference.
+/// Primary actions lean cyan-blue and surfaces stay bright and airy.
 class AppColors {
   // ==========================================
-  // PRIMARY BRAND - Professional Blue
+  // PRIMARY BRAND - CAMS Sky Blue
   // ==========================================
-  static const Color primaryOrange = Color(0xFF2196F3); // Professional blue
+  static const Color primaryOrange = Color(0xFF1EA7FD); // CTA blue
   static const Color primaryOrangeDark =
-      Color(0xFF1976D2); // Darker for pressed states
+      Color(0xFF0E6BCB); // Deep pressed state
   static const Color primaryOrangeLight =
-      Color(0xFF64B5F6); // Lighter for hover states
+      Color(0xFF72D2FF); // Bright cyan highlight
   static const Color primaryOrangePale =
-      Color(0xFFBBDEFB); // Very light for backgrounds
+      Color(0xFFE6F6FF); // Soft background wash
 
   // ==========================================
-  // SECONDARY BRAND - Technology Intelligence (Teal)
+  // SECONDARY BRAND - Logo Blue
   // ==========================================
-  static const Color secondaryTeal = Color(0xFF26A69A); // Deep teal from logo
-  static const Color secondaryTealDark = Color(0xFF00897B); // Darker teal
-  static const Color secondaryTealLight = Color(0xFF4DB6AC); // Lighter teal
+  static const Color secondaryTeal = Color(0xFF2A7BBB); // Signature logo blue
+  static const Color secondaryTealDark = Color(0xFF1C5D96); // Deep ring blue
+  static const Color secondaryTealLight =
+      Color(0xFF8ACAF1); // Soft supporting blue
   static const Color secondaryTealPale =
-      Color(0xFFB2DFDB); // Very light for backgrounds
+      Color(0xFFDDF0FF); // Pale secondary surface
 
   // ==========================================
-  // NEUTRAL COLORS - Professional Grayscale
+  // NEUTRAL COLORS - Clean Blue-Tinted Surfaces
   // ==========================================
-  static const Color backgroundPrimary =
-      Color(0xFFFAFAFA); // Very clean light gray, not pure white
+  static const Color backgroundPrimary = Color(0xFFF6FBFF); // App background
   static const Color backgroundSecondary =
-      Color(0xFFF5F5F5); // Slightly darker for cards
+      Color(0xFFEEF6FD); // Card surroundings
   static const Color backgroundTertiary =
-      Color(0xFFEEEEEE); // For subtle distinctions
-  static const Color surface =
-      Color(0xFFFFFFFF); // Pure white for elevated cards
+      Color(0xFFE3EFF8); // Subtle section separation
+  static const Color surface = Color(0xFFFFFFFF); // Elevated surfaces
 
-  static const Color textPrimary =
-      Color(0xFF212121); // Deep charcoal, not pure black
-  static const Color textSecondary =
-      Color(0xFF424242); // Medium gray for secondary text
+  static const Color textPrimary = Color(0xFF1D2736); // Ink blue/charcoal
+  static const Color textSecondary = Color(0xFF4B5B70); // Secondary content
   static const Color textTertiary =
-      Color(0xFF757575); // Light gray for hints/disabled
+      Color(0xFF7C8AA0); // Hints and supporting text
   static const Color textInverse =
-      Color(0xFFFFFFFF); // White text on dark backgrounds
+      Color(0xFFFFFFFF); // White text on solid buttons
 
-  static const Color borderLight = Color(0xFFE0E0E0); // Light borders
-  static const Color borderMedium = Color(0xFFBDBDBD); // Medium borders
-  static const Color borderDark = Color(0xFF9E9E9E); // Dark borders
+  static const Color borderLight = Color(0xFFD7E6F2); // Subtle borders
+  static const Color borderMedium = Color(0xFFB1C9DB); // Stronger borders
+  static const Color borderDark = Color(0xFF7E9CB6); // Emphasis borders
 
-  static const Color divider = Color(0xFFEEEEEE); // Divider lines
-  static const Color shadow = Color(0x1A000000); // 10% black for shadows
+  static const Color divider = Color(0xFFE3EDF6); // Divider lines
+  static const Color shadow = Color(0x144A7AA5); // Soft blue shadow
 
   // ==========================================
   // SEMANTIC STATE COLORS - Dashboard Status
@@ -72,10 +68,10 @@ class AppColors {
   static const Color errorDark = Color(0xFFD32F2F);
   static const Color errorPale = Color(0xFFFFCDD2);
 
-  static const Color info = Color(0xFF2196F3); // Blue for informational states
-  static const Color infoLight = Color(0xFF64B5F6);
-  static const Color infoDark = Color(0xFF1976D2);
-  static const Color infoPale = Color(0xFFBBDEFB);
+  static const Color info = primaryOrange;
+  static const Color infoLight = primaryOrangeLight;
+  static const Color infoDark = primaryOrangeDark;
+  static const Color infoPale = primaryOrangePale;
 
   // ==========================================
   // DARK MODE COLORS - Minimalist Digital Pulse
@@ -194,10 +190,10 @@ class AppColors {
   // ==========================================
   // MOOD-SPECIFIC COLORS - Music Context
   // ==========================================
-  static const Color energeticColor = primaryOrange; // Retail energy - Orange
-  static const Color focusColor = secondaryTeal; // Technology focus - Teal
+  static const Color energeticColor = primaryOrange; // Retail energy - Blue
+  static const Color focusColor = secondaryTeal; // Technology focus
   static const Color chillColor =
-      Color(0xFF4DD0E1); // Relaxation - Cyan (lighter teal)
+      Color(0xFF7CCDF5); // Relaxation - Soft sky blue
   static const Color upliftingColor =
       Color(0xFFFFD54F); // Positivity - Golden yellow
 

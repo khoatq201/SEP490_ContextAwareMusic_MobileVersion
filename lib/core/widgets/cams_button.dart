@@ -111,8 +111,8 @@ class CAMSButton extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppDimensions.radiusButton),
       ),
-      elevation: 2,
-      shadowColor: (customColor ?? AppColors.primaryOrange).withOpacity(0.15),
+      elevation: 0,
+      shadowColor: (customColor ?? AppColors.primaryOrange).withOpacity(0.18),
     ).copyWith(
       overlayColor: WidgetStateProperty.all(
         Colors.white.withOpacity(0.1),
@@ -122,7 +122,7 @@ class CAMSButton extends StatelessWidget {
 
   ButtonStyle _secondaryStyle() {
     return ElevatedButton.styleFrom(
-      backgroundColor: AppColors.primaryOrangeLight,
+      backgroundColor: AppColors.primaryOrangePale,
       foregroundColor: AppColors.primaryOrangeDark,
       padding: _getPadding(),
       minimumSize: Size(0, _getHeight()),
@@ -146,8 +146,8 @@ class CAMSButton extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppDimensions.radiusButton),
       ),
-      elevation: 2,
-      shadowColor: (customColor ?? AppColors.secondaryTeal).withOpacity(0.15),
+      elevation: 0,
+      shadowColor: (customColor ?? AppColors.secondaryTeal).withOpacity(0.18),
     ).copyWith(
       overlayColor: WidgetStateProperty.all(
         Colors.white.withOpacity(0.1),

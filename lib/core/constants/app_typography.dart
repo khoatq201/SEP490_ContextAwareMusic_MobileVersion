@@ -160,8 +160,8 @@ class AppTypography {
     color: AppColors.primaryOrange,
     shadows: [
       Shadow(
-        color: AppColors.primaryOrange.withOpacity(0.3),
-        blurRadius: 8,
+        color: AppColors.primaryOrange.withOpacity(0.18),
+        blurRadius: 10,
         offset: const Offset(0, 2),
       ),
     ],
@@ -181,8 +181,8 @@ class AppTypography {
     fontFamily: primaryFont,
     fontSize: 16,
     fontWeight: FontWeight.w700,
-    letterSpacing: 1.2,
-    height: 1.0,
+    letterSpacing: 0.2,
+    height: 1.1,
   );
 
   /// Sensor value display (large numbers)
