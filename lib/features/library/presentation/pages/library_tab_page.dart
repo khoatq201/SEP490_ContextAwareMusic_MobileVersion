@@ -3070,6 +3070,7 @@ class _GenerateSunoTrackBottomSheetState
                             const SizedBox(height: 12),
                             DropdownButtonFormField<BrandProfileSunoMood>(
                               initialValue: _selectedProfileMood,
+                              isExpanded: true,
                               decoration: _editorDecoration(
                                 label: 'Primary music zone',
                                 isDark: isDark,
@@ -3079,9 +3080,7 @@ class _GenerateSunoTrackBottomSheetState
                                     (mood) => DropdownMenuItem<
                                         BrandProfileSunoMood>(
                                       value: mood,
-                                      child: Text(
-                                        '${mood.label} (${mood.shortLabel} BPM band)',
-                                      ),
+                                      child: _dropdownItemLabel(mood.label),
                                     ),
                                   )
                                   .toList(),
@@ -3123,19 +3122,22 @@ class _GenerateSunoTrackBottomSheetState
                                       .any((mood) => mood.id == _selectedMoodId)
                                   ? _selectedMoodId
                                   : null,
+                              isExpanded: true,
                               decoration: _editorDecoration(
                                 label: 'Catalog mood (optional)',
                                 isDark: isDark,
                               ),
                               items: [
-                                const DropdownMenuItem<String?>(
+                                DropdownMenuItem<String?>(
                                   value: null,
-                                  child: Text('No mood preference'),
+                                  child: _dropdownItemLabel(
+                                    'No mood preference',
+                                  ),
                                 ),
                                 ...sortedMoods.map(
                                   (mood) => DropdownMenuItem<String?>(
                                     value: mood.id,
-                                    child: Text(mood.name),
+                                    child: _dropdownItemLabel(mood.name),
                                   ),
                                 ),
                               ],
@@ -3215,19 +3217,22 @@ class _GenerateSunoTrackBottomSheetState
                                       .any((mood) => mood.id == _selectedMoodId)
                                   ? _selectedMoodId
                                   : null,
+                              isExpanded: true,
                               decoration: _editorDecoration(
                                 label: 'Mood',
                                 isDark: isDark,
                               ),
                               items: [
-                                const DropdownMenuItem<String?>(
+                                DropdownMenuItem<String?>(
                                   value: null,
-                                  child: Text('No mood preference'),
+                                  child: _dropdownItemLabel(
+                                    'No mood preference',
+                                  ),
                                 ),
                                 ...sortedMoods.map(
                                   (mood) => DropdownMenuItem<String?>(
                                     value: mood.id,
-                                    child: Text(mood.name),
+                                    child: _dropdownItemLabel(mood.name),
                                   ),
                                 ),
                               ],
@@ -3277,19 +3282,22 @@ class _GenerateSunoTrackBottomSheetState
                                     playlist.id == _selectedPlaylistId)
                                 ? _selectedPlaylistId
                                 : null,
+                            isExpanded: true,
                             decoration: _editorDecoration(
                               label: 'Target playlist',
                               isDark: isDark,
                             ),
                             items: [
-                              const DropdownMenuItem<String?>(
+                              DropdownMenuItem<String?>(
                                 value: null,
-                                child: Text('No target playlist'),
+                                child: _dropdownItemLabel(
+                                  'No target playlist',
+                                ),
                               ),
                               ...widget.playlists.map(
                                 (playlist) => DropdownMenuItem<String?>(
                                   value: playlist.id,
-                                  child: Text(playlist.title),
+                                  child: _dropdownItemLabel(playlist.title),
                                 ),
                               ),
                             ],
@@ -3375,6 +3383,7 @@ class _GenerateSunoTrackBottomSheetState
                                         )
                                             ? _selectedGenerationMode
                                             : generationModes.first,
+                                        isExpanded: true,
                                         decoration: _editorDecoration(
                                           label: 'Generation mode',
                                           isDark: isDark,
@@ -3384,7 +3393,9 @@ class _GenerateSunoTrackBottomSheetState
                                               (mode) => DropdownMenuItem<
                                                   AiGenerationModeEnum?>(
                                                 value: mode,
-                                                child: Text(mode.displayName),
+                                                child: _dropdownItemLabel(
+                                                  mode.displayName,
+                                                ),
                                               ),
                                             )
                                             .toList(),
@@ -3402,6 +3413,7 @@ class _GenerateSunoTrackBottomSheetState
                                         )
                                             ? _selectedFuzzyTemplate
                                             : fuzzyTemplates.first,
+                                        isExpanded: true,
                                         decoration: _editorDecoration(
                                           label: 'Fuzzy profile template',
                                           isDark: isDark,
@@ -3411,7 +3423,9 @@ class _GenerateSunoTrackBottomSheetState
                                               (template) =>
                                                   DropdownMenuItem<String?>(
                                                 value: template,
-                                                child: Text(template),
+                                                child: _dropdownItemLabel(
+                                                  template,
+                                                ),
                                               ),
                                             )
                                             .toList(),
@@ -3778,6 +3792,7 @@ class _SunoConfigBottomSheetState extends State<_SunoConfigBottomSheet> {
                             )
                                 ? _selectedGenerationMode
                                 : generationModes.first,
+                            isExpanded: true,
                             decoration: _editorDecoration(
                               label: 'Generation mode',
                               isDark: isDark,
@@ -3787,7 +3802,9 @@ class _SunoConfigBottomSheetState extends State<_SunoConfigBottomSheet> {
                                   (mode) =>
                                       DropdownMenuItem<AiGenerationModeEnum?>(
                                     value: mode,
-                                    child: Text(mode.displayName),
+                                    child: _dropdownItemLabel(
+                                      mode.displayName,
+                                    ),
                                   ),
                                 )
                                 .toList(),
@@ -3811,19 +3828,22 @@ class _SunoConfigBottomSheetState extends State<_SunoConfigBottomSheet> {
                                   playlist.id == _selectedPlaylistId)
                               ? _selectedPlaylistId
                               : null,
+                          isExpanded: true,
                           decoration: _editorDecoration(
                             label: 'Default playlist',
                             isDark: isDark,
                           ),
                           items: [
-                            const DropdownMenuItem<String?>(
+                            DropdownMenuItem<String?>(
                               value: null,
-                              child: Text('No default playlist'),
+                              child: _dropdownItemLabel(
+                                'No default playlist',
+                              ),
                             ),
                             ...widget.playlists.map(
                               (playlist) => DropdownMenuItem<String?>(
                                 value: playlist.id,
-                                child: Text(playlist.title),
+                                child: _dropdownItemLabel(playlist.title),
                               ),
                             ),
                           ],
@@ -3901,6 +3921,14 @@ InputDecoration _editorDecoration({
       borderSide: BorderSide.none,
     ),
     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+  );
+}
+
+Widget _dropdownItemLabel(String text) {
+  return Text(
+    text,
+    maxLines: 1,
+    overflow: TextOverflow.ellipsis,
   );
 }
 
@@ -4224,6 +4252,7 @@ class _CreatePlaylistBottomSheetState extends State<_CreatePlaylistBottomSheet> 
                           const SizedBox(height: 10),
                           DropdownButtonFormField<String?>(
                             initialValue: _selectedMoodId,
+                            isExpanded: true,
                             decoration: _editorDecoration(
                               label: 'Mood',
                               isDark: isDark,
@@ -4234,14 +4263,16 @@ class _CreatePlaylistBottomSheetState extends State<_CreatePlaylistBottomSheet> 
                             ),
                             dropdownColor: palette.card,
                             items: [
-                              const DropdownMenuItem<String?>(
+                              DropdownMenuItem<String?>(
                                 value: null,
-                                child: Text('No mood assigned'),
+                                child: _dropdownItemLabel(
+                                  'No mood assigned',
+                                ),
                               ),
                               ..._sortedMoods.map(
                                 (mood) => DropdownMenuItem<String?>(
                                   value: mood.id,
-                                  child: Text(mood.name),
+                                  child: _dropdownItemLabel(mood.name),
                                 ),
                               ),
                             ],
