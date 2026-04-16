@@ -188,14 +188,20 @@ class SpacePlaybackState extends Equatable {
   });
 
   SpaceQueueStateItem? get effectiveQueueItem {
-    if (spaceQueueItems.isEmpty ||
-        currentQueueItemId == null ||
-        currentQueueItemId!.isEmpty) {
+    if (spaceQueueItems.isEmpty) {
       return null;
     }
 
+    if (currentQueueItemId != null && currentQueueItemId!.isNotEmpty) {
+      for (final item in spaceQueueItems) {
+        if (item.queueItemId == currentQueueItemId) {
+          return item;
+        }
+      }
+    }
+
     for (final item in spaceQueueItems) {
-      if (item.queueItemId == currentQueueItemId) {
+      if (item.queueStatus == queueStatusPlaying) {
         return item;
       }
     }
@@ -231,6 +237,10 @@ class SpacePlaybackState extends Equatable {
     if (currentQueueItemId != null && currentQueueItemId!.isNotEmpty) {
       return currentQueueItemId;
     }
+    final queueItemId = effectiveQueueItem?.queueItemId;
+    if (queueItemId != null && queueItemId.isNotEmpty) {
+      return queueItemId;
+    }
     return null;
   }
 
@@ -238,12 +248,20 @@ class SpacePlaybackState extends Equatable {
     if (currentTrackName != null && currentTrackName!.isNotEmpty) {
       return currentTrackName;
     }
+    final queueTrackName = effectiveQueueItem?.trackName;
+    if (queueTrackName != null && queueTrackName.isNotEmpty) {
+      return queueTrackName;
+    }
     return currentPlaylistName;
   }
 
   String? get effectiveHlsUrl {
     if (hlsUrl != null && hlsUrl!.isNotEmpty) {
       return hlsUrl;
+    }
+    final queueHlsUrl = effectiveQueueItem?.hlsUrl;
+    if (queueHlsUrl != null && queueHlsUrl.isNotEmpty) {
+      return queueHlsUrl;
     }
     return null;
   }

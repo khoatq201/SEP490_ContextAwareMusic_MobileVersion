@@ -6,7 +6,9 @@ import '../../../../core/error/failures.dart';
 import '../../../home/domain/entities/playlist_entity.dart';
 import '../../../home/domain/entities/song_entity.dart';
 import '../../../moods/data/datasources/mood_remote_datasource.dart';
+import '../../../playlists/data/models/api_playlist_model.dart';
 import '../../../playlists/data/datasources/playlist_remote_datasource.dart';
+import '../../../tracks/data/models/api_track_model.dart';
 import '../../../tracks/data/datasources/track_remote_datasource.dart';
 import '../../domain/entities/album_entity.dart';
 import '../../domain/entities/artist_entity.dart';
@@ -15,6 +17,9 @@ import '../../domain/entities/search_result.dart';
 import '../../domain/repositories/search_repository.dart';
 
 class SearchRepositoryImpl implements SearchRepository {
+  static const int _fallbackPlaylistSearchPageSize = 100;
+  static const int _fallbackTrackSearchPageSize = 100;
+
   SearchRepositoryImpl({
     required this.playlistDataSource,
     required this.trackDataSource,
@@ -80,24 +85,18 @@ class SearchRepositoryImpl implements SearchRepository {
     }
 
     try {
-      final results = <SearchResult>[];
+      final results = <String, SearchResult>{};
+      final normalizedQuery = _normalizeSearchText(query);
       final playlistResp = await playlistDataSource.getPlaylists(
         page: 1,
         pageSize: 10,
         search: query,
       );
 
-      for (final playlist in playlistResp.items) {
-        results.add(
-          SearchResult(
-            id: playlist.id,
-            title: playlist.name,
-            subtitle: 'PLAYLIST - ${playlist.moodName ?? ''}',
-            imageUrl: null,
-            type: SearchResultType.playlist,
-          ),
-        );
-      }
+      _addPlaylistResults(results, playlistResp.items);
+      final hasPlaylistHit = playlistResp.items.any(
+        (playlist) => _matchesPlaylistQuery(playlist, normalizedQuery),
+      );
 
       final trackResp = await trackDataSource.getTracks(
         page: 1,
@@ -105,22 +104,51 @@ class SearchRepositoryImpl implements SearchRepository {
         search: query,
       );
 
-      for (final track in trackResp.items) {
-        results.add(
-          SearchResult(
-            id: track.id,
-            title: track.title,
-            subtitle: track.artist ?? 'Unknown',
-            imageUrl: track.coverImageUrl,
-            type: SearchResultType.song,
-            duration: track.formattedDuration,
-            durationSeconds: track.durationSec,
-            streamUrl: track.hlsUrl,
-          ),
+      _addTrackResults(results, trackResp.items);
+      final matchingArtistTracks = trackResp.items
+          .where(
+              (track) => _matchesNormalizedQuery(track.artist, normalizedQuery))
+          .toList(growable: false);
+      final hasTrackHit = trackResp.items.any(
+        (track) => _matchesTrackQuery(track, normalizedQuery),
+      );
+      _addArtistResults(
+        results,
+        matchingArtistTracks,
+      );
+
+      if (!hasPlaylistHit) {
+        final fallbackPlaylistResp = await playlistDataSource.getPlaylists(
+          page: 1,
+          pageSize: _fallbackPlaylistSearchPageSize,
         );
+
+        final fallbackPlaylists = fallbackPlaylistResp.items
+            .where(
+                (playlist) => _matchesPlaylistQuery(playlist, normalizedQuery))
+            .toList(growable: false);
+
+        _addPlaylistResults(results, fallbackPlaylists);
       }
 
-      return Right(results);
+      if (!hasTrackHit || matchingArtistTracks.isEmpty) {
+        final fallbackTrackResp = await trackDataSource.getTracks(
+          page: 1,
+          pageSize: _fallbackTrackSearchPageSize,
+        );
+        final fallbackTracks = fallbackTrackResp.items
+            .where((track) => _matchesTrackQuery(track, normalizedQuery))
+            .toList(growable: false);
+        final fallbackArtistTracks = fallbackTrackResp.items
+            .where((track) =>
+                _matchesNormalizedQuery(track.artist, normalizedQuery))
+            .toList(growable: false);
+
+        _addTrackResults(results, fallbackTracks);
+        _addArtistResults(results, fallbackArtistTracks);
+      }
+
+      return Right(results.values.toList(growable: false));
     } catch (error, stackTrace) {
       return Left(
         ErrorMapper.toFailure(
@@ -304,5 +332,179 @@ class SearchRepositoryImpl implements SearchRepository {
         ),
       );
     }
+  }
+
+  void _addPlaylistResults(
+    Map<String, SearchResult> results,
+    List<ApiPlaylistModel> playlists,
+  ) {
+    for (final playlist in playlists) {
+      final key = 'playlist:${playlist.id}';
+      results.putIfAbsent(
+        key,
+        () => SearchResult(
+          id: playlist.id,
+          title: playlist.name,
+          subtitle: 'PLAYLIST - ${playlist.moodName ?? ''}',
+          imageUrl: null,
+          type: SearchResultType.playlist,
+        ),
+      );
+    }
+  }
+
+  void _addTrackResults(
+    Map<String, SearchResult> results,
+    List<ApiTrackModel> tracks,
+  ) {
+    for (final track in tracks) {
+      final key = 'track:${track.id}';
+      results.putIfAbsent(
+        key,
+        () => SearchResult(
+          id: track.id,
+          title: track.title,
+          subtitle: track.artist ?? 'Unknown',
+          imageUrl: track.coverImageUrl,
+          type: SearchResultType.song,
+          duration: track.formattedDuration,
+          durationSeconds: track.durationSec,
+          streamUrl: track.hlsUrl,
+        ),
+      );
+    }
+  }
+
+  void _addArtistResults(
+    Map<String, SearchResult> results,
+    List<ApiTrackModel> tracks,
+  ) {
+    final uniqueArtists = <String>{};
+    for (final track in tracks) {
+      final artist = track.artist?.trim();
+      if (artist == null || artist.isEmpty) continue;
+      final normalizedArtist = _normalizeSearchText(artist);
+      if (!uniqueArtists.add(normalizedArtist)) continue;
+      final key = 'artist:$normalizedArtist';
+      results.putIfAbsent(
+        key,
+        () => SearchResult(
+          id: artist,
+          title: artist,
+          subtitle: 'Artist',
+          imageUrl: track.coverImageUrl,
+          type: SearchResultType.artist,
+        ),
+      );
+    }
+  }
+
+  bool _matchesPlaylistQuery(
+      ApiPlaylistModel playlist, String normalizedQuery) {
+    final haystack = [
+      playlist.name,
+      playlist.description,
+      playlist.moodName,
+    ].whereType<String>().join(' ');
+    return _matchesNormalizedQuery(haystack, normalizedQuery);
+  }
+
+  bool _matchesTrackQuery(ApiTrackModel track, String normalizedQuery) {
+    final haystack = [
+      track.title,
+      track.artist,
+      track.genre,
+      track.moodName,
+    ].whereType<String>().join(' ');
+    return _matchesNormalizedQuery(haystack, normalizedQuery);
+  }
+
+  bool _matchesNormalizedQuery(String? source, String normalizedQuery) {
+    if (source == null || source.trim().isEmpty || normalizedQuery.isEmpty) {
+      return false;
+    }
+    return _normalizeSearchText(source).contains(normalizedQuery);
+  }
+
+  String _normalizeSearchText(String input) {
+    const replacements = {
+      'à': 'a',
+      'á': 'a',
+      'ả': 'a',
+      'ã': 'a',
+      'ạ': 'a',
+      'ă': 'a',
+      'ằ': 'a',
+      'ắ': 'a',
+      'ẳ': 'a',
+      'ẵ': 'a',
+      'ặ': 'a',
+      'â': 'a',
+      'ầ': 'a',
+      'ấ': 'a',
+      'ẩ': 'a',
+      'ẫ': 'a',
+      'ậ': 'a',
+      'è': 'e',
+      'é': 'e',
+      'ẻ': 'e',
+      'ẽ': 'e',
+      'ẹ': 'e',
+      'ê': 'e',
+      'ề': 'e',
+      'ế': 'e',
+      'ể': 'e',
+      'ễ': 'e',
+      'ệ': 'e',
+      'ì': 'i',
+      'í': 'i',
+      'ỉ': 'i',
+      'ĩ': 'i',
+      'ị': 'i',
+      'ò': 'o',
+      'ó': 'o',
+      'ỏ': 'o',
+      'õ': 'o',
+      'ọ': 'o',
+      'ô': 'o',
+      'ồ': 'o',
+      'ố': 'o',
+      'ổ': 'o',
+      'ỗ': 'o',
+      'ộ': 'o',
+      'ơ': 'o',
+      'ờ': 'o',
+      'ớ': 'o',
+      'ở': 'o',
+      'ỡ': 'o',
+      'ợ': 'o',
+      'ù': 'u',
+      'ú': 'u',
+      'ủ': 'u',
+      'ũ': 'u',
+      'ụ': 'u',
+      'ư': 'u',
+      'ừ': 'u',
+      'ứ': 'u',
+      'ử': 'u',
+      'ữ': 'u',
+      'ự': 'u',
+      'ỳ': 'y',
+      'ý': 'y',
+      'ỷ': 'y',
+      'ỹ': 'y',
+      'ỵ': 'y',
+      'đ': 'd',
+    };
+    final buffer = StringBuffer();
+    for (final rune in input.trim().toLowerCase().runes) {
+      final char = String.fromCharCode(rune);
+      buffer.write(replacements[char] ?? char);
+    }
+    return buffer
+        .toString()
+        .replaceAll(RegExp(r'[^a-z0-9\s]'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
   }
 }

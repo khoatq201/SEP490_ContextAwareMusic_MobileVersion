@@ -20,6 +20,15 @@ class SongListTile extends StatelessWidget {
     required this.song,
     this.onTap,
     this.onOptionSelected,
+    this.showPlayNow = true,
+    this.showPlayNext = false,
+    this.playNowLabel = 'Play now',
+    this.playNextLabel = 'Play next',
+    this.enableAddToQueue = false,
+    this.addToQueueLabel = 'Add to queue',
+    this.enableGoToAlbum = false,
+    this.enableGoToArtist = false,
+    this.forwardPlayNowToOptionHandler = false,
   });
 
   final SongEntity song;
@@ -30,6 +39,15 @@ class SongListTile extends StatelessWidget {
   /// `playNow`       → calls [onTap].
   /// Everything else is forwarded here.
   final ValueChanged<SongOption>? onOptionSelected;
+  final bool showPlayNow;
+  final bool showPlayNext;
+  final String playNowLabel;
+  final String playNextLabel;
+  final bool enableAddToQueue;
+  final String addToQueueLabel;
+  final bool enableGoToAlbum;
+  final bool enableGoToArtist;
+  final bool forwardPlayNowToOptionHandler;
 
   void _openOptions(BuildContext context) {
     showModalBottomSheet<SongOption>(
@@ -37,7 +55,17 @@ class SongListTile extends StatelessWidget {
       useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => SongOptionsBottomSheet(song: song),
+      builder: (_) => SongOptionsBottomSheet(
+        song: song,
+        showPlayNow: showPlayNow,
+        showPlayNext: showPlayNext,
+        playNowLabel: playNowLabel,
+        playNextLabel: playNextLabel,
+        enableAddToQueue: enableAddToQueue,
+        addToQueueLabel: addToQueueLabel,
+        enableGoToAlbum: enableGoToAlbum,
+        enableGoToArtist: enableGoToArtist,
+      ),
     ).then((option) {
       if (option == null) return;
       if (!context.mounted) return;
@@ -51,10 +79,17 @@ class SongListTile extends StatelessWidget {
             backgroundColor: Colors.transparent,
             builder: (_) => SelectPlaylistBottomSheet(song: song),
           );
+          return;
         case SongOption.playNow:
-          onTap?.call();
+          if (forwardPlayNowToOptionHandler && onOptionSelected != null) {
+            onOptionSelected!.call(option);
+          } else {
+            onTap?.call();
+          }
+          return;
         default:
           onOptionSelected?.call(option);
+          return;
       }
     });
   }

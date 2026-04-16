@@ -10,10 +10,15 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/enums/ai_generation_mode_enum.dart';
 import '../../../../core/enums/music_provider_enum.dart';
+import '../../../../core/enums/queue_insert_mode_enum.dart';
 import '../../../../core/enums/user_role.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/player/player_bloc.dart';
 import '../../../../core/session/session_cubit.dart';
+import '../../../../core/utils/cams_queue_actions.dart';
+import '../../../../core/widgets/queue_mode_picker_bottom_sheet.dart';
+import '../../../../core/widgets/select_playlist_bottom_sheet.dart';
+import '../../../../core/widgets/song_options_bottom_sheet.dart';
 import '../../../../injection_container.dart';
 import '../../../cams/data/services/store_hub_service.dart';
 import '../../../home/domain/entities/playlist_entity.dart';
@@ -1122,6 +1127,7 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
           palette: palette,
           onTap: () =>
               context.push('/home/playlist-detail', extra: playlist.id),
+          onMoreTap: () => _openPlaylistQueueActions(playlist),
         );
       },
     );
@@ -1190,6 +1196,7 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
           palette: palette,
           canManage: canManageTracks,
           canReviewCopyright: canReviewTrackCopyright,
+          onMoreTap: () => _openTrackPlaybackActions(track),
           onTap: () => _showTrackDetailSheet(
             track,
             canManage: canManageTracks,
@@ -1268,6 +1275,110 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
         break;
     }
   }
+
+  SongEntity _songEntityForTrack(ApiTrack track) {
+    return SongEntity(
+      id: track.id,
+      title: track.title,
+      artist: track.artist ?? 'Unknown artist',
+      duration: track.durationSec ?? 0,
+      coverUrl: track.coverImageUrl,
+      streamUrl: track.hlsUrl,
+    );
+  }
+
+  Future<void> _openTrackPlaybackActions(ApiTrack track) async {
+    final song = _songEntityForTrack(track);
+    final option = await showModalBottomSheet<SongOption>(
+      context: context,
+      useRootNavigator: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => SongOptionsBottomSheet(
+        song: song,
+        showPlayNow: true,
+        showPlayNext: true,
+        enableAddToQueue: true,
+        addToQueueLabel: 'Add to space queue',
+      ),
+    );
+
+    if (!mounted || option == null) return;
+
+    switch (option) {
+      case SongOption.addToPlaylist:
+        await showModalBottomSheet<void>(
+          context: context,
+          useRootNavigator: true,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (_) => SelectPlaylistBottomSheet(song: song),
+        );
+        return;
+      case SongOption.playNow:
+        queueTrackToCurrentSpace(
+          context,
+          trackId: track.id,
+          mode: QueueInsertModeEnum.playNow,
+          reason: buildQueueActionReason(
+            source: 'Library',
+            itemType: 'track',
+            mode: QueueInsertModeEnum.playNow,
+          ),
+        );
+        return;
+      case SongOption.playNext:
+        queueTrackToCurrentSpace(
+          context,
+          trackId: track.id,
+          mode: QueueInsertModeEnum.playNext,
+          reason: buildQueueActionReason(
+            source: 'Library',
+            itemType: 'track',
+            mode: QueueInsertModeEnum.playNext,
+          ),
+        );
+        return;
+      case SongOption.addToQueue:
+        queueTrackToCurrentSpace(
+          context,
+          trackId: track.id,
+          mode: QueueInsertModeEnum.addToQueue,
+          reason: buildQueueActionReason(
+            source: 'Library',
+            itemType: 'track',
+            mode: QueueInsertModeEnum.addToQueue,
+          ),
+        );
+        return;
+      case SongOption.goToAlbum:
+      case SongOption.goToArtist:
+      case SongOption.block:
+      case SongOption.share:
+        return;
+    }
+  }
+
+  Future<void> _openPlaylistQueueActions(PlaylistEntity playlist) async {
+    final mode = await showQueueModePickerBottomSheet(
+      context,
+      title: 'Add playlist to queue',
+      subtitle: playlist.title,
+    );
+
+    if (!mounted || mode == null) return;
+
+    queuePlaylistToCurrentSpace(
+      context,
+      playlistId: playlist.id,
+      mode: mode,
+      reason: buildQueueActionReason(
+        source: 'Library',
+        itemType: 'playlist',
+        mode: mode,
+      ),
+    );
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1278,11 +1389,13 @@ class _PlaylistTile extends StatelessWidget {
     required this.playlist,
     required this.palette,
     required this.onTap,
+    required this.onMoreTap,
   });
 
   final PlaylistEntity playlist;
   final _Palette palette;
   final VoidCallback onTap;
+  final VoidCallback onMoreTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1357,8 +1470,20 @@ class _PlaylistTile extends StatelessWidget {
                         color: palette.textMuted, fontSize: 11),
                   ),
                   const SizedBox(width: 4),
-                  Icon(Icons.chevron_right_rounded,
-                      color: palette.textMuted, size: 20),
+                  IconButton(
+                    icon: Icon(
+                      Icons.more_vert,
+                      color: palette.textMuted,
+                      size: 20,
+                    ),
+                    splashRadius: 20,
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
+                    padding: EdgeInsets.zero,
+                    onPressed: onMoreTap,
+                  ),
                 ],
               ),
             ],
@@ -1428,6 +1553,7 @@ class _TrackLibraryTile extends StatelessWidget {
     required this.palette,
     required this.canManage,
     required this.canReviewCopyright,
+    required this.onMoreTap,
     required this.onTap,
   });
 
@@ -1435,6 +1561,7 @@ class _TrackLibraryTile extends StatelessWidget {
   final _Palette palette;
   final bool canManage;
   final bool canReviewCopyright;
+  final VoidCallback onMoreTap;
   final VoidCallback onTap;
 
   @override
@@ -1558,12 +1685,20 @@ class _TrackLibraryTile extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  if (canManage || canReviewCopyright)
-                    Icon(Icons.more_horiz_rounded,
-                        color: palette.textMuted, size: 18)
-                  else
-                    Icon(Icons.chevron_right_rounded,
-                        color: palette.textMuted, size: 20),
+                  IconButton(
+                    icon: Icon(
+                      Icons.more_vert,
+                      color: palette.textMuted,
+                      size: 18,
+                    ),
+                    splashRadius: 18,
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
+                    padding: EdgeInsets.zero,
+                    onPressed: onMoreTap,
+                  ),
                 ],
               ),
             ],
@@ -2835,8 +2970,9 @@ class _GenerateSunoTrackBottomSheetState
       _selectedGenerationMode = null;
     }
     _selectedFuzzyTemplate = widget.initialConfig?.fuzzyProfileTemplate;
-    _promptMode =
-        _brandProfile != null ? _SunoPromptMode.brandProfile : _SunoPromptMode.manual;
+    _promptMode = _brandProfile != null
+        ? _SunoPromptMode.brandProfile
+        : _SunoPromptMode.manual;
     if (_selectedGenerationMode == null &&
         widget.initialConfig?.availableGenerationModes.isNotEmpty == true) {
       _selectedGenerationMode =
@@ -2890,8 +3026,8 @@ class _GenerateSunoTrackBottomSheetState
         widget.initialConfig?.recommendedBpmMin != null ||
         widget.initialConfig?.recommendedBpmMax != null ||
         widget.initialConfig?.recommendedBpmTarget != null;
-    final canSubmit =
-        _promptMode != _SunoPromptMode.brandProfile || generatedPrompt.trim().isNotEmpty;
+    final canSubmit = _promptMode != _SunoPromptMode.brandProfile ||
+        generatedPrompt.trim().isNotEmpty;
 
     return SafeArea(
       top: false,
@@ -3077,8 +3213,8 @@ class _GenerateSunoTrackBottomSheetState
                               ),
                               items: BrandProfileSunoMood.values
                                   .map(
-                                    (mood) => DropdownMenuItem<
-                                        BrandProfileSunoMood>(
+                                    (mood) =>
+                                        DropdownMenuItem<BrandProfileSunoMood>(
                                       value: mood,
                                       child: _dropdownItemLabel(mood.label),
                                     ),
@@ -3493,40 +3629,44 @@ class _GenerateSunoTrackBottomSheetState
                             child: FilledButton.icon(
                               onPressed: canSubmit
                                   ? () {
-                                final isValid =
-                                    _formKey.currentState?.validate() ?? false;
-                                if (!isValid) return;
-                                final prompt = _promptMode ==
-                                        _SunoPromptMode.brandProfile
-                                    ? _nullable(generatedPrompt)
-                                    : _nullable(_promptController.text);
-                                if (_promptMode ==
-                                        _SunoPromptMode.brandProfile &&
-                                    prompt == null) {
-                                  return;
-                                }
-                                Navigator.pop(
-                                  context,
-                                  CreateSunoGenerationRequest(
-                                    prompt: prompt,
-                                    title: _nullable(_titleController.text),
-                                    artist: _nullable(_artistController.text),
-                                    moodId: _selectedMoodId,
-                                    targetPlaylistId: _selectedPlaylistId,
-                                    autoAddToTargetPlaylist:
-                                        _autoAddToTargetPlaylist,
-                                    aiGenerationMode: _selectedGenerationMode,
-                                    fuzzyProfileTemplate:
-                                        _nullable(_selectedFuzzyTemplate ?? ''),
-                                    recommendedBpmMin:
-                                        _nullableInt(_bpmMinController.text),
-                                    recommendedBpmMax:
-                                        _nullableInt(_bpmMaxController.text),
-                                    recommendedBpmTarget:
-                                        _nullableInt(_bpmTargetController.text),
-                                  ),
-                                );
-                              }
+                                      final isValid =
+                                          _formKey.currentState?.validate() ??
+                                              false;
+                                      if (!isValid) return;
+                                      final prompt = _promptMode ==
+                                              _SunoPromptMode.brandProfile
+                                          ? _nullable(generatedPrompt)
+                                          : _nullable(_promptController.text);
+                                      if (_promptMode ==
+                                              _SunoPromptMode.brandProfile &&
+                                          prompt == null) {
+                                        return;
+                                      }
+                                      Navigator.pop(
+                                        context,
+                                        CreateSunoGenerationRequest(
+                                          prompt: prompt,
+                                          title:
+                                              _nullable(_titleController.text),
+                                          artist:
+                                              _nullable(_artistController.text),
+                                          moodId: _selectedMoodId,
+                                          targetPlaylistId: _selectedPlaylistId,
+                                          autoAddToTargetPlaylist:
+                                              _autoAddToTargetPlaylist,
+                                          aiGenerationMode:
+                                              _selectedGenerationMode,
+                                          fuzzyProfileTemplate: _nullable(
+                                              _selectedFuzzyTemplate ?? ''),
+                                          recommendedBpmMin: _nullableInt(
+                                              _bpmMinController.text),
+                                          recommendedBpmMax: _nullableInt(
+                                              _bpmMaxController.text),
+                                          recommendedBpmTarget: _nullableInt(
+                                              _bpmTargetController.text),
+                                        ),
+                                      );
+                                    }
                                   : null,
                               icon: const Icon(Icons.auto_awesome_rounded,
                                   size: 18),
@@ -3549,7 +3689,8 @@ class _GenerateSunoTrackBottomSheetState
   List<AiGenerationModeEnum> get _generationModeOptions {
     final modes = <AiGenerationModeEnum>[];
     final configuredMode = widget.initialConfig?.aiGenerationMode;
-    if (configuredMode != null && configuredMode != AiGenerationModeEnum.unknown) {
+    if (configuredMode != null &&
+        configuredMode != AiGenerationModeEnum.unknown) {
       modes.add(configuredMode);
     }
     for (final mode in widget.initialConfig?.availableGenerationModes ??
@@ -3969,7 +4110,8 @@ class _CreatePlaylistBottomSheet extends StatefulWidget {
       _CreatePlaylistBottomSheetState();
 }
 
-class _CreatePlaylistBottomSheetState extends State<_CreatePlaylistBottomSheet> {
+class _CreatePlaylistBottomSheetState
+    extends State<_CreatePlaylistBottomSheet> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
@@ -4378,20 +4520,21 @@ class _CreatePlaylistBottomSheetState extends State<_CreatePlaylistBottomSheet> 
                                           Icons.search_rounded,
                                           color: palette.textMuted,
                                         ),
-                                        suffixIcon: _trackSearchController
-                                                .text.isEmpty
-                                            ? null
-                                            : IconButton(
-                                                tooltip: 'Clear',
-                                                onPressed: () {
-                                                  _trackSearchController.clear();
-                                                  setState(() {});
-                                                },
-                                                icon: Icon(
-                                                  Icons.close_rounded,
-                                                  color: palette.textMuted,
-                                                ),
-                                              ),
+                                        suffixIcon:
+                                            _trackSearchController.text.isEmpty
+                                                ? null
+                                                : IconButton(
+                                                    tooltip: 'Clear',
+                                                    onPressed: () {
+                                                      _trackSearchController
+                                                          .clear();
+                                                      setState(() {});
+                                                    },
+                                                    icon: Icon(
+                                                      Icons.close_rounded,
+                                                      color: palette.textMuted,
+                                                    ),
+                                                  ),
                                       ),
                                     ),
                                     if (selectedTrackCount > 0) ...[
@@ -4445,8 +4588,8 @@ class _CreatePlaylistBottomSheetState extends State<_CreatePlaylistBottomSheet> 
                                               : ListView.separated(
                                                   itemCount:
                                                       filteredTracks.length,
-                                                  separatorBuilder:
-                                                      (_, __) => Divider(
+                                                  separatorBuilder: (_, __) =>
+                                                      Divider(
                                                     height: 1,
                                                     color: palette.border
                                                         .withValues(
@@ -4585,7 +4728,6 @@ class _CreatePlaylistBottomSheetState extends State<_CreatePlaylistBottomSheet> 
       ),
     );
   }
-
 }
 
 class _FilePickerTile extends StatelessWidget {

@@ -145,6 +145,8 @@ class _HomeDashboardView extends StatelessWidget {
                       onSelectAuto: () =>
                           context.read<HomeCubit>().selectAutoMode(),
                       onSelectManual: () =>
+                          context.read<HomeCubit>().activateManualMode(),
+                      onChangeMood: () =>
                           context.read<HomeCubit>().openManualSelection(),
                       onCloseManualPicker: () =>
                           context.read<HomeCubit>().closeManualSelection(),
@@ -625,6 +627,7 @@ class _MasterControlCard extends StatelessWidget {
     required this.palette,
     required this.onSelectAuto,
     required this.onSelectManual,
+    required this.onChangeMood,
     required this.onCloseManualPicker,
     this.modeMessage,
     this.currentPlaybackName,
@@ -638,6 +641,7 @@ class _MasterControlCard extends StatelessWidget {
   final _Palette palette;
   final VoidCallback onSelectAuto;
   final VoidCallback onSelectManual;
+  final VoidCallback onChangeMood;
   final VoidCallback onCloseManualPicker;
   final String? modeMessage;
   final String? currentPlaybackName;
@@ -650,14 +654,14 @@ class _MasterControlCard extends StatelessWidget {
             ? 'AI Auto is active'
             : manualSelectionOpen
                 ? 'Choose a manual mood'
-                : 'Manual override is active';
+                : 'Manual mode is active';
     final modeDescription = !hasSpaceSelected
         ? 'Pick a space before changing playback mode.'
         : autoModeEnabled
             ? 'AI analyzes context and picks mood and queue for this space.'
             : manualSelectionOpen
                 ? 'Select a mood below to replace AI decisions for this space.'
-                : 'A track, queue, or mood was manually chosen. AI stays paused until you switch back.';
+                : 'AI stays paused for this space. Choose a mood only if you want to override the mood too.';
     final gradientColors = palette.isDark
         ? [
             palette.accent.withOpacity(0.80),
@@ -791,9 +795,8 @@ class _MasterControlCard extends StatelessWidget {
                   Align(
                     alignment: Alignment.centerLeft,
                     child: TextButton.icon(
-                      onPressed: hasSpaceSelected && !isApplying
-                          ? onSelectManual
-                          : null,
+                      onPressed:
+                          hasSpaceSelected && !isApplying ? onChangeMood : null,
                       style: TextButton.styleFrom(
                         foregroundColor: Colors.white,
                         padding: EdgeInsets.zero,

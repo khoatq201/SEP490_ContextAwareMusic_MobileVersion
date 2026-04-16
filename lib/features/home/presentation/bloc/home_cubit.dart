@@ -163,6 +163,47 @@ class HomeCubit extends Cubit<HomeState> {
     ));
   }
 
+  Future<void> activateManualMode() async {
+    final spaceId = state.activeSpaceId;
+    if (spaceId == null || state.isApplyingOverride) return;
+
+    if (state.isManualOverride && !state.isManualSelectionOpen) {
+      return;
+    }
+
+    emit(state.copyWith(
+      isApplyingOverride: true,
+      isManualSelectionOpen: false,
+      clearModeMessage: true,
+    ));
+
+    final result = await _overrideSpace(
+      spaceId: spaceId,
+      isClearManagerSelectedQueues: false,
+      isCutOver: false,
+      reason: 'Home manual mode request',
+      usePlaybackDeviceScope: _usePlaybackDeviceScope,
+    );
+
+    result.fold(
+      (failure) => emit(state.copyWith(
+        isApplyingOverride: false,
+        modeMessage:
+            'Switch to manual failed: ${ErrorMapper.displayMessageForFailure(failure)}',
+      )),
+      (_) async {
+        emit(state.copyWith(
+          isApplyingOverride: false,
+          isManualOverride: true,
+          isManualSelectionOpen: false,
+          isPendingTranscode: false,
+          modeMessage: null,
+        ));
+        await loadSpacePlaybackState(spaceId);
+      },
+    );
+  }
+
   void closeManualSelection() {
     if (state.isApplyingOverride || !state.isManualSelectionOpen) return;
     emit(state.copyWith(

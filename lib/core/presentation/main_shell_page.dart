@@ -41,6 +41,9 @@ class MainShellPage extends StatelessWidget {
     final currentIndex = _currentIndex(context);
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final keyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
+    final shouldHideShellChromeForKeyboard =
+        keyboardVisible && currentIndex == 1;
 
     // ── Bottom navigation bar ──────────────────────────────────────────
     final bottomNav = Container(
@@ -153,21 +156,23 @@ class MainShellPage extends StatelessWidget {
         }
       },
       child: Scaffold(
-        resizeToAvoidBottomInset: false,
+        resizeToAvoidBottomInset: shouldHideShellChromeForKeyboard,
         // extendBody lets the body go behind the MiniPlayer + BottomBar area
         extendBody: true,
         body: child,
-        bottomNavigationBar: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Hide MiniPlayer when on the Now Playing tab (redundant)
-            if (!GoRouterState.of(context)
-                .matchedLocation
-                .startsWith('/now-playing'))
-              const MiniPlayerWidget(),
-            bottomNav,
-          ],
-        ),
+        bottomNavigationBar: shouldHideShellChromeForKeyboard
+            ? null
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Hide MiniPlayer when on the Now Playing tab (redundant)
+                  if (!GoRouterState.of(context)
+                      .matchedLocation
+                      .startsWith('/now-playing'))
+                    const MiniPlayerWidget(),
+                  bottomNav,
+                ],
+              ),
       ),
     );
   }

@@ -10,7 +10,7 @@ class ApiConstants {
 
   // Base URLs
   // Android emulator can use 10.0.2.2 (host localhost); real devices should use LAN IP.http://192.168.1.4:7001,https://logcams.cloud
-  static const String baseUrl = 'https://logcams.cloud';
+  static const String baseUrl = 'http://192.168.1.3:7001';
 
   // Default request headers
   static const Map<String, String> defaultHeaders = {

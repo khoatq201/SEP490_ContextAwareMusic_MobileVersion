@@ -7,14 +7,19 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/constants/app_typography.dart';
+import '../../../../core/enums/queue_insert_mode_enum.dart';
 import '../../../../core/player/player_bloc.dart';
 import '../../../../core/player/player_event.dart';
 import '../../../../core/player/local_preview_feedback.dart';
 import '../../../../core/presentation/shell_layout_metrics.dart';
 import '../../../../core/session/session_cubit.dart';
+import '../../../../core/utils/cams_queue_actions.dart';
 import '../../../../core/widgets/app_error_view.dart';
 import '../../../../core/widgets/app_inline_error_card.dart';
+import '../../../../core/widgets/queue_mode_picker_bottom_sheet.dart';
+import '../../../../core/widgets/select_playlist_bottom_sheet.dart';
 import '../../../../core/widgets/song_list_tile.dart';
+import '../../../../core/widgets/song_options_bottom_sheet.dart';
 import '../../../../injection_container.dart';
 import '../../../home/domain/entities/playlist_entity.dart';
 import '../../../home/domain/entities/song_entity.dart';
@@ -47,8 +52,11 @@ void _playSearchSongOrShowMessage(
 ) {
   final session = context.read<SessionCubit>().state;
   if (!session.isPlaybackDevice) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text(kManagerPlaylistOnlyMessage)),
+    showTrackQueueModePickerAndQueue(
+      context,
+      trackId: result.id,
+      title: result.title,
+      source: 'Search tap',
     );
     return;
   }
@@ -85,6 +93,125 @@ void _playSearchSongOrShowMessage(
       ));
 }
 
+SongEntity _searchResultToSongEntity(SearchResult result) {
+  return SongEntity(
+    id: result.id,
+    title: result.title,
+    artist: result.subtitle,
+    duration: result.durationSeconds ?? 0,
+    coverUrl: result.imageUrl ?? result.thumbnailUrl,
+    streamUrl: result.streamUrl,
+  );
+}
+
+Future<void> _handleSearchSongOption(
+  BuildContext context,
+  SearchResult result,
+  SongOption option,
+) async {
+  final song = _searchResultToSongEntity(result);
+
+  switch (option) {
+    case SongOption.addToPlaylist:
+      await showModalBottomSheet<void>(
+        context: context,
+        useRootNavigator: true,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => SelectPlaylistBottomSheet(song: song),
+      );
+      return;
+    case SongOption.playNow:
+      queueTrackToCurrentSpace(
+        context,
+        trackId: result.id,
+        mode: QueueInsertModeEnum.playNow,
+        reason: buildQueueActionReason(
+          source: 'Search',
+          itemType: 'track',
+          mode: QueueInsertModeEnum.playNow,
+        ),
+      );
+      return;
+    case SongOption.playNext:
+      queueTrackToCurrentSpace(
+        context,
+        trackId: result.id,
+        mode: QueueInsertModeEnum.playNext,
+        reason: buildQueueActionReason(
+          source: 'Search',
+          itemType: 'track',
+          mode: QueueInsertModeEnum.playNext,
+        ),
+      );
+      return;
+    case SongOption.addToQueue:
+      queueTrackToCurrentSpace(
+        context,
+        trackId: result.id,
+        mode: QueueInsertModeEnum.addToQueue,
+        reason: buildQueueActionReason(
+          source: 'Search',
+          itemType: 'track',
+          mode: QueueInsertModeEnum.addToQueue,
+        ),
+      );
+      return;
+    case SongOption.goToAlbum:
+    case SongOption.goToArtist:
+    case SongOption.block:
+    case SongOption.share:
+      return;
+  }
+}
+
+Future<void> _openSearchSongOptions(
+  BuildContext context,
+  SearchResult result,
+) async {
+  final option = await showModalBottomSheet<SongOption>(
+    context: context,
+    useRootNavigator: true,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => SongOptionsBottomSheet(
+      song: _searchResultToSongEntity(result),
+      showPlayNow: true,
+      showPlayNext: true,
+      enableAddToQueue: true,
+      addToQueueLabel: 'Add to space queue',
+    ),
+  );
+
+  if (!context.mounted || option == null) return;
+  await _handleSearchSongOption(context, result, option);
+}
+
+Future<void> _openSearchPlaylistOptions(
+  BuildContext context, {
+  required String playlistId,
+  required String playlistTitle,
+  String source = 'Search',
+}) async {
+  final mode = await showQueueModePickerBottomSheet(
+    context,
+    title: 'Add playlist to queue',
+    subtitle: playlistTitle,
+  );
+  if (!context.mounted || mode == null) return;
+
+  queuePlaylistToCurrentSpace(
+    context,
+    playlistId: playlistId,
+    mode: mode,
+    reason: buildQueueActionReason(
+      source: source,
+      itemType: 'playlist',
+      mode: mode,
+    ),
+  );
+}
+
 // ===========================================================================
 // _SearchView
 // ===========================================================================
@@ -118,11 +245,14 @@ class _SearchViewState extends State<_SearchView> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final hasMiniPlayer =
         context.select((PlayerBloc bloc) => bloc.state.hasTrack);
-    final bottomSpacing = ShellLayoutMetrics.reservedBottom(
-      context,
-      hasMiniPlayer: hasMiniPlayer,
-      extra: AppDimensions.spacingLg,
-    );
+    final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
+    final bottomSpacing = keyboardInset > 0
+        ? AppDimensions.spacingLg
+        : ShellLayoutMetrics.reservedBottom(
+            context,
+            hasMiniPlayer: hasMiniPlayer,
+            extra: AppDimensions.spacingLg,
+          );
     final bgColor =
         isDark ? AppColors.backgroundDarkPrimary : AppColors.backgroundPrimary;
 
@@ -130,6 +260,7 @@ class _SearchViewState extends State<_SearchView> {
       backgroundColor: bgColor,
       body: SafeArea(
         child: CustomScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           slivers: [
             // ── Search bar ─────────────────────────────────────────────
             SliverToBoxAdapter(
@@ -243,14 +374,14 @@ class _SearchViewState extends State<_SearchView> {
     if (state.status == SearchStatus.failure && state.failure != null) {
       return SliverFillRemaining(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spacingMd),
+          padding:
+              const EdgeInsets.symmetric(horizontal: AppDimensions.spacingMd),
           child: AppErrorView(
             failure: state.failure,
             title: 'Search unavailable',
             message: state.failure!.message,
-            onRetry: () => context
-                .read<SearchBloc>()
-                .add(QueryChangedEvent(state.query)),
+            onRetry: () =>
+                context.read<SearchBloc>().add(QueryChangedEvent(state.query)),
           ),
         ),
       );
@@ -693,6 +824,60 @@ class _ResultTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    Widget? trailing;
+    if (result.type == SearchResultType.song) {
+      trailing = SizedBox(
+        width: 78,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (result.duration != null)
+              Text(
+                result.duration!,
+                style: TextStyle(
+                  color: isDark
+                      ? AppColors.textDarkTertiary
+                      : AppColors.textTertiary,
+                  fontSize: 12,
+                ),
+              ),
+            IconButton(
+              icon: Icon(
+                Icons.more_vert,
+                color: isDark
+                    ? AppColors.textDarkTertiary
+                    : AppColors.textTertiary,
+                size: 18,
+              ),
+              splashRadius: 18,
+              onPressed: () => _openSearchSongOptions(context, result),
+            ),
+          ],
+        ),
+      );
+    } else if (result.type == SearchResultType.playlist) {
+      trailing = IconButton(
+        icon: Icon(
+          Icons.more_vert,
+          color: isDark ? AppColors.textDarkTertiary : AppColors.textTertiary,
+          size: 18,
+        ),
+        splashRadius: 18,
+        onPressed: () => _openSearchPlaylistOptions(
+          context,
+          playlistId: result.id,
+          playlistTitle: result.title,
+        ),
+      );
+    } else {
+      trailing = Icon(
+        Icons.chevron_right,
+        color: isDark ? AppColors.textDarkTertiary : AppColors.textTertiary,
+        size: 20,
+      );
+    }
+
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(
         vertical: AppDimensions.spacingXs,
@@ -740,24 +925,7 @@ class _ResultTile extends StatelessWidget {
           fontSize: 12,
         ),
       ),
-      trailing: result.type == SearchResultType.song
-          ? (result.duration != null
-              ? Text(
-                  result.duration!,
-                  style: TextStyle(
-                    color: isDark
-                        ? AppColors.textDarkTertiary
-                        : AppColors.textTertiary,
-                    fontSize: 12,
-                  ),
-                )
-              : null)
-          : Icon(
-              Icons.chevron_right,
-              color:
-                  isDark ? AppColors.textDarkTertiary : AppColors.textTertiary,
-              size: 20,
-            ),
+      trailing: trailing,
       onTap: () => _onTap(context),
     );
   }
@@ -906,17 +1074,44 @@ class _PlaylistGridSliver extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    Text(
-                      r.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(
-                        color: isDark
-                            ? AppColors.textDarkPrimary
-                            : AppColors.textPrimary,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            r.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(
+                              color: isDark
+                                  ? AppColors.textDarkPrimary
+                                  : AppColors.textPrimary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            Icons.more_vert,
+                            color: isDark
+                                ? AppColors.textDarkTertiary
+                                : AppColors.textTertiary,
+                            size: 18,
+                          ),
+                          splashRadius: 18,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: 28,
+                            minHeight: 28,
+                          ),
+                          onPressed: () => _openSearchPlaylistOptions(
+                            ctx,
+                            playlistId: r.id,
+                            playlistTitle: r.title,
+                          ),
+                        ),
+                      ],
                     ),
                     Text(
                       r.subtitle,
@@ -993,6 +1188,12 @@ class _SongListSliver extends StatelessWidget {
             return SongListTile(
               song: song,
               onTap: () => _playSearchSongOrShowMessage(context, r),
+              showPlayNext: true,
+              enableAddToQueue: true,
+              addToQueueLabel: 'Add to space queue',
+              forwardPlayNowToOptionHandler: true,
+              onOptionSelected: (option) =>
+                  _handleSearchSongOption(context, r, option),
             );
           }),
         ]),
@@ -1222,17 +1423,49 @@ class _PlaylistCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-                child: playlist.coverUrl != null
-                    ? Image.network(
-                        playlist.coverUrl!,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) =>
-                            _CoverFallback(isDark: isDark),
-                      )
-                    : _CoverFallback(isDark: isDark),
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: ClipRRect(
+                      borderRadius:
+                          BorderRadius.circular(AppDimensions.radiusMd),
+                      child: playlist.coverUrl != null
+                          ? Image.network(
+                              playlist.coverUrl!,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) =>
+                                  _CoverFallback(isDark: isDark),
+                            )
+                          : _CoverFallback(isDark: isDark),
+                    ),
+                  ),
+                  Positioned(
+                    top: 6,
+                    right: 6,
+                    child: Material(
+                      color: Colors.black.withValues(alpha: 0.36),
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: () => _openSearchPlaylistOptions(
+                          context,
+                          playlistId: playlist.id,
+                          playlistTitle: playlist.title,
+                          source: 'Search featuring',
+                        ),
+                        child: const Padding(
+                          padding: EdgeInsets.all(6),
+                          child: Icon(
+                            Icons.more_vert,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 6),

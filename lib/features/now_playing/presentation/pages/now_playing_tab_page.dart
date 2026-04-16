@@ -43,12 +43,42 @@ class NowPlayingTabPage extends StatefulWidget {
   State<NowPlayingTabPage> createState() => _NowPlayingTabPageState();
 }
 
-class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
+class _NowPlayingTabPageState extends State<NowPlayingTabPage>
+    with SingleTickerProviderStateMixin {
   static const int _defaultRemoteVolumePercent = 60;
   static const int _minimumRemoteVolumePercent = 30;
 
   double _volume = 0.6;
   bool _isShuffleOn = false;
+  late final AnimationController _discRotationController;
+
+  @override
+  void initState() {
+    super.initState();
+    _discRotationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 18),
+    );
+  }
+
+  @override
+  void dispose() {
+    _discRotationController.dispose();
+    super.dispose();
+  }
+
+  void _syncDiscRotation(bool shouldSpin) {
+    if (shouldSpin) {
+      if (!_discRotationController.isAnimating) {
+        _discRotationController.repeat();
+      }
+      return;
+    }
+
+    if (_discRotationController.isAnimating) {
+      _discRotationController.stop(canceled: false);
+    }
+  }
 
   void _dispatchRemoteSkipBack(BuildContext context) {
     context.read<CamsPlaybackBloc>().add(const CamsPreviousTapped());
@@ -303,6 +333,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
     final displayPosition = playerState.displayPosition;
     final displayPositionPrecise = playerState.displayPositionPrecise;
     final isPlaying = playerState.isPlaying;
+    _syncDiscRotation(isPlaying && track != null);
     final useRemoteControls =
         playerState.isSyncedCamsPlayback || camsState.isStreaming;
     final hasNextForControls = useRemoteControls
@@ -389,16 +420,11 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                 Center(
                   child: AspectRatio(
                     aspectRatio: 1,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: track?.albumArt != null
-                          ? Image.network(
-                              track!.albumArt!,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) =>
-                                  _artPlaceholder(palette),
-                            )
-                          : _artPlaceholder(palette),
+                    child: _SpinningAlbumDisc(
+                      artUrl: track?.albumArt,
+                      palette: palette,
+                      rotation: _discRotationController,
+                      placeholder: _artPlaceholder(palette),
                     ),
                   ),
                 )
@@ -1578,6 +1604,117 @@ class _QueueAudioControlsState extends State<_QueueAudioControls> {
             }).toList(),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SpinningAlbumDisc extends StatelessWidget {
+  const _SpinningAlbumDisc({
+    required this.artUrl,
+    required this.palette,
+    required this.rotation,
+    required this.placeholder,
+  });
+
+  final String? artUrl;
+  final _NPPalette palette;
+  final Animation<double> rotation;
+  final Widget placeholder;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: palette.accent.withValues(alpha: 0.22),
+            blurRadius: 32,
+            spreadRadius: 2,
+            offset: const Offset(0, 16),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(6),
+        child: RotationTransition(
+          turns: rotation,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: palette.card,
+                    border: Border.all(
+                      color: palette.border.withValues(alpha: 0.75),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: ClipOval(
+                      child: artUrl != null
+                          ? Image.network(
+                              artUrl!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => placeholder,
+                            )
+                          : placeholder,
+                    ),
+                  ),
+                ),
+              ),
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          Colors.transparent,
+                          Colors.transparent,
+                          Colors.black.withValues(alpha: 0.18),
+                        ],
+                        stops: const [0.0, 0.62, 1.0],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: palette.bg,
+                  border: Border.all(
+                    color: palette.border.withValues(alpha: 0.9),
+                    width: 8,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.18),
+                      blurRadius: 12,
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: palette.textMuted.withValues(alpha: 0.45),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

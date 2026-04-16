@@ -5,12 +5,15 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/enums/queue_insert_mode_enum.dart';
 import '../../../../core/widgets/play_to_space_button.dart';
 import '../../../../core/widgets/song_list_tile.dart';
+import '../../../../core/widgets/song_options_bottom_sheet.dart';
 import '../../../../core/player/player_bloc.dart';
 import '../../../../core/player/player_event.dart';
 import '../../../../core/player/local_preview_feedback.dart';
 import '../../../../core/session/session_cubit.dart';
+import '../../../../core/utils/cams_queue_actions.dart';
 import '../../../home/domain/entities/playlist_entity.dart';
 import '../../../space_control/domain/entities/track.dart';
 
@@ -178,10 +181,12 @@ class SearchPlaylistDetailPage extends StatelessWidget {
                   onTap: () {
                     final session = ctx.read<SessionCubit>().state;
                     if (!session.isPlaybackDevice) {
-                      ScaffoldMessenger.of(ctx).showSnackBar(
-                        const SnackBar(
-                          content: Text(kManagerPlaylistOnlyMessage),
-                        ),
+                      showTrackQueueModePickerAndQueue(
+                        ctx,
+                        trackId: song.id,
+                        playlistId: playlist.id,
+                        title: song.title,
+                        source: 'Search playlist tap',
                       );
                       return;
                     }
@@ -194,6 +199,30 @@ class SearchPlaylistDetailPage extends StatelessWidget {
                           startIndex: i,
                           playlistName: playlist.title,
                         ));
+                  },
+                  showPlayNext: true,
+                  enableAddToQueue: true,
+                  addToQueueLabel: 'Add to space queue',
+                  forwardPlayNowToOptionHandler: true,
+                  onOptionSelected: (option) {
+                    final mode = switch (option) {
+                      SongOption.playNow => QueueInsertModeEnum.playNow,
+                      SongOption.playNext => QueueInsertModeEnum.playNext,
+                      SongOption.addToQueue => QueueInsertModeEnum.addToQueue,
+                      _ => null,
+                    };
+                    if (mode == null) return;
+                    queueTrackToCurrentSpace(
+                      ctx,
+                      trackId: song.id,
+                      playlistId: playlist.id,
+                      mode: mode,
+                      reason: buildQueueActionReason(
+                        source: 'Search playlist',
+                        itemType: 'track',
+                        mode: mode,
+                      ),
+                    );
                   },
                 );
               },

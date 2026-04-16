@@ -693,6 +693,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
             item.trackId,
             item.position,
             item.queueStatus,
+            item.hlsUrl ?? '',
             item.isReadyToStream ? 1 : 0,
           ].join(':'),
         )
@@ -812,7 +813,16 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
     final signature = [
       playbackState.spaceId,
       playbackState.effectiveQueueItemId ?? '',
-      ...queueItems.map((item) => item.queueItemId),
+      ...queueItems.map(
+        (item) => [
+          item.queueItemId,
+          item.trackId,
+          item.position,
+          item.queueStatus,
+          item.hlsUrl ?? '',
+          item.isReadyToStream ? 1 : 0,
+        ].join(':'),
+      ),
     ].join('|');
 
     if (_hydratedPlaylistId != signature) {
