@@ -78,7 +78,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
   static const Duration _hlsReloadThreshold = Duration(seconds: 16);
   static const Duration _hlsRecoveryCooldown = Duration(seconds: 10);
   static const Duration _hlsStartupGrace = Duration(seconds: 12);
-  static const double _sameRemoteStreamDriftToleranceSeconds = 1.5;
+  static const double _sameRemoteStreamSeekCorrectionSeconds = 0.8;
 
   @override
   void initState() {
@@ -268,6 +268,9 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
       trackId: _resolveCurrentTrackId(playbackState) ?? playbackState.spaceId,
       trackName: playbackState.effectiveTrackName,
       seekOffsetSeconds: playbackState.effectiveSeekOffset,
+      startedAtUtc: playbackState.startedAtUtc,
+      expectedEndAtUtc: playbackState.expectedEndAtUtc,
+      serverClockOffsetMs: SpacePlaybackState.serverClockOffsetMs,
       isPaused: playbackState.isPaused,
       playLocally: _shouldPlayRemoteAudioLocally(session),
       forceReload: _shouldPlayRemoteAudioLocally(session),
@@ -512,6 +515,9 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
         playbackState: playbackState,
       );
       _lastAppliedRemotePlaybackSignature = remotePlaybackSignature;
+      final shouldCorrectPosition = _shouldPlayRemoteAudioLocally(session) &&
+          driftSeconds > _sameRemoteStreamSeekCorrectionSeconds;
+      var appliedSameStreamCommand = false;
       if (playerBloc.state.isPlaying != shouldBePlaying) {
         final command = playbackState.isPaused
             ? PlaybackCommandEnum.pause
@@ -525,7 +531,23 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
           command: command,
           playLocally: _shouldPlayRemoteAudioLocally(session),
         ));
-      } else {
+        appliedSameStreamCommand = true;
+      }
+      if (shouldCorrectPosition) {
+        _debugLog(
+          'same remote HLS snapshot -> seek correction without restart '
+          'queueItemId=${playbackState.effectiveQueueItemId ?? '-'} '
+          'target=${playbackState.effectiveSeekOffset.toStringAsFixed(2)} '
+          'drift=${driftSeconds.toStringAsFixed(2)}',
+        );
+        _addPlayerEvent(PlayerRemoteCommandApplied(
+          command: PlaybackCommandEnum.seek,
+          positionSeconds: playbackState.effectiveSeekOffset,
+          playLocally: true,
+        ));
+        appliedSameStreamCommand = true;
+      }
+      if (!appliedSameStreamCommand) {
         _debugLog(
           'same remote HLS snapshot -> keep current player '
           'queueItemId=${playbackState.effectiveQueueItemId ?? '-'} '
@@ -559,6 +581,9 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
       trackId: _resolveCurrentTrackId(playbackState) ?? playbackState.spaceId,
       trackName: playbackState.effectiveTrackName,
       seekOffsetSeconds: playbackState.effectiveSeekOffset,
+      startedAtUtc: playbackState.startedAtUtc,
+      expectedEndAtUtc: playbackState.expectedEndAtUtc,
+      serverClockOffsetMs: SpacePlaybackState.serverClockOffsetMs,
       isPaused: playbackState.isPaused,
       playLocally: _shouldPlayRemoteAudioLocally(session),
     ));
@@ -619,18 +644,14 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
       return false;
     }
 
-    return _remotePositionDriftSeconds(
-          playerState: playerState,
-          playbackState: playbackState,
-        ) <=
-        _sameRemoteStreamDriftToleranceSeconds;
+    return true;
   }
 
   double _remotePositionDriftSeconds({
     required PlayerState playerState,
     required SpacePlaybackState playbackState,
   }) {
-    return (playerState.currentPositionPrecise -
+    return (playerState.displayPositionPrecise -
             playbackState.effectiveSeekOffset)
         .abs();
   }
@@ -1261,6 +1282,9 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
         trackId: _resolveCurrentTrackId(playbackState) ?? playbackState.spaceId,
         trackName: playbackState.effectiveTrackName,
         seekOffsetSeconds: playbackState.effectiveSeekOffset,
+        startedAtUtc: playbackState.startedAtUtc,
+        expectedEndAtUtc: playbackState.expectedEndAtUtc,
+        serverClockOffsetMs: SpacePlaybackState.serverClockOffsetMs,
         isPaused: playbackState.isPaused,
         playLocally: true,
         forceReload: true,

@@ -183,6 +183,9 @@ class PlayerHlsStarted extends PlayerEvent {
   final String? trackId;
   final String? trackName;
   final double seekOffsetSeconds;
+  final DateTime? startedAtUtc;
+  final DateTime? expectedEndAtUtc;
+  final int serverClockOffsetMs;
   final bool isPaused;
   final bool playLocally;
   final bool forceReload;
@@ -195,6 +198,9 @@ class PlayerHlsStarted extends PlayerEvent {
     this.trackId,
     this.trackName,
     this.seekOffsetSeconds = 0,
+    this.startedAtUtc,
+    this.expectedEndAtUtc,
+    this.serverClockOffsetMs = 0,
     this.isPaused = false,
     this.playLocally = true,
     this.forceReload = false,
@@ -209,6 +215,9 @@ class PlayerHlsStarted extends PlayerEvent {
         trackId,
         trackName,
         seekOffsetSeconds,
+        startedAtUtc,
+        expectedEndAtUtc,
+        serverClockOffsetMs,
         isPaused,
         playLocally,
         forceReload,
