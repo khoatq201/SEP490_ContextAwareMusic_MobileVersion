@@ -125,6 +125,10 @@ export const SpaceList = () => {
     setMusicDrawerOpen(true);
   };
 
+  const handleManageSchedule = (id: string) => {
+    navigate(`/store/spaces/${id}/schedule`);
+  };
+
   const handleManageQueue = (id: string) => {
     setSelectedSpaceId(id);
     setQueueDrawerOpen(true);
@@ -229,6 +233,7 @@ export const SpaceList = () => {
 
   const columns = getSpaceColumns({
     onView: handleView,
+    onManageSchedule: handleManageSchedule,
     onManageMusic: handleManageMusic,
     onManageQueue: handleManageQueue,
     onPairDevice: handlePairDevice,

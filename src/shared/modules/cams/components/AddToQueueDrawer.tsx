@@ -21,6 +21,7 @@ import { usePlaylists } from '@/shared/modules/playlists/hooks';
 import type { PlaylistFilter } from '@/shared/modules/playlists/types';
 import { useTracks } from '@/shared/modules/tracks/hooks';
 import type { TrackFilter } from '@/shared/modules/tracks/types';
+import { isTrackPlaybackBlockedByCopyright } from '@/shared/modules/tracks/utils';
 import { useAddTracksToQueue, useAddPlaylistToQueue } from '../hooks';
 import { QueueInsertMode } from '../types';
 import { DRAWER_WIDTHS } from '@/config';
@@ -165,6 +166,15 @@ export const AddToQueueDrawer = ({
     refetch: refetchTracks,
   } = useTracks(trackFilter);
 
+  const selectableTracks = useMemo(
+    () =>
+      (tracksData?.items || []).filter(
+        (track) =>
+          !isTrackPlaybackBlockedByCopyright(track.copyrightClearanceStatus),
+      ),
+    [tracksData?.items],
+  );
+
   const { data: moods = [] } = useMoods();
 
   const addTracks = useAddTracksToQueue();
@@ -287,66 +297,72 @@ export const AddToQueueDrawer = ({
         size='large'
         style={{ width: '100%' }}
       >
-        <OverrideMusicSourceSelector
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          enabledTabs={['tracks', 'playlist']}
-          track={{
-            filter: trackFilter,
-            setFilter: setTrackFilter,
-            showFilters: showTrackFilters,
-            setShowFilters: setShowTrackFilters,
-            hasActiveFilters: !!hasActiveTrackFilters,
-            data: tracksData?.items || [],
-            total: tracksData?.totalItems || 0,
-            isLoading: isLoadingTracks,
-            refetch: refetchTracks,
-            selectedTrackIds,
-            setSelectedTrackIds,
-            defaultFilter: defaultTrackFilter,
-            onTableChange: (pagination, _filters, sorter) => {
-              const currentSorter = Array.isArray(sorter) ? sorter[0] : sorter;
+        <div className={styles.selectorBlock}>
+          <OverrideMusicSourceSelector
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            enabledTabs={['tracks', 'playlist']}
+            track={{
+              filter: trackFilter,
+              setFilter: setTrackFilter,
+              showFilters: showTrackFilters,
+              setShowFilters: setShowTrackFilters,
+              hasActiveFilters: !!hasActiveTrackFilters,
+              data: selectableTracks,
+              total: tracksData?.totalItems || 0,
+              isLoading: isLoadingTracks,
+              refetch: refetchTracks,
+              selectedTrackIds,
+              setSelectedTrackIds,
+              defaultFilter: defaultTrackFilter,
+              onTableChange: (pagination, _filters, sorter) => {
+                const currentSorter = Array.isArray(sorter)
+                  ? sorter[0]
+                  : sorter;
 
-              setTrackFilter((prev) => ({
-                ...prev,
-                page: pagination.current || 1,
-                pageSize: pagination.pageSize || 10,
-                sortBy: currentSorter.field
-                  ? String(currentSorter.field)
-                  : 'createdAt',
-                isAscending: currentSorter.order === 'ascend',
-              }));
-            },
-          }}
-          playlist={{
-            filter: playlistFilter,
-            setFilter: setPlaylistFilter,
-            showFilters: showPlaylistFilters,
-            setShowFilters: setShowPlaylistFilters,
-            hasActiveFilters: !!hasActivePlaylistFilters,
-            data: playlistsData?.items || [],
-            total: playlistsData?.totalItems || 0,
-            isLoading: isLoadingPlaylists,
-            refetch: refetchPlaylists,
-            selectedPlaylistId,
-            setSelectedPlaylistId,
-            defaultFilter: defaultPlaylistFilter,
-            moodOptions,
-            onTableChange: (pagination, _filters, sorter) => {
-              const currentSorter = Array.isArray(sorter) ? sorter[0] : sorter;
+                setTrackFilter((prev) => ({
+                  ...prev,
+                  page: pagination.current || 1,
+                  pageSize: pagination.pageSize || 10,
+                  sortBy: currentSorter.field
+                    ? String(currentSorter.field)
+                    : 'createdAt',
+                  isAscending: currentSorter.order === 'ascend',
+                }));
+              },
+            }}
+            playlist={{
+              filter: playlistFilter,
+              setFilter: setPlaylistFilter,
+              showFilters: showPlaylistFilters,
+              setShowFilters: setShowPlaylistFilters,
+              hasActiveFilters: !!hasActivePlaylistFilters,
+              data: playlistsData?.items || [],
+              total: playlistsData?.totalItems || 0,
+              isLoading: isLoadingPlaylists,
+              refetch: refetchPlaylists,
+              selectedPlaylistId,
+              setSelectedPlaylistId,
+              defaultFilter: defaultPlaylistFilter,
+              moodOptions,
+              onTableChange: (pagination, _filters, sorter) => {
+                const currentSorter = Array.isArray(sorter)
+                  ? sorter[0]
+                  : sorter;
 
-              setPlaylistFilter((prev) => ({
-                ...prev,
-                page: pagination.current || 1,
-                pageSize: pagination.pageSize || 10,
-                sortBy: currentSorter.field
-                  ? String(currentSorter.field)
-                  : 'createdAt',
-                isAscending: currentSorter.order === 'ascend',
-              }));
-            },
-          }}
-        />
+                setPlaylistFilter((prev) => ({
+                  ...prev,
+                  page: pagination.current || 1,
+                  pageSize: pagination.pageSize || 10,
+                  sortBy: currentSorter.field
+                    ? String(currentSorter.field)
+                    : 'createdAt',
+                  isAscending: currentSorter.order === 'ascend',
+                }));
+              },
+            }}
+          />
+        </div>
 
         <div className={styles.sectionCard}>
           <Text strong>Queue Mode</Text>

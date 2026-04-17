@@ -1,13 +1,16 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
+  Alert,
   Card,
   Button,
   Space,
   Select,
+  Tag,
   Typography,
   Divider,
   Flex,
   message,
+  App,
 } from 'antd';
 import {
   SettingOutlined,
@@ -27,24 +30,54 @@ import {
   useOverridePlaylist,
   useCancelOverride,
   useUpdateAudioState,
+  useUpdateSchedulingState,
   useRemoveQueueItem,
   useRemoveQueueItems,
   useClearQueue,
   useReorderQueue,
 } from '@/shared/modules/cams/hooks';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   PlaybackCommand,
   QueueItemSource,
   QueueItemStatus,
   QueueEndBehavior,
+  SchedulingSlotOrigin,
 } from '@/shared/modules/cams/types';
 import type { SpaceQueueItemResponse } from '@/shared/modules/cams/types';
-import { isSpacePlaying } from '@/shared/modules/cams/utils';
+import {
+  formatPlaybackTime,
+  isSpacePlaying,
+} from '@/shared/modules/cams/utils';
 import { usePlaylists } from '@/shared/modules/playlists/hooks';
 import type { SpaceListItem } from '@/shared/modules/spaces/types';
 import { AppModal, SettingSwitch } from '@/shared/components';
+import { api } from '@/config';
+import type { Result } from '@/shared/types';
+import { showErrorMessage } from '@/shared/utils';
 
 const { Title, Text } = Typography;
+const STORE_CONFIG_ENDPOINT = '/api/cms/store-configs';
+const AUTO_VOLUME_KEY = 'Fuzzy:AutoVolumeEnabled';
+
+type StoreConfigItem = {
+  id: string;
+  key: string;
+  value: string;
+};
+
+const SCHEDULING_ORIGIN_LABELS: Record<SchedulingSlotOrigin, string> = {
+  [SchedulingSlotOrigin.Space]: 'Space Schedule',
+  [SchedulingSlotOrigin.Brand]: 'Brand Schedule',
+};
+
+const formatStatusDateTime = (value?: string | null) => {
+  if (!value) {
+    return null;
+  }
+
+  return new Date(value).toLocaleString('en-GB');
+};
 
 interface SpacePlayerCardProps {
   space: SpaceListItem;
@@ -52,9 +85,11 @@ interface SpacePlayerCardProps {
 }
 
 export const SpacePlayerCard = ({ space, storeId }: SpacePlayerCardProps) => {
+  const { message: appMessage } = App.useApp();
   const [showSettings, setShowSettings] = useState(false);
   const [isOverrideDrawerOpen, setIsOverrideDrawerOpen] = useState(false);
   const [isAddQueueModalOpen, setIsAddQueueModalOpen] = useState(false);
+  const [statusNowMs, setStatusNowMs] = useState(() => Date.now());
 
   // Fetch space state from API (initial load only)
   const { data: spaceState, isLoading: isLoadingState } = useSpaceState(
@@ -78,13 +113,86 @@ export const SpacePlayerCard = ({ space, storeId }: SpacePlayerCardProps) => {
   const overridePlaylist = useOverridePlaylist();
   const cancelOverride = useCancelOverride();
   const updateAudio = useUpdateAudioState();
+  const updateSchedulingState = useUpdateSchedulingState();
   const removeQueueItem = useRemoveQueueItem();
   const removeQueueItems = useRemoveQueueItems();
   const clearQueue = useClearQueue();
   const reorderQueue = useReorderQueue();
 
+  useEffect(() => {
+    if (
+      !spaceState?.manualOverrideExpiresAtUtc &&
+      !spaceState?.schedulingEndsAtUtc
+    ) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setStatusNowMs(Date.now());
+    }, 1000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [spaceState?.manualOverrideExpiresAtUtc, spaceState?.schedulingEndsAtUtc]);
+
+  const { data: storeConfigs = [], refetch: refetchAutoVolumeConfig } =
+    useQuery({
+      queryKey: ['space-player-auto-volume-config', storeId],
+      queryFn: async () => {
+        const response = await api.get<Result<StoreConfigItem[]>>(
+          `${STORE_CONFIG_ENDPOINT}/store/${storeId}?category=FuzzyLogic`,
+        );
+        return response.data.data || [];
+      },
+      enabled: !!storeId,
+    });
+
+  const autoVolumeConfig = storeConfigs.find((c) => c.key === AUTO_VOLUME_KEY);
+  const isAutoVolumeEnabled = autoVolumeConfig
+    ? autoVolumeConfig.value.toLowerCase() === 'true'
+    : true;
+
+  const toggleAutoVolume = useMutation({
+    mutationFn: async (enabled: boolean) => {
+      const payload = {
+        key: AUTO_VOLUME_KEY,
+        value: enabled ? 'true' : 'false',
+        category: 'FuzzyLogic',
+        dataType: 'bool',
+        description:
+          'Enable ambient-noise based automatic volume adjustments for CAMS.',
+      };
+
+      if (autoVolumeConfig?.id) {
+        await api.put<Result<StoreConfigItem>>(
+          `${STORE_CONFIG_ENDPOINT}/${autoVolumeConfig.id}`,
+          payload,
+        );
+      } else {
+        await api.post<Result<StoreConfigItem>>(STORE_CONFIG_ENDPOINT, {
+          storeId,
+          ...payload,
+        });
+      }
+    },
+    onSuccess: async (_, enabled) => {
+      appMessage.success(
+        enabled ? 'Auto volume enabled.' : 'Auto volume disabled.',
+      );
+      await refetchAutoVolumeConfig();
+    },
+    onError: (error) => {
+      showErrorMessage(error, 'Failed to update auto volume setting.');
+    },
+  });
+
   // Debounce ref for volume updates
   const volumeUpdateTimeoutRef = useRef<number | null>(null);
+  // Previous-button double-tap: first tap seeks to beginning; second tap within this
+  // window goes to the actual previous track.
+  const prevTapTimestampRef = useRef<number>(0);
+  const PREV_DOUBLE_TAP_MS = 2000; // 2 s window
 
   // ✅ Use spaceState directly from React Query
   const hlsUrl = spaceState?.hlsUrl || null;
@@ -97,6 +205,27 @@ export const SpacePlayerCard = ({ space, storeId }: SpacePlayerCardProps) => {
   const isPlaying = spaceState
     ? !spaceState.isPaused && isSpacePlaying(spaceState)
     : false;
+
+  const manualOverrideRemainingSeconds = spaceState?.manualOverrideExpiresAtUtc
+    ? Math.max(
+        0,
+        Math.ceil(
+          (new Date(spaceState.manualOverrideExpiresAtUtc).getTime() -
+            statusNowMs) /
+            1000,
+        ),
+      )
+    : (spaceState?.manualOverrideRemainingSeconds ?? null);
+
+  const schedulingRemainingSeconds = spaceState?.schedulingEndsAtUtc
+    ? Math.max(
+        0,
+        Math.ceil(
+          (new Date(spaceState.schedulingEndsAtUtc).getTime() - statusNowMs) /
+            1000,
+        ),
+      )
+    : (spaceState?.schedulingRemainingSeconds ?? null);
 
   // Normalize queue items: accept either `position` or `orderIndex`, accept optional queueStatus from server
   const normalizedQueue = (
@@ -205,15 +334,27 @@ export const SpacePlayerCard = ({ space, storeId }: SpacePlayerCardProps) => {
       return;
     }
 
-    // Attempt to jump to previous track (always jump when available).
-    // Find previous item by position
+    const now = Date.now();
+    const timeSinceLastTap = now - prevTapTimestampRef.current;
+    prevTapTimestampRef.current = now;
+
+    // First tap (or tap after window expired): seek to start of current track.
+    if (timeSinceLastTap > PREV_DOUBLE_TAP_MS) {
+      playbackControl.mutate({
+        spaceId: space.id,
+        command: PlaybackCommand.Seek,
+        seekPositionSeconds: 0,
+      });
+      return;
+    }
+
+    // Second tap within the window: jump to previous track.
     const currentPos = currentItem.position ?? 0;
     const previous = queueItems
       .filter((it) => it.position < currentPos)
       .sort((a, b) => b.position - a.position)[0];
 
     if (previous && previous.queueItemId) {
-      // Use SkipToTrack to explicitly jump to previous queue item
       playbackControl.mutate({
         spaceId: space.id,
         command: PlaybackCommand.SkipToTrack,
@@ -326,7 +467,7 @@ export const SpacePlayerCard = ({ space, storeId }: SpacePlayerCardProps) => {
       playbackControl.mutate({
         spaceId: space.id,
         command: PlaybackCommand.Seek,
-        seekPositionSeconds: Math.max(0, Math.floor(seconds)),
+        seekPositionSeconds: Math.max(0, seconds),
       });
     },
     [space.id, isPending, playbackControl],
@@ -459,12 +600,120 @@ export const SpacePlayerCard = ({ space, storeId }: SpacePlayerCardProps) => {
         size='middle'
       >
         <SettingSwitch
+          label='Auto Volume (by ambient noise)'
+          description='Automatically adjusts playback volume based on current noise level.'
+          value={isAutoVolumeEnabled}
+          onChange={(checked) => toggleAutoVolume.mutate(checked)}
+          disabled={toggleAutoVolume.isPending}
+        />
+
+        <SettingSwitch
           label='Manual Override'
           description='Turn on to select tracks/playlist/mood manually. Turn off to resume AI control.'
           value={!!spaceState?.isManualOverride}
           onChange={handleOverrideToggle}
           disabled={overridePlaylist.isPending || cancelOverride.isPending}
         />
+
+        <SettingSwitch
+          label='Scheduling Mode'
+          description='Switch runtime ownership between normal playback flow and schedule-driven playback for the active time slot.'
+          value={!!spaceState?.isScheduling}
+          onChange={(checked) => {
+            updateSchedulingState.mutate({
+              spaceId: space.id,
+              data: { isScheduling: checked },
+            });
+          }}
+          disabled={updateSchedulingState.isPending}
+          loading={updateSchedulingState.isPending}
+        />
+
+        {spaceState?.isManualOverride && (
+          <Alert
+            type='warning'
+            showIcon
+            message={
+              <Space wrap>
+                <Text strong>Manual Override Active</Text>
+                {spaceState.overrideMode != null && (
+                  <Tag color='orange'>Mode {spaceState.overrideMode}</Tag>
+                )}
+                {manualOverrideRemainingSeconds != null && (
+                  <Tag color='red'>
+                    TTL {formatPlaybackTime(manualOverrideRemainingSeconds)}
+                  </Tag>
+                )}
+              </Space>
+            }
+            description={
+              <Space
+                direction='vertical'
+                size={2}
+              >
+                {spaceState.overrideReason && (
+                  <Text>Reason: {spaceState.overrideReason}</Text>
+                )}
+                {spaceState.manualOverrideActivatedAtUtc && (
+                  <Text type='secondary'>
+                    Activated:{' '}
+                    {formatStatusDateTime(
+                      spaceState.manualOverrideActivatedAtUtc,
+                    )}
+                  </Text>
+                )}
+                {spaceState.manualOverrideExpiresAtUtc && (
+                  <Text type='secondary'>
+                    Expires:{' '}
+                    {formatStatusDateTime(
+                      spaceState.manualOverrideExpiresAtUtc,
+                    )}
+                  </Text>
+                )}
+              </Space>
+            }
+          />
+        )}
+
+        {spaceState?.isScheduling && (
+          <Alert
+            type='info'
+            showIcon
+            message={
+              <Space wrap>
+                <Text strong>Scheduling Runtime Active</Text>
+                {spaceState.schedulingSlotOrigin != null && (
+                  <Tag color='blue'>
+                    {SCHEDULING_ORIGIN_LABELS[spaceState.schedulingSlotOrigin]}
+                  </Tag>
+                )}
+                {schedulingRemainingSeconds != null && (
+                  <Tag color='cyan'>
+                    Ends in {formatPlaybackTime(schedulingRemainingSeconds)}
+                  </Tag>
+                )}
+              </Space>
+            }
+            description={
+              <Space
+                direction='vertical'
+                size={2}
+              >
+                {spaceState.schedulingEndsAtUtc && (
+                  <Text type='secondary'>
+                    Window ends:{' '}
+                    {formatStatusDateTime(spaceState.schedulingEndsAtUtc)}
+                  </Text>
+                )}
+                {spaceState.schedulingSlotId && (
+                  <Text type='secondary'>
+                    Active slot: {spaceState.schedulingSlotId}
+                  </Text>
+                )}
+              </Space>
+            }
+          />
+        )}
 
         {/* Playlist Selection (Settings) */}
         {showSettings && (
@@ -516,6 +765,12 @@ export const SpacePlayerCard = ({ space, storeId }: SpacePlayerCardProps) => {
                 >
                   <Text strong>Audio</Text>
                   <Space>
+                    <Text
+                      type='secondary'
+                      style={{ fontSize: 12 }}
+                    >
+                      Auto: {isAutoVolumeEnabled ? 'On' : 'Off'}
+                    </Text>
                     <Text
                       type='secondary'
                       style={{ fontSize: 12 }}

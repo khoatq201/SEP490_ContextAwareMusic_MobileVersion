@@ -84,7 +84,11 @@ export const EditStoreDrawer = ({
   onSuccess,
 }: EditStoreDrawerProps) => {
   const [form] = Form.useForm<EditStoreDrawerFormValues>();
-  const { data: store, isLoading } = useStore(storeId || undefined, open);
+  const {
+    data: store,
+    isLoading,
+    refetch,
+  } = useStore(storeId || undefined, open);
   const updateStore = useUpdateStore();
   const createFuzzyProfile = useCreateStoreFuzzyOverrideProfile();
   const { user } = useAuth();
@@ -112,10 +116,53 @@ export const EditStoreDrawer = ({
         areaSquareMeters: store.areaSquareMeters || undefined,
         maxCapacity: store.maxCapacity || undefined,
         fuzzyOverrideLevel: store.fuzzyOverrideLevel ?? 3,
-        fuzzy: {},
+        fuzzy: {
+          name: store.activeFuzzyProfileName ?? undefined,
+          chillBpmMin: store.chillBpmMin ?? undefined,
+          chillBpmMax: store.chillBpmMax ?? undefined,
+          focusBpmMin: store.focusBpmMin ?? undefined,
+          focusBpmMax: store.focusBpmMax ?? undefined,
+          energeticBpmMin: store.energeticBpmMin ?? undefined,
+          energeticBpmMax: store.energeticBpmMax ?? undefined,
+          pressureLowMax: store.pressureLowMax ?? undefined,
+          pressureCriticalMin: store.pressureCriticalMin ?? undefined,
+          noiseQuietMaxDb:
+            store.noiseQuietMaxDb ??
+            store.stressComfortableMax ??
+            store.densitySparseMax ??
+            undefined,
+          noiseLoudMinDb:
+            store.noiseLoudMinDb ??
+            store.stressHighMin ??
+            store.densityCrowdedMin ??
+            undefined,
+          spaceCapacity: store.spaceCapacity ?? undefined,
+          defaultDecibelWhenNull:
+            store.defaultDecibelWhenNull ??
+            store.defaultDensityRatioWhenNull ??
+            undefined,
+          chillMoodCandidates: store.chillMoodCandidates?.length
+            ? store.chillMoodCandidates
+            : undefined,
+          focusMoodCandidates: store.focusMoodCandidates?.length
+            ? store.focusMoodCandidates
+            : undefined,
+          energeticMoodCandidates: store.energeticMoodCandidates?.length
+            ? store.energeticMoodCandidates
+            : undefined,
+          allowedPlaylistIds: store.allowedPlaylistIds?.length
+            ? store.allowedPlaylistIds
+            : undefined,
+        },
       });
     }
   }, [store, open, form]);
+
+  useEffect(() => {
+    if (open && storeId) {
+      void refetch();
+    }
+  }, [open, storeId, refetch]);
 
   const handleSubmit = async (values: EditStoreDrawerFormValues) => {
     if (!storeId) return;
@@ -159,7 +206,14 @@ export const EditStoreDrawer = ({
       | Partial<StoreFuzzyOverrideProfileRequest>
       | undefined;
     const body = pickStoreFuzzyOverrideBody(fuzzy);
-    createFuzzyProfile.mutate({ storeId, body });
+    createFuzzyProfile.mutate(
+      { storeId, body },
+      {
+        onSuccess: () => {
+          void refetch();
+        },
+      },
+    );
   };
 
   return (

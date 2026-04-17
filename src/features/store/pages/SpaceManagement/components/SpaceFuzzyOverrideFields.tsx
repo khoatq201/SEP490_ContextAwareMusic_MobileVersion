@@ -1,8 +1,17 @@
 import { Collapse, Form, Input, InputNumber, Select, Typography } from 'antd';
 
 import { usePlaylistOptionsForStore } from '@/shared/modules/playlists/hooks';
+import { MOOD_TYPE_LABELS } from '@/shared/modules/moods/constants';
+import { MoodType } from '@/shared/modules/moods/types';
 
 const { Text } = Typography;
+
+const MOOD_CANDIDATE_OPTIONS = Object.values(MoodType)
+  .filter((value): value is MoodType => typeof value === 'number')
+  .map((value) => ({
+    label: MOOD_TYPE_LABELS[value],
+    value,
+  }));
 
 type SpaceFuzzyOverrideFieldsProps = {
   storeIdForPlaylists?: string;
@@ -26,7 +35,8 @@ export const SpaceFuzzyOverrideFields = ({
         style={{ marginBottom: 12 }}
       >
         Create and activate a space-specific fuzzy profile. Thresholds are
-        optional.
+        optional. Use people-count and noise thresholds to control mood
+        switching.
       </Typography.Paragraph>
 
       <Form.Item
@@ -34,6 +44,51 @@ export const SpaceFuzzyOverrideFields = ({
         name={['fuzzy', 'name']}
       >
         <Input placeholder='Optional label for this profile' />
+      </Form.Item>
+
+      <Form.Item
+        label='Chill mood candidates'
+        name={['fuzzy', 'chillMoodCandidates']}
+        tooltip='Optional lane mapping override. Leave empty to use runtime default mapping.'
+      >
+        <Select
+          size='large'
+          mode='multiple'
+          allowClear
+          placeholder='Optional - moods allowed for Chill lane'
+          options={MOOD_CANDIDATE_OPTIONS}
+          optionFilterProp='label'
+        />
+      </Form.Item>
+
+      <Form.Item
+        label='Focus mood candidates'
+        name={['fuzzy', 'focusMoodCandidates']}
+        tooltip='Optional lane mapping override. Leave empty to use runtime default mapping.'
+      >
+        <Select
+          size='large'
+          mode='multiple'
+          allowClear
+          placeholder='Optional - moods allowed for Focus lane'
+          options={MOOD_CANDIDATE_OPTIONS}
+          optionFilterProp='label'
+        />
+      </Form.Item>
+
+      <Form.Item
+        label='Energetic mood candidates'
+        name={['fuzzy', 'energeticMoodCandidates']}
+        tooltip='Optional lane mapping override. Leave empty to use runtime default mapping.'
+      >
+        <Select
+          size='large'
+          mode='multiple'
+          allowClear
+          placeholder='Optional - moods allowed for Energetic lane'
+          options={MOOD_CANDIDATE_OPTIONS}
+          optionFilterProp='label'
+        />
       </Form.Item>
 
       <Collapse
@@ -44,7 +99,7 @@ export const SpaceFuzzyOverrideFields = ({
         items={[
           {
             key: 'fuzzyAdvanced',
-            label: 'Threshold & BPM overrides (optional)',
+            label: 'Advanced mood thresholds & BPM (optional)',
             children: (
               <div
                 style={{
@@ -108,8 +163,9 @@ export const SpaceFuzzyOverrideFields = ({
                   />
                 </Form.Item>
                 <Form.Item
-                  label='Pressure low max'
+                  label='People count: Low level max'
                   name={['fuzzy', 'pressureLowMax']}
+                  tooltip='If people count is below this value, CAMS treats crowd pressure as Low.'
                 >
                   <InputNumber
                     className='w-full!'
@@ -117,8 +173,9 @@ export const SpaceFuzzyOverrideFields = ({
                   />
                 </Form.Item>
                 <Form.Item
-                  label='Pressure critical min'
+                  label='People count: Energetic trigger min'
                   name={['fuzzy', 'pressureCriticalMin']}
+                  tooltip='If people count is above this value, CAMS treats crowd pressure as Critical and prioritizes Energetic.'
                 >
                   <InputNumber
                     className='w-full!'
@@ -126,18 +183,9 @@ export const SpaceFuzzyOverrideFields = ({
                   />
                 </Form.Item>
                 <Form.Item
-                  label='Stress comfortable max'
-                  name={['fuzzy', 'stressComfortableMax']}
-                >
-                  <InputNumber
-                    className='w-full!'
-                    min={0}
-                    step={0.01}
-                  />
-                </Form.Item>
-                <Form.Item
-                  label='Stress high min'
-                  name={['fuzzy', 'stressHighMin']}
+                  label='Noise threshold: Quiet max (dB)'
+                  name={['fuzzy', 'noiseQuietMaxDb']}
+                  tooltip='If decibel is below this value, CAMS classifies ambient noise as Quiet.'
                 >
                   <InputNumber
                     className='w-full!'
@@ -146,30 +194,20 @@ export const SpaceFuzzyOverrideFields = ({
                   />
                 </Form.Item>
                 <Form.Item
-                  label='Density sparse max (0-1)'
-                  name={['fuzzy', 'densitySparseMax']}
+                  label='Noise threshold: Loud min (dB)'
+                  name={['fuzzy', 'noiseLoudMinDb']}
+                  tooltip='If decibel is above this value, CAMS classifies ambient noise as Loud.'
                 >
                   <InputNumber
                     className='w-full!'
                     min={0}
-                    max={1}
                     step={0.01}
                   />
                 </Form.Item>
                 <Form.Item
-                  label='Density crowded min (0-1)'
-                  name={['fuzzy', 'densityCrowdedMin']}
-                >
-                  <InputNumber
-                    className='w-full!'
-                    min={0}
-                    max={1}
-                    step={0.01}
-                  />
-                </Form.Item>
-                <Form.Item
-                  label='Space capacity'
+                  label='Space capacity (reference)'
                   name={['fuzzy', 'spaceCapacity']}
+                  tooltip='Reference capacity for this space profile.'
                 >
                   <InputNumber
                     className='w-full!'
@@ -177,13 +215,13 @@ export const SpaceFuzzyOverrideFields = ({
                   />
                 </Form.Item>
                 <Form.Item
-                  label='Default density ratio when null (0-1)'
-                  name={['fuzzy', 'defaultDensityRatioWhenNull']}
+                  label='Fallback decibel when missing (dB)'
+                  name={['fuzzy', 'defaultDecibelWhenNull']}
+                  tooltip='Used only when telemetry payload does not include decibel.'
                 >
                   <InputNumber
                     className='w-full!'
                     min={0}
-                    max={1}
                     step={0.01}
                   />
                 </Form.Item>

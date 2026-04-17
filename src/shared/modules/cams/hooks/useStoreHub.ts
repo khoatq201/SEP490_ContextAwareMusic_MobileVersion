@@ -12,6 +12,7 @@ type EventHandlers = {
   onSpaceStateSync?: (spaceId: string, state: SpaceStateDto) => void;
   onConnected?: () => void;
   onDisconnected?: () => void;
+  onReconnected?: () => void;
 };
 
 /**
@@ -46,6 +47,8 @@ export const useStoreHub = (
   }, [handlers]);
 
   useEffect(() => {
+    const connectionState = connectionRef.current;
+
     // ✅ Early return without setState
     if (!storeId || !token) {
       console.log('❌ Cannot connect to StoreHub: Missing storeId or token', {
@@ -56,23 +59,23 @@ export const useStoreHub = (
     }
 
     // ✅ Mark that we should connect
-    connectionRef.current.shouldConnect = true;
+    connectionState.shouldConnect = true;
 
     const connect = async () => {
       // ✅ Prevent double-connect in Strict Mode
-      if (connectionRef.current.isConnecting) {
+      if (connectionState.isConnecting) {
         console.log('⏭️ Connection already in progress, skipping...');
         return;
       }
 
       // ✅ Check if we should still connect (not unmounted)
-      if (!connectionRef.current.shouldConnect) {
+      if (!connectionState.shouldConnect) {
         console.log('⏭️ Component unmounted before connect, aborting...');
         return;
       }
 
       try {
-        connectionRef.current.isConnecting = true;
+        connectionState.isConnecting = true;
         setIsConnecting(true);
         setError(null);
 
@@ -96,7 +99,7 @@ export const useStoreHub = (
           },
           onConnected: () => {
             // ✅ Only update state if still mounted
-            if (connectionRef.current.shouldConnect) {
+            if (connectionState.shouldConnect) {
               console.log('✅ StoreHub connected successfully');
               setIsConnected(true);
               setIsConnecting(false);
@@ -107,7 +110,7 @@ export const useStoreHub = (
             console.log('❌ StoreHub disconnected');
             setIsConnected(false);
             setIsConnecting(false);
-            connectionRef.current.isConnecting = false;
+            connectionState.isConnecting = false;
             handlersRef.current.onDisconnected?.();
           },
           onReconnecting: () => {
@@ -118,10 +121,11 @@ export const useStoreHub = (
             console.log('✅ StoreHub reconnected');
             setIsConnected(true);
             setIsConnecting(false);
+            handlersRef.current.onReconnected?.();
           },
         });
 
-        connectionRef.current.isConnecting = false;
+        connectionState.isConnecting = false;
       } catch (err) {
         console.error('❌ Failed to connect to StoreHub:', err);
 
@@ -138,17 +142,17 @@ export const useStoreHub = (
 
     // ✅ Small delay to avoid double-connect in Strict Mode
     const timer = setTimeout(() => {
-      if (connectionRef.current.shouldConnect) {
+      if (connectionState.shouldConnect) {
         connect();
       }
     }, 100);
 
     return () => {
-      // ✅ Copy ref value to variable in cleanup
-      const shouldCleanup = connectionRef.current.shouldConnect;
+      const shouldCleanup = connectionState.shouldConnect;
 
       // ✅ Mark that we should NOT connect anymore
-      connectionRef.current.shouldConnect = false;
+      connectionState.shouldConnect = false;
+      connectionState.isConnecting = false;
 
       clearTimeout(timer);
 
@@ -160,7 +164,6 @@ export const useStoreHub = (
       }
 
       setIsConnected(false);
-      connectionRef.current.isConnecting = false;
     };
   }, [storeId, token]);
 

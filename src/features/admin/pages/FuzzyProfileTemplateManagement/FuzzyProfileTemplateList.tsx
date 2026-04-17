@@ -43,12 +43,10 @@ const DEFAULT_CREATE_VALUES: Partial<FuzzyProfileTemplateDetail> = {
   energeticBpmMax: 140,
   pressureLowMax: 2,
   pressureCriticalMin: 5,
-  stressComfortableMax: 28,
-  stressHighMin: 32,
-  densitySparseMax: 0.3,
-  densityCrowdedMin: 0.7,
+  noiseQuietMaxDb: 50,
+  noiseLoudMinDb: 75,
   spaceCapacity: 30,
-  defaultDensityRatioWhenNull: 0.5,
+  defaultDecibelWhenNull: 60,
 };
 
 const gridStyle: React.CSSProperties = {
@@ -85,6 +83,20 @@ export const FuzzyProfileTemplateList = () => {
     if (!drawerOpen || mode !== 'edit' || !detail) return;
     form.setFieldsValue({
       ...detail,
+      noiseQuietMaxDb:
+        detail.noiseQuietMaxDb ??
+        detail.stressComfortableMax ??
+        detail.densitySparseMax ??
+        undefined,
+      noiseLoudMinDb:
+        detail.noiseLoudMinDb ??
+        detail.stressHighMin ??
+        detail.densityCrowdedMin ??
+        undefined,
+      defaultDecibelWhenNull:
+        detail.defaultDecibelWhenNull ??
+        detail.defaultDensityRatioWhenNull ??
+        undefined,
       isActive: detail.isActive,
     });
   }, [drawerOpen, mode, detail, form]);
@@ -128,12 +140,10 @@ export const FuzzyProfileTemplateList = () => {
     energeticBpmMax: Number(values.energeticBpmMax),
     pressureLowMax: Number(values.pressureLowMax),
     pressureCriticalMin: Number(values.pressureCriticalMin),
-    stressComfortableMax: Number(values.stressComfortableMax),
-    stressHighMin: Number(values.stressHighMin),
-    densitySparseMax: Number(values.densitySparseMax),
-    densityCrowdedMin: Number(values.densityCrowdedMin),
+    noiseQuietMaxDb: Number(values.noiseQuietMaxDb),
+    noiseLoudMinDb: Number(values.noiseLoudMinDb),
     spaceCapacity: Number(values.spaceCapacity),
-    defaultDensityRatioWhenNull: Number(values.defaultDensityRatioWhenNull),
+    defaultDecibelWhenNull: Number(values.defaultDecibelWhenNull),
   });
 
   const handleSubmit = async () => {
@@ -480,7 +490,8 @@ export const FuzzyProfileTemplateList = () => {
             </Form.Item>
             <Form.Item
               name='pressureLowMax'
-              label='Pressure low max'
+              label='People count: Low level max'
+              tooltip='If people count is below this value, CAMS treats crowd pressure as Low.'
               rules={[{ required: true }]}
             >
               <InputNumber
@@ -490,7 +501,8 @@ export const FuzzyProfileTemplateList = () => {
             </Form.Item>
             <Form.Item
               name='pressureCriticalMin'
-              label='Pressure critical min'
+              label='People count: Energetic trigger min'
+              tooltip='If people count is above this value, CAMS treats crowd pressure as Critical and prioritizes Energetic.'
               rules={[{ required: true }]}
             >
               <InputNumber
@@ -499,8 +511,9 @@ export const FuzzyProfileTemplateList = () => {
               />
             </Form.Item>
             <Form.Item
-              name='stressComfortableMax'
-              label='Stress comfortable max'
+              name='noiseQuietMaxDb'
+              label='Noise threshold: Quiet max (dB)'
+              tooltip='If decibel is below this value, CAMS classifies ambient noise as Quiet.'
               rules={[{ required: true }]}
             >
               <InputNumber
@@ -510,43 +523,21 @@ export const FuzzyProfileTemplateList = () => {
               />
             </Form.Item>
             <Form.Item
-              name='stressHighMin'
-              label='Stress high min'
+              name='noiseLoudMinDb'
+              label='Noise threshold: Loud min (dB)'
+              tooltip='If decibel is above this value, CAMS classifies ambient noise as Loud.'
               rules={[{ required: true }]}
             >
               <InputNumber
                 className='w-full!'
                 min={0}
-                step={0.01}
-              />
-            </Form.Item>
-            <Form.Item
-              name='densitySparseMax'
-              label='Density sparse max (0–1)'
-              rules={[{ required: true }]}
-            >
-              <InputNumber
-                className='w-full!'
-                min={0}
-                max={1}
-                step={0.01}
-              />
-            </Form.Item>
-            <Form.Item
-              name='densityCrowdedMin'
-              label='Density crowded min (0–1)'
-              rules={[{ required: true }]}
-            >
-              <InputNumber
-                className='w-full!'
-                min={0}
-                max={1}
                 step={0.01}
               />
             </Form.Item>
             <Form.Item
               name='spaceCapacity'
-              label='Space capacity'
+              label='Space capacity (reference)'
+              tooltip='Reference capacity for this template profile.'
               rules={[{ required: true }]}
             >
               <InputNumber
@@ -555,14 +546,14 @@ export const FuzzyProfileTemplateList = () => {
               />
             </Form.Item>
             <Form.Item
-              name='defaultDensityRatioWhenNull'
-              label='Default density ratio when null (0–1)'
+              name='defaultDecibelWhenNull'
+              label='Fallback decibel when missing (dB)'
+              tooltip='Used only when telemetry payload does not include decibel.'
               rules={[{ required: true }]}
             >
               <InputNumber
                 className='w-full!'
                 min={0}
-                max={1}
                 step={0.01}
               />
             </Form.Item>

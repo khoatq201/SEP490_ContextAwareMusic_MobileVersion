@@ -1,5 +1,4 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { message } from 'antd';
 import { QUERY_KEYS } from '@/config';
 import { handleApiError } from '@/shared/utils';
 import { camsService } from '../services';
@@ -44,7 +43,6 @@ export const useOverridePlaylist = () => {
       return camsService.overridePlaylist(spaceId, data);
     },
     onSuccess: (_, variables) => {
-      message.success('Manual override applied successfully');
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.cams.spaceState(variables.spaceId),
       });

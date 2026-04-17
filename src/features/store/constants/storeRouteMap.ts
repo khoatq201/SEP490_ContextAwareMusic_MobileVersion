@@ -3,4 +3,5 @@ export const STORE_ROUTE_MAP: Record<string, string> = {
   spaces: '/store/spaces',
   tracks: '/store/tracks',
   playlists: '/store/playlists',
+  'config-management': '/store/config-management',
 };

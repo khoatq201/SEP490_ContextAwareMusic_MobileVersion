@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router';
+import { Navigate, useSearchParams } from 'react-router';
 
 /**
  * Hooks
@@ -19,14 +19,28 @@ const ROLE_HOME_MAP: Record<RoleEnum, string> = {
   [RoleEnum.StoreManager]: '/store/dashboard',
 };
 
+const isSafeInternalPath = (path: string) =>
+  path.startsWith('/') && !path.startsWith('//') && !path.includes('://');
+
 export const RedirectIfAuthenticated = ({
   children,
 }: {
   children: React.ReactNode;
 }) => {
   const { isAuthenticated, user } = useAuth();
+  const [searchParams] = useSearchParams();
 
   if (isAuthenticated && user) {
+    const next = searchParams.get('redirect');
+    if (next && isSafeInternalPath(next)) {
+      return (
+        <Navigate
+          to={next}
+          replace
+        />
+      );
+    }
+
     const primaryRole = user.roles[0];
     const redirectTo = ROLE_HOME_MAP[primaryRole] ?? '/unauthorized';
 

@@ -28,11 +28,9 @@ export const pickSpaceFuzzyOverrideBody = (
   }
 
   const decimals: (keyof SpaceFuzzyOverrideProfileRequest)[] = [
-    'stressComfortableMax',
-    'stressHighMin',
-    'densitySparseMax',
-    'densityCrowdedMin',
-    'defaultDensityRatioWhenNull',
+    'noiseQuietMaxDb',
+    'noiseLoudMinDb',
+    'defaultDecibelWhenNull',
   ];
   for (const key of decimals) {
     const value = fuzzy[key];
@@ -41,11 +39,71 @@ export const pickSpaceFuzzyOverrideBody = (
     }
   }
 
+  // Backward compatibility for older form payloads still using legacy field names.
+  if (
+    out.noiseQuietMaxDb === undefined &&
+    typeof fuzzy.stressComfortableMax === 'number' &&
+    !Number.isNaN(fuzzy.stressComfortableMax)
+  ) {
+    out.noiseQuietMaxDb = fuzzy.stressComfortableMax;
+  }
+  if (
+    out.noiseQuietMaxDb === undefined &&
+    typeof fuzzy.densitySparseMax === 'number' &&
+    !Number.isNaN(fuzzy.densitySparseMax)
+  ) {
+    out.noiseQuietMaxDb = fuzzy.densitySparseMax;
+  }
+
+  if (
+    out.noiseLoudMinDb === undefined &&
+    typeof fuzzy.stressHighMin === 'number' &&
+    !Number.isNaN(fuzzy.stressHighMin)
+  ) {
+    out.noiseLoudMinDb = fuzzy.stressHighMin;
+  }
+  if (
+    out.noiseLoudMinDb === undefined &&
+    typeof fuzzy.densityCrowdedMin === 'number' &&
+    !Number.isNaN(fuzzy.densityCrowdedMin)
+  ) {
+    out.noiseLoudMinDb = fuzzy.densityCrowdedMin;
+  }
+
+  if (
+    out.defaultDecibelWhenNull === undefined &&
+    typeof fuzzy.defaultDensityRatioWhenNull === 'number' &&
+    !Number.isNaN(fuzzy.defaultDensityRatioWhenNull)
+  ) {
+    out.defaultDecibelWhenNull = fuzzy.defaultDensityRatioWhenNull;
+  }
+
   if (
     Array.isArray(fuzzy.allowedPlaylistIds) &&
     fuzzy.allowedPlaylistIds.length > 0
   ) {
     out.allowedPlaylistIds = fuzzy.allowedPlaylistIds.filter(Boolean);
+  }
+
+  if (
+    Array.isArray(fuzzy.chillMoodCandidates) &&
+    fuzzy.chillMoodCandidates.length > 0
+  ) {
+    out.chillMoodCandidates = fuzzy.chillMoodCandidates;
+  }
+
+  if (
+    Array.isArray(fuzzy.focusMoodCandidates) &&
+    fuzzy.focusMoodCandidates.length > 0
+  ) {
+    out.focusMoodCandidates = fuzzy.focusMoodCandidates;
+  }
+
+  if (
+    Array.isArray(fuzzy.energeticMoodCandidates) &&
+    fuzzy.energeticMoodCandidates.length > 0
+  ) {
+    out.energeticMoodCandidates = fuzzy.energeticMoodCandidates;
   }
 
   return out;

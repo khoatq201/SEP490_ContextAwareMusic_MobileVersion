@@ -31,12 +31,15 @@ export type FuzzyProfileTemplateDetail = FuzzyProfileTemplateListItem & {
   energeticBpmMax: number;
   pressureLowMax: number;
   pressureCriticalMin: number;
-  stressComfortableMax: number;
-  stressHighMin: number;
-  densitySparseMax: number;
-  densityCrowdedMin: number;
+  noiseQuietMaxDb: number;
+  noiseLoudMinDb: number;
   spaceCapacity: number;
-  defaultDensityRatioWhenNull: number;
+  defaultDecibelWhenNull: number;
+  stressComfortableMax?: number;
+  stressHighMin?: number;
+  densitySparseMax?: number;
+  densityCrowdedMin?: number;
+  defaultDensityRatioWhenNull?: number;
 };
 
 export type FuzzyProfileTemplateFormValues = {
@@ -56,10 +59,13 @@ export type FuzzyProfileTemplateFormValues = {
   energeticBpmMax: number;
   pressureLowMax: number;
   pressureCriticalMin: number;
-  stressComfortableMax: number;
-  stressHighMin: number;
-  densitySparseMax: number;
-  densityCrowdedMin: number;
+  noiseQuietMaxDb: number;
+  noiseLoudMinDb: number;
   spaceCapacity: number;
-  defaultDensityRatioWhenNull: number;
+  defaultDecibelWhenNull: number;
+  stressComfortableMax?: number;
+  stressHighMin?: number;
+  densitySparseMax?: number;
+  densityCrowdedMin?: number;
+  defaultDensityRatioWhenNull?: number;
 };

@@ -54,6 +54,7 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
   final _nvrPasswordController = TextEditingController();
   final _nvrHostController = TextEditingController();
   final _nvrPortController = TextEditingController(text: '80');
+  final _nvrChannelController = TextEditingController(text: '1');
   final _secretCodeFocusNode = FocusNode();
   final _ssidFocusNode = FocusNode();
   final _passwordFocusNode = FocusNode();
@@ -61,6 +62,7 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
   final _nvrPasswordFocusNode = FocusNode();
   final _nvrHostFocusNode = FocusNode();
   final _nvrPortFocusNode = FocusNode();
+  final _nvrChannelFocusNode = FocusNode();
   final _secretCodeFieldKey = GlobalKey();
   final _ssidFieldKey = GlobalKey();
   final _passwordFieldKey = GlobalKey();
@@ -68,6 +70,7 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
   final _nvrPasswordFieldKey = GlobalKey();
   final _nvrHostFieldKey = GlobalKey();
   final _nvrPortFieldKey = GlobalKey();
+  final _nvrChannelFieldKey = GlobalKey();
   bool _obscureSecretCode = true;
   bool _obscurePassword = true;
   bool _obscureNvrPassword = true;
@@ -83,6 +86,7 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
     _attachFocusListener(_nvrPasswordFocusNode, _nvrPasswordFieldKey);
     _attachFocusListener(_nvrHostFocusNode, _nvrHostFieldKey);
     _attachFocusListener(_nvrPortFocusNode, _nvrPortFieldKey);
+    _attachFocusListener(_nvrChannelFocusNode, _nvrChannelFieldKey);
   }
 
   @override
@@ -95,6 +99,7 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
     _nvrPasswordController.dispose();
     _nvrHostController.dispose();
     _nvrPortController.dispose();
+    _nvrChannelController.dispose();
     _secretCodeFocusNode.dispose();
     _ssidFocusNode.dispose();
     _passwordFocusNode.dispose();
@@ -102,6 +107,7 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
     _nvrPasswordFocusNode.dispose();
     _nvrHostFocusNode.dispose();
     _nvrPortFocusNode.dispose();
+    _nvrChannelFocusNode.dispose();
     super.dispose();
   }
 
@@ -387,6 +393,39 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
                 'The ESP32 is storing the NVR source and Wi-Fi credentials, then joining the selected network.',
           ),
         ];
+      case HubProvisioningPhase.discoveringNvrChannels:
+        return [
+          _ProgressCard(
+            palette: palette,
+            title: 'Discovering camera views',
+            subtitle:
+                'The ESP32 is connecting to Wi-Fi, finding the NVR, and preparing preview snapshots for each channel.',
+          ),
+        ];
+      case HubProvisioningPhase.selectNvrChannel:
+        return [
+          _NvrChannelPickerCard(
+            palette: palette,
+            channels: state.nvrChannels,
+            onRefresh: () => context
+                .read<HubProvisioningBloc>()
+                .add(const HubProvisioningNvrChannelsRefreshRequested()),
+            onSelected: (channel) => context
+                .read<HubProvisioningBloc>()
+                .add(HubProvisioningNvrChannelSelected(
+                  selectedChannel: channel,
+                )),
+          ),
+        ];
+      case HubProvisioningPhase.sendingNvrChannelSelection:
+        return [
+          _ProgressCard(
+            palette: palette,
+            title: 'Saving selected camera view',
+            subtitle:
+                'The ESP32 will use this channel for snapshots and people counting.',
+          ),
+        ];
       case HubProvisioningPhase.resolvingLocation:
       case HubProvisioningPhase.reviewLocation:
       case HubProvisioningPhase.sendingLocation:
@@ -507,6 +546,7 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
     _nvrPasswordController.clear();
     _nvrHostController.clear();
     _nvrPortController.text = '80';
+    _nvrChannelController.text = '1';
     setState(() {
       _obscureSecretCode = true;
       _obscurePassword = true;
@@ -528,6 +568,7 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
     _nvrPasswordController.clear();
     _nvrHostController.clear();
     _nvrPortController.text = '80';
+    _nvrChannelController.text = '1';
     setState(() {
       _obscureSecretCode = true;
       _obscurePassword = true;
@@ -1343,8 +1384,8 @@ class _NvrConfigCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             useDirectNvr
-                ? 'Development mode uses the host and port you enter, for example a forwarded NVR endpoint.'
-                : 'Auto mode lets the ESP32 discover an IMOU/Dahua NVR on the same LAN after Wi-Fi connects.',
+                ? 'Direct mode uses the host and port you enter, then shows channel previews from that NVR.'
+                : 'Auto mode tries to discover an IMOU/Dahua NVR on the LAN, then shows channel previews when discovery succeeds.',
             style: GoogleFonts.inter(
               color: palette.textMuted,
               fontSize: 13,
@@ -1356,18 +1397,53 @@ class _NvrConfigCard extends StatelessWidget {
             contentPadding: EdgeInsets.zero,
             value: useDirectNvr,
             title: Text(
-              'Development direct NVR mode',
+              'Direct NVR mode',
               style: GoogleFonts.inter(
                 color: palette.textPrimary,
                 fontWeight: FontWeight.w700,
               ),
             ),
             subtitle: Text(
-              'Use this for external forwarding, e.g. 192.168.1.237:18080.',
+              'Recommended for demo. Enter the NVR host directly, then choose the camera view from previews.',
               style: GoogleFonts.inter(color: palette.textMuted, fontSize: 12),
             ),
             onChanged: onToggleDirectMode,
           ),
+          if (!useDirectNvr) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.warning.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppColors.warning.withValues(alpha: 0.35),
+                ),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    LucideIcons.wrench,
+                    color: AppColors.warning,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Auto discovery is in maintenance mode. It can still scan the LAN, but direct mode is more stable for capstone demo setup.',
+                      style: GoogleFonts.inter(
+                        color: palette.textMuted,
+                        fontSize: 12,
+                        height: 1.45,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
           Container(
             key: usernameFieldKey,
@@ -1405,6 +1481,15 @@ class _NvrConfigCard extends StatelessWidget {
                   ),
                 ),
               ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'After the ESP32 joins Wi-Fi, it will show live channel previews so you can choose the right view instead of guessing a channel number.',
+            style: GoogleFonts.inter(
+              color: palette.textMuted,
+              fontSize: 13,
+              height: 1.5,
             ),
           ),
           if (useDirectNvr) ...[
@@ -1446,6 +1531,198 @@ class _NvrConfigCard extends StatelessWidget {
             label: const Text('Save NVR config to ESP32'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _NvrChannelPickerCard extends StatelessWidget {
+  const _NvrChannelPickerCard({
+    required this.palette,
+    required this.channels,
+    required this.onRefresh,
+    required this.onSelected,
+  });
+
+  final _HubPalette palette;
+  final List<NvrChannelPreview> channels;
+  final VoidCallback onRefresh;
+  final ValueChanged<int> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final onlineChannels =
+        channels.where((channel) => channel.online).toList(growable: false);
+
+    return _SectionCard(
+      palette: palette,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Choose camera view',
+                  style: GoogleFonts.poppins(
+                    color: palette.textPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              TextButton.icon(
+                onPressed: onRefresh,
+                icon: const Icon(LucideIcons.refreshCw, size: 16),
+                label: const Text('Refresh'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            onlineChannels.isEmpty
+                ? 'No live previews were returned. Offline channels are shown below for troubleshooting.'
+                : 'Select the clearest view for occupancy counting. The ESP32 will save that channel and use it for detection.',
+            style: GoogleFonts.inter(
+              color: palette.textMuted,
+              fontSize: 13,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 16),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: channels.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 0.82,
+            ),
+            itemBuilder: (context, index) {
+              final channel = channels[index];
+              return _NvrChannelTile(
+                palette: palette,
+                channel: channel,
+                onTap:
+                    channel.online ? () => onSelected(channel.channel) : null,
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NvrChannelTile extends StatelessWidget {
+  const _NvrChannelTile({
+    required this.palette,
+    required this.channel,
+    required this.onTap,
+  });
+
+  final _HubPalette palette;
+  final NvrChannelPreview channel;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        decoration: BoxDecoration(
+          color: palette.panel,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: channel.online ? palette.accent : palette.border,
+          ),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: channel.snapshotUrl == null
+                  ? _NvrPreviewPlaceholder(
+                      palette: palette,
+                      label: 'No preview',
+                    )
+                  : Image.network(
+                      channel.snapshotUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _NvrPreviewPlaceholder(
+                        palette: palette,
+                        label: 'Preview failed',
+                      ),
+                      loadingBuilder: (context, child, progress) {
+                        if (progress == null) return child;
+                        return _NvrPreviewPlaceholder(
+                          palette: palette,
+                          label: 'Loading',
+                        );
+                      },
+                    ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    channel.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      color: palette.textPrimary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    channel.online ? 'Ready to use' : 'Offline',
+                    style: GoogleFonts.inter(
+                      color: channel.online
+                          ? AppColors.success
+                          : palette.textMuted,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NvrPreviewPlaceholder extends StatelessWidget {
+  const _NvrPreviewPlaceholder({
+    required this.palette,
+    required this.label,
+  });
+
+  final _HubPalette palette;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.black.withValues(alpha: 0.08),
+      alignment: Alignment.center,
+      child: Text(
+        label,
+        style: GoogleFonts.inter(
+          color: palette.textMuted,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }

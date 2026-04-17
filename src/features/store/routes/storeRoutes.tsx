@@ -13,6 +13,11 @@ const SpaceList = Loadable(
   'SpaceList',
 );
 
+const SpaceSchedulePage = Loadable(
+  () => import('@/features/store/pages/SpaceSchedule/SpaceSchedulePage'),
+  'SpaceSchedulePage',
+);
+
 const TrackList = Loadable(
   () => import('@/features/store/pages/TrackManagement/TrackList'),
   'TrackList',
@@ -21,6 +26,11 @@ const TrackList = Loadable(
 const PlaylistList = Loadable(
   () => import('@/features/store/pages/PlaylistManagement/PlaylistList'),
   'PlaylistList',
+);
+
+const ConfigList = Loadable(
+  () => import('@/features/store/pages/ConfigManagement/ConfigList'),
+  'ConfigList',
 );
 
 const Dashboard = Loadable(
@@ -48,6 +58,10 @@ export const storeRoutes = [
     element: <SpaceList />,
   },
   {
+    path: 'spaces/:spaceId/schedule',
+    element: <SpaceSchedulePage />,
+  },
+  {
     path: 'settings',
     element: <StoreSettings />,
   },
@@ -58,6 +72,10 @@ export const storeRoutes = [
   {
     path: 'playlists',
     element: <PlaylistList />,
+  },
+  {
+    path: 'config-management',
+    element: <ConfigList />,
   },
   {
     path: 'profile/*',

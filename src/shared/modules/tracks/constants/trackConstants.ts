@@ -1,5 +1,5 @@
 import type { SelectProps } from 'antd';
-import { MusicProviderEnum } from '../types';
+import { MusicProviderEnum, TrackCopyrightClearanceStatus } from '../types';
 
 /**
  * Music Provider Options (for Select dropdown)
@@ -23,6 +23,31 @@ export const MUSIC_PROVIDER_LABELS: Record<MusicProviderEnum, string> = {
 export const MUSIC_PROVIDER_COLORS: Record<MusicProviderEnum, string> = {
   [MusicProviderEnum.Custom]: 'blue',
   [MusicProviderEnum.Suno]: 'purple',
+};
+
+/**
+ * Copyright clearance labels and colors.
+ */
+export const COPYRIGHT_CLEARANCE_LABELS: Record<
+  TrackCopyrightClearanceStatus,
+  string
+> = {
+  [TrackCopyrightClearanceStatus.NotApplicable]: 'Not Applicable',
+  [TrackCopyrightClearanceStatus.PendingScan]: 'Pending Scan',
+  [TrackCopyrightClearanceStatus.PendingReview]: 'Pending Review',
+  [TrackCopyrightClearanceStatus.Cleared]: 'Cleared',
+  [TrackCopyrightClearanceStatus.Rejected]: 'Rejected',
+};
+
+export const COPYRIGHT_CLEARANCE_COLORS: Record<
+  TrackCopyrightClearanceStatus,
+  string
+> = {
+  [TrackCopyrightClearanceStatus.NotApplicable]: 'default',
+  [TrackCopyrightClearanceStatus.PendingScan]: 'gold',
+  [TrackCopyrightClearanceStatus.PendingReview]: 'orange',
+  [TrackCopyrightClearanceStatus.Cleared]: 'success',
+  [TrackCopyrightClearanceStatus.Rejected]: 'red',
 };
 
 /**

@@ -16,6 +16,10 @@ import {
  * Hooks
  */
 import { useStore } from '@/features/brand/hooks';
+import {
+  GOVERNANCE_MODE_LABELS,
+  GovernanceModeEnum,
+} from '@/features/brand/types';
 
 /**
  * Constants
@@ -99,6 +103,19 @@ export const StoreDetailDrawer = ({
                 color={ENTITY_STATUS_COLORS[store.status]}
               >
                 {ENTITY_STATUS_LABELS[store.status]}
+              </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label='Governance Mode'>
+              <Tag
+                color={
+                  store.governanceMode === GovernanceModeEnum.StrictSync
+                    ? 'blue'
+                    : store.governanceMode === GovernanceModeEnum.AIMode
+                      ? 'purple'
+                      : 'gold'
+                }
+              >
+                {GOVERNANCE_MODE_LABELS[store.governanceMode]}
               </Tag>
             </Descriptions.Item>
             {store.contactNumber && (

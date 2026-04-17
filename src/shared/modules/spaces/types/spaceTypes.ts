@@ -1,4 +1,5 @@
 import type { BaseResponse, EntityStatusEnum } from '@/shared/types';
+import type { MoodType } from '@/shared/modules/moods/types';
 
 /**
  * Space Type Enum (from API_Spaces.md §4.5)
@@ -35,6 +36,32 @@ export interface SpaceDetailResponse extends SpaceListItem {
   wiFiSensorId?: string;
   ioTDeviceId?: string;
   currentPlaylistId?: string; // 🔒 Read-only (set by AI pipeline)
+
+  activeFuzzyMusicProfileId?: string | null;
+  activeFuzzyProfileName?: string | null;
+
+  chillBpmMin?: number | null;
+  chillBpmMax?: number | null;
+  focusBpmMin?: number | null;
+  focusBpmMax?: number | null;
+  energeticBpmMin?: number | null;
+  energeticBpmMax?: number | null;
+  pressureLowMax?: number | null;
+  pressureCriticalMin?: number | null;
+  noiseQuietMaxDb?: number | null;
+  noiseLoudMinDb?: number | null;
+  defaultDecibelWhenNull?: number | null;
+  stressComfortableMax?: number | null;
+  stressHighMin?: number | null;
+  densitySparseMax?: number | null;
+  densityCrowdedMin?: number | null;
+  spaceCapacity?: number | null;
+  defaultDensityRatioWhenNull?: number | null;
+
+  chillMoodCandidates?: MoodType[] | null;
+  focusMoodCandidates?: MoodType[] | null;
+  energeticMoodCandidates?: MoodType[] | null;
+  allowedPlaylistIds?: string[] | null;
 }
 
 /**
@@ -80,12 +107,18 @@ export interface SpaceFuzzyOverrideProfileRequest {
   energeticBpmMax?: number;
   pressureLowMax?: number;
   pressureCriticalMin?: number;
+  noiseQuietMaxDb?: number;
+  noiseLoudMinDb?: number;
+  defaultDecibelWhenNull?: number;
   stressComfortableMax?: number;
   stressHighMin?: number;
   densitySparseMax?: number;
   densityCrowdedMin?: number;
   spaceCapacity?: number;
   defaultDensityRatioWhenNull?: number;
+  chillMoodCandidates?: MoodType[];
+  focusMoodCandidates?: MoodType[];
+  energeticMoodCandidates?: MoodType[];
   allowedPlaylistIds?: string[];
 }
 
@@ -105,4 +138,6 @@ export type SpaceFilter = {
   storeId?: string; // For Brand role to filter spaces by store
   createdFrom?: string; // ISO 8601
   createdTo?: string; // ISO 8601
+  /** Resolve a known set of space IDs (e.g. config override allowedSpaceIds). Sent as repeated query params. */
+  spaceIds?: string[];
 };

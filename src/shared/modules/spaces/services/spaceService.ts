@@ -59,6 +59,7 @@ export const spaceService = {
     if (filter.storeId) params.append('storeId', filter.storeId); // For Brand role
     if (filter.createdFrom) params.append('createdFrom', filter.createdFrom);
     if (filter.createdTo) params.append('createdTo', filter.createdTo);
+    filter.spaceIds?.forEach((id) => params.append('spaceIds', id));
 
     return api.get<PaginationResult<SpaceListItem>>(
       `${SPACE_ENDPOINTS.list}?${params.toString()}`,

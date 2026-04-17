@@ -9,6 +9,12 @@ import type {
   StoreDetailResponse,
   StoreRequest,
   StoreFuzzyOverrideProfileRequest,
+  StoreContextRawLogsFilter,
+  StoreContextRawLogItem,
+  StoreContextTimeSeriesFilter,
+  StoreContextTimeSeriesResponse,
+  StoreContextAggregateFilter,
+  StoreContextAggregateResponse,
 } from '../types';
 import type { PaginationResult, Result } from '@/shared/types';
 
@@ -20,6 +26,9 @@ const STORE_ENDPOINTS = {
   delete: (id: string) => `/api/stores/${id}`,
   toggleStatus: (id: string) => `/api/stores/${id}/toggle-status`,
   fuzzyProfiles: (id: string) => `/api/stores/${id}/fuzzy-profiles`,
+  contextLogs: (id: string) => `/api/stores/${id}/context-logs`,
+  contextTimeSeries: (id: string) => `/api/stores/${id}/context-timeseries`,
+  contextAggregate: (id: string) => `/api/stores/${id}/context-aggregate`,
 } as const;
 
 export const storeService = {
@@ -36,6 +45,7 @@ export const storeService = {
     if (filter.district) params.append('district', filter.district);
     if (filter.status !== undefined)
       params.append('status', filter.status.toString());
+    filter.storeIds?.forEach((id) => params.append('storeIds', id));
 
     return api.get<PaginationResult<StoreListItem>>(
       `${STORE_ENDPOINTS.list}?${params.toString()}`,
@@ -64,4 +74,55 @@ export const storeService = {
     storeId: string,
     body: StoreFuzzyOverrideProfileRequest,
   ) => api.post<Result>(STORE_ENDPOINTS.fuzzyProfiles(storeId), body),
+
+  getContextRawLogs: (
+    storeId: string,
+    filter: StoreContextRawLogsFilter = {},
+  ) => {
+    const params = new URLSearchParams();
+
+    if (filter.page) params.append('page', filter.page.toString());
+    if (filter.pageSize) params.append('pageSize', filter.pageSize.toString());
+    if (filter.spaceId) params.append('spaceId', filter.spaceId);
+    if (filter.fromUtc) params.append('fromUtc', filter.fromUtc);
+    if (filter.toUtc) params.append('toUtc', filter.toUtc);
+
+    return api.get<PaginationResult<StoreContextRawLogItem>>(
+      `${STORE_ENDPOINTS.contextLogs(storeId)}?${params.toString()}`,
+    );
+  },
+
+  getContextTimeSeries: (
+    storeId: string,
+    filter: StoreContextTimeSeriesFilter = {},
+  ) => {
+    const params = new URLSearchParams();
+
+    if (filter.spaceId) params.append('spaceId', filter.spaceId);
+    if (filter.fromUtc) params.append('fromUtc', filter.fromUtc);
+    if (filter.toUtc) params.append('toUtc', filter.toUtc);
+    if (filter.granularity) params.append('granularity', filter.granularity);
+
+    return api.get<Result<StoreContextTimeSeriesResponse>>(
+      `${STORE_ENDPOINTS.contextTimeSeries(storeId)}?${params.toString()}`,
+    );
+  },
+
+  getContextAggregate: (
+    storeId: string,
+    filter: StoreContextAggregateFilter = {},
+  ) => {
+    const params = new URLSearchParams();
+
+    if (filter.spaceId) params.append('spaceId', filter.spaceId);
+    if (filter.fromUtc) params.append('fromUtc', filter.fromUtc);
+    if (filter.toUtc) params.append('toUtc', filter.toUtc);
+    if (filter.compareFromUtc)
+      params.append('compareFromUtc', filter.compareFromUtc);
+    if (filter.compareToUtc) params.append('compareToUtc', filter.compareToUtc);
+
+    return api.get<Result<StoreContextAggregateResponse>>(
+      `${STORE_ENDPOINTS.contextAggregate(storeId)}?${params.toString()}`,
+    );
+  },
 };

@@ -8,6 +8,7 @@ import {
   ShopOutlined,
   CustomerServiceOutlined,
   UnorderedListOutlined,
+  SettingOutlined,
 } from '@ant-design/icons';
 
 export const STORE_MENU_ITEMS: ItemType[] = [
@@ -30,5 +31,10 @@ export const STORE_MENU_ITEMS: ItemType[] = [
     key: 'playlists',
     icon: <UnorderedListOutlined />,
     label: 'Playlist Management',
+  },
+  {
+    key: 'config-management',
+    icon: <SettingOutlined />,
+    label: 'Config Management',
   },
 ];

@@ -1,5 +1,4 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { message } from 'antd';
 import { QUERY_KEYS } from '@/config';
 import { handleApiError } from '@/shared/utils';
 import { camsService } from '../services';
@@ -13,7 +12,6 @@ export const useCancelOverride = () => {
   return useMutation({
     mutationFn: (spaceId: string) => camsService.cancelOverride(spaceId),
     onSuccess: (_, spaceId) => {
-      message.success('Manual override cancelled successfully');
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.cams.spaceState(spaceId),
       });

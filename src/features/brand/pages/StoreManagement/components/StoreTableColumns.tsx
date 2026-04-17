@@ -12,12 +12,14 @@ import {
   CheckCircleOutlined,
   DeleteOutlined,
   AppstoreOutlined,
+  ControlOutlined,
 } from '@ant-design/icons';
 
 /**
  * Types
  */
 import type { StoreListItem } from '@/features/brand/types/storeTypes';
+import { GOVERNANCE_MODE_LABELS } from '@/features/brand/types';
 import { EntityStatusEnum } from '@/shared/types/commonTypes';
 import type { ItemType } from 'antd/es/menu/interface';
 
@@ -35,6 +37,7 @@ type StoreColumnsProps = {
   onEdit: (store: StoreListItem) => void;
   onToggleStatus: (id: string) => void;
   onDelete: (id: string) => void;
+  onSetGovernanceMode: (store: StoreListItem) => void;
 };
 
 export const getStoreColumns = ({
@@ -43,6 +46,7 @@ export const getStoreColumns = ({
   onEdit,
   onToggleStatus,
   onDelete,
+  onSetGovernanceMode,
 }: StoreColumnsProps): ColumnsType<StoreListItem> => {
   const getActionItems = (record: StoreListItem) => {
     const items: ItemType[] = [
@@ -63,6 +67,12 @@ export const getStoreColumns = ({
         label: 'Edit',
         icon: <EditOutlined />,
         onClick: () => onEdit(record),
+      },
+      {
+        key: 'governance-mode',
+        label: 'Set Governance Mode',
+        icon: <ControlOutlined />,
+        onClick: () => onSetGovernanceMode(record),
       },
       {
         type: 'divider',
@@ -145,6 +155,23 @@ export const getStoreColumns = ({
           {STORE_STATUS_LABELS[status]}
         </Tag>
       ),
+    },
+    {
+      title: 'Governance',
+      dataIndex: 'governanceMode',
+      key: 'governanceMode',
+      width: 140,
+      render: (governanceMode: StoreListItem['governanceMode']) => {
+        const color =
+          governanceMode === 1
+            ? 'blue'
+            : governanceMode === 2
+              ? 'purple'
+              : 'gold';
+        return (
+          <Tag color={color}>{GOVERNANCE_MODE_LABELS[governanceMode]}</Tag>
+        );
+      },
     },
     {
       title: 'Created At',

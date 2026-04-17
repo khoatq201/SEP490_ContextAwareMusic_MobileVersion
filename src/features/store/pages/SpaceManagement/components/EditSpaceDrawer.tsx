@@ -71,7 +71,11 @@ export const EditSpaceDrawer = ({
   onSuccess,
 }: EditSpaceDrawerProps) => {
   const [form] = Form.useForm<EditSpaceFormValues>();
-  const { data: space, isLoading } = useSpace(spaceId || undefined, open);
+  const {
+    data: space,
+    isLoading,
+    refetch,
+  } = useSpace(spaceId || undefined, open);
   const updateSpace = useUpdateSpace();
   const createFuzzyProfile = useCreateSpaceFuzzyOverrideProfile();
 
@@ -88,10 +92,53 @@ export const EditSpaceDrawer = ({
         roiCoordinates: nullToUndefined(space.roiCoordinates),
         wiFiSensorId: nullToUndefined(space.wiFiSensorId),
         ioTDeviceId: nullToUndefined(space.ioTDeviceId),
-        fuzzy: {},
+        fuzzy: {
+          name: space.activeFuzzyProfileName ?? undefined,
+          chillBpmMin: space.chillBpmMin ?? undefined,
+          chillBpmMax: space.chillBpmMax ?? undefined,
+          focusBpmMin: space.focusBpmMin ?? undefined,
+          focusBpmMax: space.focusBpmMax ?? undefined,
+          energeticBpmMin: space.energeticBpmMin ?? undefined,
+          energeticBpmMax: space.energeticBpmMax ?? undefined,
+          pressureLowMax: space.pressureLowMax ?? undefined,
+          pressureCriticalMin: space.pressureCriticalMin ?? undefined,
+          noiseQuietMaxDb:
+            space.noiseQuietMaxDb ??
+            space.stressComfortableMax ??
+            space.densitySparseMax ??
+            undefined,
+          noiseLoudMinDb:
+            space.noiseLoudMinDb ??
+            space.stressHighMin ??
+            space.densityCrowdedMin ??
+            undefined,
+          spaceCapacity: space.spaceCapacity ?? undefined,
+          defaultDecibelWhenNull:
+            space.defaultDecibelWhenNull ??
+            space.defaultDensityRatioWhenNull ??
+            undefined,
+          chillMoodCandidates: space.chillMoodCandidates?.length
+            ? space.chillMoodCandidates
+            : undefined,
+          focusMoodCandidates: space.focusMoodCandidates?.length
+            ? space.focusMoodCandidates
+            : undefined,
+          energeticMoodCandidates: space.energeticMoodCandidates?.length
+            ? space.energeticMoodCandidates
+            : undefined,
+          allowedPlaylistIds: space.allowedPlaylistIds?.length
+            ? space.allowedPlaylistIds
+            : undefined,
+        },
       });
     }
   }, [space, open, form]);
+
+  useEffect(() => {
+    if (open && spaceId) {
+      void refetch();
+    }
+  }, [open, spaceId, refetch]);
 
   const handleSubmit = async (values: EditSpaceFormValues) => {
     if (!spaceId) return;
@@ -116,7 +163,14 @@ export const EditSpaceDrawer = ({
       | Partial<SpaceFuzzyOverrideProfileRequest>
       | undefined;
     const body = pickSpaceFuzzyOverrideBody(fuzzy);
-    createFuzzyProfile.mutate({ spaceId, body });
+    createFuzzyProfile.mutate(
+      { spaceId, body },
+      {
+        onSuccess: () => {
+          void refetch();
+        },
+      },
+    );
   };
 
   const handleCancel = () => {

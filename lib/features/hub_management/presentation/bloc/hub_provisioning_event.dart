@@ -99,6 +99,21 @@ class HubProvisioningNvrConfigSubmitted extends HubProvisioningEvent {
   List<Object?> get props => [mode, username, password, host, port];
 }
 
+class HubProvisioningNvrChannelSelected extends HubProvisioningEvent {
+  const HubProvisioningNvrChannelSelected({
+    required this.selectedChannel,
+  });
+
+  final int selectedChannel;
+
+  @override
+  List<Object?> get props => [selectedChannel];
+}
+
+class HubProvisioningNvrChannelsRefreshRequested extends HubProvisioningEvent {
+  const HubProvisioningNvrChannelsRefreshRequested();
+}
+
 class HubProvisioningLocationSubmitted extends HubProvisioningEvent {
   const HubProvisioningLocationSubmitted({
     required this.city,

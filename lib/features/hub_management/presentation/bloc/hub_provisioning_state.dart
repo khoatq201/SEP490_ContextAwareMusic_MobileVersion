@@ -22,12 +22,43 @@ enum HubProvisioningPhase {
   provisioning,
   enterNvrConfig,
   sendingNvrConfig,
+  discoveringNvrChannels,
+  selectNvrChannel,
+  sendingNvrChannelSelection,
   resolvingLocation,
   reviewLocation,
   sendingLocation,
   syncing,
   success,
   failure,
+}
+
+class NvrChannelPreview extends Equatable {
+  const NvrChannelPreview({
+    required this.channel,
+    required this.name,
+    required this.online,
+    this.snapshotUrl,
+  });
+
+  final int channel;
+  final String name;
+  final bool online;
+  final String? snapshotUrl;
+
+  factory NvrChannelPreview.fromJson(Map<String, dynamic> json) {
+    return NvrChannelPreview(
+      channel: (json['channel'] as num?)?.toInt() ?? 0,
+      name: (json['name'] as String?) ?? 'Channel ${json['channel'] ?? ''}',
+      online: json['online'] == true,
+      snapshotUrl: (json['snapshot_url'] as String?)?.trim().isEmpty ?? true
+          ? null
+          : json['snapshot_url'] as String?,
+    );
+  }
+
+  @override
+  List<Object?> get props => [channel, name, online, snapshotUrl];
 }
 
 class HubProvisioningState extends Equatable {
@@ -44,6 +75,8 @@ class HubProvisioningState extends Equatable {
     this.wifiCandidates = const <WifiCandidate>[],
     this.pendingWifiSsid,
     this.pendingWifiPassphrase,
+    this.nvrChannels = const <NvrChannelPreview>[],
+    this.nvrPreviewBaseUrl,
     this.draftLocation,
     this.message,
     this.isPermissionPermanentlyDenied = false,
@@ -62,6 +95,8 @@ class HubProvisioningState extends Equatable {
   final List<WifiCandidate> wifiCandidates;
   final String? pendingWifiSsid;
   final String? pendingWifiPassphrase;
+  final List<NvrChannelPreview> nvrChannels;
+  final String? nvrPreviewBaseUrl;
   final HubDeviceLocation? draftLocation;
   final String? message;
   final bool isPermissionPermanentlyDenied;
@@ -85,6 +120,9 @@ class HubProvisioningState extends Equatable {
     bool clearPendingWifiSsid = false,
     String? pendingWifiPassphrase,
     bool clearPendingWifiPassphrase = false,
+    List<NvrChannelPreview>? nvrChannels,
+    String? nvrPreviewBaseUrl,
+    bool clearNvrPreviewBaseUrl = false,
     HubDeviceLocation? draftLocation,
     bool clearDraftLocation = false,
     String? message,
@@ -113,6 +151,10 @@ class HubProvisioningState extends Equatable {
       pendingWifiPassphrase: clearPendingWifiPassphrase
           ? null
           : (pendingWifiPassphrase ?? this.pendingWifiPassphrase),
+      nvrChannels: nvrChannels ?? this.nvrChannels,
+      nvrPreviewBaseUrl: clearNvrPreviewBaseUrl
+          ? null
+          : (nvrPreviewBaseUrl ?? this.nvrPreviewBaseUrl),
       draftLocation:
           clearDraftLocation ? null : (draftLocation ?? this.draftLocation),
       message: clearMessage ? null : (message ?? this.message),
@@ -144,6 +186,8 @@ class HubProvisioningState extends Equatable {
         wifiCandidates,
         pendingWifiSsid,
         pendingWifiPassphrase,
+        nvrChannels,
+        nvrPreviewBaseUrl,
         draftLocation,
         message,
         isPermissionPermanentlyDenied,

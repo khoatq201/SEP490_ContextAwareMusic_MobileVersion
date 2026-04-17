@@ -1,4 +1,5 @@
 import type { EntityStatusEnum } from '@/shared/types/commonTypes';
+import type { MoodType } from '@/shared/modules/moods/types';
 
 // Request DTO
 export type BrandRequest = {
@@ -27,12 +28,18 @@ export type BrandRequest = {
   energeticBpmMax?: number;
   pressureLowMax?: number;
   pressureCriticalMin?: number;
+  noiseQuietMaxDb?: number;
+  noiseLoudMinDb?: number;
+  defaultDecibelWhenNull?: number;
   stressComfortableMax?: number;
   stressHighMin?: number;
   densitySparseMax?: number;
   densityCrowdedMin?: number;
   spaceCapacity?: number;
   defaultDensityRatioWhenNull?: number;
+  chillMoodCandidates?: MoodType[];
+  focusMoodCandidates?: MoodType[];
+  energeticMoodCandidates?: MoodType[];
   allowedPlaylistIds?: string[];
 };
 
@@ -73,12 +80,18 @@ export type BrandDetailResponse = BrandListItem & {
   energeticBpmMax?: number | null;
   pressureLowMax?: number | null;
   pressureCriticalMin?: number | null;
+  noiseQuietMaxDb?: number | null;
+  noiseLoudMinDb?: number | null;
+  defaultDecibelWhenNull?: number | null;
   stressComfortableMax?: number | null;
   stressHighMin?: number | null;
   densitySparseMax?: number | null;
   densityCrowdedMin?: number | null;
   spaceCapacity?: number | null;
   defaultDensityRatioWhenNull?: number | null;
+  chillMoodCandidates?: MoodType[] | null;
+  focusMoodCandidates?: MoodType[] | null;
+  energeticMoodCandidates?: MoodType[] | null;
   allowedPlaylistIds?: string[] | null;
 };
 

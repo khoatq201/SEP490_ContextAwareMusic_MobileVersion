@@ -7,6 +7,7 @@ import {
   PoweroffOutlined,
   MoreOutlined,
   SoundOutlined,
+  CalendarOutlined,
   QrcodeOutlined,
   UnorderedListOutlined,
   ExperimentOutlined,
@@ -31,6 +32,7 @@ import {
 
 type SpaceColumnActions = {
   onView: (id: string) => void;
+  onManageSchedule: (id: string) => void;
   onManageMusic: (id: string) => void;
   onManageQueue: (id: string) => void;
   onPairDevice: (id: string) => void;
@@ -42,6 +44,7 @@ type SpaceColumnActions = {
 
 export const getSpaceColumns = ({
   onView,
+  onManageSchedule,
   onManageMusic,
   onManageQueue,
   onPairDevice,
@@ -120,6 +123,12 @@ export const getSpaceColumns = ({
           icon: <EyeOutlined />,
           label: 'View Details',
           onClick: () => onView(record.id),
+        },
+        {
+          key: 'manage-schedule',
+          icon: <CalendarOutlined />,
+          label: 'Manage Schedule',
+          onClick: () => onManageSchedule(record.id),
         },
         {
           key: 'manage-music',

@@ -28,6 +28,8 @@ import { MetadataStatusBadge } from './MetadataStatusBadge';
  */
 import { ENTITY_STATUS_LABELS, ENTITY_STATUS_COLORS } from '@/shared/constants';
 import {
+  COPYRIGHT_CLEARANCE_COLORS,
+  COPYRIGHT_CLEARANCE_LABELS,
   MUSIC_PROVIDER_LABELS,
   MUSIC_PROVIDER_COLORS,
 } from '@/shared/modules/tracks/constants';
@@ -37,6 +39,7 @@ import {
  */
 import type {
   MusicProviderEnum,
+  TrackCopyrightClearanceStatus,
   TrackListItem,
 } from '@/shared/modules/tracks/types';
 
@@ -150,6 +153,17 @@ export const getTrackColumns = ({
     width: 150,
     render: (_: unknown, record: TrackListItem) => (
       <MetadataStatusBadge track={record} />
+    ),
+  },
+  {
+    title: 'Copyright',
+    dataIndex: 'copyrightClearanceStatus',
+    key: 'copyrightClearanceStatus',
+    width: 140,
+    render: (status: TrackCopyrightClearanceStatus) => (
+      <Tag color={COPYRIGHT_CLEARANCE_COLORS[status]}>
+        {COPYRIGHT_CLEARANCE_LABELS[status]}
+      </Tag>
     ),
   },
   {

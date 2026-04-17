@@ -6,6 +6,18 @@ function appendScalar(fd: FormData, key: string, value: unknown) {
   fd.append(key, String(value));
 }
 
+function appendArray(
+  fd: FormData,
+  key: string,
+  values?: Array<string | number>,
+) {
+  if (!Array.isArray(values)) return;
+  for (const value of values) {
+    if (value === undefined || value === null || value === '') continue;
+    fd.append(key, String(value));
+  }
+}
+
 /**
  * Appends CAMS fuzzy / music policy fields to brand multipart FormData (create or update).
  * Keys use PascalCase to match `BrandRequest` / `[FromForm]` binding on the API.
@@ -27,15 +39,30 @@ export function appendBrandMusicPolicyToFormData(
 
   appendScalar(formData, 'PressureLowMax', values.pressureLowMax);
   appendScalar(formData, 'PressureCriticalMin', values.pressureCriticalMin);
-  appendScalar(formData, 'StressComfortableMax', values.stressComfortableMax);
-  appendScalar(formData, 'StressHighMin', values.stressHighMin);
-  appendScalar(formData, 'DensitySparseMax', values.densitySparseMax);
-  appendScalar(formData, 'DensityCrowdedMin', values.densityCrowdedMin);
+  appendScalar(
+    formData,
+    'NoiseQuietMaxDb',
+    values.noiseQuietMaxDb ??
+      values.stressComfortableMax ??
+      values.densitySparseMax,
+  );
+  appendScalar(
+    formData,
+    'NoiseLoudMinDb',
+    values.noiseLoudMinDb ?? values.stressHighMin ?? values.densityCrowdedMin,
+  );
   appendScalar(formData, 'SpaceCapacity', values.spaceCapacity);
   appendScalar(
     formData,
-    'DefaultDensityRatioWhenNull',
-    values.defaultDensityRatioWhenNull,
+    'DefaultDecibelWhenNull',
+    values.defaultDecibelWhenNull ?? values.defaultDensityRatioWhenNull,
+  );
+  appendArray(formData, 'ChillMoodCandidates', values.chillMoodCandidates);
+  appendArray(formData, 'FocusMoodCandidates', values.focusMoodCandidates);
+  appendArray(
+    formData,
+    'EnergeticMoodCandidates',
+    values.energeticMoodCandidates,
   );
 
   const ids = values.allowedPlaylistIds;

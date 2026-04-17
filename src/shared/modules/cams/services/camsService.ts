@@ -13,6 +13,7 @@ import type {
   ReorderQueueRequest,
   RemoveQueueItemsRequest,
   UpdateAudioStateRequest,
+  UpdateSchedulingStateRequest,
   SpaceQueueItemResponse,
 } from '../types';
 
@@ -41,6 +42,8 @@ const CAMS_ENDPOINTS = {
   removeQueueItems: (spaceId: string) => `/api/cams/spaces/${spaceId}/queue`,
   updateAudioState: (spaceId: string) =>
     `/api/cams/spaces/${spaceId}/state/audio`,
+  updateSchedulingState: (spaceId: string) =>
+    `/api/cams/spaces/${spaceId}/state/scheduling`,
 } as const;
 
 /**
@@ -176,4 +179,13 @@ export const camsService = {
    */
   updateAudioState: (spaceId: string, data: UpdateAudioStateRequest) =>
     api.patch<Result>(CAMS_ENDPOINTS.updateAudioState(spaceId), data),
+
+  /**
+   * Update runtime scheduling ownership (IsScheduling)
+   * PATCH /api/cams/spaces/{spaceId}/state/scheduling
+   */
+  updateSchedulingState: (
+    spaceId: string,
+    data: UpdateSchedulingStateRequest,
+  ) => api.patch<Result>(CAMS_ENDPOINTS.updateSchedulingState(spaceId), data),
 };

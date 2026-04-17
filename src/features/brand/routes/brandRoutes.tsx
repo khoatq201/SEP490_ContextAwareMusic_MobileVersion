@@ -33,6 +33,16 @@ const PlaylistList = Loadable(
   'PlaylistList',
 );
 
+const ScheduleList = Loadable(
+  () => import('@/features/brand/pages/ScheduleManagement/ScheduleList'),
+  'ScheduleList',
+);
+
+const ConfigList = Loadable(
+  () => import('@/features/brand/pages/ConfigManagement/ConfigList'),
+  'ConfigList',
+);
+
 const BrandProfile = Loadable(
   () => import('@/features/brand/pages/Profile/BrandProfile'),
   'BrandProfile',
@@ -41,6 +51,11 @@ const BrandProfile = Loadable(
 const SunoAI = Loadable(
   () => import('@/features/brand/pages/SunoAIGenerator'),
   'SunoAI',
+);
+
+const TokenBilling = Loadable(
+  () => import('@/features/brand/pages/TokenBilling'),
+  'BrandTokenBilling',
 );
 
 export const brandRoutes = [
@@ -65,8 +80,20 @@ export const brandRoutes = [
     element: <PlaylistList />,
   },
   {
+    path: 'schedule',
+    element: <ScheduleList />,
+  },
+  {
+    path: 'config-management',
+    element: <ConfigList />,
+  },
+  {
     path: 'suno-ai',
     element: <SunoAI />,
+  },
+  {
+    path: 'tokens',
+    element: <TokenBilling />,
   },
   {
     path: 'profile/*',
@@ -76,7 +103,7 @@ export const brandRoutes = [
     path: '*',
     element: (
       <Navigate
-        to='/store/dashboard'
+        to='/brand/dashboard'
         replace
       />
     ),

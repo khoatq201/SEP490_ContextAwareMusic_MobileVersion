@@ -6,6 +6,15 @@ import { FUZZY_PROFILE_TEMPLATE_OPTIONS } from '@/features/admin/constants/fuzzy
 import { useFuzzyProfileTemplateOptions } from '@/features/admin/hooks';
 
 import { usePlaylistOptions } from '@/shared/modules/playlists/hooks';
+import { MOOD_TYPE_LABELS } from '@/shared/modules/moods/constants';
+import { MoodType } from '@/shared/modules/moods/types';
+
+const MOOD_CANDIDATE_OPTIONS = Object.values(MoodType)
+  .filter((value): value is MoodType => typeof value === 'number')
+  .map((value) => ({
+    label: MOOD_TYPE_LABELS[value],
+    value,
+  }));
 
 const formatRange = (min?: number, max?: number) => {
   if (min == null || max == null) return 'Not configured';
@@ -144,6 +153,51 @@ export const BrandMusicPolicyFields = ({
       {showPolicyFields ? (
         <>
           <Form.Item
+            label='Chill mood candidates'
+            name='chillMoodCandidates'
+            tooltip='Optional lane mapping override. Leave empty to use runtime default mapping.'
+          >
+            <Select
+              size='large'
+              mode='multiple'
+              allowClear
+              placeholder='Optional - moods allowed for Chill lane'
+              options={MOOD_CANDIDATE_OPTIONS}
+              optionFilterProp='label'
+            />
+          </Form.Item>
+
+          <Form.Item
+            label='Focus mood candidates'
+            name='focusMoodCandidates'
+            tooltip='Optional lane mapping override. Leave empty to use runtime default mapping.'
+          >
+            <Select
+              size='large'
+              mode='multiple'
+              allowClear
+              placeholder='Optional - moods allowed for Focus lane'
+              options={MOOD_CANDIDATE_OPTIONS}
+              optionFilterProp='label'
+            />
+          </Form.Item>
+
+          <Form.Item
+            label='Energetic mood candidates'
+            name='energeticMoodCandidates'
+            tooltip='Optional lane mapping override. Leave empty to use runtime default mapping.'
+          >
+            <Select
+              size='large'
+              mode='multiple'
+              allowClear
+              placeholder='Optional - moods allowed for Energetic lane'
+              options={MOOD_CANDIDATE_OPTIONS}
+              optionFilterProp='label'
+            />
+          </Form.Item>
+
+          <Form.Item
             label='Allowed playlists (optional)'
             name='allowedPlaylistIds'
             tooltip='Leave empty so AI is not restricted to specific playlists. Duplicates are rejected by the API.'
@@ -235,8 +289,9 @@ export const BrandMusicPolicyFields = ({
                         />
                       </Form.Item>
                       <Form.Item
-                        label='Pressure low max'
+                        label='People count: Low level max'
                         name='pressureLowMax'
+                        tooltip='If people count is below this value, CAMS treats crowd pressure as Low.'
                       >
                         <InputNumber
                           className='w-full!'
@@ -244,8 +299,9 @@ export const BrandMusicPolicyFields = ({
                         />
                       </Form.Item>
                       <Form.Item
-                        label='Pressure critical min'
+                        label='People count: Energetic trigger min'
                         name='pressureCriticalMin'
+                        tooltip='If people count is above this value, CAMS treats crowd pressure as Critical and prioritizes Energetic.'
                       >
                         <InputNumber
                           className='w-full!'
@@ -253,18 +309,9 @@ export const BrandMusicPolicyFields = ({
                         />
                       </Form.Item>
                       <Form.Item
-                        label='Stress comfortable max'
-                        name='stressComfortableMax'
-                      >
-                        <InputNumber
-                          className='w-full!'
-                          min={0}
-                          step={0.01}
-                        />
-                      </Form.Item>
-                      <Form.Item
-                        label='Stress high min'
-                        name='stressHighMin'
+                        label='Noise threshold: Quiet max (dB)'
+                        name='noiseQuietMaxDb'
+                        tooltip='If decibel is below this value, CAMS classifies ambient noise as Quiet.'
                       >
                         <InputNumber
                           className='w-full!'
@@ -273,30 +320,20 @@ export const BrandMusicPolicyFields = ({
                         />
                       </Form.Item>
                       <Form.Item
-                        label='Density sparse max (0–1)'
-                        name='densitySparseMax'
+                        label='Noise threshold: Loud min (dB)'
+                        name='noiseLoudMinDb'
+                        tooltip='If decibel is above this value, CAMS classifies ambient noise as Loud.'
                       >
                         <InputNumber
                           className='w-full!'
                           min={0}
-                          max={1}
                           step={0.01}
                         />
                       </Form.Item>
                       <Form.Item
-                        label='Density crowded min (0–1)'
-                        name='densityCrowdedMin'
-                      >
-                        <InputNumber
-                          className='w-full!'
-                          min={0}
-                          max={1}
-                          step={0.01}
-                        />
-                      </Form.Item>
-                      <Form.Item
-                        label='Space capacity'
+                        label='Space capacity (reference)'
                         name='spaceCapacity'
+                        tooltip='Reference capacity for the profile.'
                       >
                         <InputNumber
                           className='w-full!'
@@ -304,13 +341,13 @@ export const BrandMusicPolicyFields = ({
                         />
                       </Form.Item>
                       <Form.Item
-                        label='Default density ratio when null (0–1)'
-                        name='defaultDensityRatioWhenNull'
+                        label='Fallback decibel when missing (dB)'
+                        name='defaultDecibelWhenNull'
+                        tooltip='Used only when telemetry payload does not include decibel.'
                       >
                         <InputNumber
                           className='w-full!'
                           min={0}
-                          max={1}
                           step={0.01}
                         />
                       </Form.Item>

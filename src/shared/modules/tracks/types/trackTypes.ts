@@ -24,6 +24,17 @@ export enum TranscodeStatusEnum {
 }
 
 /**
+ * Copyright clearance status (from backend enum)
+ */
+export enum TrackCopyrightClearanceStatus {
+  NotApplicable = 0,
+  PendingScan = 1,
+  PendingReview = 2,
+  Cleared = 3,
+  Rejected = 4,
+}
+
+/**
  * Track Metadata Status (FE computed)
  * Based on presence of bpm, energyLevel, valence fields
  * See: docs/cams/FE_IMPLEMENTATION_METADATA_TO_FUZZY_AI.md §2.3
@@ -55,6 +66,7 @@ export interface TrackListItem extends BaseResponse {
   coverImageUrl?: string;
   playCount: number;
   isAiGenerated?: boolean;
+  copyrightClearanceStatus: TrackCopyrightClearanceStatus;
 }
 
 /**

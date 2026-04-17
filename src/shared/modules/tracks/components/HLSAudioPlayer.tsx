@@ -21,6 +21,8 @@ interface HLSAudioPlayerProps {
   artist?: string;
   coverImageUrl?: string;
   shouldStop?: boolean;
+  unavailableMessage?: string;
+  disabled?: boolean;
 }
 
 export const HLSAudioPlayer = ({
@@ -29,6 +31,8 @@ export const HLSAudioPlayer = ({
   artist,
   coverImageUrl,
   shouldStop = false,
+  unavailableMessage,
+  disabled = false,
 }: HLSAudioPlayerProps) => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const hlsRef = useRef<Hls | null>(null);
@@ -47,9 +51,17 @@ export const HLSAudioPlayer = ({
     }
   }, [shouldStop]);
 
+  // Enforce hard stop when player is disabled by policy.
+  useEffect(() => {
+    if (disabled && audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+  }, [disabled]);
+
   // Initialize HLS player
   useEffect(() => {
-    if (!hlsUrl || !audioRef.current) return;
+    if (!hlsUrl || !audioRef.current || disabled) return;
 
     const audio = audioRef.current;
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -112,7 +124,7 @@ export const HLSAudioPlayer = ({
       setError('HLS is not supported in this browser');
       setIsLoading(false);
     }
-  }, [hlsUrl]);
+  }, [hlsUrl, disabled]);
 
   // Audio event listeners
   useEffect(() => {
@@ -155,7 +167,7 @@ export const HLSAudioPlayer = ({
   }, []);
 
   const togglePlayPause = () => {
-    if (!audioRef.current) return;
+    if (!audioRef.current || disabled) return;
 
     if (isPlaying) {
       audioRef.current.pause();
@@ -173,12 +185,12 @@ export const HLSAudioPlayer = ({
     setCurrentTime(value);
   };
 
-  if (!hlsUrl) {
+  if (!hlsUrl || disabled) {
     return (
       <Card>
         <div style={{ padding: 16, textAlign: 'center', color: '#999' }}>
           <SoundOutlined style={{ fontSize: 24, marginBottom: 8 }} />
-          <div>Audio file not available</div>
+          <div>{unavailableMessage || 'Audio file not available'}</div>
         </div>
       </Card>
     );

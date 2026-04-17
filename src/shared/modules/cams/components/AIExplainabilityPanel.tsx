@@ -22,7 +22,35 @@ export const AIExplainabilityPanel = ({
   spaceState,
   compact = false,
 }: AIExplainabilityPanelProps) => {
-  const hasBpmRange = spaceState.bpmMin !== null && spaceState.bpmMax !== null;
+  const inferBpmRangeFromMood = (moodName?: string | null) => {
+    const mood = moodName?.toLowerCase() || '';
+
+    if (mood.includes('focus')) {
+      return { min: 85, max: 105, target: 95 };
+    }
+
+    if (mood.includes('energetic') || mood.includes('uplifting')) {
+      return { min: 120, max: 140, target: 130 };
+    }
+
+    if (
+      mood.includes('calm') ||
+      mood.includes('chill') ||
+      mood.includes('social') ||
+      mood.includes('romantic')
+    ) {
+      return { min: 60, max: 80, target: 70 };
+    }
+
+    return null;
+  };
+
+  const fallbackBpmRange = inferBpmRangeFromMood(spaceState.moodName);
+  const bpmMin = spaceState.bpmMin ?? fallbackBpmRange?.min ?? null;
+  const bpmMax = spaceState.bpmMax ?? fallbackBpmRange?.max ?? null;
+  const bpmTarget = spaceState.bpmTarget ?? fallbackBpmRange?.target ?? null;
+
+  const hasBpmRange = bpmMin !== null && bpmMax !== null;
   const hasFuzzyInfo = spaceState.fuzzyRule || spaceState.fuzzyReason;
   const isFallback = spaceState.isBpmFallback === true;
 
@@ -76,8 +104,8 @@ export const AIExplainabilityPanel = ({
             )}
             {hasBpmRange && (
               <Tag color='cyan'>
-                BPM: {spaceState.bpmMin}-{spaceState.bpmMax}
-                {spaceState.bpmTarget && ` (target: ${spaceState.bpmTarget})`}
+                BPM: {bpmMin}-{bpmMax}
+                {bpmTarget && ` (target: ${bpmTarget})`}
               </Tag>
             )}
             {isFallback && (
@@ -140,11 +168,11 @@ export const AIExplainabilityPanel = ({
             >
               <Space size='small'>
                 <Tag color='cyan'>
-                  {spaceState.bpmMin} - {spaceState.bpmMax} BPM
+                  {bpmMin} - {bpmMax} BPM
                 </Tag>
-                {spaceState.bpmTarget && (
+                {bpmTarget && (
                   <Tooltip title='Target BPM within the range'>
-                    <Tag color='geekblue'>Target: {spaceState.bpmTarget}</Tag>
+                    <Tag color='geekblue'>Target: {bpmTarget}</Tag>
                   </Tooltip>
                 )}
               </Space>

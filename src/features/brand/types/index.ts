@@ -1,5 +1,7 @@
+export * from './billingTypes';
 export * from './staffTypes';
 export * from './storeTypes';
+export * from './configTypes';
 export * from './deviceTypes';
 export * from './playerTypes';
 export * from './scheduleTypes';

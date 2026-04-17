@@ -34,6 +34,7 @@ import {
   StoreFilter as StoreFilterComponent,
   StoreDetailDrawer,
   StoreSpacesDrawer,
+  SetGovernanceModeDrawer,
 } from './components';
 
 /**
@@ -55,7 +56,14 @@ export const StoreList = () => {
   const [editDrawerOpen, setEditDrawerOpen] = useState(false);
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
   const [spacesDrawerOpen, setSpacesDrawerOpen] = useState(false);
+  const [governanceModeDrawerOpen, setGovernanceModeDrawerOpen] =
+    useState(false);
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
+  const [selectedStoreName, setSelectedStoreName] = useState<
+    string | undefined
+  >();
+  const [selectedGovernanceMode, setSelectedGovernanceMode] =
+    useState<StoreListItem['governanceMode']>();
 
   const { data, isLoading, refetch } = useStores(filter);
 
@@ -95,6 +103,13 @@ export const StoreList = () => {
   const handleViewSpaces = (storeId: string) => {
     setSelectedStoreId(storeId);
     setSpacesDrawerOpen(true);
+  };
+
+  const handleSetGovernanceMode = (store: StoreListItem) => {
+    setSelectedStoreId(store.id);
+    setSelectedStoreName(store.name);
+    setSelectedGovernanceMode(store.governanceMode);
+    setGovernanceModeDrawerOpen(true);
   };
 
   const handleEdit = (store: StoreListItem) => {
@@ -162,6 +177,7 @@ export const StoreList = () => {
     onEdit: handleEdit,
     onToggleStatus: handleToggleStatus,
     onDelete: handleDelete,
+    onSetGovernanceMode: handleSetGovernanceMode,
   });
 
   // Extract unique cities from data
@@ -264,6 +280,19 @@ export const StoreList = () => {
         onClose={() => {
           setSpacesDrawerOpen(false);
           setSelectedStoreId(null);
+        }}
+      />
+
+      <SetGovernanceModeDrawer
+        open={governanceModeDrawerOpen}
+        storeId={selectedStoreId ?? ''}
+        storeName={selectedStoreName}
+        currentMode={selectedGovernanceMode}
+        onClose={() => {
+          setGovernanceModeDrawerOpen(false);
+          setSelectedStoreId(null);
+          setSelectedStoreName(undefined);
+          setSelectedGovernanceMode(undefined);
         }}
       />
     </div>

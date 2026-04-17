@@ -26,6 +26,7 @@ import {
   volumeToAudioLevel,
   getEffectiveSeekOffset,
 } from '../utils';
+import { storeHubService } from '../services/storeHubService';
 import type { SpaceStateResponse } from '../types';
 
 const { Text } = Typography;
@@ -88,15 +89,25 @@ export const SpacePlayer = ({
 
   // ✅ Track if we're syncing from server to avoid feedback loops
   const isSyncingRef = useRef(false);
+  // Key of the last state we fully processed — prevents re-processing the identical state
+  // object but NEVER blocks a genuinely new state (e.g. from another client's command).
+  const lastSyncedStateKeyRef = useRef<string | null>(null);
   // ✅ Track last pause time to detect long pause (need HLS reload)
   const lastPauseTimeRef = useRef<number | null>(null);
   // ✅ Store expected seek position after reload
   const pendingSeekRef = useRef<number | null>(null);
+  // Always-current snapshot of the state prop — readable inside HLS/audio event closures.
+  const stateRef = useRef<SpaceStateResponse | null | undefined>(state);
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
   // Keep local seek authoritative briefly to avoid snap-back from stale server state.
   const localSeekLockRef = useRef<{
     targetSeconds: number;
     startedAtMs: number;
   } | null>(null);
+  // True while user is actively dragging the seek slider (between onChange and onAfterChange).
+  const isUserSeekingRef = useRef(false);
   // Delay remote seek after user releases slider
   const seekTimeoutRef = useRef<number | null>(null);
   const SEEK_API_DELAY_MS = 120;
@@ -141,16 +152,33 @@ export const SpacePlayer = ({
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         console.log('✅ HLS manifest parsed successfully');
 
-        // ✅ Apply pending seek if exists (from long pause reload)
-        if (pendingSeekRef.current !== null) {
-          console.log(
-            `⏩ Applying pending seek to ${pendingSeekRef.current.toFixed(1)}s`,
+        // Recompute seek offset fresh at manifest-ready time to avoid using a stale
+        // pendingSeekRef that was calculated before the HLS load began.
+        const seekTarget = (() => {
+          if (pendingSeekRef.current !== null) {
+            // Long-pause reload path: pendingSeekRef holds the expected position,
+            // but we recompute it now so accumulated load time is accounted for.
+            pendingSeekRef.current = null;
+          }
+          if (!stateRef.current) return null;
+          return getEffectiveSeekOffset(
+            stateRef.current,
+            storeHubService.serverClockOffsetMs,
           );
-          audio.currentTime = pendingSeekRef.current;
-          pendingSeekRef.current = null;
+        })();
+
+        if (
+          seekTarget !== null &&
+          !Number.isNaN(seekTarget) &&
+          seekTarget > 0
+        ) {
+          console.log(
+            `⏩ MANIFEST_PARSED seek to ${seekTarget.toFixed(1)}s (clock-corrected)`,
+          );
+          audio.currentTime = seekTarget;
         }
 
-        // DO NOT autop-play here based on stale isPlaying, we rely on the state sync effect
+        // DO NOT autoplay here based on stale isPlaying, we rely on the state sync effect
       });
 
       hls.on(Hls.Events.MANIFEST_LOADING, () => {
@@ -194,10 +222,18 @@ export const SpacePlayer = ({
       console.log('🍎 Using native HLS support (Safari)');
       audio.src = hlsUrl;
 
-      // ✅ Apply pending seek for Safari
+      // Apply pending seek for Safari — recompute fresh to account for load delay.
       if (pendingSeekRef.current !== null) {
-        audio.currentTime = pendingSeekRef.current;
         pendingSeekRef.current = null;
+      }
+      if (stateRef.current && !stateRef.current.isPaused) {
+        const seekTarget = getEffectiveSeekOffset(
+          stateRef.current,
+          storeHubService.serverClockOffsetMs,
+        );
+        if (seekTarget > 0) {
+          audio.currentTime = seekTarget;
+        }
       }
 
       // DO NOT autoplay here based on stale isPlaying, we rely on the state sync effect
@@ -213,13 +249,23 @@ export const SpacePlayer = ({
 
     const audio = audioRef.current;
 
-    // ✅ Prevent re-sync if already syncing
-    if (isSyncingRef.current) {
-      console.log('⏭️ Already syncing, skipping...');
+    // Build a lightweight key representing the meaningful parts of this state.
+    // Two renders with the same key are identical — no need to re-sync.
+    const stateKey = [
+      state.currentQueueItemId ?? '',
+      state.isPaused ? '1' : '0',
+      state.startedAtUtc ?? '',
+      state.hlsUrl ?? '',
+    ].join('|');
+
+    // Re-entrant guard: skip only if we're mid-processing AND the state hasn't changed.
+    if (isSyncingRef.current && lastSyncedStateKeyRef.current === stateKey) {
+      console.log('⏭️ Already syncing same state, skipping...');
       return;
     }
 
     isSyncingRef.current = true;
+    lastSyncedStateKeyRef.current = stateKey;
 
     // Handle pause state from server
     if (state.isPaused) {
@@ -245,7 +291,11 @@ export const SpacePlayer = ({
     }
 
     // Handle playing state from server
-    const expectedPosition = getEffectiveSeekOffset(state);
+    // Pass the server clock offset so seek math matches mobile behaviour.
+    const expectedPosition = getEffectiveSeekOffset(
+      state,
+      storeHubService.serverClockOffsetMs,
+    );
 
     const localSeekLock = localSeekLockRef.current;
     if (localSeekLock) {
@@ -338,10 +388,10 @@ export const SpacePlayer = ({
 
     lastPauseTimeRef.current = null;
 
-    // ✅ Delay before allowing next sync
+    // Release re-entrant guard after a short window (prevents same-tick double-firing).
     setTimeout(() => {
       isSyncingRef.current = false;
-    }, 1000); // Increase delay to 1s to prevent rapid re-sync
+    }, 150);
   }, [state, isPlaying, hlsUrl]);
 
   // Sync volume
@@ -393,13 +443,37 @@ export const SpacePlayer = ({
     const handleCanPlay = () => {
       setIsBuffering(false);
 
-      if (pendingSeekRef.current !== null && audioRef.current) {
-        const seekTarget = pendingSeekRef.current;
-        console.log(
-          `⏩ Applying pending seek on canplay: ${seekTarget.toFixed(1)}s`,
-        );
-        audioRef.current.currentTime = seekTarget;
-        pendingSeekRef.current = null;
+      // Never override position while the user is dragging the slider or a local seek
+      // lock is active. Applying the (stale) server position here would revert the seek.
+      if (isUserSeekingRef.current || localSeekLockRef.current !== null) return;
+
+      // Recompute seek offset fresh at canplay so accumulated buffer/load time is
+      // factored in — avoids starting a few hundred ms behind due to a stale pendingSeekRef.
+      if (audioRef.current) {
+        if (pendingSeekRef.current !== null) {
+          pendingSeekRef.current = null; // discard stale snapshot
+        }
+        const s = stateRef.current;
+        if (s && !s.isPaused) {
+          const seekTarget = getEffectiveSeekOffset(
+            s,
+            storeHubService.serverClockOffsetMs,
+          );
+          if (
+            seekTarget > 0 &&
+            Math.abs(audioRef.current.currentTime - seekTarget) > 0.3
+          ) {
+            console.log(
+              `⏩ canplay seek to ${seekTarget.toFixed(1)}s (clock-corrected)`,
+            );
+            audioRef.current.currentTime = seekTarget;
+          }
+        } else if (s?.isPaused && s.pausePositionSeconds != null) {
+          const target = s.pausePositionSeconds;
+          if (Math.abs(audioRef.current.currentTime - target) > 0.3) {
+            audioRef.current.currentTime = target;
+          }
+        }
       }
     };
 
@@ -425,6 +499,7 @@ export const SpacePlayer = ({
   // Handle seek (scrub) - immediate local scrub on change, remote seek on afterChange
   const handleSeek = (value: number) => {
     if (!audioRef.current) return;
+    isUserSeekingRef.current = true; // mark drag in progress — blocks canplay from reverting
     const seekTime = (value / 100) * duration;
     audioRef.current.currentTime = seekTime;
     setCurrentTime(seekTime);
@@ -432,6 +507,7 @@ export const SpacePlayer = ({
 
   const handleSeekComplete = (value: number) => {
     if (!audioRef.current) return;
+    isUserSeekingRef.current = false; // drag ended — lock takes over
     const seekTime = (value / 100) * duration;
     localSeekLockRef.current = {
       targetSeconds: seekTime,
@@ -476,6 +552,12 @@ export const SpacePlayer = ({
     adjustingVolumeTimeoutRef.current = window.setTimeout(() => {
       isAdjustingVolumeRef.current = false;
       adjustingVolumeTimeoutRef.current = null;
+      // Revert to server-confirmed volume — handles the case where the API call
+      // failed (e.g. volumePercent out of allowed range) and no SignalR sync fired.
+      const s = stateRef.current;
+      if (typeof s?.volumePercent === 'number') {
+        setVolume(Math.max(0, Math.min(100, Math.floor(s.volumePercent))));
+      }
     }, 1200);
   };
 

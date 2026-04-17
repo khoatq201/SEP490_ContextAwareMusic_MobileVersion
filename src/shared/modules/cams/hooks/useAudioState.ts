@@ -1,5 +1,4 @@
 import { useMutation } from '@tanstack/react-query';
-import { message } from 'antd';
 import { handleApiError } from '@/shared/utils';
 import { camsService } from '../services';
 import type { UpdateAudioStateRequest } from '../types';
@@ -27,9 +26,8 @@ export const useUpdateAudioState = () => {
       spaceId: string;
       data: UpdateAudioStateRequest;
     }) => camsService.updateAudioState(spaceId, data),
-    onSuccess: () => {
-      message.success('Audio state updated');
-    },
+    onSuccess: () => {},
+
     onError: (error) => {
       handleApiError(error);
     },

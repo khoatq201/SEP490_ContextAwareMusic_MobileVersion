@@ -1,4 +1,13 @@
-import { Drawer, Descriptions, Tag, Spin, Alert, Space } from 'antd';
+import {
+  Drawer,
+  Descriptions,
+  Tag,
+  Spin,
+  Alert,
+  Space,
+  Button,
+  Flex,
+} from 'antd';
 
 /**
  * Icons
@@ -15,8 +24,10 @@ import {
  */
 import {
   useTrack,
+  useSetTrackCopyrightClearance,
   useTrackMetadataPolling,
 } from '@/shared/modules/tracks/hooks';
+import { AppModal } from '@/shared/components';
 
 /**
  * Components
@@ -31,15 +42,22 @@ import {
  * Constants
  */
 import {
+  COPYRIGHT_CLEARANCE_COLORS,
+  COPYRIGHT_CLEARANCE_LABELS,
   MUSIC_PROVIDER_LABELS,
   MUSIC_PROVIDER_COLORS,
 } from '@/shared/modules/tracks/constants';
 import { ENTITY_STATUS_LABELS } from '@/shared/constants';
+import { TrackCopyrightClearanceStatus } from '@/shared/modules/tracks/types';
 
 /**
  * Utils
  */
 import { formatDate } from '@/shared/utils';
+import {
+  getTrackPlaybackBlockedMessage,
+  isTrackPlaybackBlockedByCopyright,
+} from '@/shared/modules/tracks/utils';
 
 /**
  * Configs
@@ -58,6 +76,13 @@ export const TrackDetailsDrawer = ({
   onClose,
 }: TrackDetailsDrawerProps) => {
   const { data: track, isLoading, error } = useTrack(trackId, open);
+  const setTrackCopyrightClearance = useSetTrackCopyrightClearance();
+  const isCopyrightBlocked = isTrackPlaybackBlockedByCopyright(
+    track?.copyrightClearanceStatus,
+  );
+  const blockedMessage = getTrackPlaybackBlockedMessage(
+    track?.copyrightClearanceStatus,
+  );
 
   // Auto-poll metadata status for newly uploaded tracks
   const { isPolling, attempts, maxAttempts, status } = useTrackMetadataPolling(
@@ -66,6 +91,34 @@ export const TrackDetailsDrawer = ({
       enabled: open && !!trackId,
     },
   );
+
+  const canReviewCopyright =
+    track?.copyrightClearanceStatus ===
+      TrackCopyrightClearanceStatus.PendingScan ||
+    track?.copyrightClearanceStatus ===
+      TrackCopyrightClearanceStatus.PendingReview;
+
+  const handleSetCopyrightClearance = (approve: boolean) => {
+    if (!track?.id || setTrackCopyrightClearance.isPending) {
+      return;
+    }
+
+    AppModal.confirm({
+      title: approve
+        ? 'Approve Copyright Clearance'
+        : 'Reject Copyright Clearance',
+      content: approve
+        ? 'Approve this track so it can be streamed again?'
+        : 'Reject this track and keep it blocked from playback?',
+      okText: approve ? 'Approve' : 'Reject',
+      okButtonProps: { danger: !approve },
+      onOk: () =>
+        setTrackCopyrightClearance.mutate({
+          id: track.id,
+          approve,
+        }),
+    });
+  };
 
   return (
     <Drawer
@@ -105,12 +158,52 @@ export const TrackDetailsDrawer = ({
             status={status}
           />
 
+          {isCopyrightBlocked && (
+            <Alert
+              type={
+                track?.copyrightClearanceStatus ===
+                TrackCopyrightClearanceStatus.PendingScan
+                  ? 'warning'
+                  : 'error'
+              }
+              showIcon
+              message='Playback blocked by copyright policy'
+              description={blockedMessage}
+            />
+          )}
+
+          {canReviewCopyright && (
+            <Flex
+              justify='end'
+              gap='small'
+            >
+              <Button
+                size='large'
+                danger
+                onClick={() => handleSetCopyrightClearance(false)}
+                loading={setTrackCopyrightClearance.isPending}
+              >
+                Reject Track
+              </Button>
+              <Button
+                size='large'
+                type='primary'
+                onClick={() => handleSetCopyrightClearance(true)}
+                loading={setTrackCopyrightClearance.isPending}
+              >
+                Approve Track
+              </Button>
+            </Flex>
+          )}
+
           {/* Audio Player */}
           <HLSAudioPlayer
             hlsUrl={track.hlsUrl}
             title={track.title}
             artist={track.artist}
             coverImageUrl={track.coverImageUrl}
+            unavailableMessage={isCopyrightBlocked ? blockedMessage : undefined}
+            disabled={isCopyrightBlocked}
           />
 
           {/* Basic Information */}
@@ -157,6 +250,23 @@ export const TrackDetailsDrawer = ({
                 color={track.status === 1 ? 'success' : 'default'}
               >
                 {ENTITY_STATUS_LABELS[track.status]}
+              </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label='Copyright'>
+              <Tag
+                color={
+                  COPYRIGHT_CLEARANCE_COLORS[
+                    track.copyrightClearanceStatus ??
+                      TrackCopyrightClearanceStatus.Cleared
+                  ]
+                }
+              >
+                {
+                  COPYRIGHT_CLEARANCE_LABELS[
+                    track.copyrightClearanceStatus ??
+                      TrackCopyrightClearanceStatus.Cleared
+                  ]
+                }
               </Tag>
             </Descriptions.Item>
           </Descriptions>

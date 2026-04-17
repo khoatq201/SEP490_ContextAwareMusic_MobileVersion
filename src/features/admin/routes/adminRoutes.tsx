@@ -29,6 +29,11 @@ const AccountList = Loadable(
   'AccountList',
 );
 
+const ConfigList = Loadable(
+  () => import('@/features/admin/pages/ConfigManagement/ConfigList'),
+  'ConfigList',
+);
+
 const TrackList = Loadable(
   () => import('@/features/admin/pages/TrackManagement/TrackList'),
   'TrackList',
@@ -42,6 +47,11 @@ const PlaylistList = Loadable(
 const AdminProfile = Loadable(
   () => import('@/features/admin/pages/Profile/AdminProfile'),
   'AdminProfile',
+);
+
+const BillingPackages = Loadable(
+  () => import('@/features/admin/pages/BillingPackages'),
+  'AdminBillingPackages',
 );
 
 export const adminRoutes = [
@@ -62,12 +72,20 @@ export const adminRoutes = [
     element: <AccountList />,
   },
   {
+    path: 'config-management',
+    element: <ConfigList />,
+  },
+  {
     path: 'tracks',
     element: <TrackList />,
   },
   {
     path: 'playlists',
     element: <PlaylistList />,
+  },
+  {
+    path: 'billing-packages',
+    element: <BillingPackages />,
   },
   {
     path: 'profile/*',
@@ -77,7 +95,7 @@ export const adminRoutes = [
     path: '*',
     element: (
       <Navigate
-        to='/store/dashboard'
+        to='/admin/dashboard'
         replace
       />
     ),

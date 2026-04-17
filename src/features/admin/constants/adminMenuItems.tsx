@@ -10,9 +10,11 @@ import {
   DashboardOutlined,
   UserOutlined,
   ShopOutlined,
+  SettingOutlined,
   SlidersOutlined,
   CustomerServiceOutlined,
   UnorderedListOutlined,
+  DollarOutlined,
 } from '@ant-design/icons';
 
 export const ADMIN_MENU_ITEMS: ItemType[] = [
@@ -32,6 +34,11 @@ export const ADMIN_MENU_ITEMS: ItemType[] = [
     label: 'Brand Management',
   },
   {
+    key: 'config-management',
+    icon: <SettingOutlined />,
+    label: 'Config Management',
+  },
+  {
     key: 'ai-fuzzy-templates',
     icon: <SlidersOutlined />,
     label: 'AI fuzzy management',
@@ -45,5 +52,10 @@ export const ADMIN_MENU_ITEMS: ItemType[] = [
     key: 'playlists',
     icon: <UnorderedListOutlined />,
     label: 'Playlist Library',
+  },
+  {
+    key: 'billing-packages',
+    icon: <DollarOutlined />,
+    label: 'Token packages',
   },
 ];

@@ -31,15 +31,22 @@ import {
  * Constants
  */
 import {
+  COPYRIGHT_CLEARANCE_COLORS,
+  COPYRIGHT_CLEARANCE_LABELS,
   MUSIC_PROVIDER_LABELS,
   MUSIC_PROVIDER_COLORS,
 } from '@/shared/modules/tracks/constants';
 import { ENTITY_STATUS_LABELS } from '@/shared/constants';
+import { TrackCopyrightClearanceStatus } from '@/shared/modules/tracks/types';
 
 /**
  * Utils
  */
 import { formatDate } from '@/shared/utils';
+import {
+  getTrackPlaybackBlockedMessage,
+  isTrackPlaybackBlockedByCopyright,
+} from '@/shared/modules/tracks/utils';
 
 /**
  * Configs
@@ -58,6 +65,12 @@ export const TrackDetailsDrawer = ({
   onClose,
 }: TrackDetailsDrawerProps) => {
   const { data: track, isLoading, error } = useTrack(trackId, open);
+  const isCopyrightBlocked = isTrackPlaybackBlockedByCopyright(
+    track?.copyrightClearanceStatus,
+  );
+  const blockedMessage = getTrackPlaybackBlockedMessage(
+    track?.copyrightClearanceStatus,
+  );
 
   // Auto-poll metadata status for newly uploaded tracks
   const { isPolling, attempts, maxAttempts, status } = useTrackMetadataPolling(
@@ -105,6 +118,20 @@ export const TrackDetailsDrawer = ({
             status={status}
           />
 
+          {isCopyrightBlocked && (
+            <Alert
+              type={
+                track?.copyrightClearanceStatus ===
+                TrackCopyrightClearanceStatus.PendingScan
+                  ? 'warning'
+                  : 'error'
+              }
+              showIcon
+              message='Playback blocked by copyright policy'
+              description={blockedMessage}
+            />
+          )}
+
           {/* Audio Player */}
           <HLSAudioPlayer
             hlsUrl={track.hlsUrl}
@@ -112,6 +139,8 @@ export const TrackDetailsDrawer = ({
             artist={track.artist}
             coverImageUrl={track.coverImageUrl}
             shouldStop={!open}
+            unavailableMessage={isCopyrightBlocked ? blockedMessage : undefined}
+            disabled={isCopyrightBlocked}
           />
 
           {/* Basic Information */}
@@ -157,6 +186,23 @@ export const TrackDetailsDrawer = ({
                 color={track.status === 1 ? 'success' : 'default'}
               >
                 {ENTITY_STATUS_LABELS[track.status]}
+              </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label='Copyright'>
+              <Tag
+                color={
+                  COPYRIGHT_CLEARANCE_COLORS[
+                    track.copyrightClearanceStatus ??
+                      TrackCopyrightClearanceStatus.Cleared
+                  ]
+                }
+              >
+                {
+                  COPYRIGHT_CLEARANCE_LABELS[
+                    track.copyrightClearanceStatus ??
+                      TrackCopyrightClearanceStatus.Cleared
+                  ]
+                }
               </Tag>
             </Descriptions.Item>
           </Descriptions>

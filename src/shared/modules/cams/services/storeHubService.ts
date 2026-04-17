@@ -24,7 +24,20 @@ type StoreHubEventHandlers = {
 class StoreHubService {
   private connection: HubConnection | null = null;
   private currentStoreId: string | null = null;
+  private joinedSpaceIds = new Set<string>();
   private eventHandlers: StoreHubEventHandlers = {};
+
+  /**
+   * Clock offset in ms: clientNow - serverNow at connection time.
+   * Positive means client clock is ahead of server.
+   * Used by getEffectiveSeekOffset to correct seek positions.
+   */
+  private _serverClockOffsetMs = 0;
+
+  /** Exposed to playbackHelpers so seek math can compensate for clock skew. */
+  public get serverClockOffsetMs(): number {
+    return this._serverClockOffsetMs;
+  }
 
   /**
    * Check if connection is active
@@ -183,6 +196,7 @@ class StoreHubService {
     try {
       console.log('🎵 Joining space group:', spaceId);
       await this.connection.invoke('JoinSpaceAsync', spaceId);
+      this.joinedSpaceIds.add(spaceId);
       console.log('✅ Joined space group successfully:', spaceId);
     } catch (error) {
       console.error('❌ Failed to join space group:', error);
@@ -206,6 +220,7 @@ class StoreHubService {
     try {
       console.log('👋 Leaving space group:', spaceId);
       await this.connection.invoke('LeaveSpaceAsync', spaceId);
+      this.joinedSpaceIds.delete(spaceId);
       console.log('✅ Left space group successfully:', spaceId);
     } catch (error) {
       console.error('❌ Failed to leave space group:', error);
@@ -220,7 +235,18 @@ class StoreHubService {
     if (!this.connection) return;
 
     // Server ack after JoinSpaceAsync / JoinManagerRoomAsync (camelCase over the wire)
-    this.connection.on('connectionconfirmed', () => {});
+    this.connection.on(
+      'connectionconfirmed',
+      (data: { serverTimeUtc?: string } | null) => {
+        if (data?.serverTimeUtc) {
+          const serverMs = new Date(data.serverTimeUtc).getTime();
+          this._serverClockOffsetMs = Date.now() - serverMs;
+          console.log(
+            `🕐 Server clock offset computed: ${this._serverClockOffsetMs.toFixed(0)}ms (client − server)`,
+          );
+        }
+      },
+    );
 
     // PlayStream event (new track/playlist)
     this.connection.on('PlayStream', (payload: PlayStreamPayload) => {
@@ -249,15 +275,28 @@ class StoreHubService {
       this.eventHandlers.onReconnecting?.();
     });
 
-    this.connection.onreconnected(() => {
+    this.connection.onreconnected(async () => {
       console.log('✅ SignalR reconnected');
-      this.eventHandlers.onReconnected?.();
+      try {
+        // Rejoin manager room after reconnect
+        if (this.currentStoreId) {
+          await this.joinStore(this.currentStoreId);
+        }
 
-      // Rejoin manager room after reconnect
-      if (this.currentStoreId) {
-        this.joinStore(this.currentStoreId).catch((err) => {
-          console.error('❌ Failed to rejoin after reconnect:', err);
-        });
+        // Rejoin all active space groups after reconnect.
+        const spaceIds = Array.from(this.joinedSpaceIds);
+        await Promise.all(
+          spaceIds.map(async (spaceId) => {
+            try {
+              await this.connection?.invoke('JoinSpaceAsync', spaceId);
+              console.log('✅ Rejoined space group after reconnect:', spaceId);
+            } catch (err) {
+              console.error('❌ Failed to rejoin space group:', spaceId, err);
+            }
+          }),
+        );
+      } finally {
+        this.eventHandlers.onReconnected?.();
       }
     });
 
@@ -288,6 +327,7 @@ class StoreHubService {
     } finally {
       this.connection = null;
       this.currentStoreId = null;
+      this.joinedSpaceIds.clear();
       this.eventHandlers = {};
     }
   }

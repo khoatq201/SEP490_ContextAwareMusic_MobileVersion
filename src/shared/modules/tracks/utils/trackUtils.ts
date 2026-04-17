@@ -1,5 +1,9 @@
 import type { TrackDetailResponse, TrackListItem } from '../types';
-import { TrackMetadataStatus, TranscodeStatusEnum } from '../types';
+import {
+  TrackCopyrightClearanceStatus,
+  TrackMetadataStatus,
+  TranscodeStatusEnum,
+} from '../types';
 
 /**
  * Determine metadata extraction status based on track fields
@@ -178,5 +182,40 @@ export const getTranscodeStatusText = (
       return 'Failed';
     default:
       return 'Unknown';
+  }
+};
+
+/**
+ * True when playback must be blocked by copyright policy.
+ */
+export const isTrackPlaybackBlockedByCopyright = (
+  status?: TrackCopyrightClearanceStatus,
+): boolean => {
+  if (status === undefined || status === null) {
+    return false;
+  }
+
+  return (
+    status === TrackCopyrightClearanceStatus.PendingScan ||
+    status === TrackCopyrightClearanceStatus.PendingReview ||
+    status === TrackCopyrightClearanceStatus.Rejected
+  );
+};
+
+/**
+ * Human-friendly message shown when playback is blocked by policy.
+ */
+export const getTrackPlaybackBlockedMessage = (
+  status?: TrackCopyrightClearanceStatus,
+): string => {
+  switch (status) {
+    case TrackCopyrightClearanceStatus.PendingScan:
+      return 'Track is being scanned for copyright. Playback is temporarily disabled.';
+    case TrackCopyrightClearanceStatus.PendingReview:
+      return 'Track is blocked due to copyright risk. Please contact admin to review and unblock this track.';
+    case TrackCopyrightClearanceStatus.Rejected:
+      return 'Track is blocked by copyright policy. Please contact admin to unblock this track.';
+    default:
+      return 'Audio file not available.';
   }
 };

@@ -104,13 +104,30 @@ export const EditBrandDrawer = ({
         energeticBpmMax: brand.energeticBpmMax ?? undefined,
         pressureLowMax: brand.pressureLowMax ?? undefined,
         pressureCriticalMin: brand.pressureCriticalMin ?? undefined,
-        stressComfortableMax: brand.stressComfortableMax ?? undefined,
-        stressHighMin: brand.stressHighMin ?? undefined,
-        densitySparseMax: brand.densitySparseMax ?? undefined,
-        densityCrowdedMin: brand.densityCrowdedMin ?? undefined,
+        noiseQuietMaxDb:
+          brand.noiseQuietMaxDb ??
+          brand.stressComfortableMax ??
+          brand.densitySparseMax ??
+          undefined,
+        noiseLoudMinDb:
+          brand.noiseLoudMinDb ??
+          brand.stressHighMin ??
+          brand.densityCrowdedMin ??
+          undefined,
         spaceCapacity: brand.spaceCapacity ?? undefined,
-        defaultDensityRatioWhenNull:
-          brand.defaultDensityRatioWhenNull ?? undefined,
+        defaultDecibelWhenNull:
+          brand.defaultDecibelWhenNull ??
+          brand.defaultDensityRatioWhenNull ??
+          undefined,
+        chillMoodCandidates: brand.chillMoodCandidates?.length
+          ? brand.chillMoodCandidates
+          : undefined,
+        focusMoodCandidates: brand.focusMoodCandidates?.length
+          ? brand.focusMoodCandidates
+          : undefined,
+        energeticMoodCandidates: brand.energeticMoodCandidates?.length
+          ? brand.energeticMoodCandidates
+          : undefined,
         allowedPlaylistIds: brand.allowedPlaylistIds?.length
           ? brand.allowedPlaylistIds
           : undefined,

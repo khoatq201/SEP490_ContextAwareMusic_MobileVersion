@@ -48,6 +48,11 @@ export enum OverrideMode {
   Mood = 2,
 }
 
+export enum SchedulingSlotOrigin {
+  Space = 1,
+  Brand = 2,
+}
+
 /**
  * Queue Insert Mode Enum (from API_CAMS.md § 3.3.2)
  * ⚠️ NEW (2026-03-23): Queue insert modes
@@ -136,6 +141,16 @@ export interface SpaceStateDto {
   moodName: string | null;
   isManualOverride: boolean;
   overrideMode: OverrideMode | null;
+  overrideReason?: string | null;
+  manualOverrideActivatedAtUtc?: string | null;
+  manualOverrideExpiresAtUtc?: string | null;
+  manualOverrideTtlSeconds?: number | null;
+  manualOverrideRemainingSeconds?: number | null;
+  isScheduling?: boolean;
+  schedulingSlotId?: string | null;
+  schedulingSlotOrigin?: SchedulingSlotOrigin | null;
+  schedulingEndsAtUtc?: string | null;
+  schedulingRemainingSeconds?: number | null;
   startedAtUtc: string | null;
   expectedEndAtUtc: string | null;
   seekOffsetSeconds: number | null; // Always null in SignalR
@@ -268,6 +283,10 @@ export interface UpdateAudioStateRequest {
   queueEndBehavior?: QueueEndBehavior;
 }
 
+export interface UpdateSchedulingStateRequest {
+  isScheduling: boolean;
+}
+
 /**
  * Playback control request (from API_CAMS.md § 3.3)
  */
@@ -294,6 +313,16 @@ export interface SpaceStateResponse {
   moodName: string | null;
   isManualOverride: boolean;
   overrideMode: OverrideMode | null;
+  overrideReason?: string | null;
+  manualOverrideActivatedAtUtc?: string | null;
+  manualOverrideExpiresAtUtc?: string | null;
+  manualOverrideTtlSeconds?: number | null;
+  manualOverrideRemainingSeconds?: number | null;
+  isScheduling?: boolean;
+  schedulingSlotId?: string | null;
+  schedulingSlotOrigin?: SchedulingSlotOrigin | null;
+  schedulingEndsAtUtc?: string | null;
+  schedulingRemainingSeconds?: number | null;
   startedAtUtc: string | null;
   expectedEndAtUtc: string | null;
   seekOffsetSeconds: number | null; // Calculated server-side in REST
