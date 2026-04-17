@@ -34,6 +34,7 @@ class SpaceMutationRequest {
   final int? maxOccupancy;
   final int? criticalQueueThreshold;
   final String? wiFiSensorId;
+  final String? ioTDeviceId;
 
   const SpaceMutationRequest({
     this.storeId,
@@ -45,6 +46,7 @@ class SpaceMutationRequest {
     this.maxOccupancy,
     this.criticalQueueThreshold,
     this.wiFiSensorId,
+    this.ioTDeviceId,
   });
 
   Map<String, dynamic> toJson() {
@@ -62,6 +64,8 @@ class SpaceMutationRequest {
         'criticalQueueThreshold': criticalQueueThreshold,
       if (wiFiSensorId != null && wiFiSensorId!.trim().isNotEmpty)
         'wiFiSensorId': wiFiSensorId!.trim(),
+      if (ioTDeviceId != null && ioTDeviceId!.trim().isNotEmpty)
+        'ioTDeviceId': ioTDeviceId!.trim(),
     };
   }
 }
