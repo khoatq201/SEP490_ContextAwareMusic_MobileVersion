@@ -16,6 +16,7 @@ class SpaceScheduleBloc extends Bloc<SpaceScheduleEvent, SpaceScheduleState> {
   final GetSpaceScheduleBootstrap getSpaceScheduleBootstrap;
   final ApplyScheduleSource applyScheduleSource;
   final SaveSpaceSchedule saveSpaceSchedule;
+  final ToggleSpaceSchedule toggleSpaceSchedule;
   final SaveScheduleToLibrary saveScheduleToLibrary;
   final DeleteScheduleSlot deleteScheduleSlot;
 
@@ -23,6 +24,7 @@ class SpaceScheduleBloc extends Bloc<SpaceScheduleEvent, SpaceScheduleState> {
     required this.getSpaceScheduleBootstrap,
     required this.applyScheduleSource,
     required this.saveSpaceSchedule,
+    required this.toggleSpaceSchedule,
     required this.saveScheduleToLibrary,
     required this.deleteScheduleSlot,
   }) : super(const SpaceScheduleState()) {
@@ -34,6 +36,7 @@ class SpaceScheduleBloc extends Bloc<SpaceScheduleEvent, SpaceScheduleState> {
     on<SpaceScheduleDaySelected>(_onDaySelected);
     on<SpaceScheduleSlotSaved>(_onSlotSaved);
     on<SpaceScheduleSlotDeleted>(_onSlotDeleted);
+    on<SpaceScheduleToggled>(_onToggled);
     on<SpaceScheduleSavedToLibrary>(_onSavedToLibrary);
     on<SpaceScheduleEditorReopened>(_onEditorReopened);
     on<SpaceScheduleFeedbackCleared>(_onFeedbackCleared);
@@ -247,6 +250,29 @@ class SpaceScheduleBloc extends Bloc<SpaceScheduleEvent, SpaceScheduleState> {
       emit,
       successStage: SpaceScheduleStage.editor,
       successMessage: 'Schedule slot removed.',
+    );
+  }
+
+  Future<void> _onToggled(
+    SpaceScheduleToggled event,
+    Emitter<SpaceScheduleState> emit,
+  ) async {
+    final spaceId = state.spaceId;
+    if (spaceId == null) return;
+
+    emit(state.copyWith(status: SpaceScheduleStatus.saving));
+    final result = await toggleSpaceSchedule(
+      spaceId: spaceId,
+      enabled: event.enabled,
+    );
+    _handleScheduleResult(
+      result,
+      emit,
+      successStage: SpaceScheduleStage.editor,
+      successMessage: event.enabled
+          ? 'Space schedule enabled.'
+          : 'Space schedule disabled.',
+      selectedDay: state.selectedDay,
     );
   }
 

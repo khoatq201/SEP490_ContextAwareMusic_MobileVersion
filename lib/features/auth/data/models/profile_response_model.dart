@@ -13,6 +13,7 @@ class ProfileResponseModel {
   final String lastName;
   final String? phoneNumber;
   final String? avatarPath;
+  final List<String> storeIds;
   final List<String> roles;
 
   const ProfileResponseModel({
@@ -22,10 +23,20 @@ class ProfileResponseModel {
     required this.lastName,
     this.phoneNumber,
     this.avatarPath,
+    this.storeIds = const [],
     required this.roles,
   });
 
   factory ProfileResponseModel.fromJson(Map<String, dynamic> json) {
+    final rawStoreIds = json['storeIds'] as List<dynamic>?;
+    final directStoreId = json['storeId']?.toString();
+    final parsedStoreIds = <String>{
+      ...?rawStoreIds?.map((entry) => entry.toString()).where(
+            (entry) => entry.trim().isNotEmpty,
+          ),
+      if (directStoreId != null && directStoreId.trim().isNotEmpty) directStoreId,
+    }.toList(growable: false);
+
     return ProfileResponseModel(
       email: json['email'] as String,
       userId: json['userId'] as String,
@@ -33,6 +44,7 @@ class ProfileResponseModel {
       lastName: json['lastName'] as String,
       phoneNumber: json['phoneNumber'] as String?,
       avatarPath: (json['avatarUrl'] ?? json['avatarPath']) as String?,
+      storeIds: parsedStoreIds,
       roles: (json['roles'] as List<dynamic>).map((e) => _mapRole(e)).toList(),
     );
   }
@@ -72,7 +84,7 @@ class ProfileResponseModel {
       phoneNumber: phoneNumber,
       role: roles.isNotEmpty ? roles.first : '',
       roles: roles,
-      storeIds: const [],
+      storeIds: storeIds,
       avatarUrl: avatarPath,
     );
   }
@@ -85,6 +97,7 @@ class ProfileResponseModel {
       'lastName': lastName,
       'phoneNumber': phoneNumber,
       'avatarPath': avatarPath,
+      'storeIds': storeIds,
       'roles': roles,
     };
   }

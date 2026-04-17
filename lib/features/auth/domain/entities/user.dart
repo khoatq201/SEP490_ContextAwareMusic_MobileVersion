@@ -30,12 +30,42 @@ class User extends Equatable {
     this.lastLogin,
   });
 
-  /// Check if user has a specific role (PascalCase matching).
-  bool hasRole(String roleName) => roles.contains(roleName);
+  Iterable<String> get _roleCandidates sync* {
+    if (roles.isNotEmpty) {
+      yield* roles;
+    }
+    if (role.trim().isNotEmpty) {
+      yield role;
+    }
+  }
 
-  bool get isSystemAdmin => roles.contains('SystemAdmin');
-  bool get isBrandManager => roles.contains('BrandManager');
-  bool get isStoreManager => roles.contains('StoreManager');
+  String _normalizeRole(String value) {
+    final normalized = value.trim().toLowerCase();
+    if (normalized.isEmpty) return '';
+
+    return normalized
+        .replaceAll(RegExp(r'^role[_\s-]*'), '')
+        .replaceAll(RegExp(r'[\s_-]+'), '');
+  }
+
+  bool _matchesRole(String roleName) {
+    final target = _normalizeRole(roleName);
+    if (target.isEmpty) return false;
+
+    for (final candidate in _roleCandidates) {
+      if (_normalizeRole(candidate) == target) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// Check if user has a specific role, regardless of source formatting.
+  bool hasRole(String roleName) => _matchesRole(roleName);
+
+  bool get isSystemAdmin => _matchesRole('SystemAdmin');
+  bool get isBrandManager => _matchesRole('BrandManager');
+  bool get isStoreManager => _matchesRole('StoreManager');
 
   @override
   List<Object?> get props => [

@@ -95,7 +95,7 @@ class LocationMockDataSource implements LocationRemoteDataSource {
           );
       if (space != null) return space;
     }
-    throw ServerException('Space not found');
+    throw const ServerException('Space not found');
   }
 
   @override
@@ -147,7 +147,7 @@ class LocationMockDataSource implements LocationRemoteDataSource {
         storeId.isEmpty ||
         name.isEmpty ||
         request.type == null) {
-      throw ServerException('Invalid payload for creating space.');
+      throw const ServerException('Invalid payload for creating space.');
     }
 
     final created = LocationSpaceModel(
@@ -209,7 +209,7 @@ class LocationMockDataSource implements LocationRemoteDataSource {
         message: 'Space updated successfully',
       );
     }
-    throw ServerException('Space not found.');
+    throw const ServerException('Space not found.');
   }
 
   @override
@@ -225,7 +225,7 @@ class LocationMockDataSource implements LocationRemoteDataSource {
         );
       }
     }
-    throw ServerException('Space not found.');
+    throw const ServerException('Space not found.');
   }
 
   @override
@@ -263,7 +263,7 @@ class LocationMockDataSource implements LocationRemoteDataSource {
         message: 'Space status updated successfully',
       );
     }
-    throw ServerException('Space not found.');
+    throw const ServerException('Space not found.');
   }
 
   @override
@@ -276,7 +276,7 @@ class LocationMockDataSource implements LocationRemoteDataSource {
       (spaces) => spaces.any((space) => space.id == spaceId),
     );
     if (!exists) {
-      throw ServerException('Space not found.');
+      throw const ServerException('Space not found.');
     }
     return const SpaceMutationResult(
       isSuccess: true,

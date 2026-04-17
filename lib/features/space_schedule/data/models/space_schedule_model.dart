@@ -14,18 +14,24 @@ class SpaceScheduleModel extends SpaceSchedule {
   });
 
   factory SpaceScheduleModel.fromJson(Map<String, dynamic> json) {
+    final updatedAtRaw = json['updatedAt']?.toString();
     return SpaceScheduleModel(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      spaceId: json['spaceId'] as String?,
-      slots: (json['slots'] as List<dynamic>)
+      id: json['id']?.toString() ??
+          'space-schedule-${json['spaceId']?.toString() ?? 'unknown'}',
+      name: json['name']?.toString() ??
+          json['sourceLabel']?.toString() ??
+          'Space schedule',
+      spaceId: json['spaceId']?.toString(),
+      slots: (json['slots'] as List<dynamic>? ?? const [])
           .map((slot) =>
               ScheduleSlotModel.fromJson(slot as Map<String, dynamic>))
           .toList(),
       enabled: json['enabled'] as bool? ?? true,
-      sourceId: json['sourceId'] as String?,
-      sourceLabel: json['sourceLabel'] as String?,
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      sourceId: json['sourceId']?.toString(),
+      sourceLabel: json['sourceLabel']?.toString(),
+      updatedAt: updatedAtRaw == null
+          ? DateTime.now()
+          : DateTime.tryParse(updatedAtRaw) ?? DateTime.now(),
     );
   }
 

@@ -13,12 +13,13 @@ class ScheduleSourceModel extends ScheduleSource {
   });
 
   factory ScheduleSourceModel.fromJson(Map<String, dynamic> json) {
+    final type = _parseSourceType(json);
     return ScheduleSourceModel(
-      id: json['id'] as String,
-      title: json['title'] as String,
-      subtitle: json['subtitle'] as String,
-      description: json['description'] as String?,
-      type: ScheduleSourceType.values.byName(json['type'] as String),
+      id: json['id']?.toString() ?? '',
+      title: json['title']?.toString() ?? 'Schedule source',
+      subtitle: json['subtitle']?.toString() ?? '',
+      description: json['description']?.toString(),
+      type: type,
       schedule:
           SpaceScheduleModel.fromJson(json['schedule'] as Map<String, dynamic>),
       isUserCreated: json['isUserCreated'] as bool? ?? false,
@@ -44,5 +45,13 @@ class ScheduleSourceModel extends ScheduleSource {
       ).toJson(),
       'isUserCreated': isUserCreated,
     };
+  }
+
+  static ScheduleSourceType _parseSourceType(Map<String, dynamic> json) {
+    final raw = json['type']?.toString().trim().toLowerCase();
+    if (raw == 'template' || json['isTemplate'] == true) {
+      return ScheduleSourceType.template;
+    }
+    return ScheduleSourceType.library;
   }
 }

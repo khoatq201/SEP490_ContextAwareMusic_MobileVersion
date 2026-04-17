@@ -130,6 +130,7 @@ class _FakeCamsRepository implements CamsRepository {
     String? moodId,
     bool? isClearManagerSelectedQueues,
     bool? isCutOver,
+    int? manualOverrideTtlSeconds,
     String? reason,
     bool usePlaybackDeviceScope = false,
   }) async {
@@ -162,6 +163,15 @@ class _FakeCamsRepository implements CamsRepository {
     int? volumePercent,
     bool? isMuted,
     int? queueEndBehavior,
+    bool usePlaybackDeviceScope = false,
+  }) async {
+    return const Right(null);
+  }
+
+  @override
+  Future<Either<Failure, void>> updateSchedulingState({
+    required String spaceId,
+    required bool isScheduling,
     bool usePlaybackDeviceScope = false,
   }) async {
     return const Right(null);

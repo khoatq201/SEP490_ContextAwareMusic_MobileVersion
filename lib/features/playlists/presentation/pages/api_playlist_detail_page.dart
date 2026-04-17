@@ -112,7 +112,7 @@ class _CoverSliverAppBar extends StatelessWidget {
         child: Container(
           margin: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.35),
+            color: Colors.black.withValues(alpha: 0.35),
             borderRadius: BorderRadius.circular(12),
           ),
           child: const Icon(LucideIcons.chevronLeft,
@@ -355,7 +355,7 @@ class _PlaylistHeader extends StatelessWidget {
           ),
 
           const SizedBox(height: 4),
-          Divider(color: palette.border.withOpacity(0.6), height: 28),
+          Divider(color: palette.border.withValues(alpha: 0.6), height: 28),
         ],
       ),
     );
@@ -748,7 +748,7 @@ Future<QueueInsertModeEnum?> _showQueueModePickerSheet({
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: palette.accent.withOpacity(0.14),
+                            color: palette.accent.withValues(alpha: 0.14),
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Text(
@@ -767,7 +767,8 @@ Future<QueueInsertModeEnum?> _showQueueModePickerSheet({
                   ).pop(options[i].mode),
                 ),
                 if (i != options.length - 1)
-                  Divider(color: palette.border.withOpacity(0.5), height: 1),
+                  Divider(
+                      color: palette.border.withValues(alpha: 0.5), height: 1),
               ],
             ],
           ),
@@ -1028,7 +1029,7 @@ class _SpacePickerSheetState extends State<_SpacePickerSheet> {
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: spaces.length,
                 separatorBuilder: (_, __) => Divider(
-                  color: palette.border.withOpacity(0.5),
+                  color: palette.border.withValues(alpha: 0.5),
                   height: 1,
                 ),
                 itemBuilder: (context, index) {
@@ -1041,7 +1042,7 @@ class _SpacePickerSheetState extends State<_SpacePickerSheet> {
                     leading: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: palette.accent.withOpacity(0.12),
+                        color: palette.accent.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(LucideIcons.store,
@@ -1130,7 +1131,7 @@ class _Palette {
         isDark: true,
         bg: AppColors.backgroundDarkPrimary,
         card: AppColors.surfaceDark,
-        overlay: Colors.white.withOpacity(0.06),
+        overlay: Colors.white.withValues(alpha: 0.06),
         border: AppColors.borderDarkMedium,
         textPrimary: AppColors.textDarkPrimary,
         textMuted: AppColors.textDarkSecondary,

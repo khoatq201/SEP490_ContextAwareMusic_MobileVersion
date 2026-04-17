@@ -1,5 +1,6 @@
 import '../../../../core/enums/override_mode_enum.dart';
 import '../../../../core/enums/ai_generation_mode_enum.dart';
+import '../../../../core/enums/scheduling_slot_origin_enum.dart';
 import '../../domain/entities/space_playback_state.dart';
 import '../../domain/entities/space_queue_state_item.dart';
 import 'space_queue_state_item_model.dart';
@@ -17,6 +18,16 @@ class SpacePlaybackStateModel extends SpacePlaybackState {
     super.moodName,
     super.isManualOverride,
     super.overrideMode,
+    super.overrideReason,
+    super.manualOverrideActivatedAtUtc,
+    super.manualOverrideExpiresAtUtc,
+    super.manualOverrideTtlSeconds,
+    super.manualOverrideRemainingSeconds,
+    super.isScheduling,
+    super.schedulingSlotId,
+    super.schedulingSlotOrigin,
+    super.schedulingEndsAtUtc,
+    super.schedulingRemainingSeconds,
     super.startedAtUtc,
     super.expectedEndAtUtc,
     super.isPaused,
@@ -57,6 +68,22 @@ class SpacePlaybackStateModel extends SpacePlaybackState {
       moodName: _readString(json, 'moodName'),
       isManualOverride: _readBool(json, 'isManualOverride') ?? false,
       overrideMode: OverrideModeEnum.fromJson(_readValue(json, 'overrideMode')),
+      overrideReason: _readString(json, 'overrideReason'),
+      manualOverrideActivatedAtUtc:
+          _readDateTime(json, 'manualOverrideActivatedAtUtc'),
+      manualOverrideExpiresAtUtc:
+          _readDateTime(json, 'manualOverrideExpiresAtUtc'),
+      manualOverrideTtlSeconds:
+          _readNum(json, 'manualOverrideTtlSeconds')?.toInt(),
+      manualOverrideRemainingSeconds:
+          _readNum(json, 'manualOverrideRemainingSeconds')?.toInt(),
+      isScheduling: _readBool(json, 'isScheduling') ?? false,
+      schedulingSlotId: _readString(json, 'schedulingSlotId'),
+      schedulingSlotOrigin: SchedulingSlotOriginEnum.fromJson(
+          _readValue(json, 'schedulingSlotOrigin')),
+      schedulingEndsAtUtc: _readDateTime(json, 'schedulingEndsAtUtc'),
+      schedulingRemainingSeconds:
+          _readNum(json, 'schedulingRemainingSeconds')?.toInt(),
       startedAtUtc: _readDateTime(json, 'startedAtUtc'),
       expectedEndAtUtc: _readDateTime(json, 'expectedEndAtUtc'),
       isPaused: _readBool(json, 'isPaused') ?? false,
@@ -139,17 +166,23 @@ class SpacePlaybackStateModel extends SpacePlaybackState {
     }
 
     final explainability = SpacePlaybackExplainability(
-      triggeredRule: _readString(mergedSource, 'triggeredRule'),
-      reason: _readString(mergedSource, 'reason'),
+      triggeredRule: _readString(mergedSource, 'triggeredRule') ??
+          _readString(mergedSource, 'fuzzyRule'),
+      reason: _readString(mergedSource, 'reason') ??
+          _readString(mergedSource, 'fuzzyReason'),
       moodName: _readString(mergedSource, 'moodName') ??
           _readString(mergedSource, 'newMood') ??
           _readString(mergedSource, 'selectedMoodName'),
-      recommendedBpmMin: _readNum(mergedSource, 'recommendedBpmMin')?.toInt(),
-      recommendedBpmMax: _readNum(mergedSource, 'recommendedBpmMax')?.toInt(),
+      recommendedBpmMin: _readNum(mergedSource, 'recommendedBpmMin')?.toInt() ??
+          _readNum(mergedSource, 'bpmMin')?.toInt(),
+      recommendedBpmMax: _readNum(mergedSource, 'recommendedBpmMax')?.toInt() ??
+          _readNum(mergedSource, 'bpmMax')?.toInt(),
       recommendedBpmTarget:
-          _readNum(mergedSource, 'recommendedBpmTarget')?.toInt(),
+          _readNum(mergedSource, 'recommendedBpmTarget')?.toInt() ??
+              _readNum(mergedSource, 'bpmTarget')?.toInt(),
       usedMoodOnlyFallback: _readBool(mergedSource, 'usedMoodOnlyFallback') ??
-          _readBool(mergedSource, 'bpmFallback'),
+          _readBool(mergedSource, 'bpmFallback') ??
+          _readBool(mergedSource, 'isBpmFallback'),
       moodOnlyCount: _readNum(mergedSource, 'moodOnlyCount')?.toInt(),
       bpmFilteredCount: _readNum(mergedSource, 'bpmFilteredCount')?.toInt(),
       aiGenerationMode: _readAiGenerationMode(mergedSource),
@@ -179,6 +212,7 @@ class SpacePlaybackStateModel extends SpacePlaybackState {
       'aiExplainability',
       'selectionExplainability',
       'musicSelectionExplainability',
+      'aiTrace',
       'fuzzyExplainability',
       'fuzzyResult',
     ];
@@ -198,10 +232,16 @@ class SpacePlaybackStateModel extends SpacePlaybackState {
       'recommendedBpmMin',
       'recommendedBpmMax',
       'recommendedBpmTarget',
+      'bpmMin',
+      'bpmMax',
+      'bpmTarget',
       'usedMoodOnlyFallback',
       'bpmFallback',
+      'isBpmFallback',
       'moodOnlyCount',
       'bpmFilteredCount',
+      'fuzzyRule',
+      'fuzzyReason',
       'newMood',
       'selectedMoodName',
       'aiGenerationMode',

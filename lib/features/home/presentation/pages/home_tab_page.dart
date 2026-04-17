@@ -453,9 +453,9 @@ class _SensorChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: accent.withOpacity(palette.isDark ? 0.12 : 0.10),
+        color: accent.withValues(alpha: palette.isDark ? 0.12 : 0.10),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: accent.withOpacity(0.30)),
+        border: Border.all(color: accent.withValues(alpha: 0.30)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -490,7 +490,7 @@ class _SensorChip extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: accent.withOpacity(0.18),
+                color: accent.withValues(alpha: 0.18),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -532,10 +532,10 @@ class _CurrentMoodChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: palette.accent.withOpacity(palette.isDark ? 0.12 : 0.08),
+          color: palette.accent.withValues(alpha: palette.isDark ? 0.12 : 0.08),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: palette.accent.withOpacity(0.25),
+            color: palette.accent.withValues(alpha: 0.25),
           ),
         ),
         child: Row(
@@ -543,7 +543,7 @@ class _CurrentMoodChip extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: palette.accent.withOpacity(0.18),
+                color: palette.accent.withValues(alpha: 0.18),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
@@ -664,8 +664,8 @@ class _MasterControlCard extends StatelessWidget {
                 : 'AI stays paused for this space. Choose a mood only if you want to override the mood too.';
     final gradientColors = palette.isDark
         ? [
-            palette.accent.withOpacity(0.80),
-            palette.accentAlt.withOpacity(0.55),
+            palette.accent.withValues(alpha: 0.80),
+            palette.accentAlt.withValues(alpha: 0.55),
           ]
         : [
             palette.accent,
@@ -682,7 +682,7 @@ class _MasterControlCard extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: palette.accent.withOpacity(0.30),
+            color: palette.accent.withValues(alpha: 0.30),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -703,7 +703,7 @@ class _MasterControlCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
+                        color: Colors.white.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Icon(
@@ -733,7 +733,7 @@ class _MasterControlCard extends StatelessWidget {
                           Text(
                             modeDescription,
                             style: GoogleFonts.inter(
-                              color: Colors.white.withOpacity(0.80),
+                              color: Colors.white.withValues(alpha: 0.80),
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
                             ),
@@ -743,7 +743,7 @@ class _MasterControlCard extends StatelessWidget {
                             children: [
                               Icon(
                                 LucideIcons.music2,
-                                color: Colors.white.withOpacity(0.70),
+                                color: Colors.white.withValues(alpha: 0.70),
                                 size: 13,
                               ),
                               const SizedBox(width: 5),
@@ -753,7 +753,7 @@ class _MasterControlCard extends StatelessWidget {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: GoogleFonts.inter(
-                                    color: Colors.white.withOpacity(0.65),
+                                    color: Colors.white.withValues(alpha: 0.65),
                                     fontSize: 11,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -820,7 +820,7 @@ class _MasterControlCard extends StatelessWidget {
                     children: [
                       Icon(
                         Icons.info_outline_rounded,
-                        color: Colors.white.withOpacity(0.88),
+                        color: Colors.white.withValues(alpha: 0.88),
                         size: 14,
                       ),
                       const SizedBox(width: 6),
@@ -828,7 +828,7 @@ class _MasterControlCard extends StatelessWidget {
                         child: Text(
                           'Mood options below only open because you explicitly entered manual setup here.',
                           style: GoogleFonts.inter(
-                            color: Colors.white.withOpacity(0.90),
+                            color: Colors.white.withValues(alpha: 0.90),
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                           ),
@@ -876,7 +876,7 @@ class _MasterControlCard extends StatelessWidget {
                           isPendingTranscode
                               ? LucideIcons.loader
                               : LucideIcons.info,
-                          color: Colors.white.withOpacity(0.85),
+                          color: Colors.white.withValues(alpha: 0.85),
                           size: 14,
                         ),
                       const SizedBox(width: 8),
@@ -889,7 +889,7 @@ class _MasterControlCard extends StatelessWidget {
                                       ? 'Accepted (202). Stream starts when transcode is ready.'
                                       : '')),
                           style: GoogleFonts.inter(
-                            color: Colors.white.withOpacity(0.92),
+                            color: Colors.white.withValues(alpha: 0.92),
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                           ),
@@ -934,13 +934,13 @@ class _ModeActionButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           decoration: BoxDecoration(
             color: selected
-                ? Colors.white.withOpacity(0.22)
-                : Colors.white.withOpacity(0.10),
+                ? Colors.white.withValues(alpha: 0.22)
+                : Colors.white.withValues(alpha: 0.10),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: selected
-                  ? Colors.white.withOpacity(0.78)
-                  : Colors.white.withOpacity(0.24),
+                  ? Colors.white.withValues(alpha: 0.78)
+                  : Colors.white.withValues(alpha: 0.24),
             ),
           ),
           child: Row(
@@ -951,7 +951,7 @@ class _ModeActionButton extends StatelessWidget {
               Text(
                 label,
                 style: GoogleFonts.inter(
-                  color: Colors.white.withOpacity(enabled ? 0.96 : 0.55),
+                  color: Colors.white.withValues(alpha: enabled ? 0.96 : 0.55),
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
@@ -1052,7 +1052,7 @@ class _AiExplainabilityCard extends StatelessWidget {
         border: Border.all(color: palette.border),
         boxShadow: [
           BoxShadow(
-            color: palette.shadow.withOpacity(0.10),
+            color: palette.shadow.withValues(alpha: 0.10),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -1436,8 +1436,8 @@ class _PlaylistCard extends StatelessWidget {
                       colors: [
                         Colors.transparent,
                         Colors.transparent,
-                        Colors.black.withOpacity(0.45),
-                        Colors.black.withOpacity(0.82),
+                        Colors.black.withValues(alpha: 0.45),
+                        Colors.black.withValues(alpha: 0.82),
                       ],
                       stops: const [0.0, 0.30, 0.65, 1.0],
                     ),
@@ -1453,14 +1453,15 @@ class _PlaylistCard extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.50),
+                    color: Colors.black.withValues(alpha: 0.50),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.white.withOpacity(0.15)),
+                    border:
+                        Border.all(color: Colors.white.withValues(alpha: 0.15)),
                   ),
                   child: Text(
                     '${playlist.totalTracks} tracks',
                     style: GoogleFonts.inter(
-                      color: Colors.white.withOpacity(0.90),
+                      color: Colors.white.withValues(alpha: 0.90),
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
                     ),
@@ -1502,7 +1503,7 @@ class _PlaylistCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.inter(
-                          color: Colors.white.withOpacity(0.75),
+                          color: Colors.white.withValues(alpha: 0.75),
                           fontSize: 10,
                           fontWeight: FontWeight.w500,
                         ),
@@ -1526,7 +1527,7 @@ class _FallbackCover extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: palette.accent.withOpacity(0.20),
+      color: palette.accent.withValues(alpha: 0.20),
       child: Icon(LucideIcons.music4, color: palette.textMuted, size: 40),
     );
   }
@@ -1606,7 +1607,7 @@ class _Palette {
         isDark: true,
         bg: AppColors.backgroundDarkPrimary,
         card: AppColors.surfaceDark,
-        overlay: Colors.white.withOpacity(0.06),
+        overlay: Colors.white.withValues(alpha: 0.06),
         border: AppColors.borderDarkMedium,
         textPrimary: AppColors.textDarkPrimary,
         textMuted: AppColors.textDarkSecondary,

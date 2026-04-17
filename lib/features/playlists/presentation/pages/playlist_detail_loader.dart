@@ -37,8 +37,8 @@ class _PlaylistDetailLoaderState extends State<PlaylistDetailLoader> {
 
   Future<Either<Failure, ApiPlaylist>> _loadPlaylist() async {
     try {
-      final playlist =
-          await sl<PlaylistRemoteDataSource>().getPlaylistById(widget.playlistId);
+      final playlist = await sl<PlaylistRemoteDataSource>()
+          .getPlaylistById(widget.playlistId);
       return Right(playlist);
     } catch (error, stackTrace) {
       return Left(
@@ -84,7 +84,7 @@ class _PlaylistDetailLoaderState extends State<PlaylistDetailLoader> {
         child: Container(
           margin: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.35),
+            color: Colors.black.withValues(alpha: 0.35),
             borderRadius: BorderRadius.circular(12),
           ),
           child: const Icon(

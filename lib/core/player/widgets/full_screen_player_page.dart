@@ -145,9 +145,9 @@ class FullScreenPlayerPage extends StatelessWidget {
                             horizontal: 14, vertical: 7),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20),
-                          color: palette.accent.withOpacity(0.12),
+                          color: palette.accent.withValues(alpha: 0.12),
                           border: Border.all(
-                            color: palette.accent.withOpacity(0.4),
+                            color: palette.accent.withValues(alpha: 0.4),
                           ),
                         ),
                         child: Row(
@@ -244,9 +244,9 @@ class FullScreenPlayerPage extends StatelessWidget {
                               const RoundSliderOverlayShape(overlayRadius: 14),
                           activeTrackColor: palette.accent,
                           inactiveTrackColor:
-                              palette.textMuted.withOpacity(0.2),
+                              palette.textMuted.withValues(alpha: 0.2),
                           thumbColor: palette.accentAlt,
-                          overlayColor: palette.accent.withOpacity(0.2),
+                          overlayColor: palette.accent.withValues(alpha: 0.2),
                         ),
                         child: Slider(
                           value: state.progress,
@@ -415,7 +415,7 @@ class _FSPalette {
         isDark: true,
         bg: AppColors.backgroundDarkPrimary,
         card: AppColors.surfaceDark,
-        overlay: Colors.white.withOpacity(0.06),
+        overlay: Colors.white.withValues(alpha: 0.06),
         border: AppColors.borderDarkMedium,
         textPrimary: AppColors.textDarkPrimary,
         textMuted: AppColors.textDarkSecondary,

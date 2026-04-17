@@ -88,21 +88,17 @@ class PlaybackNotificationService {
   }) async {
     final handler = CamsAudioHandler();
     try {
-      // Check if AudioService is already running
-      final isRunning = AudioService.running;
-      if (!isRunning) {
-        await AudioService.init(
-          builder: () => handler,
-          config: const AudioServiceConfig(
-            androidNotificationChannelId: _channelId,
-            androidNotificationChannelName: _channelName,
-            androidNotificationChannelDescription: _channelDescription,
-            androidNotificationOngoing: true,
-            androidResumeOnClick: true,
-            preloadArtwork: false,
-          ),
-        );
-      }
+      await AudioService.init(
+        builder: () => handler,
+        config: const AudioServiceConfig(
+          androidNotificationChannelId: _channelId,
+          androidNotificationChannelName: _channelName,
+          androidNotificationChannelDescription: _channelDescription,
+          androidNotificationOngoing: true,
+          androidResumeOnClick: true,
+          preloadArtwork: false,
+        ),
+      );
     } catch (e) {
       // AudioService already initialized or errored, continue gracefully
       debugPrint(

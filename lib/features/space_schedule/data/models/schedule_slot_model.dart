@@ -10,14 +10,16 @@ class ScheduleSlotModel extends ScheduleSlot {
   });
 
   factory ScheduleSlotModel.fromJson(Map<String, dynamic> json) {
+    final rawMusicId = json['musicId'] ?? json['playlistId'];
     return ScheduleSlotModel(
-      id: json['id'] as String,
-      daysOfWeek: (json['daysOfWeek'] as List<dynamic>)
-          .map((day) => day as int)
+      id: json['id']?.toString() ?? '',
+      daysOfWeek: (json['daysOfWeek'] as List<dynamic>? ?? const [])
+          .map((day) => int.tryParse(day.toString()) ?? 0)
+          .where((day) => day >= 1 && day <= 7)
           .toList(),
-      startTime: json['startTime'] as String,
-      endTime: json['endTime'] as String,
-      musicId: json['musicId'] as String,
+      startTime: json['startTime']?.toString() ?? '00:00',
+      endTime: json['endTime']?.toString() ?? '00:00',
+      musicId: rawMusicId?.toString() ?? '',
     );
   }
 

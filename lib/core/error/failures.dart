@@ -32,14 +32,13 @@ abstract class Failure extends Equatable {
 
 class ServerFailure extends Failure {
   const ServerFailure([
-    String message = 'Something went wrong on our side. Please try again.',
+    super.message = 'Something went wrong on our side. Please try again.',
     FailureKind kind = FailureKind.server,
     String? backendCode,
     int? statusCode,
     String? debugMessage,
     bool isRetryable = true,
   ]) : super(
-          message,
           kind: kind,
           backendCode: backendCode,
           statusCode: statusCode,
@@ -50,14 +49,13 @@ class ServerFailure extends Failure {
 
 class NetworkFailure extends Failure {
   const NetworkFailure([
-    String message = 'Check your internet connection and try again.',
+    super.message = 'Check your internet connection and try again.',
     FailureKind kind = FailureKind.network,
     String? backendCode,
     int? statusCode,
     String? debugMessage,
     bool isRetryable = true,
   ]) : super(
-          message,
           kind: kind,
           backendCode: backendCode,
           statusCode: statusCode,
@@ -68,13 +66,12 @@ class NetworkFailure extends Failure {
 
 class CacheFailure extends Failure {
   const CacheFailure([
-    String message = 'Stored data is unavailable right now.',
+    super.message = 'Stored data is unavailable right now.',
     String? backendCode,
     int? statusCode,
     String? debugMessage,
     bool isRetryable = true,
   ]) : super(
-          message,
           kind: FailureKind.cache,
           backendCode: backendCode,
           statusCode: statusCode,
@@ -85,13 +82,12 @@ class CacheFailure extends Failure {
 
 class AuthenticationFailure extends Failure {
   const AuthenticationFailure([
-    String message = 'Your session has expired. Please sign in again.',
+    super.message = 'Your session has expired. Please sign in again.',
     String? backendCode,
     int? statusCode,
     String? debugMessage,
     bool isRetryable = false,
   ]) : super(
-          message,
           kind: FailureKind.authentication,
           backendCode: backendCode,
           statusCode: statusCode,
@@ -102,13 +98,12 @@ class AuthenticationFailure extends Failure {
 
 class ForbiddenFailure extends Failure {
   const ForbiddenFailure([
-    String message = 'You do not have permission to do that.',
+    super.message = 'You do not have permission to do that.',
     String? backendCode,
     int? statusCode,
     String? debugMessage,
     bool isRetryable = false,
   ]) : super(
-          message,
           kind: FailureKind.forbidden,
           backendCode: backendCode,
           statusCode: statusCode,
@@ -119,13 +114,12 @@ class ForbiddenFailure extends Failure {
 
 class MqttConnectionFailure extends Failure {
   const MqttConnectionFailure([
-    String message = 'Realtime connection is unavailable right now.',
+    super.message = 'Realtime connection is unavailable right now.',
     String? backendCode,
     int? statusCode,
     String? debugMessage,
     bool isRetryable = true,
   ]) : super(
-          message,
           kind: FailureKind.mqtt,
           backendCode: backendCode,
           statusCode: statusCode,
@@ -136,14 +130,13 @@ class MqttConnectionFailure extends Failure {
 
 class ValidationFailure extends Failure {
   const ValidationFailure([
-    String message = 'Please review the information and try again.',
+    super.message = 'Please review the information and try again.',
     FailureKind kind = FailureKind.validation,
     String? backendCode,
     int? statusCode,
     String? debugMessage,
     bool isRetryable = false,
   ]) : super(
-          message,
           kind: kind,
           backendCode: backendCode,
           statusCode: statusCode,
@@ -154,13 +147,12 @@ class ValidationFailure extends Failure {
 
 class NotFoundFailure extends Failure {
   const NotFoundFailure([
-    String message = 'We could not find what you were looking for.',
+    super.message = 'We could not find what you were looking for.',
     String? backendCode,
     int? statusCode,
     String? debugMessage,
     bool isRetryable = false,
   ]) : super(
-          message,
           kind: FailureKind.notFound,
           backendCode: backendCode,
           statusCode: statusCode,
@@ -171,14 +163,13 @@ class NotFoundFailure extends Failure {
 
 class ConflictFailure extends Failure {
   const ConflictFailure([
-    String message = 'This action conflicts with the current data.',
+    super.message = 'This action conflicts with the current data.',
     FailureKind kind = FailureKind.conflict,
     String? backendCode,
     int? statusCode,
     String? debugMessage,
     bool isRetryable = false,
   ]) : super(
-          message,
           kind: kind,
           backendCode: backendCode,
           statusCode: statusCode,
@@ -189,13 +180,12 @@ class ConflictFailure extends Failure {
 
 class RateLimitFailure extends Failure {
   const RateLimitFailure([
-    String message = 'Too many requests. Please wait a moment and try again.',
+    super.message = 'Too many requests. Please wait a moment and try again.',
     String? backendCode,
     int? statusCode,
     String? debugMessage,
     bool isRetryable = true,
   ]) : super(
-          message,
           kind: FailureKind.rateLimited,
           backendCode: backendCode,
           statusCode: statusCode,
@@ -206,13 +196,12 @@ class RateLimitFailure extends Failure {
 
 class PermissionFailure extends Failure {
   const PermissionFailure([
-    String message = 'Permission is required to continue.',
+    super.message = 'Permission is required to continue.',
     String? backendCode,
     int? statusCode,
     String? debugMessage,
     bool isRetryable = false,
   ]) : super(
-          message,
           kind: FailureKind.permission,
           backendCode: backendCode,
           statusCode: statusCode,
@@ -223,13 +212,12 @@ class PermissionFailure extends Failure {
 
 class CancelledFailure extends Failure {
   const CancelledFailure([
-    String message = 'This action was cancelled.',
+    super.message = 'This action was cancelled.',
     String? backendCode,
     int? statusCode,
     String? debugMessage,
     bool isRetryable = true,
   ]) : super(
-          message,
           kind: FailureKind.cancelled,
           backendCode: backendCode,
           statusCode: statusCode,
@@ -240,13 +228,12 @@ class CancelledFailure extends Failure {
 
 class UnexpectedFailure extends Failure {
   const UnexpectedFailure([
-    String message = 'Something unexpected happened. Please try again.',
+    super.message = 'Something unexpected happened. Please try again.',
     String? backendCode,
     int? statusCode,
     String? debugMessage,
     bool isRetryable = true,
   ]) : super(
-          message,
           kind: FailureKind.unexpected,
           backendCode: backendCode,
           statusCode: statusCode,

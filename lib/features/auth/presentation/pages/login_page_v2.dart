@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -13,6 +11,9 @@ import '../../../../core/widgets/cams_logo.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
+
+const _googleLogoUrl =
+    'https://developers.google.com/identity/images/g-logo.png';
 
 /// Enhanced login page aligned with the CAMS reference design.
 class LoginPageV2 extends StatefulWidget {
@@ -847,83 +848,24 @@ class _LoginBackdropPainter extends CustomPainter {
   }
 }
 
-/// Google "G" logo built with Flutter widgets (no asset needed).
+/// Google "G" logo served from Google Identity documentation assets.
 class _GoogleIcon extends StatelessWidget {
   const _GoogleIcon();
 
   @override
   Widget build(BuildContext context) {
-    return const SizedBox(
+    return SizedBox(
       width: 22,
       height: 22,
-      child: CustomPaint(
-        painter: _GoogleLogoPainter(),
+      child: Image.network(
+        _googleLogoUrl,
+        width: 22,
+        height: 22,
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.high,
+        semanticLabel: 'Google logo',
+        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
       ),
     );
   }
-}
-
-class _GoogleLogoPainter extends CustomPainter {
-  const _GoogleLogoPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final strokeWidth = size.width * 0.18;
-    final radius = (size.width - strokeWidth) / 2;
-    final rect = Rect.fromCircle(
-      center: Offset(size.width / 2, size.height / 2),
-      radius: radius,
-    );
-
-    Paint arcPaint(Color color) => Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawArc(
-      rect,
-      0.92 * math.pi,
-      0.92 * math.pi,
-      false,
-      arcPaint(const Color(0xFF4285F4)),
-    );
-    canvas.drawArc(
-      rect,
-      1.86 * math.pi,
-      0.42 * math.pi,
-      false,
-      arcPaint(const Color(0xFFEA4335)),
-    );
-    canvas.drawArc(
-      rect,
-      0.02 * math.pi,
-      0.34 * math.pi,
-      false,
-      arcPaint(const Color(0xFFFBBC05)),
-    );
-    canvas.drawArc(
-      rect,
-      0.38 * math.pi,
-      0.54 * math.pi,
-      false,
-      arcPaint(const Color(0xFF34A853)),
-    );
-
-    final barPaint = Paint()
-      ..color = const Color(0xFF4285F4)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
-
-    final centerY = size.height / 2;
-    canvas.drawLine(
-      Offset(size.width * 0.54, centerY),
-      Offset(size.width * 0.9, centerY),
-      barPaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

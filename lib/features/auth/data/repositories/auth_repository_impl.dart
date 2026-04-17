@@ -100,7 +100,21 @@ class AuthRepositoryImpl implements AuthRepository {
       final userJson = await localStorage.getUser();
       if (userJson != null) {
         final userModel = UserModel.fromJson(userJson);
-        return Right(userModel.toEntity());
+        final cachedUser = userModel.toEntity();
+        final shouldRefreshProfile = await networkInfo.isConnected &&
+            cachedUser.isStoreManager &&
+            cachedUser.storeIds.isEmpty;
+        if (!shouldRefreshProfile) {
+          return Right(cachedUser);
+        }
+
+        final profileResponse = await remoteDataSource.getProfile();
+        final refreshedUser = profileResponse.toUser();
+        await localStorage.saveUser(UserModel.fromEntity(refreshedUser).toJson());
+        await localStorage.saveActiveSessionMode(
+          LocalStorageService.sessionModeManager,
+        );
+        return Right(refreshedUser);
       }
 
       if (await networkInfo.isConnected) {

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -83,7 +83,7 @@ class _CreateRulePageState extends State<CreateRulePage> {
                       decoration: InputDecoration(
                         hintText: 'E.g.: Lunchtime crowd music',
                         hintStyle: GoogleFonts.inter(
-                          color: palette.textMuted.withOpacity(0.55),
+                          color: palette.textMuted.withValues(alpha: 0.55),
                           fontSize: 14,
                         ),
                         filled: true,
@@ -145,7 +145,7 @@ class _CreateRulePageState extends State<CreateRulePage> {
                       hint: Text(
                         'Select sensor type…',
                         style: GoogleFonts.inter(
-                          color: palette.textMuted.withOpacity(0.55),
+                          color: palette.textMuted.withValues(alpha: 0.55),
                           fontSize: 14,
                         ),
                       ),
@@ -293,7 +293,7 @@ class _CreateRulePageState extends State<CreateRulePage> {
                           _selectedPlaylist,
                           style: GoogleFonts.inter(
                             color: _selectedPlaylist == 'Not selected'
-                                ? palette.textMuted.withOpacity(0.55)
+                                ? palette.textMuted.withValues(alpha: 0.55)
                                 : palette.accent,
                             fontSize: 12,
                           ),
@@ -412,9 +412,10 @@ class _SliderInput extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
               decoration: BoxDecoration(
-                color: palette.accent.withOpacity(0.12),
+                color: palette.accent.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: palette.accent.withOpacity(0.3)),
+                border:
+                    Border.all(color: palette.accent.withValues(alpha: 0.3)),
               ),
               child: Text(
                 '${value.round()}$unit',
@@ -431,9 +432,9 @@ class _SliderInput extends StatelessWidget {
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
             activeTrackColor: palette.accent,
-            inactiveTrackColor: palette.textMuted.withOpacity(0.2),
+            inactiveTrackColor: palette.textMuted.withValues(alpha: 0.2),
             thumbColor: palette.accent,
-            overlayColor: palette.accent.withOpacity(0.15),
+            overlayColor: palette.accent.withValues(alpha: 0.15),
             trackHeight: 3,
           ),
           child: Slider(
@@ -534,7 +535,7 @@ class _BlockCard extends StatelessWidget {
         border: Border.all(color: palette.border),
         boxShadow: [
           BoxShadow(
-            color: palette.shadow.withOpacity(0.07),
+            color: palette.shadow.withValues(alpha: 0.07),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -563,7 +564,7 @@ class _BlockTitle extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: palette.accent.withOpacity(0.12),
+            color: palette.accent.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, color: palette.accent, size: 16),
@@ -605,7 +606,7 @@ class _Palette {
         isDark: true,
         bg: AppColors.backgroundDarkPrimary,
         card: AppColors.surfaceDark,
-        overlay: Colors.white.withOpacity(0.06),
+        overlay: Colors.white.withValues(alpha: 0.06),
         border: AppColors.borderDarkMedium,
         textPrimary: AppColors.textDarkPrimary,
         textMuted: AppColors.textDarkSecondary,

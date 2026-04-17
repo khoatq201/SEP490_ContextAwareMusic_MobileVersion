@@ -10,7 +10,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: SplashScreen(
-          onInitializationComplete: () {
+          onInitializationComplete: () async {
             initialized = true;
           },
         ),

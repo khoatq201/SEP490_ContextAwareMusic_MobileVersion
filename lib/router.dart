@@ -48,6 +48,7 @@ import 'features/hub_management/presentation/bloc/hub_provisioning_event.dart';
 import 'features/hub_management/presentation/pages/space_hub_page.dart';
 import 'features/context_rules/presentation/pages/context_rules_page.dart';
 import 'features/context_rules/presentation/pages/create_rule_page.dart';
+import 'features/auth/domain/entities/user.dart';
 import 'core/session/session_cubit.dart';
 import 'injection_container.dart';
 
@@ -79,13 +80,22 @@ class AppRouter {
 
   static GlobalKey<NavigatorState> get rootNavigatorKey => _rootNavigatorKey;
 
-  static String _managerLandingLocation(SessionCubit sessionCubit) {
+  static String _managerLandingLocation(
+    SessionCubit sessionCubit, {
+    User? user,
+  }) {
     final session = sessionCubit.state;
     if (session.currentSpace != null) {
       return '/home';
     }
     if (session.currentStore != null) {
       return '/store/${session.currentStore!.id}';
+    }
+    final assignedStoreId = user?.storeIds.isNotEmpty == true
+        ? user!.storeIds.first
+        : null;
+    if (assignedStoreId != null && assignedStoreId.isNotEmpty) {
+      return '/store/$assignedStoreId';
     }
     return '/store-selection';
   }
@@ -138,7 +148,7 @@ class AppRouter {
             location == '/login' ||
             location == '/forgot-password' ||
             location == '/pair-device') {
-          return _managerLandingLocation(sessionCubit);
+          return _managerLandingLocation(sessionCubit, user: user);
         }
 
         // Prevent StoreManager from staying on /store-selection.
@@ -148,7 +158,7 @@ class AppRouter {
         if (location == '/store-selection' &&
             user != null &&
             user.isStoreManager) {
-          final target = _managerLandingLocation(sessionCubit);
+          final target = _managerLandingLocation(sessionCubit, user: user);
           if (target != location) {
             return target;
           }

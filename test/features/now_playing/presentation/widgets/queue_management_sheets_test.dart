@@ -85,7 +85,7 @@ void main() {
   );
 
   testWidgets(
-    'override sheet only enables submit for the active source tab and hides inactive moods',
+    'override sheet allows optional source selection and hides inactive moods',
     (tester) async {
       sl.registerSingleton<GetTracks>(
         GetTracks(_FakeTrackRepository(_sampleTracks)),
@@ -136,7 +136,7 @@ void main() {
             find.widgetWithText(ElevatedButton, 'Apply override'),
           );
 
-      expect(button().onPressed, isNull);
+      expect(button().onPressed, isNotNull);
 
       await tester.tap(find.text('Track Alpha'));
       await tester.pumpAndSettle();
@@ -144,13 +144,14 @@ void main() {
 
       await tester.tap(find.text('Playlist'));
       await tester.pumpAndSettle();
-      expect(button().onPressed, isNull);
+      expect(button().onPressed, isNotNull);
 
       await tester.tap(find.text('Mood'));
       await tester.pumpAndSettle();
 
       expect(find.text('ARCHIVED'), findsNothing);
       expect(find.text('ENERGETIC'), findsOneWidget);
+      expect(button().onPressed, isNotNull);
 
       await tester.tap(find.text('ENERGETIC'));
       await tester.pumpAndSettle();

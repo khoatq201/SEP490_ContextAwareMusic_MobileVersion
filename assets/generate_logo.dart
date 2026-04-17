@@ -1,5 +1,7 @@
-import 'package:flutter/material.dart';
+import 'dart:io';
 import 'dart:ui' as ui;
+
+import 'package:flutter/material.dart';
 
 // Script to generate placeholder logo PNG
 // Run: dart run assets/generate_logo.dart
@@ -50,7 +52,12 @@ void main() async {
 
   final picture = recorder.endRecording();
   final img = await picture.toImage(512, 512);
-  final pngBytes = await img.toByteData(format: ui.ImageByteFormat.png);
+  final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
+  final pngBytes = byteData?.buffer.asUint8List();
+  if (pngBytes == null) {
+    throw StateError('Unable to encode generated logo as PNG.');
+  }
 
-  print('Logo generated! Save this as splash_logo.png');
+  await File('assets/splash_logo.png').writeAsBytes(pngBytes);
+  stdout.writeln('Logo generated: assets/splash_logo.png');
 }

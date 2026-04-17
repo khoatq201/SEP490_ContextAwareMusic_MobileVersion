@@ -19,6 +19,7 @@ abstract class CamsRepository {
     String? moodId,
     bool? isClearManagerSelectedQueues,
     bool? isCutOver,
+    int? manualOverrideTtlSeconds,
     String? reason,
     bool usePlaybackDeviceScope = false,
   });
@@ -44,6 +45,12 @@ abstract class CamsRepository {
     int? volumePercent,
     bool? isMuted,
     int? queueEndBehavior,
+    bool usePlaybackDeviceScope = false,
+  });
+
+  Future<Either<Failure, void>> updateSchedulingState({
+    required String spaceId,
+    required bool isScheduling,
     bool usePlaybackDeviceScope = false,
   });
 
@@ -121,6 +128,7 @@ class CamsRepositoryImpl implements CamsRepository {
     String? moodId,
     bool? isClearManagerSelectedQueues,
     bool? isCutOver,
+    int? manualOverrideTtlSeconds,
     String? reason,
     bool usePlaybackDeviceScope = false,
   }) async {
@@ -132,6 +140,7 @@ class CamsRepositoryImpl implements CamsRepository {
         moodId: moodId,
         isClearManagerSelectedQueues: isClearManagerSelectedQueues,
         isCutOver: isCutOver,
+        manualOverrideTtlSeconds: manualOverrideTtlSeconds,
         reason: reason,
         usePlaybackDeviceScope: usePlaybackDeviceScope,
       );
@@ -208,6 +217,26 @@ class CamsRepositoryImpl implements CamsRepository {
       return Left(ServerFailure(e.message));
     } catch (e) {
       return Left(ServerFailure('Failed to update audio state: $e'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> updateSchedulingState({
+    required String spaceId,
+    required bool isScheduling,
+    bool usePlaybackDeviceScope = false,
+  }) async {
+    try {
+      await remoteDataSource.updateSchedulingState(
+        spaceId: spaceId,
+        isScheduling: isScheduling,
+        usePlaybackDeviceScope: usePlaybackDeviceScope,
+      );
+      return const Right(null);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure('Failed to update scheduling state: $e'));
     }
   }
 

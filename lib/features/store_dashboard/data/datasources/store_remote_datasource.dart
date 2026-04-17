@@ -138,11 +138,18 @@ class StoreRemoteDataSourceImpl implements StoreRemoteDataSource {
 
       return Future.wait(
         summaries.map((summary) async {
-          final moodName = await _getMoodFromSpaceState(
+          final runtimeState = await _getRuntimeFromSpaceState(
             spaceId: summary.id,
             fallbackMood: summary.currentMood,
           );
-          return summary.copyWith(currentMood: moodName);
+          return summary.copyWith(
+            currentMood: runtimeState.moodName,
+            isManualOverride: runtimeState.isManualOverride,
+            isScheduling: runtimeState.isScheduling,
+            manualOverrideRemainingSeconds:
+                runtimeState.manualOverrideRemainingSeconds,
+            schedulingRemainingSeconds: runtimeState.schedulingRemainingSeconds,
+          );
         }),
       );
     } catch (e) {
@@ -243,7 +250,7 @@ class StoreRemoteDataSourceImpl implements StoreRemoteDataSource {
     }
   }
 
-  Future<String> _getMoodFromSpaceState({
+  Future<_SpaceRuntimeSummary> _getRuntimeFromSpaceState({
     required String spaceId,
     required String fallbackMood,
   }) async {
@@ -254,15 +261,23 @@ class StoreRemoteDataSourceImpl implements StoreRemoteDataSource {
         final payload = data['data'];
         if (payload is Map<String, dynamic>) {
           final moodName = payload['moodName']?.toString();
-          if (moodName != null && moodName.trim().isNotEmpty) {
-            return moodName;
-          }
+          return _SpaceRuntimeSummary(
+            moodName: moodName != null && moodName.trim().isNotEmpty
+                ? moodName
+                : fallbackMood,
+            isManualOverride: payload['isManualOverride'] == true,
+            isScheduling: payload['isScheduling'] == true,
+            manualOverrideRemainingSeconds:
+                (payload['manualOverrideRemainingSeconds'] as num?)?.toInt(),
+            schedulingRemainingSeconds:
+                (payload['schedulingRemainingSeconds'] as num?)?.toInt(),
+          );
         }
       }
     } catch (_) {
       // Keep per-space fallback without failing the full list.
     }
-    return fallbackMood;
+    return _SpaceRuntimeSummary(moodName: fallbackMood);
   }
 
   StoreMutationResult _parseMutationResult(dynamic data) {
@@ -311,4 +326,20 @@ class StoreRemoteDataSourceImpl implements StoreRemoteDataSource {
     }
     return 'Request failed.';
   }
+}
+
+class _SpaceRuntimeSummary {
+  const _SpaceRuntimeSummary({
+    required this.moodName,
+    this.isManualOverride = false,
+    this.isScheduling = false,
+    this.manualOverrideRemainingSeconds,
+    this.schedulingRemainingSeconds,
+  });
+
+  final String moodName;
+  final bool isManualOverride;
+  final bool isScheduling;
+  final int? manualOverrideRemainingSeconds;
+  final int? schedulingRemainingSeconds;
 }

@@ -56,6 +56,6 @@ class DevicePairingMockDataSource implements DevicePairingRemoteDataSource {
       );
     }
 
-    throw ServerException('Invalid pairing code');
+    throw const ServerException('Invalid pairing code');
   }
 }

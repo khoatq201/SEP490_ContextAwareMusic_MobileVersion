@@ -61,8 +61,8 @@ class _CategoryDetailView extends StatelessWidget {
             margin: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: isDark
-                  ? Colors.white.withOpacity(0.08)
-                  : Colors.black.withOpacity(0.06),
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : Colors.black.withValues(alpha: 0.06),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(

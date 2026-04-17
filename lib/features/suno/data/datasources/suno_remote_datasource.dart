@@ -265,7 +265,7 @@ class SunoRemoteDataSourceImpl implements SunoRemoteDataSource {
     if (data is Map) {
       return Map<String, dynamic>.from(data);
     }
-    throw ServerException('Invalid Suno API response.');
+    throw const ServerException('Invalid Suno API response.');
   }
 
   Map<String, dynamic> _requirePaginationMap(dynamic data) {
@@ -289,7 +289,7 @@ class SunoRemoteDataSourceImpl implements SunoRemoteDataSource {
       throw ServerException(_extractErrorMessage(payload));
     }
 
-    throw ServerException('Invalid Suno generation history response.');
+    throw const ServerException('Invalid Suno generation history response.');
   }
 
   String _extractDioErrorMessage(

@@ -39,7 +39,7 @@ void main() {
     });
 
     test('updatePlaylist maps ServerException to ServerFailure', () async {
-      remoteDataSource.updateError = ServerException('Playlist locked');
+      remoteDataSource.updateError = const ServerException('Playlist locked');
 
       final result = await repository.updatePlaylist(
         'playlist-2',

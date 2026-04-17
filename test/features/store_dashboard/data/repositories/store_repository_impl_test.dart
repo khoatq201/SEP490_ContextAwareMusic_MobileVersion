@@ -37,7 +37,7 @@ void main() {
     });
 
     test('updateStore maps ServerException to ServerFailure', () async {
-      remoteDataSource.updateStoreError = ServerException('Store locked');
+      remoteDataSource.updateStoreError = const ServerException('Store locked');
 
       final result = await repository.updateStore(
         'store-1',
@@ -54,7 +54,7 @@ void main() {
       );
     });
 
-    test('deleteStore maps unknown exception to ServerFailure', () async {
+    test('deleteStore maps unknown exception to UnexpectedFailure', () async {
       remoteDataSource.deleteStoreError = Exception('Delete failed');
 
       final result = await repository.deleteStore('store-2');
@@ -62,8 +62,8 @@ void main() {
       expect(result, isA<Left<Failure, StoreMutationResult>>());
       result.fold(
         (failure) {
-          expect(failure, isA<ServerFailure>());
-          expect(failure.message, contains('Failed to delete store:'));
+          expect(failure, isA<UnexpectedFailure>());
+          expect(failure.message, 'We could not delete this store right now.');
         },
         (_) => fail('Expected failure'),
       );

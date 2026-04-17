@@ -57,7 +57,7 @@ void main() {
 
     test('updateSpace maps ServerException to ServerFailure', () async {
       networkInfo.connected = true;
-      remoteDataSource.updateSpaceError = ServerException('Space locked');
+      remoteDataSource.updateSpaceError = const ServerException('Space locked');
 
       final result = await repository.updateSpace(
         'space-1',

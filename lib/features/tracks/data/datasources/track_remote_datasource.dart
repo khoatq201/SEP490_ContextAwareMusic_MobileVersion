@@ -466,7 +466,7 @@ class TrackRemoteDataSourceImpl implements TrackRemoteDataSource {
         filename: file.fileName,
       );
     }
-    throw ServerException('Invalid upload file payload.');
+    throw const ServerException('Invalid upload file payload.');
   }
 
   String _extractErrorMessage(Map<String, dynamic> payload) {

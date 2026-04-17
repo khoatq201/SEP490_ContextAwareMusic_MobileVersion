@@ -66,8 +66,8 @@ class SongOptionsBottomSheet extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? const Color(0xFF1C1C1E) : Colors.white;
     final cardColor = isDark
-        ? Colors.white.withOpacity(0.06)
-        : Colors.black.withOpacity(0.04);
+        ? Colors.white.withValues(alpha: 0.06)
+        : Colors.black.withValues(alpha: 0.04);
     final textPrimary = isDark ? Colors.white : Colors.black87;
     final textMuted = isDark ? Colors.white60 : Colors.black45;
     final dividerColor = isDark ? Colors.white12 : Colors.black12;
@@ -250,8 +250,8 @@ class _ArtFallback extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: isDark
-          ? Colors.white.withOpacity(0.07)
-          : Colors.black.withOpacity(0.06),
+          ? Colors.white.withValues(alpha: 0.07)
+          : Colors.black.withValues(alpha: 0.06),
       child: Icon(
         LucideIcons.music4,
         size: 22,

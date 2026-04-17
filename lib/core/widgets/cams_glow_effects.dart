@@ -65,7 +65,7 @@ class _CAMSGlowContainerState extends State<CAMSGlowContainer>
           borderRadius: widget.borderRadius,
           boxShadow: [
             BoxShadow(
-              color: widget.glowColor.withOpacity(0.5),
+              color: widget.glowColor.withValues(alpha: 0.5),
               blurRadius: widget.glowRadius,
               spreadRadius: widget.glowSpread,
             ),
@@ -84,7 +84,7 @@ class _CAMSGlowContainerState extends State<CAMSGlowContainer>
             borderRadius: widget.borderRadius,
             boxShadow: [
               BoxShadow(
-                color: widget.glowColor.withOpacity(_glowAnimation.value),
+                color: widget.glowColor.withValues(alpha: _glowAnimation.value),
                 blurRadius: widget.glowRadius,
                 spreadRadius: widget.glowSpread,
               ),
@@ -207,7 +207,7 @@ class _CAMSShimmerState extends State<CAMSShimmer>
               end: Alignment.bottomRight,
               colors: [
                 widget.baseColor,
-                widget.highlightColor.withOpacity(0.3),
+                widget.highlightColor.withValues(alpha: 0.3),
                 widget.baseColor,
               ],
               stops: [
@@ -254,7 +254,7 @@ class CAMSNeonBorder extends StatelessWidget {
         boxShadow: glow
             ? [
                 BoxShadow(
-                  color: borderColor.withOpacity(0.5),
+                  color: borderColor.withValues(alpha: 0.5),
                   blurRadius: 10,
                   spreadRadius: 1,
                 ),

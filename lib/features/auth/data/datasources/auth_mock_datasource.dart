@@ -63,7 +63,7 @@ class AuthMockDataSource implements AuthRemoteDataSource {
       );
     }
 
-    throw ServerException('Invalid email or password');
+    throw const ServerException('Invalid email or password');
   }
 
   @override
@@ -99,7 +99,7 @@ class AuthMockDataSource implements AuthRemoteDataSource {
   }) async {
     await Future.delayed(const Duration(milliseconds: 500));
     if (newPassword != confirmPassword) {
-      throw ServerException('New password and confirm password do not match');
+      throw const ServerException('New password and confirm password do not match');
     }
     // Mock: always succeeds
   }

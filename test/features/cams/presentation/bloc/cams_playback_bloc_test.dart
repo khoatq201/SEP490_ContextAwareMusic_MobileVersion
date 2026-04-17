@@ -27,6 +27,7 @@ import 'package:cams_store_manager/features/cams/domain/usecases/override_space.
 import 'package:cams_store_manager/features/cams/domain/usecases/queue_usecases.dart';
 import 'package:cams_store_manager/features/cams/domain/usecases/send_playback_command.dart';
 import 'package:cams_store_manager/features/cams/domain/usecases/update_audio_state.dart';
+import 'package:cams_store_manager/features/cams/domain/usecases/update_scheduling_state.dart';
 import 'package:cams_store_manager/features/cams/presentation/bloc/cams_playback_bloc.dart';
 import 'package:cams_store_manager/features/cams/presentation/bloc/cams_playback_event.dart';
 import 'package:cams_store_manager/features/cams/presentation/bloc/cams_playback_state.dart';
@@ -72,6 +73,7 @@ void main() {
         getSpaceQueue: GetSpaceQueue(repository),
         sendPlaybackCommand: SendPlaybackCommand(repository),
         updateAudioState: UpdateAudioState(repository),
+        updateSchedulingState: UpdateSchedulingState(repository),
         storeHubService: storeHubService,
       );
 
@@ -327,7 +329,7 @@ void main() {
       expect(repository.lastOverrideRequest, isNull);
       expect(
         bloc.state.errorMessage,
-        'Select exactly one override source before applying.',
+        'Select at most one override source before applying.',
       );
     });
 
@@ -1026,6 +1028,7 @@ class _FakeCamsRepository implements CamsRepository {
     String? moodId,
     bool? isClearManagerSelectedQueues,
     bool? isCutOver,
+    int? manualOverrideTtlSeconds,
     String? reason,
     bool usePlaybackDeviceScope = false,
   }) async {
@@ -1036,6 +1039,7 @@ class _FakeCamsRepository implements CamsRepository {
       moodId: moodId,
       isClearManagerSelectedQueues: isClearManagerSelectedQueues,
       isCutOver: isCutOver,
+      manualOverrideTtlSeconds: manualOverrideTtlSeconds,
       reason: reason,
       usePlaybackDeviceScope: usePlaybackDeviceScope,
     );
@@ -1136,6 +1140,19 @@ class _FakeCamsRepository implements CamsRepository {
           spaceQueueItems: state.spaceQueueItems,
         ),
       ),
+    );
+    return const Right(null);
+  }
+
+  @override
+  Future<Either<Failure, void>> updateSchedulingState({
+    required String spaceId,
+    required bool isScheduling,
+    bool usePlaybackDeviceScope = false,
+  }) async {
+    getSpaceStateResult = getSpaceStateResult.fold(
+      Left.new,
+      (state) => Right(state.copyWith(isScheduling: isScheduling)),
     );
     return const Right(null);
   }
@@ -1266,6 +1283,7 @@ class _OverrideRequest {
   final String? moodId;
   final bool? isClearManagerSelectedQueues;
   final bool? isCutOver;
+  final int? manualOverrideTtlSeconds;
   final String? reason;
   final bool usePlaybackDeviceScope;
 
@@ -1276,6 +1294,7 @@ class _OverrideRequest {
     required this.moodId,
     required this.isClearManagerSelectedQueues,
     required this.isCutOver,
+    required this.manualOverrideTtlSeconds,
     required this.reason,
     required this.usePlaybackDeviceScope,
   });

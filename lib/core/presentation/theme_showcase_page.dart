@@ -259,24 +259,6 @@ class CAMSThemeShowcase extends StatelessWidget {
     );
   }
 
-  Widget _buildGradientBox(String label, Gradient gradient) {
-    return Container(
-      height: 80,
-      decoration: BoxDecoration(
-        gradient: gradient,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        label,
-        style: AppTypography.titleMedium.copyWith(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
-
   Widget _buildStatusChip(String label, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -284,7 +266,7 @@ class CAMSThemeShowcase extends StatelessWidget {
         vertical: AppDimensions.spacing8,
       ),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
         border: Border.all(color: color, width: 2),
       ),

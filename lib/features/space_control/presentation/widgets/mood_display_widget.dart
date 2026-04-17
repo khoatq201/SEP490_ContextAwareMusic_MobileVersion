@@ -57,8 +57,8 @@ class MoodDisplayWidget extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           color: isDark
-              ? _getMoodColor(mood).withOpacity(0.1)
-              : _getMoodColor(mood).withOpacity(0.05),
+              ? _getMoodColor(mood).withValues(alpha: 0.1)
+              : _getMoodColor(mood).withValues(alpha: 0.05),
         ),
         child: Column(
           children: [

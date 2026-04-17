@@ -47,6 +47,19 @@ class SaveSpaceSchedule {
   }
 }
 
+class ToggleSpaceSchedule {
+  final SpaceScheduleRepository repository;
+
+  ToggleSpaceSchedule(this.repository);
+
+  Future<Either<Failure, SpaceSchedule>> call({
+    required String spaceId,
+    required bool enabled,
+  }) {
+    return repository.toggleSchedule(spaceId: spaceId, enabled: enabled);
+  }
+}
+
 class SaveScheduleToLibrary {
   final SpaceScheduleRepository repository;
 

@@ -31,11 +31,9 @@ class AppTheme {
         onError: Colors.white,
         errorContainer: AppColors.errorPale,
         onErrorContainer: AppColors.errorDark,
-        background: AppColors.backgroundPrimary,
-        onBackground: AppColors.textPrimary,
         surface: AppColors.surface,
         onSurface: AppColors.textPrimary,
-        surfaceVariant: AppColors.backgroundSecondary,
+        surfaceContainerHighest: AppColors.backgroundSecondary,
         onSurfaceVariant: AppColors.textSecondary,
         outline: AppColors.borderLight,
         shadow: AppColors.shadow,
@@ -93,7 +91,7 @@ class AppTheme {
           backgroundColor: AppColors.primaryOrange,
           foregroundColor: Colors.white,
           elevation: 0,
-          shadowColor: AppColors.primaryOrange.withOpacity(0.18),
+          shadowColor: AppColors.primaryOrange.withValues(alpha: 0.18),
           padding: const EdgeInsets.symmetric(
             horizontal: AppDimensions.buttonPaddingHorizontalMd,
             vertical: AppDimensions.buttonPaddingVerticalMd,
@@ -257,6 +255,24 @@ class AppTheme {
       ),
 
       // ========================================
+      // Snack Bar Theme
+      // ========================================
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.secondaryTealDark,
+        contentTextStyle: AppTypography.bodyMedium.copyWith(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+        ),
+        actionTextColor: Colors.white,
+        disabledActionTextColor: Colors.white70,
+        elevation: AppDimensions.elevationLg,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
+        ),
+      ),
+
+      // ========================================
       // Bottom Navigation Bar Theme
       // ========================================
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
@@ -276,7 +292,7 @@ class AppTheme {
       // ========================================
       // Divider Theme
       // ========================================
-      dividerTheme: DividerThemeData(
+      dividerTheme: const DividerThemeData(
         color: AppColors.divider,
         thickness: AppDimensions.dividerThickness,
         indent: AppDimensions.dividerIndent,
@@ -363,11 +379,9 @@ class AppTheme {
         onError: AppColors.textDarkPrimary,
         errorContainer: AppColors.errorPale,
         onErrorContainer: AppColors.errorNeon,
-        background: AppColors.backgroundDarkPrimary,
-        onBackground: AppColors.textDarkPrimary,
         surface: AppColors.surfaceDark,
         onSurface: AppColors.textDarkPrimary,
-        surfaceVariant: AppColors.surfaceDarkElevated,
+        surfaceContainerHighest: AppColors.surfaceDarkElevated,
         onSurfaceVariant: AppColors.textDarkSecondary,
         outline: AppColors.borderDarkLight,
         shadow: AppColors.shadowDark,
@@ -412,7 +426,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
         ),
         color: AppColors.surfaceDark,
-        shadowColor: AppColors.primaryCyan.withOpacity(0.1),
+        shadowColor: AppColors.primaryCyan.withValues(alpha: 0.1),
         margin: const EdgeInsets.all(AppDimensions.spacingMd),
       ),
 
@@ -424,7 +438,7 @@ class AppTheme {
           backgroundColor: AppColors.primaryCyan,
           foregroundColor: AppColors.backgroundDarkPrimary,
           elevation: AppDimensions.elevationSm,
-          shadowColor: AppColors.primaryCyan.withOpacity(0.5),
+          shadowColor: AppColors.primaryCyan.withValues(alpha: 0.5),
           padding: const EdgeInsets.symmetric(
             horizontal: AppDimensions.buttonPaddingHorizontalMd,
             vertical: AppDimensions.buttonPaddingVerticalMd,
@@ -541,7 +555,7 @@ class AppTheme {
       dialogTheme: DialogThemeData(
         backgroundColor: AppColors.surfaceDark,
         elevation: AppDimensions.elevationXl,
-        shadowColor: AppColors.primaryCyan.withOpacity(0.2),
+        shadowColor: AppColors.primaryCyan.withValues(alpha: 0.2),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusDialog),
         ),
@@ -550,6 +564,28 @@ class AppTheme {
         ),
         contentTextStyle: AppTypography.bodyMedium.copyWith(
           color: AppColors.textDarkSecondary,
+        ),
+      ),
+
+      // ========================================
+      // Snack Bar Theme
+      // ========================================
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.surfaceDarkElevated,
+        contentTextStyle: AppTypography.bodyMedium.copyWith(
+          color: AppColors.textDarkPrimary,
+          fontWeight: FontWeight.w600,
+        ),
+        actionTextColor: AppColors.primaryCyan,
+        disabledActionTextColor: AppColors.textDarkTertiary,
+        elevation: AppDimensions.elevationLg,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
+          side: const BorderSide(
+            color: AppColors.borderDarkLight,
+            width: AppDimensions.borderWidthNormal,
+          ),
         ),
       ),
 
@@ -596,7 +632,7 @@ class AppTheme {
       // ========================================
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.surfaceDarkElevated,
-        selectedColor: AppColors.primaryCyan.withOpacity(0.2),
+        selectedColor: AppColors.primaryCyan.withValues(alpha: 0.2),
         disabledColor: AppColors.borderDarkLight,
         padding: const EdgeInsets.symmetric(
           horizontal: AppDimensions.spacingMd,

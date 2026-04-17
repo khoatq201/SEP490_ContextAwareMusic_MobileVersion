@@ -93,7 +93,7 @@ class _ArtistBody extends StatelessWidget {
             child: Container(
               margin: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.35),
+                color: Colors.black.withValues(alpha: 0.35),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(LucideIcons.chevronLeft,
@@ -113,7 +113,9 @@ class _ArtistBody extends StatelessWidget {
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 shadows: [
-                  Shadow(color: Colors.black.withOpacity(0.6), blurRadius: 6),
+                  Shadow(
+                      color: Colors.black.withValues(alpha: 0.6),
+                      blurRadius: 6),
                 ],
               ),
             ),
@@ -147,7 +149,8 @@ class _ArtistBody extends StatelessWidget {
                 ],
 
                 const SizedBox(height: 4),
-                Divider(color: palette.border.withOpacity(0.6), height: 28),
+                Divider(
+                    color: palette.border.withValues(alpha: 0.6), height: 28),
               ],
             ),
           ),
@@ -348,7 +351,7 @@ class _ArtistCoverBackground extends StatelessWidget {
               end: Alignment.bottomCenter,
               colors: [
                 Colors.transparent,
-                palette.bg.withOpacity(0.8),
+                palette.bg.withValues(alpha: 0.8),
               ],
             ),
           ),
@@ -404,7 +407,7 @@ class _Palette {
   factory _Palette.fromBrightness(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
     if (isDark) {
-      return _Palette(
+      return const _Palette(
         isDark: true,
         bg: AppColors.backgroundDarkPrimary,
         card: AppColors.surfaceDark,

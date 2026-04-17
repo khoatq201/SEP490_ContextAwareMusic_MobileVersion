@@ -250,24 +250,24 @@ class _RuleTile extends StatelessWidget {
     final isEnabled = rule.isEnabled;
     final isTriggered = rule.isTriggered;
     final accentColor =
-        isEnabled ? palette.accent : palette.textMuted.withOpacity(0.5);
+        isEnabled ? palette.accent : palette.textMuted.withValues(alpha: 0.5);
 
     // Border: green glow when triggered, accent-tinted when enabled, muted when off
     final borderColor = isTriggered
         ? Colors.green
         : isEnabled
-            ? palette.accent.withOpacity(0.35)
+            ? palette.accent.withValues(alpha: 0.35)
             : palette.border;
 
     final boxShadows = <BoxShadow>[
       if (isTriggered)
         BoxShadow(
-          color: Colors.green.withOpacity(0.28),
+          color: Colors.green.withValues(alpha: 0.28),
           blurRadius: 14,
           spreadRadius: 2,
         ),
       BoxShadow(
-        color: Colors.black.withOpacity(isDark ? 0.25 : 0.06),
+        color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.06),
         blurRadius: 12,
         offset: const Offset(0, 4),
       ),
@@ -303,7 +303,7 @@ class _RuleTile extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: Icon(
                       Icons.drag_handle_rounded,
-                      color: palette.textMuted.withOpacity(0.45),
+                      color: palette.textMuted.withValues(alpha: 0.45),
                       size: 22,
                     ),
                   ),
@@ -402,7 +402,7 @@ class _RuleTile extends StatelessWidget {
                             child: Icon(
                               Icons.edit_outlined,
                               size: 17,
-                              color: palette.textMuted.withOpacity(0.6),
+                              color: palette.textMuted.withValues(alpha: 0.6),
                             ),
                           ),
                         ),
@@ -415,7 +415,8 @@ class _RuleTile extends StatelessWidget {
                             child: Icon(
                               LucideIcons.trash2,
                               size: 16,
-                              color: Colors.red.shade300.withOpacity(0.85),
+                              color:
+                                  Colors.red.shade300.withValues(alpha: 0.85),
                             ),
                           ),
                         ),
@@ -444,9 +445,9 @@ class _ConditionPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Text(
         label,
@@ -474,7 +475,7 @@ class _EmptyState extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(LucideIcons.fileQuestion,
-              size: 64, color: palette.textMuted.withOpacity(0.4)),
+              size: 64, color: palette.textMuted.withValues(alpha: 0.4)),
           const SizedBox(height: 16),
           Text(
             'No rules yet',
@@ -523,7 +524,7 @@ class _Palette {
         isDark: true,
         bg: AppColors.backgroundDarkPrimary,
         card: AppColors.surfaceDark,
-        overlay: Colors.white.withOpacity(0.06),
+        overlay: Colors.white.withValues(alpha: 0.06),
         border: AppColors.borderDarkMedium,
         textPrimary: AppColors.textDarkPrimary,
         textMuted: AppColors.textDarkSecondary,

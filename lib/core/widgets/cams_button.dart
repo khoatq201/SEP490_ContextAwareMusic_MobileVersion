@@ -112,10 +112,11 @@ class CAMSButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppDimensions.radiusButton),
       ),
       elevation: 0,
-      shadowColor: (customColor ?? AppColors.primaryOrange).withOpacity(0.18),
+      shadowColor:
+          (customColor ?? AppColors.primaryOrange).withValues(alpha: 0.18),
     ).copyWith(
       overlayColor: WidgetStateProperty.all(
-        Colors.white.withOpacity(0.1),
+        Colors.white.withValues(alpha: 0.1),
       ),
     );
   }
@@ -132,7 +133,7 @@ class CAMSButton extends StatelessWidget {
       elevation: 0,
     ).copyWith(
       overlayColor: WidgetStateProperty.all(
-        AppColors.primaryOrange.withOpacity(0.1),
+        AppColors.primaryOrange.withValues(alpha: 0.1),
       ),
     );
   }
@@ -147,10 +148,11 @@ class CAMSButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppDimensions.radiusButton),
       ),
       elevation: 0,
-      shadowColor: (customColor ?? AppColors.secondaryTeal).withOpacity(0.18),
+      shadowColor:
+          (customColor ?? AppColors.secondaryTeal).withValues(alpha: 0.18),
     ).copyWith(
       overlayColor: WidgetStateProperty.all(
-        Colors.white.withOpacity(0.1),
+        Colors.white.withValues(alpha: 0.1),
       ),
     );
   }
@@ -169,7 +171,7 @@ class CAMSButton extends StatelessWidget {
       ),
     ).copyWith(
       overlayColor: WidgetStateProperty.all(
-        (customColor ?? AppColors.primaryOrange).withOpacity(0.1),
+        (customColor ?? AppColors.primaryOrange).withValues(alpha: 0.1),
       ),
     );
   }
@@ -184,7 +186,7 @@ class CAMSButton extends StatelessWidget {
       ),
     ).copyWith(
       overlayColor: WidgetStateProperty.all(
-        (customColor ?? AppColors.primaryOrange).withOpacity(0.1),
+        (customColor ?? AppColors.primaryOrange).withValues(alpha: 0.1),
       ),
     );
   }
@@ -195,21 +197,21 @@ class CAMSButton extends StatelessWidget {
 
   ButtonStyle _ghostStyle() {
     return ElevatedButton.styleFrom(
-      backgroundColor: Colors.white.withOpacity(0.1),
+      backgroundColor: Colors.white.withValues(alpha: 0.1),
       foregroundColor: Colors.white,
       padding: _getPadding(),
       minimumSize: Size(0, _getHeight()),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppDimensions.radiusButton),
         side: BorderSide(
-          color: Colors.white.withOpacity(0.3),
+          color: Colors.white.withValues(alpha: 0.3),
           width: AppDimensions.borderWidthNormal,
         ),
       ),
       elevation: 0,
     ).copyWith(
       overlayColor: WidgetStateProperty.all(
-        Colors.white.withOpacity(0.1),
+        Colors.white.withValues(alpha: 0.1),
       ),
     );
   }
@@ -319,7 +321,7 @@ class CAMSIconButton extends StatelessWidget {
             ? [
                 BoxShadow(
                   color: (backgroundColor ?? AppColors.primaryOrange)
-                      .withOpacity(0.15),
+                      .withValues(alpha: 0.15),
                   blurRadius: 8,
                   offset: const Offset(0, 4),
                 ),
@@ -334,8 +336,8 @@ class CAMSIconButton extends StatelessWidget {
             onPressed?.call();
           },
           borderRadius: BorderRadius.circular(buttonSize / 2),
-          splashColor: Colors.white.withOpacity(0.2),
-          highlightColor: Colors.white.withOpacity(0.1),
+          splashColor: Colors.white.withValues(alpha: 0.2),
+          highlightColor: Colors.white.withValues(alpha: 0.1),
           child: Center(
             child: Icon(
               icon,

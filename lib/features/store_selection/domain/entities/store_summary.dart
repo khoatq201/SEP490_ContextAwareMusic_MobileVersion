@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import '../../../../core/enums/entity_status_enum.dart';
+import '../../../config_governance/domain/entities/config_governance_enums.dart';
 
 /// Represents a store item from the paginated store list (StoreListItem).
 class StoreSummary extends Equatable {
@@ -11,6 +12,7 @@ class StoreSummary extends Equatable {
   final String? city;
   final String? district;
   final EntityStatusEnum status;
+  final StoreGovernanceMode? governanceMode;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -23,6 +25,7 @@ class StoreSummary extends Equatable {
     this.city,
     this.district,
     this.status = EntityStatusEnum.active,
+    this.governanceMode,
     this.createdAt,
     this.updatedAt,
   });
@@ -44,6 +47,7 @@ class StoreSummary extends Equatable {
         city,
         district,
         status,
+        governanceMode,
         createdAt,
         updatedAt,
       ];

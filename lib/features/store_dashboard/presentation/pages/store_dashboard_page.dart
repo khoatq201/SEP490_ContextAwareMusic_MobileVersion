@@ -20,6 +20,10 @@ import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../../core/session/session_cubit.dart';
+import '../../../config_governance/domain/entities/config_governance_enums.dart';
+import '../../../config_governance/domain/entities/config_value_upsert_request.dart';
+import '../../../config_governance/domain/usecases/config_governance_usecases.dart';
+import '../../../config_governance/presentation/widgets/config_governance_sheet.dart';
 import '../../../space_control/domain/entities/space.dart';
 import '../../../space_control/presentation/bloc/music_control_bloc.dart';
 import '../../../space_control/presentation/bloc/music_control_event.dart';
@@ -36,6 +40,15 @@ import '../bloc/store_dashboard_event.dart';
 import '../bloc/store_dashboard_state.dart';
 import '../widgets/store_info_card.dart';
 import '../widgets/space_grid_card.dart';
+
+enum _StoreDashboardToolAction {
+  refresh,
+  storeGovernance,
+  governanceMode,
+  publishConfigVersion,
+  rollbackConfigVersion,
+  musicPolicy,
+}
 
 class StoreDashboardPage extends StatelessWidget {
   final String storeId;
@@ -115,8 +128,9 @@ class StoreDashboardPage extends StatelessWidget {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
-                                color:
-                                    AppColors.primaryOrange.withOpacity(0.15),
+                                color: AppColors.primaryOrange.withValues(
+                                  alpha: 0.15,
+                                ),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Text(
@@ -142,7 +156,7 @@ class StoreDashboardPage extends StatelessWidget {
                   leading: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.12),
+                      color: Colors.blue.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(Icons.store_outlined,
@@ -176,7 +190,7 @@ class StoreDashboardPage extends StatelessWidget {
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.error.withOpacity(0.12),
+                    color: AppColors.error.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(Icons.logout_outlined,
@@ -216,13 +230,13 @@ class StoreDashboardPage extends StatelessWidget {
       return CircleAvatar(
         radius: size / 2,
         backgroundImage: NetworkImage(avatarUrl),
-        backgroundColor: AppColors.primaryOrange.withOpacity(0.2),
+        backgroundColor: AppColors.primaryOrange.withValues(alpha: 0.2),
       );
     }
     final initials = _getInitials(username);
     return CircleAvatar(
       radius: size / 2,
-      backgroundColor: AppColors.primaryOrange.withOpacity(0.85),
+      backgroundColor: AppColors.primaryOrange.withValues(alpha: 0.85),
       child: Text(
         initials,
         style: TextStyle(
@@ -268,6 +282,21 @@ class StoreDashboardPage extends StatelessWidget {
         title: title,
       ),
     );
+  }
+
+  void _unfocusAndPop<T>(BuildContext context, [T? result]) {
+    FocusManager.instance.primaryFocus?.unfocus();
+    Navigator.of(context).pop<T>(result);
+  }
+
+  Future<void> _waitForRouteTeardown() async {
+    await WidgetsBinding.instance.endOfFrame;
+  }
+
+  bool _isValidGuid(String value) {
+    return RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+    ).hasMatch(value.trim());
   }
 
   Future<void> _showEditStoreDialog(
@@ -503,6 +532,487 @@ class StoreDashboardPage extends StatelessWidget {
     );
   }
 
+  Future<void> _showStoreConfigGovernanceSheet(
+    BuildContext context,
+    Store store,
+  ) {
+    final sessionRole = context.read<SessionCubit>().state.currentRole;
+    final scopedStoreId =
+        sessionRole == UserRole.storeManager ? null : store.id;
+
+    return showModalBottomSheet<void>(
+      context: context,
+      useRootNavigator: true,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => ConfigGovernanceSheet.store(
+        storeId: scopedStoreId,
+        targetName: store.name,
+      ),
+    );
+  }
+
+  Future<StoreGovernanceMode?> _loadCurrentGovernanceMode(
+    BuildContext context,
+    Store store,
+  ) async {
+    final result =
+        await context.read<StoreDashboardBloc>().getStoreDetails(store.id);
+    if (!context.mounted) return null;
+
+    return result.fold(
+      (failure) {
+        if (store.governanceMode != null) {
+          return store.governanceMode;
+        }
+
+        _showStoreFailure(
+          context,
+          failure,
+          title: 'Governance mode unavailable',
+        );
+        return null;
+      },
+      (freshStore) => freshStore.governanceMode ?? StoreGovernanceMode.freedom,
+    );
+  }
+
+  Future<void> _showGovernanceModeDialog(
+    BuildContext context,
+    Store store,
+  ) async {
+    final currentMode = await _loadCurrentGovernanceMode(context, store);
+    if (currentMode == null || !context.mounted) return;
+
+    var selectedMode = currentMode;
+    final selectedResult = await showDialog<StoreGovernanceMode>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Store governance mode'),
+          content: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: RadioGroup<StoreGovernanceMode>(
+              groupValue: selectedMode,
+              onChanged: (value) {
+                if (value == null) return;
+                setState(() => selectedMode = value);
+              },
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: StoreGovernanceMode.values
+                    .map(
+                      (mode) => RadioListTile<StoreGovernanceMode>(
+                        value: mode,
+                        title: Text(mode.label),
+                        subtitle: Text(mode.description),
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    )
+                    .toList(growable: false),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => _unfocusAndPop<StoreGovernanceMode>(
+                dialogContext,
+              ),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => _unfocusAndPop<StoreGovernanceMode>(
+                dialogContext,
+                selectedMode,
+              ),
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+    await _waitForRouteTeardown();
+    if (selectedResult == null || !context.mounted) return;
+
+    final result = await sl<SetStoreGovernanceMode>()(
+      request: SetStoreGovernanceModeRequest(
+        storeIds: [store.id],
+        mode: selectedResult,
+      ),
+    );
+    if (!context.mounted) return;
+
+    result.fold(
+      (failure) => _showStoreFailure(
+        context,
+        failure,
+        title: 'Governance mode failed',
+      ),
+      (message) {
+        context.read<StoreDashboardBloc>().add(
+              RefreshStoreDashboard(storeId: store.id),
+            );
+        _showStoreSnackBar(
+          context,
+          message.isNotEmpty ? message : 'Store governance mode updated.',
+        );
+      },
+    );
+  }
+
+  Future<void> _showPublishConfigVersionDialog(
+    BuildContext context,
+    Store store,
+  ) async {
+    final noteController = TextEditingController();
+    final request = await showDialog<PublishConfigVersionRequest>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Publish store config snapshot'),
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: TextField(
+            controller: noteController,
+            maxLines: 3,
+            decoration: const InputDecoration(
+              labelText: 'Note (optional)',
+              hintText: 'Why this store config snapshot is being published',
+              border: OutlineInputBorder(),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => _unfocusAndPop<PublishConfigVersionRequest>(
+              dialogContext,
+            ),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final note = noteController.text.trim();
+              _unfocusAndPop<PublishConfigVersionRequest>(
+                dialogContext,
+                PublishConfigVersionRequest(
+                  scopeType: ConfigScopeType.store,
+                  scopeId: store.id,
+                  note: note.isEmpty ? null : note,
+                ),
+              );
+            },
+            child: const Text('Publish'),
+          ),
+        ],
+      ),
+    );
+    await _waitForRouteTeardown();
+    noteController.dispose();
+    if (request == null || !context.mounted) return;
+
+    final result = await sl<PublishConfigVersion>()(
+      request: request,
+    );
+    if (!context.mounted) return;
+
+    result.fold(
+      (failure) => _showStoreFailure(
+        context,
+        failure,
+        title: 'Publish config failed',
+      ),
+      (message) => _showStoreSnackBar(
+        context,
+        message.isNotEmpty ? message : 'Store config version published.',
+      ),
+    );
+  }
+
+  Future<void> _showRollbackConfigVersionDialog(
+    BuildContext context,
+    Store store,
+  ) async {
+    final versionController = TextEditingController();
+    final noteController = TextEditingController();
+    String? versionError;
+    final request = await showDialog<RollbackConfigVersionRequest>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Rollback store config'),
+          content: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: versionController,
+                  autofocus: true,
+                  onChanged: (_) {
+                    if (versionError != null) {
+                      setState(() => versionError = null);
+                    }
+                  },
+                  decoration: InputDecoration(
+                    labelText: 'Version ID',
+                    hintText: '00000000-0000-0000-0000-000000000000',
+                    helperText: 'Paste the UUID returned by publish snapshot.',
+                    errorText: versionError,
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: noteController,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    labelText: 'Note (optional)',
+                    hintText: 'Why this rollback is needed',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => _unfocusAndPop<RollbackConfigVersionRequest>(
+                dialogContext,
+              ),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final versionId = versionController.text.trim();
+                if (versionId.isEmpty) {
+                  setState(() => versionError = 'Version ID is required.');
+                  return;
+                }
+                if (!_isValidGuid(versionId)) {
+                  setState(
+                    () => versionError = 'Use only the published version UUID.',
+                  );
+                  return;
+                }
+
+                final note = noteController.text.trim();
+                _unfocusAndPop<RollbackConfigVersionRequest>(
+                  dialogContext,
+                  RollbackConfigVersionRequest(
+                    versionId: versionId,
+                    note: note.isEmpty ? null : note,
+                  ),
+                );
+              },
+              child: const Text('Rollback'),
+            ),
+          ],
+        ),
+      ),
+    );
+    await _waitForRouteTeardown();
+    versionController.dispose();
+    noteController.dispose();
+    if (request == null || !context.mounted) return;
+
+    final result = await sl<RollbackConfigVersion>()(request: request);
+    if (!context.mounted) return;
+
+    result.fold(
+      (failure) => _showStoreFailure(
+        context,
+        failure,
+        title: 'Rollback config failed',
+      ),
+      (message) {
+        context.read<StoreDashboardBloc>().add(
+              RefreshStoreDashboard(storeId: store.id),
+            );
+        _showStoreSnackBar(
+          context,
+          message.isNotEmpty ? message : 'Store config version rolled back.',
+        );
+      },
+    );
+  }
+
+  String _musicPolicySummary(Store store) {
+    if (store.fuzzyOverrideSummary?.hasAnyData == true) {
+      return store.fuzzyOverrideLevel?.displayName ?? 'Store override active';
+    }
+    return 'Using brand defaults';
+  }
+
+  Future<void> _showStoreToolsSheet(
+    BuildContext context, {
+    required Store store,
+    required bool canManageStore,
+    required bool canManageMusicPolicy,
+    required bool canViewGovernanceConfig,
+  }) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary =
+        isDark ? AppColors.textDarkPrimary : AppColors.textPrimary;
+    final textSecondary =
+        isDark ? AppColors.textDarkSecondary : AppColors.textSecondary;
+
+    final selectedAction =
+        await showModalBottomSheet<_StoreDashboardToolAction>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.82,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    margin: const EdgeInsets.only(top: 10, bottom: 8),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white24 : Colors.black26,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Store tools',
+                        style: AppTypography.titleMedium.copyWith(
+                          color: textPrimary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        store.name,
+                        style: AppTypography.bodySmall.copyWith(
+                          color: textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Flexible(
+                  child: ListView(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.only(bottom: 12),
+                    children: [
+                      ListTile(
+                        leading: const Icon(Icons.refresh_rounded),
+                        title: const Text('Refresh dashboard'),
+                        subtitle: const Text('Reload store and space status'),
+                        onTap: () => Navigator.of(sheetContext).pop(
+                          _StoreDashboardToolAction.refresh,
+                        ),
+                      ),
+                      if (canViewGovernanceConfig)
+                        ListTile(
+                          leading: const Icon(Icons.tune_rounded),
+                          title: const Text('Store configuration'),
+                          subtitle: const Text(
+                            'Review effective config and overrides',
+                          ),
+                          onTap: () => Navigator.of(sheetContext).pop(
+                            _StoreDashboardToolAction.storeGovernance,
+                          ),
+                        ),
+                      if (canManageStore)
+                        ListTile(
+                          leading: const Icon(
+                            Icons.admin_panel_settings_outlined,
+                          ),
+                          title: const Text('Governance mode'),
+                          subtitle: const Text(
+                            'Set Strict Sync, AI Mode, or Freedom',
+                          ),
+                          onTap: () => Navigator.of(sheetContext).pop(
+                            _StoreDashboardToolAction.governanceMode,
+                          ),
+                        ),
+                      if (canManageStore)
+                        ListTile(
+                          leading: const Icon(Icons.publish_outlined),
+                          title: const Text('Publish config snapshot'),
+                          subtitle: const Text(
+                            'Create a store-scope config version',
+                          ),
+                          onTap: () => Navigator.of(sheetContext).pop(
+                            _StoreDashboardToolAction.publishConfigVersion,
+                          ),
+                        ),
+                      if (canManageStore)
+                        ListTile(
+                          leading: const Icon(Icons.restore_outlined),
+                          title: const Text('Rollback config version'),
+                          subtitle: const Text(
+                            'Restore from a published version ID',
+                          ),
+                          onTap: () => Navigator.of(sheetContext).pop(
+                            _StoreDashboardToolAction.rollbackConfigVersion,
+                          ),
+                        ),
+                      if (canManageMusicPolicy)
+                        ListTile(
+                          leading: const Icon(Icons.library_music_outlined),
+                          title: const Text('Music policy'),
+                          subtitle: Text(_musicPolicySummary(store)),
+                          onTap: () => Navigator.of(sheetContext).pop(
+                            _StoreDashboardToolAction.musicPolicy,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (selectedAction == null || !context.mounted) return;
+    await _waitForRouteTeardown();
+    if (!context.mounted) return;
+
+    switch (selectedAction) {
+      case _StoreDashboardToolAction.refresh:
+        context.read<StoreDashboardBloc>().add(
+              RefreshStoreDashboard(storeId: store.id),
+            );
+        return;
+      case _StoreDashboardToolAction.storeGovernance:
+        await _showStoreConfigGovernanceSheet(context, store);
+        return;
+      case _StoreDashboardToolAction.governanceMode:
+        await _showGovernanceModeDialog(context, store);
+        return;
+      case _StoreDashboardToolAction.publishConfigVersion:
+        await _showPublishConfigVersionDialog(context, store);
+        return;
+      case _StoreDashboardToolAction.rollbackConfigVersion:
+        await _showRollbackConfigVersionDialog(context, store);
+        return;
+      case _StoreDashboardToolAction.musicPolicy:
+        await _showStoreFuzzyOverrideSheet(context, store);
+        return;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -516,6 +1026,9 @@ class StoreDashboardPage extends StatelessWidget {
     final canManageMusicPolicy = !session.isPlaybackDevice &&
         (session.currentRole == UserRole.brandManager ||
             session.currentRole == UserRole.storeManager);
+    final canViewGovernanceConfig = canManageMusicPolicy;
+    final showStoreTools =
+        canManageStore || canManageMusicPolicy || canViewGovernanceConfig;
 
     return PopScope(
       canPop: false,
@@ -554,17 +1067,29 @@ class StoreDashboardPage extends StatelessWidget {
             ? AppColors.backgroundDarkPrimary
             : AppColors.backgroundPrimary,
         appBar: AppBar(
+          centerTitle: true,
+          leadingWidth: showStoreTools ? 108 : 60,
+          leading: SizedBox(width: showStoreTools ? 108 : 60),
           title: const Text('Store Dashboard'),
           actions: [
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: () {
-                context.read<StoreDashboardBloc>().add(
-                      RefreshStoreDashboard(storeId: storeId),
-                    );
-              },
-              tooltip: 'Refresh',
-            ),
+            if (showStoreTools)
+              IconButton(
+                icon: const Icon(Icons.tune_rounded),
+                onPressed: () {
+                  final dashboardState =
+                      context.read<StoreDashboardBloc>().state;
+                  final store = dashboardState.store;
+                  if (store == null) return;
+                  _showStoreToolsSheet(
+                    context,
+                    store: store,
+                    canManageStore: canManageStore,
+                    canManageMusicPolicy: canManageMusicPolicy,
+                    canViewGovernanceConfig: canViewGovernanceConfig,
+                  );
+                },
+                tooltip: 'Store tools',
+              ),
             // User avatar → account sheet
             BlocBuilder<AuthBloc, AuthState>(
               builder: (context, authState) {
@@ -644,72 +1169,6 @@ class StoreDashboardPage extends StatelessWidget {
                           ? () => _deleteStore(context, state.store!)
                           : null,
                     ),
-
-                    const SizedBox(height: AppDimensions.spacingLg),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Music Policy',
-                            style: AppTypography.titleLarge.copyWith(
-                              color: isDark
-                                  ? AppColors.textDarkPrimary
-                                  : AppColors.textPrimary,
-                            ),
-                          ),
-                        ),
-                        if (canManageMusicPolicy)
-                          OutlinedButton.icon(
-                            onPressed: () => _showStoreFuzzyOverrideSheet(
-                              context,
-                              state.store!,
-                            ),
-                            icon: const Icon(Icons.tune_rounded, size: 18),
-                            label: const Text('Edit'),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: AppDimensions.spacingMd),
-                    if (state.store!.fuzzyOverrideSummary?.hasAnyData == true)
-                      FuzzyOverrideSummaryCard(
-                        title: 'Active Store Policy',
-                        summary: state.store!.fuzzyOverrideSummary!,
-                      )
-                    else
-                      Card(
-                        elevation: 0,
-                        child: Padding(
-                          padding: const EdgeInsets.all(
-                            AppDimensions.spacingLg,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                state.store!.fuzzyOverrideLevel?.displayName ??
-                                    'Using brand defaults',
-                                style: AppTypography.bodyLarge.copyWith(
-                                  color: isDark
-                                      ? AppColors.textDarkPrimary
-                                      : AppColors.textPrimary,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              const SizedBox(height: AppDimensions.spacingXs),
-                              Text(
-                                canManageMusicPolicy
-                                    ? 'Create a store override to tune fuzzy BPM bands, thresholds, and allowed playlists for this location.'
-                                    : 'No store-level override is active. This store is currently using the inherited brand music policy.',
-                                style: AppTypography.bodySmall.copyWith(
-                                  color: isDark
-                                      ? AppColors.textDarkSecondary
-                                      : AppColors.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
 
                     const SizedBox(height: AppDimensions.spacingLg),
 

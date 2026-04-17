@@ -68,7 +68,7 @@ void main() {
     test('keeps syncPending when remote save fails', () async {
       networkInfo.connected = true;
       remoteDataSource.upsertError =
-          ServerException('backend sync still unavailable');
+          const ServerException('backend sync still unavailable');
 
       final result = await repository.upsertBinding(_sampleBinding());
 
@@ -88,7 +88,7 @@ void main() {
       await stubDataSource.upsertBinding(
         SpaceHubBindingModel.fromEntity(_sampleBinding()),
       );
-      remoteDataSource.deleteError = ServerException('delete failed');
+      remoteDataSource.deleteError = const ServerException('delete failed');
 
       final result = await repository.deleteBinding('space-1');
 

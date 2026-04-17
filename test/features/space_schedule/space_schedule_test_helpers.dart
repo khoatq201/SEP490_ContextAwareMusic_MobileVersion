@@ -45,6 +45,7 @@ SpaceScheduleBloc buildSpaceScheduleBloc({
     getSpaceScheduleBootstrap: GetSpaceScheduleBootstrap(repository),
     applyScheduleSource: ApplyScheduleSource(repository),
     saveSpaceSchedule: SaveSpaceSchedule(repository),
+    toggleSpaceSchedule: ToggleSpaceSchedule(repository),
     saveScheduleToLibrary: SaveScheduleToLibrary(repository),
     deleteScheduleSlot: DeleteScheduleSlot(repository),
   );

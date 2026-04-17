@@ -319,7 +319,7 @@ class AppColors {
 
   /// Get color with custom opacity
   static Color withOpacity(Color color, double opacity) {
-    return color.withOpacity(opacity);
+    return color.withValues(alpha: opacity);
   }
 
   /// Get appropriate text color for background (contrast)
@@ -330,7 +330,7 @@ class AppColors {
 
   /// Create glassmorphism effect color
   static Color glassmorphism({double opacity = 0.2}) {
-    return Colors.white.withOpacity(opacity);
+    return Colors.white.withValues(alpha: opacity);
   }
 
   /// Get status color by name

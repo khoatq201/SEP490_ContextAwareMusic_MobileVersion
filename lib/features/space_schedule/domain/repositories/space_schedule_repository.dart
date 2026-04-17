@@ -20,6 +20,11 @@ abstract class SpaceScheduleRepository {
   Future<Either<Failure, SpaceSchedule>> saveSpaceSchedule(
       SpaceSchedule schedule);
 
+  Future<Either<Failure, SpaceSchedule>> toggleSchedule({
+    required String spaceId,
+    required bool enabled,
+  });
+
   Future<Either<Failure, ScheduleSource>> saveScheduleToLibrary({
     required SpaceSchedule schedule,
     required String title,

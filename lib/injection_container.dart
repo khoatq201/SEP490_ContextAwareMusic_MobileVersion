@@ -49,6 +49,7 @@ import 'features/locations/domain/usecases/location_usecases.dart';
 import 'features/locations/presentation/bloc/location_bloc.dart';
 import 'features/space_schedule/data/datasources/space_schedule_local_datasource.dart';
 import 'features/space_schedule/data/datasources/space_schedule_mock_datasource.dart';
+import 'features/space_schedule/data/datasources/space_schedule_remote_datasource.dart';
 import 'features/space_schedule/data/repositories/space_schedule_repository_impl.dart';
 import 'features/space_schedule/domain/repositories/space_schedule_repository.dart';
 import 'features/space_schedule/domain/usecases/space_schedule_usecases.dart';
@@ -148,6 +149,13 @@ import 'features/suno/data/repositories/suno_repository_impl.dart';
 import 'features/suno/domain/services/suno_playback_orchestrator.dart';
 import 'features/suno/domain/usecases/suno_usecases.dart';
 
+// Config Governance Feature
+import 'features/config_governance/data/datasources/config_governance_remote_datasource.dart';
+import 'features/config_governance/data/repositories/config_governance_repository_impl.dart';
+import 'features/config_governance/domain/repositories/config_governance_repository.dart';
+import 'features/config_governance/domain/usecases/config_governance_usecases.dart';
+import 'features/config_governance/presentation/bloc/config_governance_cubit.dart';
+
 // CAMS Feature
 import 'features/cams/data/datasources/cams_remote_datasource.dart';
 import 'features/cams/data/repositories/cams_repository_impl.dart';
@@ -161,6 +169,7 @@ import 'features/cams/domain/services/cams_playback_capability_provider.dart';
 import 'features/cams/domain/usecases/queue_usecases.dart';
 import 'features/cams/domain/usecases/send_playback_command.dart';
 import 'features/cams/domain/usecases/update_audio_state.dart';
+import 'features/cams/domain/usecases/update_scheduling_state.dart';
 import 'features/cams/presentation/bloc/cams_playback_bloc.dart';
 
 // Moods Use Cases
@@ -397,16 +406,22 @@ Future<void> initializeDependencies() async {
     () => SpaceScheduleLocalDataSource(localStorage: sl()),
   );
 
+  sl.registerLazySingleton<SpaceScheduleRemoteDataSource>(
+    () => SpaceScheduleRemoteDataSourceImpl(dioClient: sl()),
+  );
+
   sl.registerLazySingleton<SpaceScheduleRepository>(
     () => SpaceScheduleRepositoryImpl(
       mockDataSource: sl(),
       localDataSource: sl(),
+      remoteDataSource: ApiConstants.useMockData ? null : sl(),
     ),
   );
 
   sl.registerLazySingleton(() => GetSpaceScheduleBootstrap(sl()));
   sl.registerLazySingleton(() => ApplyScheduleSource(sl()));
   sl.registerLazySingleton(() => SaveSpaceSchedule(sl()));
+  sl.registerLazySingleton(() => ToggleSpaceSchedule(sl()));
   sl.registerLazySingleton(() => SaveScheduleToLibrary(sl()));
   sl.registerLazySingleton(() => DeleteScheduleSlot(sl()));
 
@@ -415,6 +430,7 @@ Future<void> initializeDependencies() async {
       getSpaceScheduleBootstrap: sl(),
       applyScheduleSource: sl(),
       saveSpaceSchedule: sl(),
+      toggleSpaceSchedule: sl(),
       saveScheduleToLibrary: sl(),
       deleteScheduleSlot: sl(),
     ),
@@ -693,6 +709,40 @@ Future<void> initializeDependencies() async {
   );
 
   // =============================================
+  // Config Governance Feature
+  // =============================================
+
+  sl.registerLazySingleton<ConfigGovernanceRemoteDataSource>(
+    () => ConfigGovernanceRemoteDataSourceImpl(dioClient: sl()),
+  );
+
+  sl.registerLazySingleton<ConfigGovernanceRepository>(
+    () => ConfigGovernanceRepositoryImpl(remoteDataSource: sl()),
+  );
+
+  sl.registerLazySingleton(() => GetBrandConfig(sl()));
+  sl.registerLazySingleton(() => GetStoreConfig(sl()));
+  sl.registerLazySingleton(() => GetSpaceConfig(sl()));
+  sl.registerLazySingleton(() => UpsertBrandConfigValue(sl()));
+  sl.registerLazySingleton(() => UpsertStoreConfigValue(sl()));
+  sl.registerLazySingleton(() => UpsertSpaceConfigValue(sl()));
+  sl.registerLazySingleton(() => SetStoreGovernanceMode(sl()));
+  sl.registerLazySingleton(() => PublishConfigVersion(sl()));
+  sl.registerLazySingleton(() => RollbackConfigVersion(sl()));
+
+  sl.registerFactory(
+    () => ConfigGovernanceCubit(
+      getBrandConfig: sl(),
+      getStoreConfig: sl(),
+      getSpaceConfig: sl(),
+      upsertBrandConfigValue: sl(),
+      upsertStoreConfigValue: sl(),
+      upsertSpaceConfigValue: sl(),
+      setStoreGovernanceMode: sl(),
+    ),
+  );
+
+  // =============================================
   // CAMS Feature (Context-Aware Music System)
   // =============================================
 
@@ -721,6 +771,7 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(() => CancelOverride(sl()));
   sl.registerLazySingleton(() => SendPlaybackCommand(sl()));
   sl.registerLazySingleton(() => UpdateAudioState(sl()));
+  sl.registerLazySingleton(() => UpdateSchedulingState(sl()));
   sl.registerLazySingleton(() => QueueTracks(sl()));
   sl.registerLazySingleton(() => QueuePlaylist(sl()));
   sl.registerLazySingleton(() => ReorderQueue(sl()));
@@ -743,6 +794,7 @@ Future<void> initializeDependencies() async {
       getSpaceQueue: sl(),
       sendPlaybackCommand: sl(),
       updateAudioState: sl(),
+      updateSchedulingState: sl(),
       storeHubService: sl(),
     ),
   );

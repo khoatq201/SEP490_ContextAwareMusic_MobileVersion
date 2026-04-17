@@ -25,6 +25,8 @@ import 'player_state.dart';
 ///
 /// Supports playlist queue with next/previous/auto-advance.
 class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
+  static const double _hlsPositionResyncToleranceSeconds = 0.8;
+
   /// Injected at the time the space context becomes active.
   MusicControlBloc? _activeMusicBloc;
 
@@ -680,16 +682,28 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
         await _audioService.loadUrl(event.hlsUrl);
       }
 
-      if (event.seekOffsetSeconds > 0) {
-        final targetPosition = Duration(
-          milliseconds: (event.seekOffsetSeconds * 1000).round(),
+      final targetSeekOffsetSeconds = _resolveFreshHlsSeekOffset(event);
+      if ((targetSeekOffsetSeconds - event.seekOffsetSeconds).abs() > 0.2) {
+        final targetAbsoluteQueuePosition = _absoluteQueuePositionForTrack(
+          targetSeekOffsetSeconds,
+          indexOverride: resolvedIndex >= 0 ? resolvedIndex : null,
+          forceQueueOffset: resolvedIndex >= 0,
         );
-        final currentPosition = _audioService.position;
-        final positionDrift =
-            (currentPosition - targetPosition).inMilliseconds.abs() / 1000.0;
-        if (shouldReloadSource || positionDrift > 2) {
-          await _audioService.seek(targetPosition);
-        }
+        emit(state.copyWith(
+          currentPosition: targetAbsoluteQueuePosition.floor(),
+          currentPositionPrecise: targetAbsoluteQueuePosition,
+        ));
+      }
+
+      final targetPosition = Duration(
+        milliseconds: (targetSeekOffsetSeconds * 1000).round(),
+      );
+      final currentPosition = _audioService.position;
+      final positionDrift =
+          (currentPosition - targetPosition).inMilliseconds.abs() / 1000.0;
+      if (shouldReloadSource ||
+          positionDrift > _hlsPositionResyncToleranceSeconds) {
+        await _audioService.seek(targetPosition);
       }
       if (event.isPaused) {
         await _audioService.pause();
@@ -699,6 +713,37 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     } catch (_) {
       // Silently handle audio errors
     }
+  }
+
+  double _resolveFreshHlsSeekOffset(PlayerHlsStarted event) {
+    if (event.isPaused || event.startedAtUtc == null) {
+      return event.seekOffsetSeconds < 0 ? 0 : event.seekOffsetSeconds;
+    }
+
+    final rawElapsedSeconds = DateTime.now()
+            .toUtc()
+            .difference(event.startedAtUtc!.toUtc())
+            .inMilliseconds /
+        1000.0;
+    var resolvedSeconds =
+        rawElapsedSeconds - (event.serverClockOffsetMs / 1000.0);
+    if (resolvedSeconds < 0 || !resolvedSeconds.isFinite) {
+      resolvedSeconds = 0;
+    }
+
+    final expectedEndAtUtc = event.expectedEndAtUtc?.toUtc();
+    if (expectedEndAtUtc == null) {
+      return resolvedSeconds;
+    }
+
+    final totalDurationSeconds = expectedEndAtUtc
+            .difference(event.startedAtUtc!.toUtc())
+            .inMilliseconds /
+        1000.0;
+    if (totalDurationSeconds <= 0) {
+      return 0;
+    }
+    return resolvedSeconds.clamp(0.0, totalDurationSeconds).toDouble();
   }
 
   void _onHlsStopped(PlayerHlsStopped event, Emitter<PlayerState> emit) async {

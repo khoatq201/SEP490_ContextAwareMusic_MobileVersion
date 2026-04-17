@@ -1,5 +1,6 @@
 import 'dart:async';
-import 'dart:convert';
+import 'dart:developer' as developer;
+
 import '../models/music_player_state_model.dart';
 import '../models/track_model.dart';
 import 'music_control_remote_datasource.dart';
@@ -49,8 +50,10 @@ class MusicControlMockDataSource implements MusicControlRemoteDataSource {
   }) async {
     await Future.delayed(const Duration(milliseconds: 200));
     // Mock mood override - in real app would trigger playlist change
-    print(
-        'Mock: Overriding mood to $moodId for $duration minutes in space $spaceId');
+    developer.log(
+      'Mock: Overriding mood to $moodId for $duration minutes in space $spaceId',
+      name: 'MusicControlMockDataSource',
+    );
   }
 
   @override

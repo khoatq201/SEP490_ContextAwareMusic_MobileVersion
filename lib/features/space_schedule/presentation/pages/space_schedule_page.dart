@@ -5,6 +5,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../cams/presentation/bloc/cams_playback_bloc.dart';
+import '../../../cams/presentation/bloc/cams_playback_event.dart';
+import '../../../cams/presentation/bloc/cams_playback_state.dart';
 import '../../domain/entities/schedule_music_item.dart';
 import '../../domain/entities/schedule_slot.dart';
 import '../../domain/entities/schedule_source.dart';
@@ -27,6 +30,18 @@ class SpaceSchedulePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = _SchedulePalette.of(context);
+    final camsBloc = _maybeCamsBlocOf(context);
+    if (camsBloc != null &&
+        camsBloc.state.spaceId?.toLowerCase() != spaceId.toLowerCase()) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted) return;
+        final latestBloc = _maybeCamsBlocOf(context);
+        if (latestBloc == null) return;
+        if (latestBloc.state.spaceId?.toLowerCase() != spaceId.toLowerCase()) {
+          latestBloc.add(CamsInitPlayback(spaceId: spaceId));
+        }
+      });
+    }
 
     return Scaffold(
       backgroundColor: palette.background,
@@ -112,6 +127,7 @@ class SpaceSchedulePage extends StatelessWidget {
                 );
               case SpaceScheduleStage.editor:
                 return _ScheduleEditorView(
+                  spaceId: spaceId,
                   palette: palette,
                   state: state,
                   onClose: () => context.pop(),
@@ -176,7 +192,7 @@ class SpaceSchedulePage extends StatelessWidget {
             palette: _SchedulePalette.of(context),
             title: 'About the zone schedule',
             description:
-                'This mock schedule models day-part playback for each space while backend APIs are still being prepared.',
+                'This schedule manages day-part playback for each space and syncs changes through the CMS schedule API.',
           ),
         );
         break;
@@ -760,6 +776,7 @@ class _ScheduleSourceCard extends StatelessWidget {
 
 class _ScheduleEditorView extends StatelessWidget {
   const _ScheduleEditorView({
+    required this.spaceId,
     required this.palette,
     required this.state,
     required this.onClose,
@@ -768,6 +785,7 @@ class _ScheduleEditorView extends StatelessWidget {
     required this.onActionSelected,
   });
 
+  final String spaceId;
   final _SchedulePalette palette;
   final SpaceScheduleState state;
   final VoidCallback onClose;
@@ -864,6 +882,41 @@ class _ScheduleEditorView extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
+        if (draft != null) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: _maybeCamsBlocOf(context) == null
+                ? _ScheduleModeControls(
+                    palette: palette,
+                    configEnabled: draft.enabled,
+                    isSaving: state.status == SpaceScheduleStatus.saving,
+                    camsState: null,
+                    onConfigChanged: (enabled) => context
+                        .read<SpaceScheduleBloc>()
+                        .add(SpaceScheduleToggled(enabled)),
+                    onRuntimeChanged: null,
+                  )
+                : BlocBuilder<CamsPlaybackBloc, CamsPlaybackState>(
+                    builder: (context, camsState) {
+                      return _ScheduleModeControls(
+                        palette: palette,
+                        configEnabled: draft.enabled,
+                        isSaving: state.status == SpaceScheduleStatus.saving ||
+                            camsState.isOverriding,
+                        camsState: camsState,
+                        onConfigChanged: (enabled) => context
+                            .read<SpaceScheduleBloc>()
+                            .add(SpaceScheduleToggled(enabled)),
+                        onRuntimeChanged: (enabled) => context
+                            .read<CamsPlaybackBloc>()
+                            .add(CamsUpdateSchedulingState(
+                                isScheduling: enabled)),
+                      );
+                    },
+                  ),
+          ),
+          const SizedBox(height: 12),
+        ],
         SizedBox(
           height: 42,
           child: ListView.separated(
@@ -897,6 +950,131 @@ class _ScheduleEditorView extends StatelessWidget {
                   musicCatalog: state.musicCatalog,
                   onSlotTap: onSlotTap,
                 ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ScheduleModeControls extends StatelessWidget {
+  const _ScheduleModeControls({
+    required this.palette,
+    required this.configEnabled,
+    required this.isSaving,
+    required this.camsState,
+    required this.onConfigChanged,
+    required this.onRuntimeChanged,
+  });
+
+  final _SchedulePalette palette;
+  final bool configEnabled;
+  final bool isSaving;
+  final CamsPlaybackState? camsState;
+  final ValueChanged<bool> onConfigChanged;
+  final ValueChanged<bool>? onRuntimeChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final playback = camsState?.playbackState;
+    final runtimeEnabled = playback?.isScheduling ?? false;
+    final runtimeDetails = <String>[
+      if (runtimeEnabled && playback?.schedulingOriginLabel != null)
+        'Origin: ${playback!.schedulingOriginLabel}',
+      if (runtimeEnabled && playback?.schedulingSlotId?.isNotEmpty == true)
+        'Slot: ${playback!.schedulingSlotId}',
+      if (runtimeEnabled && playback?.schedulingRemainingSeconds != null)
+        'Remaining: ${_formatSeconds(playback!.schedulingRemainingSeconds!)}',
+      if (runtimeEnabled && playback?.schedulingEndsAtUtc != null)
+        'Ends: ${_formatDateTime(playback!.schedulingEndsAtUtc!)}',
+    ];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: BoxDecoration(
+        color: palette.cardMuted,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: palette.line),
+      ),
+      child: Column(
+        children: [
+          _ScheduleSwitchRow(
+            palette: palette,
+            title: 'Space-level scheduling',
+            subtitle: configEnabled
+                ? 'Weekly slots are enabled for this space.'
+                : 'Weekly slots are saved but disabled.',
+            value: configEnabled,
+            enabled: !isSaving,
+            onChanged: onConfigChanged,
+          ),
+          Divider(height: 18, color: palette.line),
+          _ScheduleSwitchRow(
+            palette: palette,
+            title: 'Scheduling runtime',
+            subtitle: runtimeDetails.isEmpty
+                ? 'CAMS will report the active slot when scheduling takes ownership.'
+                : runtimeDetails.join('  |  '),
+            value: runtimeEnabled,
+            enabled: !isSaving && onRuntimeChanged != null,
+            onChanged: onRuntimeChanged,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ScheduleSwitchRow extends StatelessWidget {
+  const _ScheduleSwitchRow({
+    required this.palette,
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final _SchedulePalette palette;
+  final String title;
+  final String subtitle;
+  final bool value;
+  final bool enabled;
+  final ValueChanged<bool>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: GoogleFonts.inter(
+                  color: palette.textPrimary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                subtitle,
+                style: GoogleFonts.inter(
+                  color: palette.textMuted,
+                  fontSize: 11,
+                  height: 1.3,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Switch.adaptive(
+          value: value,
+          activeThumbColor: palette.accent,
+          onChanged: enabled ? onChanged : null,
         ),
       ],
     );
@@ -1338,7 +1516,7 @@ class _ScheduleOptionsSheet extends StatelessWidget {
               palette: palette,
               icon: LucideIcons.info,
               title: 'About the zone schedule',
-              subtitle: 'Learn what this mock schedule does in v1',
+              subtitle: 'Learn how this schedule syncs with playback',
               onTap: () => Navigator.pop(context, _EditorAction.about),
             ),
           ],
@@ -2275,6 +2453,25 @@ String _formatDuration(int minutes) {
   return '$minutes min';
 }
 
+String _formatSeconds(int seconds) {
+  final safeSeconds = seconds < 0 ? 0 : seconds;
+  final hours = safeSeconds ~/ 3600;
+  final minutes = (safeSeconds % 3600) ~/ 60;
+  if (hours > 0 && minutes > 0) return '${hours}h ${minutes}m';
+  if (hours > 0) return '${hours}h';
+  if (minutes > 0) return '${minutes}m';
+  return '${safeSeconds}s';
+}
+
+String _formatDateTime(DateTime value) {
+  final local = value.toLocal();
+  final month = local.month.toString().padLeft(2, '0');
+  final day = local.day.toString().padLeft(2, '0');
+  final hour = local.hour.toString().padLeft(2, '0');
+  final minute = local.minute.toString().padLeft(2, '0');
+  return '$day/$month $hour:$minute';
+}
+
 int _domainDayFromUi(int value) => value == 0 ? 7 : value;
 
 int _uiDayFromDomainDay(int value) => value == 7 ? 0 : value;
@@ -2298,6 +2495,14 @@ TimeOfDay _timeOfDayFromString(String value) {
     hour: int.tryParse(segments.first) ?? 0,
     minute: int.tryParse(segments.last) ?? 0,
   );
+}
+
+CamsPlaybackBloc? _maybeCamsBlocOf(BuildContext context) {
+  try {
+    return context.read<CamsPlaybackBloc>();
+  } catch (_) {
+    return null;
+  }
 }
 
 ScheduleMusicItem? _findMusic(

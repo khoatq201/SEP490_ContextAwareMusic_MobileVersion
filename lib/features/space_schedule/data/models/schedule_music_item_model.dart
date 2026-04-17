@@ -12,14 +12,17 @@ class ScheduleMusicItemModel extends ScheduleMusicItem {
   });
 
   factory ScheduleMusicItemModel.fromJson(Map<String, dynamic> json) {
+    final title = json['title']?.toString() ?? 'Untitled playlist';
+    final artist =
+        json['artist']?.toString() ?? json['collection']?.toString() ?? '';
     return ScheduleMusicItemModel(
-      id: json['id'] as String,
-      title: json['title'] as String,
-      artist: json['artist'] as String,
-      collection: json['collection'] as String?,
-      artworkLabel: json['artworkLabel'] as String,
-      primaryHex: json['primaryHex'] as String,
-      secondaryHex: json['secondaryHex'] as String,
+      id: json['id']?.toString() ?? '',
+      title: title,
+      artist: artist,
+      collection: json['collection']?.toString(),
+      artworkLabel: json['artworkLabel']?.toString() ?? title,
+      primaryHex: json['primaryHex']?.toString() ?? '#2E5BFF',
+      secondaryHex: json['secondaryHex']?.toString() ?? '#00B8A9',
     );
   }
 

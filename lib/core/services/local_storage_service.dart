@@ -51,7 +51,7 @@ class LocalStorageService {
       await _authBox.put(_managerTokenKey, token);
       await _authBox.put(_legacyTokenKey, token);
     } catch (e) {
-      throw CacheException('Failed to save manager token');
+      throw const CacheException('Failed to save manager token');
     }
   }
 
@@ -72,7 +72,7 @@ class LocalStorageService {
       return (_authBox.get(_managerTokenKey) ?? _authBox.get(_legacyTokenKey))
           as String?;
     } catch (e) {
-      throw CacheException('Failed to get manager token');
+      throw const CacheException('Failed to get manager token');
     }
   }
 
@@ -86,7 +86,7 @@ class LocalStorageService {
         await clearActiveSessionMode();
       }
     } catch (e) {
-      throw CacheException('Failed to clear manager token');
+      throw const CacheException('Failed to clear manager token');
     }
   }
 
@@ -101,7 +101,7 @@ class LocalStorageService {
       await _authBox.put(_managerTokenExpiryKey, value);
       await _authBox.put(_legacyTokenExpiryKey, value);
     } catch (e) {
-      throw CacheException('Failed to save manager token expiry');
+      throw const CacheException('Failed to save manager token expiry');
     }
   }
 
@@ -131,7 +131,7 @@ class LocalStorageService {
     try {
       await _authBox.put(_deviceSessionKey, session);
     } catch (e) {
-      throw CacheException('Failed to save device session');
+      throw const CacheException('Failed to save device session');
     }
   }
 
@@ -141,7 +141,7 @@ class LocalStorageService {
       if (raw is! Map) return null;
       return Map<String, dynamic>.from(raw);
     } catch (e) {
-      throw CacheException('Failed to get device session');
+      throw const CacheException('Failed to get device session');
     }
   }
 
@@ -192,7 +192,7 @@ class LocalStorageService {
         await clearActiveSessionMode();
       }
     } catch (e) {
-      throw CacheException('Failed to clear device session');
+      throw const CacheException('Failed to clear device session');
     }
   }
 
@@ -200,7 +200,7 @@ class LocalStorageService {
     try {
       await _authBox.put(_activeSessionModeKey, mode);
     } catch (e) {
-      throw CacheException('Failed to save active session mode');
+      throw const CacheException('Failed to save active session mode');
     }
   }
 
@@ -208,7 +208,7 @@ class LocalStorageService {
     try {
       return _authBox.get(_activeSessionModeKey) as String?;
     } catch (e) {
-      throw CacheException('Failed to get active session mode');
+      throw const CacheException('Failed to get active session mode');
     }
   }
 
@@ -216,7 +216,7 @@ class LocalStorageService {
     try {
       await _authBox.delete(_activeSessionModeKey);
     } catch (e) {
-      throw CacheException('Failed to clear active session mode');
+      throw const CacheException('Failed to clear active session mode');
     }
   }
 
@@ -235,7 +235,7 @@ class LocalStorageService {
     try {
       await _authBox.put(_managerUserKey, user);
     } catch (e) {
-      throw CacheException('Failed to save user');
+      throw const CacheException('Failed to save user');
     }
   }
 
@@ -244,7 +244,7 @@ class LocalStorageService {
       final user = _authBox.get(_managerUserKey);
       return user != null ? Map<String, dynamic>.from(user) : null;
     } catch (e) {
-      throw CacheException('Failed to get user');
+      throw const CacheException('Failed to get user');
     }
   }
 
@@ -252,7 +252,7 @@ class LocalStorageService {
     try {
       await _authBox.delete(_managerUserKey);
     } catch (e) {
-      throw CacheException('Failed to clear user');
+      throw const CacheException('Failed to clear user');
     }
   }
 
@@ -262,7 +262,7 @@ class LocalStorageService {
     try {
       await _playlistBox.put(playlistId, playlist);
     } catch (e) {
-      throw CacheException('Failed to save playlist');
+      throw const CacheException('Failed to save playlist');
     }
   }
 
@@ -272,7 +272,7 @@ class LocalStorageService {
       if (data == null) return null;
       return Map<String, dynamic>.from(data as Map);
     } catch (e) {
-      throw CacheException('Failed to get playlist');
+      throw const CacheException('Failed to get playlist');
     }
   }
 
@@ -282,7 +282,7 @@ class LocalStorageService {
           .map((e) => Map<String, dynamic>.from(e as Map))
           .toList();
     } catch (e) {
-      throw CacheException('Failed to get all playlists');
+      throw const CacheException('Failed to get all playlists');
     }
   }
 
@@ -290,7 +290,7 @@ class LocalStorageService {
     try {
       await _playlistBox.delete(playlistId);
     } catch (e) {
-      throw CacheException('Failed to remove playlist');
+      throw const CacheException('Failed to remove playlist');
     }
   }
 
@@ -298,7 +298,7 @@ class LocalStorageService {
     try {
       await _playlistBox.clear();
     } catch (e) {
-      throw CacheException('Failed to clear playlists');
+      throw const CacheException('Failed to clear playlists');
     }
   }
 
@@ -307,7 +307,7 @@ class LocalStorageService {
     try {
       await _settingsBox.put(key, value);
     } catch (e) {
-      throw CacheException('Failed to save setting');
+      throw const CacheException('Failed to save setting');
     }
   }
 
@@ -315,7 +315,7 @@ class LocalStorageService {
     try {
       return _settingsBox.get(key);
     } catch (e) {
-      throw CacheException('Failed to get setting');
+      throw const CacheException('Failed to get setting');
     }
   }
 
@@ -323,7 +323,7 @@ class LocalStorageService {
     try {
       await _settingsBox.delete(key);
     } catch (e) {
-      throw CacheException('Failed to remove setting');
+      throw const CacheException('Failed to remove setting');
     }
   }
 
@@ -331,7 +331,7 @@ class LocalStorageService {
     try {
       await _settingsBox.put(_managerLocalPlaybackEnabledKey, enabled);
     } catch (e) {
-      throw CacheException('Failed to save manager playback preference');
+      throw const CacheException('Failed to save manager playback preference');
     }
   }
 
@@ -353,7 +353,7 @@ class LocalStorageService {
       await _playlistBox.clear();
       await _settingsBox.clear();
     } catch (e) {
-      throw CacheException('Failed to clear all data');
+      throw const CacheException('Failed to clear all data');
     }
   }
 }

@@ -58,7 +58,7 @@ class SearchPlaylistDetailPage extends StatelessWidget {
               child: Container(
                 margin: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.35),
+                  color: Colors.black.withValues(alpha: 0.35),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(LucideIcons.chevronLeft,
@@ -165,7 +165,8 @@ class SearchPlaylistDetailPage extends StatelessWidget {
                   ),
 
                   const SizedBox(height: 4),
-                  Divider(color: palette.border.withOpacity(0.6), height: 28),
+                  Divider(
+                      color: palette.border.withValues(alpha: 0.6), height: 28),
                 ],
               ),
             ),
@@ -291,7 +292,7 @@ class _Palette {
   factory _Palette.fromBrightness(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
     if (isDark) {
-      return _Palette(
+      return const _Palette(
         isDark: true,
         bg: AppColors.backgroundDarkPrimary,
         border: AppColors.borderDarkMedium,

@@ -51,7 +51,7 @@ class SpaceHubRemoteDataSourceImpl implements SpaceHubRemoteDataSource {
         options: _missingEndpointTolerantOptions,
       );
       if (response.statusCode == 404) {
-        throw ServerException(
+        throw const ServerException(
           'Hub binding endpoint is not available on the backend yet.',
         );
       }
@@ -86,7 +86,7 @@ class SpaceHubRemoteDataSourceImpl implements SpaceHubRemoteDataSource {
         options: _missingEndpointTolerantOptions,
       );
       if (response.statusCode == 404) {
-        throw ServerException(
+        throw const ServerException(
           'Hub restart endpoint is not available on the backend yet.',
         );
       }

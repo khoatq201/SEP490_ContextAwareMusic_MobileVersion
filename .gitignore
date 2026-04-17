@@ -50,3 +50,4 @@ app.*.map.json
 docs/
 docs copy 2/
 analyze*.txt
+src/

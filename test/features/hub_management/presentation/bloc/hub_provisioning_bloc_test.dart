@@ -139,7 +139,8 @@ void main() {
       expect(bloc.state.message, contains('Check the secret code'));
     });
 
-    test('emits failure when ESP32 rejects Wi-Fi credentials', () async {
+    test('returns to NVR config entry when ESP32 rejects custom config',
+        () async {
       blePermissionService.checkStatusValue =
           BlePermissionRequirementStatus.granted;
       bleProvisioningService.scanDevicesResult = const [
@@ -148,7 +149,8 @@ void main() {
       bleProvisioningService.scanWifiResult = const [
         WifiCandidate(ssid: 'Store WiFi'),
       ];
-      bleProvisioningService.provisionResult = false;
+      bleProvisioningService.customDataResult =
+          Uint8List.fromList('rejected'.codeUnits);
 
       bloc.add(
         const HubProvisioningStarted(
@@ -184,10 +186,27 @@ void main() {
           passphrase: 'super-secret',
         ),
       );
+      await _waitUntil(
+        () => bloc.state.phase == HubProvisioningPhase.enterNvrConfig,
+      );
 
-      await _waitUntil(() => bloc.state.phase == HubProvisioningPhase.failure);
+      bloc.add(
+        const HubProvisioningNvrConfigSubmitted(
+          mode: 'dahua',
+          username: 'admin',
+          password: 'nvr-secret',
+          host: '192.168.1.50',
+          port: 37777,
+        ),
+      );
 
-      expect(bloc.state.message, contains('did not confirm'));
+      await _waitUntil(
+        () =>
+            bloc.state.phase == HubProvisioningPhase.enterNvrConfig &&
+            (bloc.state.message?.contains('ESP32 rejected') ?? false),
+      );
+
+      expect(bloc.state.message, contains('ESP32 rejected the NVR config'));
     });
 
     test(
@@ -201,7 +220,8 @@ void main() {
       bleProvisioningService.scanWifiResult = const [
         WifiCandidate(ssid: 'Store WiFi'),
       ];
-      bleProvisioningService.provisionResult = true;
+      bleProvisioningService.customDataResult =
+          Uint8List.fromList('{"ok":true}'.codeUnits);
       repository.upsertResults = [
         Right(
           _binding(status: SpaceHubBindingStatus.syncPending),
@@ -243,6 +263,19 @@ void main() {
           passphrase: 'super-secret',
         ),
       );
+      await _waitUntil(
+        () => bloc.state.phase == HubProvisioningPhase.enterNvrConfig,
+      );
+
+      bloc.add(
+        const HubProvisioningNvrConfigSubmitted(
+          mode: 'dahua',
+          username: 'admin',
+          password: 'nvr-secret',
+          host: '192.168.1.50',
+          port: 37777,
+        ),
+      );
       await _waitUntil(() => bloc.state.phase == HubProvisioningPhase.success);
 
       expect(bloc.state.binding?.isSyncPending, isTrue);
@@ -256,8 +289,8 @@ void main() {
       });
 
       expect(repository.upsertCallCount, 2);
-      expect(bleProvisioningService.provisionCallCount, 1);
-      expect(bleProvisioningService.sendCustomDataCallCount, 0);
+      expect(bleProvisioningService.provisionCallCount, 0);
+      expect(bleProvisioningService.sendCustomDataCallCount, 1);
       expect(bloc.state.message, contains('synced successfully'));
     });
 
@@ -481,6 +514,7 @@ class _FakeProvisioningIdentityResolver
     return EspProvisioningIdentity(
       blePrefix: blePrefix,
       bleDeviceName: candidate.bleDeviceName,
+      deviceId: 'cam_esp32_01',
       proofOfPossession: proofOfPossession,
       source: EspProvisioningIdentitySource.blePrefixScan,
     );

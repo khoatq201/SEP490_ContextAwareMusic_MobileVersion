@@ -80,17 +80,17 @@ class _FakeSearchRepository implements SearchRepository {
   Either<Failure, List<SearchCategory>> categoriesResult = const Right([]);
   Either<Failure, List<SearchResult>> searchResult = const Right([]);
   Either<Failure, List<SearchResult>> searchByTypeResult = const Right([]);
-  Either<Failure, ArtistEntity> artistResult = Right(
+  Either<Failure, ArtistEntity> artistResult = const Right(
     ArtistEntity(id: 'artist-1', name: 'Artist'),
   );
-  Either<Failure, AlbumEntity> albumResult = Right(
+  Either<Failure, AlbumEntity> albumResult = const Right(
     AlbumEntity(
       id: 'album-1',
       name: 'Album',
       artistName: 'Artist',
       coverUrl: '',
       releaseYear: 2024,
-      songs: const [],
+      songs: [],
     ),
   );
   Either<Failure, PlaylistEntity> playlistResult = const Right(

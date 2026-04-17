@@ -333,7 +333,7 @@ class _CompanyPalette {
       textPrimary: AppColors.textPrimary,
       textSecondary: AppColors.textTertiary,
       sectionLabel: AppColors.textTertiary,
-      iconBackground: AppColors.primaryOrange.withOpacity(0.14),
+      iconBackground: AppColors.primaryOrange.withValues(alpha: 0.14),
       iconColor: AppColors.primaryOrange,
       trailingIcon: AppColors.textTertiary,
     );

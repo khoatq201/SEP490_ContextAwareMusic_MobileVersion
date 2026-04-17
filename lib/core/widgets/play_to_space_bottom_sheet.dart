@@ -158,8 +158,8 @@ class PlayToSpaceBottomSheet extends StatelessWidget {
                           height: 44,
                           decoration: BoxDecoration(
                             color: space.isOnline
-                                ? AppColors.success.withOpacity(0.12)
-                                : Colors.grey.withOpacity(0.12),
+                                ? AppColors.success.withValues(alpha: 0.12)
+                                : Colors.grey.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(
@@ -192,7 +192,7 @@ class PlayToSpaceBottomSheet extends StatelessWidget {
                           ),
                         ),
                         trailing: isSelected
-                            ? Icon(
+                            ? const Icon(
                                 LucideIcons.checkCircle2,
                                 color: AppColors.primaryCyan,
                                 size: 22,

@@ -160,7 +160,7 @@ class AppTypography {
     color: AppColors.primaryOrange,
     shadows: [
       Shadow(
-        color: AppColors.primaryOrange.withOpacity(0.18),
+        color: AppColors.primaryOrange.withValues(alpha: 0.18),
         blurRadius: 10,
         offset: const Offset(0, 2),
       ),
@@ -239,7 +239,8 @@ class AppTypography {
     return baseStyle.copyWith(
       shadows: [
         Shadow(
-          color: (shadowColor ?? AppColors.primaryOrange).withOpacity(0.3),
+          color:
+              (shadowColor ?? AppColors.primaryOrange).withValues(alpha: 0.3),
           blurRadius: blurRadius,
           offset: offset,
         ),

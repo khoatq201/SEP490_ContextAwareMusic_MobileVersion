@@ -1,5 +1,6 @@
 import '../../../../core/enums/entity_status_enum.dart';
 import '../../../../core/enums/store_fuzzy_override_level_enum.dart';
+import '../../../config_governance/domain/entities/config_governance_enums.dart';
 import '../../../music_policy/data/models/fuzzy_override_summary_model.dart';
 import '../../../music_policy/domain/entities/fuzzy_override_summary.dart';
 import '../../domain/entities/store.dart';
@@ -23,6 +24,7 @@ class StoreModel {
   final DateTime? lastMoodUpdateAt;
   final FuzzyOverrideSummary? fuzzyOverrideSummary;
   final StoreFuzzyOverrideLevelEnum? fuzzyOverrideLevel;
+  final StoreGovernanceMode? governanceMode;
   final EntityStatusEnum status;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -48,6 +50,7 @@ class StoreModel {
     this.lastMoodUpdateAt,
     this.fuzzyOverrideSummary,
     this.fuzzyOverrideLevel,
+    this.governanceMode,
     this.status = EntityStatusEnum.active,
     this.createdAt,
     this.updatedAt,
@@ -77,6 +80,9 @@ class StoreModel {
           : null,
       fuzzyOverrideSummary: FuzzyOverrideSummaryModel.fromRootJson(json),
       fuzzyOverrideLevel: _readOverrideLevel(json),
+      governanceMode: StoreGovernanceMode.tryParseConfigValue(
+        (json['governanceMode'] ?? json['GovernanceMode'])?.toString(),
+      ),
       status: EntityStatusEnum.fromJson(json['status']),
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'] as String)
@@ -109,6 +115,7 @@ class StoreModel {
       lastMoodUpdateAt: lastMoodUpdateAt,
       fuzzyOverrideSummary: fuzzyOverrideSummary,
       fuzzyOverrideLevel: fuzzyOverrideLevel,
+      governanceMode: governanceMode,
       status: status,
       createdAt: createdAt,
       updatedAt: updatedAt,
@@ -136,6 +143,7 @@ class StoreModel {
       'currentMood': currentMood,
       'lastMoodUpdateAt': lastMoodUpdateAt?.toIso8601String(),
       'fuzzyOverrideLevel': fuzzyOverrideLevel?.displayName,
+      'governanceMode': governanceMode?.value,
       'status': status.value,
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),

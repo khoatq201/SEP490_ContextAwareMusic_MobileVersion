@@ -135,8 +135,8 @@ class _SelectPlaylistBottomSheetState extends State<SelectPlaylistBottomSheet> {
     final textMuted = isDark ? Colors.white60 : Colors.black45;
     final dividerColor = isDark ? Colors.white12 : Colors.black12;
     final chipBg = isDark
-        ? Colors.white.withOpacity(0.06)
-        : Colors.black.withOpacity(0.04);
+        ? Colors.white.withValues(alpha: 0.06)
+        : Colors.black.withValues(alpha: 0.04);
 
     return SafeArea(
       bottom: true,
@@ -257,7 +257,7 @@ class _SelectPlaylistBottomSheetState extends State<SelectPlaylistBottomSheet> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(LucideIcons.music4,
-                size: 40, color: textMuted.withOpacity(0.35)),
+                size: 40, color: textMuted.withValues(alpha: 0.35)),
             const SizedBox(height: 12),
             Text(
               'No playlists yet',
@@ -337,8 +337,8 @@ class _CoverFallback extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: isDark
-          ? Colors.white.withOpacity(0.07)
-          : Colors.black.withOpacity(0.06),
+          ? Colors.white.withValues(alpha: 0.07)
+          : Colors.black.withValues(alpha: 0.06),
       child: Icon(
         LucideIcons.music4,
         size: 18,

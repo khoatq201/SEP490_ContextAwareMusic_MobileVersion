@@ -31,7 +31,7 @@ class ZoneRepositoryImpl implements ZoneRepository {
       final allZones = await remoteDataSource.getZonesBySpace('space-1');
       final zone = allZones.firstWhere(
         (z) => z.id == zoneId,
-        orElse: () => throw ServerException('Zone not found'),
+        orElse: () => throw const ServerException('Zone not found'),
       );
       return Right(zone);
     } on ServerException catch (e) {

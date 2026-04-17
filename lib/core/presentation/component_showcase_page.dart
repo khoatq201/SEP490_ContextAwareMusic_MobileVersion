@@ -22,7 +22,7 @@ class ComponentShowcasePage extends StatelessWidget {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              AppColors.paleOrange.withOpacity(0.3),
+              AppColors.paleOrange.withValues(alpha: 0.3),
               Colors.white,
             ],
           ),
@@ -359,7 +359,7 @@ class ComponentShowcasePage extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
             boxShadow: [
               BoxShadow(
-                color: color.withOpacity(0.3),
+                color: color.withValues(alpha: 0.3),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               ),

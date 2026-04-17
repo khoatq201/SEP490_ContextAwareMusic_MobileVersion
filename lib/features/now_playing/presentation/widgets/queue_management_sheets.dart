@@ -677,6 +677,7 @@ class _NowPlayingOverrideMusicSheetState
     extends State<NowPlayingOverrideMusicSheet> {
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _reasonController = TextEditingController();
+  final TextEditingController _ttlController = TextEditingController();
 
   _MusicSourceTab _sourceTab = _MusicSourceTab.tracks;
   List<ApiTrack> _tracks = const <ApiTrack>[];
@@ -702,6 +703,7 @@ class _NowPlayingOverrideMusicSheetState
   void dispose() {
     _searchController.dispose();
     _reasonController.dispose();
+    _ttlController.dispose();
     super.dispose();
   }
 
@@ -839,6 +841,7 @@ class _NowPlayingOverrideMusicSheetState
     final playlistId =
         _sourceTab == _MusicSourceTab.playlist ? _selectedPlaylistId : null;
     final moodId = _sourceTab == _MusicSourceTab.mood ? _selectedMoodId : null;
+    final ttlSeconds = int.tryParse(_ttlController.text.trim());
     context.read<CamsPlaybackBloc>().add(
           CamsApplyOverride(
             trackIds: trackIds,
@@ -846,6 +849,8 @@ class _NowPlayingOverrideMusicSheetState
             moodId: moodId,
             isClearManagerSelectedQueues: _clearManagerSelectedQueues,
             isCutOver: _isCutOver,
+            manualOverrideTtlSeconds:
+                ttlSeconds != null && ttlSeconds > 0 ? ttlSeconds : null,
             reason: reason.isEmpty ? null : reason,
           ),
         );
@@ -939,6 +944,16 @@ class _NowPlayingOverrideMusicSheetState
                   color: palette.textMuted,
                   fontSize: 11,
                 ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _ttlController,
+              keyboardType: TextInputType.number,
+              style: GoogleFonts.inter(color: palette.textPrimary),
+              decoration: const InputDecoration(
+                labelText: 'Override TTL seconds (optional)',
+                hintText: 'Example: 1800',
               ),
             ),
             const SizedBox(height: 12),

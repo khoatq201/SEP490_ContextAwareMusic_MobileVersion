@@ -544,8 +544,8 @@ class _FilterTagRow extends StatelessWidget {
                   color: isActive
                       ? Colors.transparent
                       : (isDark
-                          ? Colors.white.withOpacity(0.3)
-                          : Colors.black.withOpacity(0.2)),
+                          ? Colors.white.withValues(alpha: 0.3)
+                          : Colors.black.withValues(alpha: 0.2)),
                   width: 1,
                 ),
               ),
@@ -653,7 +653,7 @@ class _CategoryCard extends StatelessWidget {
                   image: NetworkImage(category.imageUrl!),
                   fit: BoxFit.cover,
                   colorFilter: ColorFilter.mode(
-                    category.color.withOpacity(0.6),
+                    category.color.withValues(alpha: 0.6),
                     BlendMode.srcOver,
                   ),
                 )
@@ -677,7 +677,7 @@ class _CategoryCard extends StatelessWidget {
               child: Icon(
                 category.icon,
                 size: 52,
-                color: Colors.white.withOpacity(0.25),
+                color: Colors.white.withValues(alpha: 0.25),
               ),
             ),
           ],
@@ -704,7 +704,7 @@ class _CategoryGridSkeleton extends StatelessWidget {
       itemCount: 8,
       itemBuilder: (_, __) => Container(
         decoration: BoxDecoration(
-          color: Colors.grey.withOpacity(0.15),
+          color: Colors.grey.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
         ),
       ),
@@ -894,13 +894,13 @@ class _ResultTile extends StatelessWidget {
                   result.imageUrl!,
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => Container(
-                    color: AppColors.primaryOrange.withOpacity(0.12),
+                    color: AppColors.primaryOrange.withValues(alpha: 0.12),
                     child: Icon(_fallbackIcon,
                         color: AppColors.primaryOrange, size: 24),
                   ),
                 )
               : Container(
-                  color: AppColors.primaryOrange.withOpacity(0.12),
+                  color: AppColors.primaryOrange.withValues(alpha: 0.12),
                   child: Icon(_fallbackIcon,
                       color: AppColors.primaryOrange, size: 24),
                 ),

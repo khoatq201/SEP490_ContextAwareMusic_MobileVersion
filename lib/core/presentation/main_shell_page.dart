@@ -51,7 +51,7 @@ class MainShellPage extends StatelessWidget {
         color: isDark ? AppColors.surfaceDark : Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 12,
             offset: const Offset(0, -2),
           ),
@@ -263,18 +263,18 @@ class _NavItemCenter extends StatelessWidget {
                     ? LinearGradient(
                         colors: [
                           activeColor,
-                          activeColor.withOpacity(0.7),
+                          activeColor.withValues(alpha: 0.7),
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       )
                     : null,
-                color: isActive ? null : activeColor.withOpacity(0.12),
+                color: isActive ? null : activeColor.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
                 boxShadow: isActive
                     ? [
                         BoxShadow(
-                          color: activeColor.withOpacity(0.45),
+                          color: activeColor.withValues(alpha: 0.45),
                           blurRadius: 10,
                           offset: const Offset(0, 3),
                         ),

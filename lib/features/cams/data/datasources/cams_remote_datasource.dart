@@ -20,6 +20,7 @@ abstract class CamsRemoteDataSource {
     String? moodId,
     bool? isClearManagerSelectedQueues,
     bool? isCutOver,
+    int? manualOverrideTtlSeconds,
     String? reason,
     bool usePlaybackDeviceScope = false,
   });
@@ -46,6 +47,12 @@ abstract class CamsRemoteDataSource {
     int? volumePercent,
     bool? isMuted,
     int? queueEndBehavior,
+    bool usePlaybackDeviceScope = false,
+  });
+
+  Future<void> updateSchedulingState({
+    required String spaceId,
+    required bool isScheduling,
     bool usePlaybackDeviceScope = false,
   });
 
@@ -129,6 +136,7 @@ class CamsRemoteDataSourceImpl implements CamsRemoteDataSource {
     String? moodId,
     bool? isClearManagerSelectedQueues,
     bool? isCutOver,
+    int? manualOverrideTtlSeconds,
     String? reason,
     bool usePlaybackDeviceScope = false,
   }) async {
@@ -144,6 +152,8 @@ class CamsRemoteDataSourceImpl implements CamsRemoteDataSource {
           if (isClearManagerSelectedQueues != null)
             'isClearManagerSelectedQueues': isClearManagerSelectedQueues,
           if (isCutOver != null) 'isCutOver': isCutOver,
+          if (manualOverrideTtlSeconds != null)
+            'manualOverrideTtlSeconds': manualOverrideTtlSeconds,
           if (reason != null) 'reason': reason,
         },
       );
@@ -153,7 +163,7 @@ class CamsRemoteDataSourceImpl implements CamsRemoteDataSource {
         final model = OverrideResponseModel.fromApiResponse(data);
         if (model != null) return model;
       }
-      throw ServerException('Invalid override response');
+      throw const ServerException('Invalid override response');
     } catch (e) {
       if (e is ServerException) rethrow;
       throw ServerException('Failed to override space: $e');
@@ -254,6 +264,26 @@ class CamsRemoteDataSourceImpl implements CamsRemoteDataSource {
     } catch (e) {
       if (e is ServerException) rethrow;
       throw ServerException('Failed to update audio state: $e');
+    }
+  }
+
+  @override
+  Future<void> updateSchedulingState({
+    required String spaceId,
+    required bool isScheduling,
+    bool usePlaybackDeviceScope = false,
+  }) async {
+    try {
+      await _patchWithScope(
+        spaceId: spaceId,
+        managerScopedPathBuilder: ApiConstants.camsSchedulingState,
+        playbackScopedPath: ApiConstants.camsCurrentDeviceSchedulingState,
+        usePlaybackDeviceScope: usePlaybackDeviceScope,
+        payload: {'isScheduling': isScheduling},
+      );
+    } catch (e) {
+      if (e is ServerException) rethrow;
+      throw ServerException('Failed to update scheduling state: $e');
     }
   }
 
@@ -579,7 +609,7 @@ class CamsRemoteDataSourceImpl implements CamsRemoteDataSource {
       final model = SpacePlaybackStateModel.fromApiResponse(data);
       if (model != null) return model;
     }
-    throw ServerException('Invalid space state response');
+    throw const ServerException('Invalid space state response');
   }
 
   Future<List<SpaceQueueStateItemModel>> _fetchQueueByPath(String path) async {
@@ -592,7 +622,7 @@ class CamsRemoteDataSourceImpl implements CamsRemoteDataSource {
     if (body is List) {
       return SpaceQueueStateItemModel.listFromDynamic(body);
     }
-    throw ServerException('Invalid queue response');
+    throw const ServerException('Invalid queue response');
   }
 
   @override
@@ -614,7 +644,7 @@ class CamsRemoteDataSourceImpl implements CamsRemoteDataSource {
           Map<String, dynamic>.from(data['data'] as Map),
         );
       }
-      throw ServerException('Invalid pair-device response');
+      throw const ServerException('Invalid pair-device response');
     } catch (e) {
       if (e is ServerException) rethrow;
       throw ServerException('Failed to get pair device info: $e');
@@ -633,7 +663,7 @@ class CamsRemoteDataSourceImpl implements CamsRemoteDataSource {
           Map<String, dynamic>.from(data['data'] as Map),
         );
       }
-      throw ServerException('Invalid pair-device response');
+      throw const ServerException('Invalid pair-device response');
     } catch (e) {
       if (e is ServerException) rethrow;
       throw ServerException('Failed to get pair device info: $e');
@@ -652,7 +682,7 @@ class CamsRemoteDataSourceImpl implements CamsRemoteDataSource {
           Map<String, dynamic>.from(data['data'] as Map),
         );
       }
-      throw ServerException('Invalid pair-code response');
+      throw const ServerException('Invalid pair-code response');
     } catch (e) {
       if (e is ServerException) rethrow;
       throw ServerException('Failed to generate pair code: $e');

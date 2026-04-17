@@ -516,7 +516,7 @@ class DioClient {
         return newToken;
       }
 
-      throw AuthenticationException('Refresh token failed');
+      throw const AuthenticationException('Refresh token failed');
     } on AuthenticationException {
       await _clearLocalSessionAfterRefreshFailure(
         'invalid refresh response',
@@ -534,7 +534,7 @@ class DioClient {
           playbackSession: false,
         );
       }
-      throw AuthenticationException(
+      throw const AuthenticationException(
         'Session expired. Please login again.',
       );
     }
@@ -545,7 +545,7 @@ class DioClient {
       final expiredToken = _localStorage.getDeviceAccessToken();
       final refreshToken = _localStorage.getDeviceRefreshToken();
       if (refreshToken == null || refreshToken.isEmpty) {
-        throw AuthenticationException('Missing device refresh token.');
+        throw const AuthenticationException('Missing device refresh token.');
       }
 
       _log(
@@ -577,7 +577,7 @@ class DioClient {
         final newToken =
             (payload['deviceAccessToken'] ?? payload['accessToken']) as String?;
         if (newToken == null || newToken.isEmpty) {
-          throw AuthenticationException(
+          throw const AuthenticationException(
             'Device refresh response missing access token.',
           );
         }
@@ -590,7 +590,7 @@ class DioClient {
         final expiresAt =
             DateTime.tryParse(expiresRaw?.toString() ?? '')?.toUtc();
         if (expiresAt == null) {
-          throw AuthenticationException(
+          throw const AuthenticationException(
             'Device refresh response missing token expiry.',
           );
         }
@@ -614,7 +614,7 @@ class DioClient {
         return newToken;
       }
 
-      throw AuthenticationException('Device refresh token failed.');
+      throw const AuthenticationException('Device refresh token failed.');
     } on AuthenticationException {
       await _clearLocalSessionAfterRefreshFailure(
         'invalid device refresh',
@@ -632,7 +632,7 @@ class DioClient {
           playbackSession: true,
         );
       }
-      throw AuthenticationException(
+      throw const AuthenticationException(
         'Device session expired. Please pair again.',
       );
     }
@@ -676,6 +676,21 @@ class DioClient {
     Options? options,
   }) async {
     return await _dio.put(
+      path,
+      data: data,
+      queryParameters: queryParameters,
+      options: options,
+    );
+  }
+
+  // PATCH request
+  Future<Response> patch(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    return await _dio.patch(
       path,
       data: data,
       queryParameters: queryParameters,

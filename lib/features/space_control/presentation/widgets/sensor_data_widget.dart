@@ -92,7 +92,6 @@ class _SensorCard extends StatelessWidget {
   final Color color;
 
   const _SensorCard({
-    super.key,
     required this.icon,
     required this.label,
     required this.value,

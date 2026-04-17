@@ -41,6 +41,6 @@ class MoodColorHelper {
 
   static Color shadowColorFor(String? mood) {
     final gradient = gradientFor(mood);
-    return gradient.colors.first.withOpacity(0.35);
+    return gradient.colors.first.withValues(alpha: 0.35);
   }
 }

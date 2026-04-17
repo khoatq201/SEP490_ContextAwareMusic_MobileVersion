@@ -54,21 +54,26 @@ class SessionCubit extends Cubit<SessionState> {
   /// Supports both PascalCase from backend (e.g. "StoreManager") and
   /// legacy snake_case (e.g. "store_manager").
   void setRoleFromString(String roleStr) {
-    switch (roleStr.toLowerCase()) {
+    final normalizedRole = roleStr
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp(r'^role[_\s-]*'), '')
+        .replaceAll(RegExp(r'[\s_-]+'), '');
+
+    switch (normalizedRole) {
+      case 'playbackdevice':
+        changeRole(UserRole.playbackDevice);
+        return;
       case 'storemanager':
-      case 'store_manager':
         changeRole(UserRole.storeManager);
-        break;
+        return;
       case 'brandmanager':
-      case 'brand_manager':
       case 'admin':
-        changeRole(UserRole.brandManager);
-        break;
       case 'systemadmin':
-      case 'system_admin':
         changeRole(
-            UserRole.brandManager); // SystemAdmin maps to brandManager in app
-        break;
+          UserRole.brandManager,
+        ); // SystemAdmin maps to brandManager in app
+        return;
       default:
         changeRole(UserRole.storeManager);
     }

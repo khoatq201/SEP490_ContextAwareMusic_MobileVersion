@@ -45,7 +45,7 @@ class MiniPlayerWidget extends StatelessWidget {
               borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
+                  color: Colors.black.withValues(alpha: 0.08),
                   blurRadius: 8,
                   offset: const Offset(0, -1),
                 ),
@@ -154,18 +154,19 @@ class MiniPlayerWidget extends StatelessWidget {
                           ),
                           onPressed: canSkipNext
                               ? () {
-                            if (useRemoteControls) {
-                              context.read<CamsPlaybackBloc>().add(
-                                    const CamsSendCommand(
-                                      command: PlaybackCommandEnum.skipNext,
-                                    ),
-                                  );
-                              return;
-                            }
-                            context
-                                .read<PlayerBloc>()
-                                .add(const PlayerSkipRequested());
-                          }
+                                  if (useRemoteControls) {
+                                    context.read<CamsPlaybackBloc>().add(
+                                          const CamsSendCommand(
+                                            command:
+                                                PlaybackCommandEnum.skipNext,
+                                          ),
+                                        );
+                                    return;
+                                  }
+                                  context
+                                      .read<PlayerBloc>()
+                                      .add(const PlayerSkipRequested());
+                                }
                               : null,
                         ),
 

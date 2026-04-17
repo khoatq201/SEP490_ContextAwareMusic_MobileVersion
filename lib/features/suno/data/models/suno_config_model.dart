@@ -30,10 +30,10 @@ class SunoConfigModel extends SunoConfig {
       availableGenerationModes: _readGenerationModes(json),
       brandMusicProfile: brandMusicProfile,
       fuzzyProfileTemplate: _readString(json, const [
-        'fuzzyProfileTemplate',
-        'defaultFuzzyProfileTemplate',
-        'brandMusicProfileTemplate',
-      ]) ??
+            'fuzzyProfileTemplate',
+            'defaultFuzzyProfileTemplate',
+            'brandMusicProfileTemplate',
+          ]) ??
           brandMusicProfile?.fuzzyProfileTemplate,
       availableFuzzyProfileTemplates: _readStringList(json, const [
         'availableFuzzyProfileTemplates',
@@ -97,12 +97,34 @@ class SunoConfigModel extends SunoConfig {
     ]) {
       final value = json[key];
       if (value is! List) continue;
+      final usesZeroBasedValues = value.any(_isZeroBasedGenerationModeValue);
       return value
-          .map(AiGenerationModeEnum.fromJson)
+          .map(
+            (entry) => usesZeroBasedValues
+                ? _readZeroBasedGenerationMode(entry)
+                : AiGenerationModeEnum.fromJson(entry),
+          )
           .where((mode) => mode != AiGenerationModeEnum.unknown)
           .toList(growable: false);
     }
     return const <AiGenerationModeEnum>[];
+  }
+
+  static bool _isZeroBasedGenerationModeValue(dynamic value) {
+    if (value is int) return value == 0;
+    return value.toString().trim() == '0';
+  }
+
+  static AiGenerationModeEnum _readZeroBasedGenerationMode(dynamic value) {
+    final parsed = value is int ? value : int.tryParse(value.toString().trim());
+    switch (parsed) {
+      case 0:
+        return AiGenerationModeEnum.suno;
+      case 1:
+        return AiGenerationModeEnum.brandModel;
+      default:
+        return AiGenerationModeEnum.fromJson(value);
+    }
   }
 
   static String? _readString(Map<String, dynamic> json, List<String> keys) {

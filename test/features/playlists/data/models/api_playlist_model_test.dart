@@ -5,7 +5,7 @@ import 'package:cams_store_manager/features/playlists/data/models/api_playlist_m
 void main() {
   group('ApiPlaylistModel', () {
     test('parses per-track hlsUrl from detail payload', () {
-      final model = ApiPlaylistModel.fromDetailJson({
+      final model = ApiPlaylistModel.fromDetailJson(const {
         'id': 'playlist-1',
         'name': 'Playlist',
         'createdAt': '2026-03-24T08:00:00Z',
@@ -24,7 +24,7 @@ void main() {
     });
 
     test('derives total duration from track detail payload', () {
-      final model = ApiPlaylistModel.fromDetailJson({
+      final model = ApiPlaylistModel.fromDetailJson(const {
         'id': 'playlist-2',
         'name': 'Playlist',
         'createdAt': '2026-03-24T08:00:00Z',

@@ -9,8 +9,14 @@ class ApiConstants {
   static const bool useMockData = false;
 
   // Base URLs
-  // Android emulator can use 10.0.2.2 (host localhost); real devices should use LAN IP.http://192.168.1.4:7001,https://logcams.cloud
-  static const String baseUrl = 'http://192.168.1.3:7001';
+  // Override with:
+  // flutter run --dart-define=API_BASE_URL=http://10.0.2.2:7001
+  // Android emulator can use 10.0.2.2 for host localhost.
+  // Real devices should use a LAN IP or deployed API URL.
+  static const String baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://192.168.1.3:7001',
+  );
 
   // Default request headers
   static const Map<String, String> defaultHeaders = {
@@ -99,6 +105,10 @@ class ApiConstants {
       '/api/cams/spaces/$spaceId/state/audio';
   static const String camsCurrentDeviceAudioState =
       '/api/cams/spaces/state/audio';
+  static String camsSchedulingState(String spaceId) =>
+      '/api/cams/spaces/$spaceId/state/scheduling';
+  static const String camsCurrentDeviceSchedulingState =
+      '/api/cams/spaces/state/scheduling';
   static String camsQueueTracks(String spaceId) =>
       '/api/cams/spaces/$spaceId/queue/tracks';
   static const String camsCurrentDeviceQueueTracks =
@@ -123,6 +133,40 @@ class ApiConstants {
       '/api/cams/spaces/$spaceId/pair-code';
   static String camsUnpair(String spaceId) =>
       '/api/cams/spaces/$spaceId/unpair';
+
+  // Config Governance
+  static const String cmsConfigBase = '/api/cms/config';
+  static const String cmsConfigBrand = '$cmsConfigBase/brand';
+  static const String cmsConfigBrandValue = '$cmsConfigBase/brand-value';
+  static const String cmsConfigStore = '$cmsConfigBase/store';
+  static const String cmsConfigStoreValue = '$cmsConfigBase/store-value';
+  static const String cmsConfigStoresGovernanceMode =
+      '$cmsConfigBase/stores/governance-mode';
+  static const String cmsConfigVersionPublish =
+      '$cmsConfigBase/version/publish';
+  static const String cmsConfigVersionRollback =
+      '$cmsConfigBase/version/rollback';
+  static String cmsConfigStoreById(String storeId) =>
+      '$cmsConfigBase/store/$storeId';
+  static String cmsConfigStoreValueById(String storeId) =>
+      '$cmsConfigBase/store/$storeId/value';
+  static String cmsConfigSpace(String spaceId) =>
+      '$cmsConfigBase/space/$spaceId';
+  static String cmsConfigSpaceValue(String spaceId) =>
+      '$cmsConfigBase/space/$spaceId/value';
+
+  // CMS Schedule
+  static const String cmsScheduleBase = '/api/cms/schedule';
+  static String cmsScheduleSpaceBootstrap(String spaceId) =>
+      '$cmsScheduleBase/spaces/$spaceId/bootstrap';
+  static String cmsScheduleSpaceSlot(String spaceId, String slotId) =>
+      '$cmsScheduleBase/spaces/$spaceId/slots/$slotId';
+  static String cmsScheduleSpaceApplySource(String spaceId) =>
+      '$cmsScheduleBase/spaces/$spaceId/apply-source';
+  static String cmsScheduleSpaceSaveToLibrary(String spaceId) =>
+      '$cmsScheduleBase/spaces/$spaceId/save-to-library';
+  static String cmsScheduleSpaceToggle(String spaceId) =>
+      '$cmsScheduleBase/spaces/$spaceId/toggle';
 
   // SignalR
   static String get storeHubUrl => '$baseUrl/hubs/store';

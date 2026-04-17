@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/constants/app_typography.dart';
+import '../../../config_governance/domain/entities/config_governance_enums.dart';
 import '../../domain/entities/store.dart';
 
 class StoreInfoCard extends StatelessWidget {
@@ -23,6 +24,7 @@ class StoreInfoCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final hasActions =
         onEdit != null || onToggleStatus != null || onDelete != null;
+    final governanceMode = store.governanceMode;
     return Card(
       elevation: AppDimensions.elevationMd,
       child: Padding(
@@ -59,27 +61,16 @@ class StoreInfoCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: AppDimensions.spacingXs),
-                      Row(
+                      Wrap(
+                        spacing: AppDimensions.spacingSm,
+                        runSpacing: AppDimensions.spacingXs,
                         children: [
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: store.isActive
-                                  ? AppColors.success
-                                  : AppColors.textTertiary,
-                              shape: BoxShape.circle,
-                            ),
+                          _StatusBadge(
+                            label: store.status.displayName,
+                            isActive: store.isActive,
                           ),
-                          const SizedBox(width: AppDimensions.spacingXs),
-                          Text(
-                            store.status.displayName,
-                            style: AppTypography.labelSmall.copyWith(
-                              color: store.isActive
-                                  ? AppColors.success
-                                  : AppColors.textTertiary,
-                            ),
-                          ),
+                          if (governanceMode != null)
+                            _GovernanceModeBadge(mode: governanceMode),
                         ],
                       ),
                     ],
@@ -185,6 +176,110 @@ class StoreInfoCard extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  final String label;
+  final bool isActive;
+
+  const _StatusBadge({
+    required this.label,
+    required this.isActive,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isActive ? AppColors.success : AppColors.textTertiary;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: AppDimensions.spacingXs),
+          Text(
+            label,
+            style: AppTypography.labelSmall.copyWith(
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GovernanceModeBadge extends StatelessWidget {
+  final StoreGovernanceMode mode;
+
+  const _GovernanceModeBadge({required this.mode});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _modeColor(mode);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.22)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            _modeIcon(mode),
+            size: 14,
+            color: color,
+          ),
+          const SizedBox(width: AppDimensions.spacingXs),
+          Text(
+            mode.label,
+            style: AppTypography.labelSmall.copyWith(
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Color _modeColor(StoreGovernanceMode mode) {
+    switch (mode) {
+      case StoreGovernanceMode.strictSync:
+        return AppColors.primaryOrange;
+      case StoreGovernanceMode.aiMode:
+        return AppColors.secondaryTeal;
+      case StoreGovernanceMode.freedom:
+        return AppColors.success;
+    }
+  }
+
+  static IconData _modeIcon(StoreGovernanceMode mode) {
+    switch (mode) {
+      case StoreGovernanceMode.strictSync:
+        return Icons.sync_lock_rounded;
+      case StoreGovernanceMode.aiMode:
+        return Icons.auto_awesome_rounded;
+      case StoreGovernanceMode.freedom:
+        return Icons.lock_open_rounded;
+    }
   }
 }
 

@@ -34,6 +34,7 @@ import 'package:cams_store_manager/features/cams/domain/usecases/override_space.
 import 'package:cams_store_manager/features/cams/domain/usecases/queue_usecases.dart';
 import 'package:cams_store_manager/features/cams/domain/usecases/send_playback_command.dart';
 import 'package:cams_store_manager/features/cams/domain/usecases/update_audio_state.dart';
+import 'package:cams_store_manager/features/cams/domain/usecases/update_scheduling_state.dart';
 import 'package:cams_store_manager/features/cams/presentation/bloc/cams_playback_bloc.dart';
 import 'package:cams_store_manager/features/cams/presentation/bloc/cams_playback_event.dart';
 import 'package:cams_store_manager/features/moods/data/repositories/mood_repository_impl.dart';
@@ -86,6 +87,7 @@ void main() {
         getSpaceQueue: GetSpaceQueue(camsRepository),
         sendPlaybackCommand: SendPlaybackCommand(camsRepository),
         updateAudioState: UpdateAudioState(camsRepository),
+        updateSchedulingState: UpdateSchedulingState(camsRepository),
         storeHubService: storeHubService,
       );
       camsBloc = _ManualCamsPlaybackBloc(
@@ -1396,6 +1398,7 @@ class _FakeCamsRepository implements CamsRepository {
     String? moodId,
     bool? isClearManagerSelectedQueues,
     bool? isCutOver,
+    int? manualOverrideTtlSeconds,
     String? reason,
     bool usePlaybackDeviceScope = false,
   }) async {
@@ -1428,6 +1431,15 @@ class _FakeCamsRepository implements CamsRepository {
     int? volumePercent,
     bool? isMuted,
     int? queueEndBehavior,
+    bool usePlaybackDeviceScope = false,
+  }) async {
+    return const Right(null);
+  }
+
+  @override
+  Future<Either<Failure, void>> updateSchedulingState({
+    required String spaceId,
+    required bool isScheduling,
     bool usePlaybackDeviceScope = false,
   }) async {
     return const Right(null);

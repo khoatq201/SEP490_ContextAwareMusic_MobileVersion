@@ -180,8 +180,8 @@ class _ArtFallback extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: isDark
-          ? Colors.white.withOpacity(0.07)
-          : Colors.black.withOpacity(0.06),
+          ? Colors.white.withValues(alpha: 0.07)
+          : Colors.black.withValues(alpha: 0.06),
       child: Icon(
         LucideIcons.music4,
         size: 22,

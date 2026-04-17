@@ -82,7 +82,8 @@ class _SpaceDetailPageState extends State<SpaceDetailPage>
 
   @override
   Widget build(BuildContext context) {
-    final palette = _Palette.fromBrightness(Theme.of(context).brightness);
+    final palette =
+        SpaceDetailPalette.fromBrightness(Theme.of(context).brightness);
 
     // ── Sync MusicControlBloc → global PlayerBloc ────────────────────
     return BlocListener<MusicControlBloc, MusicControlState>(
@@ -123,7 +124,7 @@ class _SpaceDetailPageState extends State<SpaceDetailPage>
                     surfaceTintColor: Colors.transparent,
                     forceElevated: innerBoxIsScrolled,
                     elevation: innerBoxIsScrolled ? 2 : 0,
-                    shadowColor: palette.shadow.withOpacity(0.1),
+                    shadowColor: palette.shadow.withValues(alpha: 0.1),
                     leading: GestureDetector(
                       onTap: () {
                         // Pop back to StoreDashboard; if can't pop, go to store route
@@ -222,7 +223,7 @@ class _SpaceDetailPageState extends State<SpaceDetailPage>
                       indicatorSize: TabBarIndicatorSize.tab,
                       labelColor: palette.accent,
                       unselectedLabelColor: palette.textMuted,
-                      dividerColor: palette.border.withOpacity(0.3),
+                      dividerColor: palette.border.withValues(alpha: 0.3),
                       labelStyle: GoogleFonts.inter(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
@@ -274,7 +275,7 @@ class _SpaceDetailPageState extends State<SpaceDetailPage>
     ); // end BlocListener
   }
 
-  Widget _buildLoading(_Palette palette) {
+  Widget _buildLoading(SpaceDetailPalette palette) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -290,7 +291,7 @@ class _SpaceDetailPageState extends State<SpaceDetailPage>
     );
   }
 
-  Widget _buildError(_Palette palette, String? message) {
+  Widget _buildError(SpaceDetailPalette palette, String? message) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -332,7 +333,7 @@ class _SpaceDetailPageState extends State<SpaceDetailPage>
     BuildContext context,
     SpaceMonitoringState spaceState,
     MusicControlState musicState,
-    _Palette palette,
+    SpaceDetailPalette palette,
   ) {
     return Stack(
       children: [
@@ -406,7 +407,7 @@ class _SpaceDetailPageState extends State<SpaceDetailPage>
     );
   }
 
-  Widget _buildSensorsTab(_Palette palette) {
+  Widget _buildSensorsTab(SpaceDetailPalette palette) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -414,7 +415,7 @@ class _SpaceDetailPageState extends State<SpaceDetailPage>
           Icon(
             LucideIcons.activity,
             size: 64,
-            color: palette.textMuted.withOpacity(0.5),
+            color: palette.textMuted.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 16),
           Text(
@@ -471,7 +472,7 @@ class SpaceHeader extends StatelessWidget {
   final bool isOnline;
   final VoidCallback onBack;
   final VoidCallback onSettings;
-  final _Palette palette;
+  final SpaceDetailPalette palette;
 
   @override
   Widget build(BuildContext context) {
@@ -573,7 +574,7 @@ class _StatusDot extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: (isOnline ? Colors.greenAccent : Colors.orangeAccent)
-                .withOpacity(0.4),
+                .withValues(alpha: 0.4),
             blurRadius: 8,
             spreadRadius: 2,
           ),
@@ -587,7 +588,7 @@ class SensorDashboard extends StatelessWidget {
   const SensorDashboard(
       {super.key, required this.sensorData, required this.palette});
   final SensorData? sensorData;
-  final _Palette palette;
+  final SpaceDetailPalette palette;
 
   @override
   Widget build(BuildContext context) {
@@ -619,7 +620,7 @@ class SensorDashboard extends StatelessWidget {
         label: 'Crowd',
         value: sensorData != null ? _crowdEstimate(sensorData!) : 'N/A',
         badge: 'Live',
-        gradient: [palette.accentAlt, palette.accent.withOpacity(0.9)],
+        gradient: [palette.accentAlt, palette.accent.withValues(alpha: 0.9)],
         palette: palette,
         isAlert: false,
       ),
@@ -630,7 +631,7 @@ class SensorDashboard extends StatelessWidget {
             ? '${sensorData!.humidity.toStringAsFixed(0)}%'
             : '--',
         badge: _humidityBadge(sensorData?.humidity),
-        gradient: [palette.accent.withOpacity(0.85), palette.accentAlt],
+        gradient: [palette.accent.withValues(alpha: 0.85), palette.accentAlt],
         palette: palette,
         isAlert: false,
       ),
@@ -686,13 +687,13 @@ class SensorCard extends StatelessWidget {
   final String value;
   final String badge;
   final List<Color> gradient;
-  final _Palette palette;
+  final SpaceDetailPalette palette;
   final bool isAlert;
 
   @override
   Widget build(BuildContext context) {
     final Color dynamicTone = isAlert
-        ? Theme.of(context).colorScheme.error.withOpacity(0.9)
+        ? Theme.of(context).colorScheme.error.withValues(alpha: 0.9)
         : palette.accent;
 
     final BoxDecoration wrapperDecoration = palette.isDark
@@ -701,13 +702,13 @@ class SensorCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.35),
+                color: Colors.black.withValues(alpha: 0.35),
                 blurRadius: 24,
                 offset: const Offset(0, 12),
               ),
             ],
             border: Border.all(
-              color: dynamicTone.withOpacity(0.25),
+              color: dynamicTone.withValues(alpha: 0.25),
               width: 0.8,
             ),
           )
@@ -720,7 +721,7 @@ class SensorCard extends StatelessWidget {
             ),
             boxShadow: [
               BoxShadow(
-                color: gradient.first.withOpacity(0.35),
+                color: gradient.first.withValues(alpha: 0.35),
                 blurRadius: 18,
                 offset: const Offset(0, 10),
               ),
@@ -741,8 +742,8 @@ class SensorCard extends StatelessWidget {
               gradient: palette.isDark
                   ? LinearGradient(
                       colors: [
-                        dynamicTone.withOpacity(0.10),
-                        dynamicTone.withOpacity(0.04),
+                        dynamicTone.withValues(alpha: 0.10),
+                        dynamicTone.withValues(alpha: 0.04),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -750,15 +751,15 @@ class SensorCard extends StatelessWidget {
                   : LinearGradient(
                       colors: [
                         palette.textOnAccent
-                            .withOpacity(palette.isDark ? 0.12 : 0.18),
+                            .withValues(alpha: palette.isDark ? 0.12 : 0.18),
                         palette.textOnAccent
-                            .withOpacity(palette.isDark ? 0.08 : 0.12),
+                            .withValues(alpha: palette.isDark ? 0.08 : 0.12),
                       ],
                     ),
               border: Border.all(
                 color: palette.isDark
-                    ? dynamicTone.withOpacity(0.35)
-                    : palette.border.withOpacity(0.6),
+                    ? dynamicTone.withValues(alpha: 0.35)
+                    : palette.border.withValues(alpha: 0.6),
                 width: palette.isDark ? 0.8 : 1,
               ),
             ),
@@ -771,8 +772,8 @@ class SensorCard extends StatelessWidget {
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         color: palette.isDark
-                            ? dynamicTone.withOpacity(0.14)
-                            : palette.textOnAccent.withOpacity(0.12),
+                            ? dynamicTone.withValues(alpha: 0.14)
+                            : palette.textOnAccent.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(icon,
@@ -789,11 +790,11 @@ class SensorCard extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: palette.isDark
-                            ? Colors.white.withOpacity(0.05)
-                            : palette.textOnAccent.withOpacity(0.14),
+                            ? Colors.white.withValues(alpha: 0.05)
+                            : palette.textOnAccent.withValues(alpha: 0.14),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                            color: palette.textOnAccent.withOpacity(0.2)),
+                            color: palette.textOnAccent.withValues(alpha: 0.2)),
                       ),
                       child: Text(
                         badge,
@@ -819,7 +820,7 @@ class SensorCard extends StatelessWidget {
                 Text(
                   label,
                   style: GoogleFonts.inter(
-                    color: palette.textOnAccent.withOpacity(0.8),
+                    color: palette.textOnAccent.withValues(alpha: 0.8),
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -843,14 +844,14 @@ class MusicPlayerHero extends StatelessWidget {
 
   final MusicControlState state;
   final String? mood;
-  final _Palette palette;
+  final SpaceDetailPalette palette;
 
   @override
   Widget build(BuildContext context) {
     final track = state.playerState?.currentTrack;
     final gradientColors = palette.isDark
         ? const [Color(0xFF1F2937), Color(0xFF111827)]
-        : [palette.card, palette.card.withOpacity(0.92)];
+        : [palette.card, palette.card.withValues(alpha: 0.92)];
     final moodGradient = MoodColorHelper.gradientFor(mood);
     final moodShadow = MoodColorHelper.shadowColorFor(mood);
     return Container(
@@ -945,7 +946,7 @@ class MusicPlayerHero extends StatelessWidget {
       ),
       child: Center(
         child: Icon(LucideIcons.music4,
-            color: palette.textOnAccent.withOpacity(0.8), size: 48),
+            color: palette.textOnAccent.withValues(alpha: 0.8), size: 48),
       ),
     );
   }
@@ -967,7 +968,7 @@ class MusicPlayerControls extends StatelessWidget {
   final VoidCallback onSkip;
   final ValueChanged<double> onVolumeChanged;
   final double volume;
-  final _Palette palette;
+  final SpaceDetailPalette palette;
 
   String _formatDuration(int seconds) {
     final minutes = seconds ~/ 60;
@@ -994,9 +995,9 @@ class MusicPlayerControls extends StatelessWidget {
             SliderTheme(
               data: SliderTheme.of(context).copyWith(
                 activeTrackColor: palette.accent,
-                inactiveTrackColor: palette.textMuted.withOpacity(0.2),
+                inactiveTrackColor: palette.textMuted.withValues(alpha: 0.2),
                 thumbColor: palette.accentAlt,
-                overlayColor: palette.accent.withOpacity(0.2),
+                overlayColor: palette.accent.withValues(alpha: 0.2),
               ),
               child: Slider(
                 value: currentPosition.clamp(0, duration).toDouble(),
@@ -1047,7 +1048,7 @@ class MusicPlayerControls extends StatelessWidget {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: palette.accent.withOpacity(0.4),
+                        color: palette.accent.withValues(alpha: 0.4),
                         blurRadius: 18,
                         offset: const Offset(0, 10),
                       ),
@@ -1080,9 +1081,10 @@ class MusicPlayerControls extends StatelessWidget {
                 child: SliderTheme(
                   data: SliderTheme.of(context).copyWith(
                     activeTrackColor: palette.accent,
-                    inactiveTrackColor: palette.textMuted.withOpacity(0.2),
+                    inactiveTrackColor:
+                        palette.textMuted.withValues(alpha: 0.2),
                     thumbColor: palette.accentAlt,
-                    overlayColor: palette.accent.withOpacity(0.2),
+                    overlayColor: palette.accent.withValues(alpha: 0.2),
                   ),
                   child: Slider(
                     value: volume,
@@ -1108,7 +1110,7 @@ class _ControlIcon extends StatelessWidget {
       {required this.icon, required this.onTap, required this.palette});
   final IconData icon;
   final VoidCallback onTap;
-  final _Palette palette;
+  final SpaceDetailPalette palette;
 
   @override
   Widget build(BuildContext context) {
@@ -1131,7 +1133,7 @@ class _ControlIcon extends StatelessWidget {
 class _MoodBadge extends StatelessWidget {
   const _MoodBadge({this.mood, required this.palette});
   final String? mood;
-  final _Palette palette;
+  final SpaceDetailPalette palette;
 
   @override
   Widget build(BuildContext context) {
@@ -1170,7 +1172,7 @@ class _MoodBadge extends StatelessWidget {
 class _MiniBadge extends StatelessWidget {
   const _MiniBadge({required this.label, required this.palette});
   final String label;
-  final _Palette palette;
+  final SpaceDetailPalette palette;
 
   @override
   Widget build(BuildContext context) {
@@ -1205,23 +1207,23 @@ class ManualOverrideCTA extends StatelessWidget {
   final String spaceId;
   final String? currentMood;
   final Color accent;
-  final _Palette palette;
+  final SpaceDetailPalette palette;
 
   @override
   Widget build(BuildContext context) {
     final gradientColors = palette.isDark
         ? [
-            palette.accent.withOpacity(0.75),
-            palette.accentAlt.withOpacity(0.55),
+            palette.accent.withValues(alpha: 0.75),
+            palette.accentAlt.withValues(alpha: 0.55),
           ]
-        : [accent, accent.withOpacity(0.7)];
+        : [accent, accent.withValues(alpha: 0.7)];
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
         gradient: LinearGradient(colors: gradientColors),
         boxShadow: [
           BoxShadow(
-            color: accent.withOpacity(0.35),
+            color: accent.withValues(alpha: 0.35),
             blurRadius: 16,
             offset: const Offset(0, 10),
           ),
@@ -1257,7 +1259,7 @@ class ManualOverrideCTA extends StatelessWidget {
                       ? 'Current: ${currentMood!.toUpperCase()}'
                       : 'Set a new atmosphere',
                   style: GoogleFonts.inter(
-                    color: palette.textOnAccent.withOpacity(0.85),
+                    color: palette.textOnAccent.withValues(alpha: 0.85),
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1352,7 +1354,7 @@ class ManualOverrideCTA extends StatelessWidget {
                     max: 120,
                     divisions: 11,
                     activeColor: palette.accent,
-                    inactiveColor: palette.textMuted.withOpacity(0.2),
+                    inactiveColor: palette.textMuted.withValues(alpha: 0.2),
                     label: '$duration',
                     onChanged: (v) => setModalState(() {
                       duration = v.round();
@@ -1421,7 +1423,7 @@ class NextTrackPanel extends StatelessWidget {
       required this.palette});
   final MusicControlState state;
   final Color accent;
-  final _Palette palette;
+  final SpaceDetailPalette palette;
 
   @override
   Widget build(BuildContext context) {
@@ -1486,9 +1488,9 @@ class NextTrackPanel extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: accent.withOpacity(0.1),
+                    color: accent.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: accent.withOpacity(0.4)),
+                    border: Border.all(color: accent.withValues(alpha: 0.4)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -1518,7 +1520,7 @@ class NextTrackPanel extends StatelessWidget {
 class _NextArtwork extends StatelessWidget {
   const _NextArtwork(this.url, {required this.palette});
   final String? url;
-  final _Palette palette;
+  final SpaceDetailPalette palette;
 
   @override
   Widget build(BuildContext context) {
@@ -1536,8 +1538,8 @@ class _NextArtwork extends StatelessWidget {
   }
 }
 
-class _Palette {
-  const _Palette({
+class SpaceDetailPalette {
+  const SpaceDetailPalette({
     required this.isDark,
     required this.bg,
     required this.card,
@@ -1551,14 +1553,14 @@ class _Palette {
     required this.shadow,
   });
 
-  factory _Palette.fromBrightness(Brightness brightness) {
+  factory SpaceDetailPalette.fromBrightness(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
     if (isDark) {
-      return _Palette(
+      return SpaceDetailPalette(
         isDark: true,
         bg: AppColors.backgroundDarkPrimary,
         card: AppColors.surfaceDark,
-        overlay: Colors.white.withOpacity(0.06),
+        overlay: Colors.white.withValues(alpha: 0.06),
         border: AppColors.borderDarkMedium,
         textPrimary: AppColors.textDarkPrimary,
         textMuted: AppColors.textDarkSecondary,
@@ -1569,7 +1571,7 @@ class _Palette {
       );
     }
 
-    return const _Palette(
+    return const SpaceDetailPalette(
       isDark: false,
       bg: AppColors.backgroundPrimary,
       card: AppColors.surface,

@@ -12,6 +12,7 @@ import '../../domain/usecases/get_space_state.dart';
 import '../../domain/usecases/queue_usecases.dart';
 import '../../domain/usecases/send_playback_command.dart';
 import '../../domain/usecases/update_audio_state.dart';
+import '../../domain/usecases/update_scheduling_state.dart';
 import 'store_hub_service.dart';
 
 /// Queue-first orchestration layer for CAMS playback.
@@ -34,6 +35,7 @@ class QueueFirstPlaybackRuntime {
     required this.getSpaceQueue,
     required this.sendPlaybackCommand,
     required this.updateAudioState,
+    required this.updateSchedulingState,
     required this.storeHubService,
   });
 
@@ -46,6 +48,7 @@ class QueueFirstPlaybackRuntime {
   final GetSpaceQueue getSpaceQueue;
   final SendPlaybackCommand sendPlaybackCommand;
   final UpdateAudioState updateAudioState;
+  final UpdateSchedulingState updateSchedulingState;
   final StoreHubService storeHubService;
 
   final StreamController<SpacePlaybackState> _playbackStateController =
@@ -162,7 +165,8 @@ class QueueFirstPlaybackRuntime {
   }) async {
     final activeSpaceId = _activeSpaceId;
     if (activeSpaceId == null || activeSpaceId.isEmpty) {
-      return Left(ServerFailure('No active space is attached to runtime.'));
+      return const Left(
+          ServerFailure('No active space is attached to runtime.'));
     }
 
     final result = await getSpaceState(
@@ -199,7 +203,8 @@ class QueueFirstPlaybackRuntime {
   }) async {
     final activeSpaceId = _activeSpaceId;
     if (activeSpaceId == null || activeSpaceId.isEmpty) {
-      return Left(ServerFailure('No active space is attached to runtime.'));
+      return const Left(
+          ServerFailure('No active space is attached to runtime.'));
     }
 
     _debugLog(
@@ -238,7 +243,8 @@ class QueueFirstPlaybackRuntime {
   }) async {
     final activeSpaceId = _activeSpaceId;
     if (activeSpaceId == null || activeSpaceId.isEmpty) {
-      return Left(ServerFailure('No active space is attached to runtime.'));
+      return const Left(
+          ServerFailure('No active space is attached to runtime.'));
     }
 
     _debugLog(
@@ -274,7 +280,8 @@ class QueueFirstPlaybackRuntime {
   }) async {
     final activeSpaceId = _activeSpaceId;
     if (activeSpaceId == null || activeSpaceId.isEmpty) {
-      return Left(ServerFailure('No active space is attached to runtime.'));
+      return const Left(
+          ServerFailure('No active space is attached to runtime.'));
     }
 
     final baselineFingerprint = _lastFingerprint;
@@ -301,7 +308,8 @@ class QueueFirstPlaybackRuntime {
   }) async {
     final activeSpaceId = _activeSpaceId;
     if (activeSpaceId == null || activeSpaceId.isEmpty) {
-      return Left(ServerFailure('No active space is attached to runtime.'));
+      return const Left(
+          ServerFailure('No active space is attached to runtime.'));
     }
 
     final baselineFingerprint = _lastFingerprint;
@@ -326,7 +334,8 @@ class QueueFirstPlaybackRuntime {
   Future<Either<Failure, void>> clearQueueItems() async {
     final activeSpaceId = _activeSpaceId;
     if (activeSpaceId == null || activeSpaceId.isEmpty) {
-      return Left(ServerFailure('No active space is attached to runtime.'));
+      return const Left(
+          ServerFailure('No active space is attached to runtime.'));
     }
 
     final baselineFingerprint = _lastFingerprint;
@@ -356,7 +365,8 @@ class QueueFirstPlaybackRuntime {
   }) async {
     final activeSpaceId = _activeSpaceId;
     if (activeSpaceId == null || activeSpaceId.isEmpty) {
-      return Left(ServerFailure('No active space is attached to runtime.'));
+      return const Left(
+          ServerFailure('No active space is attached to runtime.'));
     }
 
     final baselineFingerprint = _lastFingerprint;
@@ -424,7 +434,8 @@ class QueueFirstPlaybackRuntime {
   }) async {
     final activeSpaceId = _activeSpaceId;
     if (activeSpaceId == null || activeSpaceId.isEmpty) {
-      return Left(ServerFailure('No active space is attached to runtime.'));
+      return const Left(
+          ServerFailure('No active space is attached to runtime.'));
     }
 
     final baselineFingerprint = _lastFingerprint;
@@ -449,6 +460,38 @@ class QueueFirstPlaybackRuntime {
         );
         if (patchedState != null) {
           _emitState(patchedState);
+        }
+        unawaited(
+            _refreshAfterMutation(baselineFingerprint: baselineFingerprint));
+        return const Right(null);
+      },
+    );
+  }
+
+  Future<Either<Failure, void>> patchSchedulingState({
+    required bool isScheduling,
+  }) async {
+    final activeSpaceId = _activeSpaceId;
+    if (activeSpaceId == null || activeSpaceId.isEmpty) {
+      return const Left(
+          ServerFailure('No active space is attached to runtime.'));
+    }
+
+    final baselineFingerprint = _lastFingerprint;
+    final result = await updateSchedulingState(
+      UpdateSchedulingStateParams(
+        spaceId: activeSpaceId,
+        isScheduling: isScheduling,
+        usePlaybackDeviceScope: _usePlaybackDeviceScope,
+      ),
+    );
+
+    return result.fold(
+      Left.new,
+      (_) async {
+        final current = _currentState;
+        if (current != null) {
+          _emitState(current.copyWith(isScheduling: isScheduling));
         }
         unawaited(
             _refreshAfterMutation(baselineFingerprint: baselineFingerprint));
@@ -644,6 +687,19 @@ class QueueFirstPlaybackRuntime {
       playbackState.currentDisplayName ?? '',
       playbackState.currentPlaylistName ?? '',
       playbackState.effectiveHlsUrl ?? '',
+      playbackState.isManualOverride ? '1' : '0',
+      playbackState.overrideMode?.value.toString() ?? '',
+      playbackState.overrideReason ?? '',
+      playbackState.manualOverrideActivatedAtUtc?.toUtc().toIso8601String() ??
+          '',
+      playbackState.manualOverrideExpiresAtUtc?.toUtc().toIso8601String() ?? '',
+      playbackState.manualOverrideTtlSeconds?.toString() ?? '',
+      playbackState.manualOverrideRemainingSeconds?.toString() ?? '',
+      playbackState.isScheduling ? '1' : '0',
+      playbackState.schedulingSlotId ?? '',
+      playbackState.schedulingSlotOrigin?.value.toString() ?? '',
+      playbackState.schedulingEndsAtUtc?.toUtc().toIso8601String() ?? '',
+      playbackState.schedulingRemainingSeconds?.toString() ?? '',
       playbackState.isPaused ? '1' : '0',
       playbackState.startedAtUtc?.toUtc().toIso8601String() ?? '',
       playbackState.seekOffsetSeconds?.toStringAsFixed(3) ?? '',
@@ -676,31 +732,7 @@ class QueueFirstPlaybackRuntime {
     required SpacePlaybackState source,
     required List<SpaceQueueStateItem> queueItems,
   }) {
-    return SpacePlaybackState(
-      spaceId: source.spaceId,
-      storeId: source.storeId,
-      brandId: source.brandId,
-      currentQueueItemId: source.currentQueueItemId,
-      currentTrackName: source.currentTrackName,
-      currentPlaylistId: source.currentPlaylistId,
-      currentPlaylistName: source.currentPlaylistName,
-      hlsUrl: source.hlsUrl,
-      moodName: source.moodName,
-      isManualOverride: source.isManualOverride,
-      overrideMode: source.overrideMode,
-      startedAtUtc: source.startedAtUtc,
-      expectedEndAtUtc: source.expectedEndAtUtc,
-      isPaused: source.isPaused,
-      pausePositionSeconds: source.pausePositionSeconds,
-      seekOffsetSeconds: source.seekOffsetSeconds,
-      pendingQueueItemId: source.pendingQueueItemId,
-      pendingPlaylistId: source.pendingPlaylistId,
-      pendingOverrideReason: source.pendingOverrideReason,
-      volumePercent: source.volumePercent,
-      isMuted: source.isMuted,
-      queueEndBehavior: source.queueEndBehavior,
-      spaceQueueItems: queueItems,
-    );
+    return source.copyWith(spaceQueueItems: queueItems);
   }
 
   bool _isLocallyPatchableCommand(PlaybackCommandEnum command) {
@@ -726,90 +758,32 @@ class QueueFirstPlaybackRuntime {
 
     switch (command) {
       case PlaybackCommandEnum.pause:
-        return SpacePlaybackState(
-          spaceId: current.spaceId,
-          storeId: current.storeId,
-          brandId: current.brandId,
-          currentQueueItemId: current.currentQueueItemId,
-          currentTrackName: current.currentTrackName,
-          currentPlaylistId: current.currentPlaylistId,
-          currentPlaylistName: current.currentPlaylistName,
-          hlsUrl: current.hlsUrl,
-          moodName: current.moodName,
-          isManualOverride: current.isManualOverride,
-          overrideMode: current.overrideMode,
-          startedAtUtc: current.startedAtUtc,
-          expectedEndAtUtc: current.expectedEndAtUtc,
+        return current.copyWith(
           isPaused: true,
           pausePositionSeconds: effectiveOffset.round(),
           seekOffsetSeconds: effectiveOffset,
-          pendingQueueItemId: current.pendingQueueItemId,
-          pendingPlaylistId: current.pendingPlaylistId,
-          pendingOverrideReason: current.pendingOverrideReason,
-          volumePercent: current.volumePercent,
-          isMuted: current.isMuted,
-          queueEndBehavior: current.queueEndBehavior,
-          spaceQueueItems: current.spaceQueueItems,
         );
       case PlaybackCommandEnum.resume:
-        return SpacePlaybackState(
-          spaceId: current.spaceId,
-          storeId: current.storeId,
-          brandId: current.brandId,
-          currentQueueItemId: current.currentQueueItemId,
-          currentTrackName: current.currentTrackName,
-          currentPlaylistId: current.currentPlaylistId,
-          currentPlaylistName: current.currentPlaylistName,
-          hlsUrl: current.hlsUrl,
-          moodName: current.moodName,
-          isManualOverride: current.isManualOverride,
-          overrideMode: current.overrideMode,
+        return current.copyWith(
           startedAtUtc: nowUtc.subtract(
             Duration(milliseconds: (effectiveOffset * 1000).round()),
           ),
-          expectedEndAtUtc: current.expectedEndAtUtc,
           isPaused: false,
-          pausePositionSeconds: null,
+          clearPausePositionSeconds: true,
           seekOffsetSeconds: effectiveOffset,
-          pendingQueueItemId: current.pendingQueueItemId,
-          pendingPlaylistId: current.pendingPlaylistId,
-          pendingOverrideReason: current.pendingOverrideReason,
-          volumePercent: current.volumePercent,
-          isMuted: current.isMuted,
-          queueEndBehavior: current.queueEndBehavior,
-          spaceQueueItems: current.spaceQueueItems,
         );
       case PlaybackCommandEnum.seek:
       case PlaybackCommandEnum.seekForward:
       case PlaybackCommandEnum.seekBackward:
-        return SpacePlaybackState(
-          spaceId: current.spaceId,
-          storeId: current.storeId,
-          brandId: current.brandId,
-          currentQueueItemId: current.currentQueueItemId,
-          currentTrackName: current.currentTrackName,
-          currentPlaylistId: current.currentPlaylistId,
-          currentPlaylistName: current.currentPlaylistName,
-          hlsUrl: current.hlsUrl,
-          moodName: current.moodName,
-          isManualOverride: current.isManualOverride,
-          overrideMode: current.overrideMode,
+        return current.copyWith(
           startedAtUtc: current.isPaused
               ? current.startedAtUtc
               : nowUtc.subtract(
                   Duration(milliseconds: (safeSeek * 1000).round()),
                 ),
-          expectedEndAtUtc: current.expectedEndAtUtc,
-          isPaused: current.isPaused,
           pausePositionSeconds: current.isPaused ? safeSeek.round() : null,
+          clearPausePositionSeconds: !current.isPaused,
           seekOffsetSeconds: safeSeek,
-          pendingQueueItemId: current.pendingQueueItemId,
-          pendingPlaylistId: current.pendingPlaylistId,
-          pendingOverrideReason: current.pendingOverrideReason,
-          volumePercent: current.volumePercent,
-          isMuted: current.isMuted,
-          queueEndBehavior: current.queueEndBehavior,
-          spaceQueueItems: current.spaceQueueItems,
         );
       case PlaybackCommandEnum.skipNext:
       case PlaybackCommandEnum.skipPrevious:
@@ -827,30 +801,10 @@ class QueueFirstPlaybackRuntime {
   }) {
     if (current == null) return null;
 
-    return SpacePlaybackState(
-      spaceId: current.spaceId,
-      storeId: current.storeId,
-      brandId: current.brandId,
-      currentQueueItemId: current.currentQueueItemId,
-      currentTrackName: current.currentTrackName,
-      currentPlaylistId: current.currentPlaylistId,
-      currentPlaylistName: current.currentPlaylistName,
-      hlsUrl: current.hlsUrl,
-      moodName: current.moodName,
-      isManualOverride: current.isManualOverride,
-      overrideMode: current.overrideMode,
-      startedAtUtc: current.startedAtUtc,
-      expectedEndAtUtc: current.expectedEndAtUtc,
-      isPaused: current.isPaused,
-      pausePositionSeconds: current.pausePositionSeconds,
-      seekOffsetSeconds: current.seekOffsetSeconds,
-      pendingQueueItemId: current.pendingQueueItemId,
-      pendingPlaylistId: current.pendingPlaylistId,
-      pendingOverrideReason: current.pendingOverrideReason,
+    return current.copyWith(
       volumePercent: volumePercent ?? current.volumePercent,
       isMuted: isMuted ?? current.isMuted,
       queueEndBehavior: queueEndBehavior ?? current.queueEndBehavior,
-      spaceQueueItems: current.spaceQueueItems,
     );
   }
 
@@ -860,29 +814,21 @@ class QueueFirstPlaybackRuntime {
       return SpacePlaybackState(spaceId: spaceId);
     }
 
-    return SpacePlaybackState(
+    return current.copyWith(
       spaceId: spaceId,
-      storeId: current.storeId,
-      brandId: current.brandId,
-      currentQueueItemId: null,
-      currentTrackName: null,
-      currentPlaylistId: null,
-      currentPlaylistName: null,
-      hlsUrl: null,
-      moodName: current.moodName,
-      isManualOverride: current.isManualOverride,
-      overrideMode: current.overrideMode,
-      startedAtUtc: null,
-      expectedEndAtUtc: null,
+      clearCurrentQueueItemId: true,
+      clearCurrentTrackName: true,
+      clearCurrentPlaylistId: true,
+      clearCurrentPlaylistName: true,
+      clearHlsUrl: true,
+      clearStartedAtUtc: true,
+      clearExpectedEndAtUtc: true,
       isPaused: false,
-      pausePositionSeconds: null,
-      seekOffsetSeconds: null,
-      pendingQueueItemId: null,
-      pendingPlaylistId: null,
-      pendingOverrideReason: null,
-      volumePercent: current.volumePercent,
-      isMuted: current.isMuted,
-      queueEndBehavior: current.queueEndBehavior,
+      clearPausePositionSeconds: true,
+      clearSeekOffsetSeconds: true,
+      clearPendingQueueItemId: true,
+      clearPendingPlaylistId: true,
+      clearPendingOverrideReason: true,
       spaceQueueItems: const [],
     );
   }
@@ -898,30 +844,8 @@ class QueueFirstPlaybackRuntime {
             Duration(
                 milliseconds: (incoming.seekOffsetSeconds! * 1000).round()),
           );
-      return SpacePlaybackState(
-        spaceId: incoming.spaceId,
-        storeId: incoming.storeId,
-        brandId: incoming.brandId,
-        currentQueueItemId: incoming.currentQueueItemId,
-        currentTrackName: incoming.currentTrackName,
-        currentPlaylistId: incoming.currentPlaylistId,
-        currentPlaylistName: incoming.currentPlaylistName,
-        hlsUrl: incoming.hlsUrl,
-        moodName: incoming.moodName,
-        isManualOverride: incoming.isManualOverride,
-        overrideMode: incoming.overrideMode,
+      return incoming.copyWith(
         startedAtUtc: startedAtUtc,
-        expectedEndAtUtc: incoming.expectedEndAtUtc,
-        isPaused: incoming.isPaused,
-        pausePositionSeconds: incoming.pausePositionSeconds,
-        seekOffsetSeconds: incoming.seekOffsetSeconds,
-        pendingQueueItemId: incoming.pendingQueueItemId,
-        pendingPlaylistId: incoming.pendingPlaylistId,
-        pendingOverrideReason: incoming.pendingOverrideReason,
-        volumePercent: incoming.volumePercent,
-        isMuted: incoming.isMuted,
-        queueEndBehavior: incoming.queueEndBehavior,
-        spaceQueueItems: incoming.spaceQueueItems,
       );
     }
 
@@ -930,30 +854,8 @@ class QueueFirstPlaybackRuntime {
         current.hlsUrl == incoming.hlsUrl &&
         current.startedAtUtc != null &&
         incoming.startedAtUtc == null) {
-      return SpacePlaybackState(
-        spaceId: incoming.spaceId,
-        storeId: incoming.storeId,
-        brandId: incoming.brandId,
-        currentQueueItemId: incoming.currentQueueItemId,
-        currentTrackName: incoming.currentTrackName,
-        currentPlaylistId: incoming.currentPlaylistId,
-        currentPlaylistName: incoming.currentPlaylistName,
-        hlsUrl: incoming.hlsUrl,
-        moodName: incoming.moodName,
-        isManualOverride: incoming.isManualOverride,
-        overrideMode: incoming.overrideMode,
+      return incoming.copyWith(
         startedAtUtc: current.startedAtUtc,
-        expectedEndAtUtc: incoming.expectedEndAtUtc,
-        isPaused: incoming.isPaused,
-        pausePositionSeconds: incoming.pausePositionSeconds,
-        seekOffsetSeconds: incoming.seekOffsetSeconds,
-        pendingQueueItemId: incoming.pendingQueueItemId,
-        pendingPlaylistId: incoming.pendingPlaylistId,
-        pendingOverrideReason: incoming.pendingOverrideReason,
-        volumePercent: incoming.volumePercent,
-        isMuted: incoming.isMuted,
-        queueEndBehavior: incoming.queueEndBehavior,
-        spaceQueueItems: incoming.spaceQueueItems,
       );
     }
 
@@ -1054,6 +956,8 @@ class QueueFirstPlaybackRuntime {
         'pending=${playbackState.pendingQueueItemId ?? '-'} '
         'track=${playbackState.currentDisplayName ?? '-'} '
         'hls=${playbackState.effectiveHlsUrl ?? '-'} '
+        'manual=${playbackState.isManualOverride} '
+        'scheduling=${playbackState.isScheduling} '
         'paused=${playbackState.isPaused} '
         'queueCount=${playbackState.spaceQueueItems.length} '
         'queue=[$queuePreview]';

@@ -38,7 +38,7 @@ class _SpaceDevicePageState extends State<SpaceDevicePage> {
 
   // ── Action handlers ─────────────────────────────────────────────────────
 
-  void _showUnpairDialog(BuildContext context, _Palette palette) {
+  void _showUnpairDialog(BuildContext context, SpaceDevicePalette palette) {
     showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -96,7 +96,7 @@ class _SpaceDevicePageState extends State<SpaceDevicePage> {
     });
   }
 
-  void _showWifiSheet(BuildContext context, _Palette palette) {
+  void _showWifiSheet(BuildContext context, SpaceDevicePalette palette) {
     showModalBottomSheet(
       context: context,
       useRootNavigator: true,
@@ -108,7 +108,8 @@ class _SpaceDevicePageState extends State<SpaceDevicePage> {
 
   @override
   Widget build(BuildContext context) {
-    final palette = _Palette.fromBrightness(Theme.of(context).brightness);
+    final palette =
+        SpaceDevicePalette.fromBrightness(Theme.of(context).brightness);
     final hub = _space.currentHub;
 
     return BlocListener<PlayerBloc, ps.PlayerState>(
@@ -181,7 +182,7 @@ class _SpaceDevicePageState extends State<SpaceDevicePage> {
 
 class _NoHubState extends StatelessWidget {
   const _NoHubState({required this.palette});
-  final _Palette palette;
+  final SpaceDevicePalette palette;
 
   @override
   Widget build(BuildContext context) {
@@ -194,7 +195,7 @@ class _NoHubState extends StatelessWidget {
             Icon(
               Icons.developer_board_outlined,
               size: 88,
-              color: palette.textMuted.withOpacity(0.3),
+              color: palette.textMuted.withValues(alpha: 0.3),
             ),
             const SizedBox(height: 20),
             Text(
@@ -255,7 +256,7 @@ class _HubPresentState extends StatelessWidget {
 
   final HubEntity hub;
   final double volume;
-  final _Palette palette;
+  final SpaceDevicePalette palette;
   final ValueChanged<double> onVolumeChanged;
   final VoidCallback onChangeWifi;
   final VoidCallback onUnpair;
@@ -299,7 +300,7 @@ class _HubOverviewCard extends StatelessWidget {
   const _HubOverviewCard({required this.hub, required this.palette});
 
   final HubEntity hub;
-  final _Palette palette;
+  final SpaceDevicePalette palette;
 
   @override
   Widget build(BuildContext context) {
@@ -318,7 +319,7 @@ class _HubOverviewCard extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: palette.accent.withOpacity(0.12),
+                  color: palette.accent.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(LucideIcons.cpu, size: 20, color: palette.accent),
@@ -339,9 +340,9 @@ class _HubOverviewCard extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
+                  color: statusColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: statusColor.withOpacity(0.4)),
+                  border: Border.all(color: statusColor.withValues(alpha: 0.4)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -355,7 +356,7 @@ class _HubOverviewCard extends StatelessWidget {
                         boxShadow: hub.isOnline
                             ? [
                                 BoxShadow(
-                                    color: Colors.green.withOpacity(0.6),
+                                    color: Colors.green.withValues(alpha: 0.6),
                                     blurRadius: 5)
                               ]
                             : null,
@@ -425,7 +426,7 @@ class _SensorsCard extends StatelessWidget {
   const _SensorsCard({required this.sensors, required this.palette});
 
   final List<HubSensorEntity> sensors;
-  final _Palette palette;
+  final SpaceDevicePalette palette;
 
   @override
   Widget build(BuildContext context) {
@@ -480,7 +481,7 @@ class _AudioCard extends StatelessWidget {
 
   final HubEntity hub;
   final double volume;
-  final _Palette palette;
+  final SpaceDevicePalette palette;
   final ValueChanged<double> onVolumeChanged;
 
   @override
@@ -565,7 +566,7 @@ class _AudioCard extends StatelessWidget {
                     activeTrackColor: palette.accent,
                     inactiveTrackColor: palette.border,
                     thumbColor: palette.accent,
-                    overlayColor: palette.accent.withOpacity(0.15),
+                    overlayColor: palette.accent.withValues(alpha: 0.15),
                     trackHeight: 4,
                   ),
                   child: Slider(
@@ -610,7 +611,7 @@ class _SettingsSection extends StatelessWidget {
     required this.onUnpair,
   });
 
-  final _Palette palette;
+  final SpaceDevicePalette palette;
   final VoidCallback onChangeWifi;
   final VoidCallback onUnpair;
 
@@ -666,15 +667,16 @@ class _SettingsButton extends StatelessWidget {
 
   final IconData icon;
   final String label;
-  final _Palette palette;
+  final SpaceDevicePalette palette;
   final VoidCallback onTap;
   final bool isDestructive;
 
   @override
   Widget build(BuildContext context) {
     final color = isDestructive ? Colors.red.shade400 : palette.textPrimary;
-    final borderColor =
-        isDestructive ? Colors.red.shade300.withOpacity(0.5) : palette.border;
+    final borderColor = isDestructive
+        ? Colors.red.shade300.withValues(alpha: 0.5)
+        : palette.border;
 
     return OutlinedButton.icon(
       onPressed: onTap,
@@ -699,7 +701,7 @@ class _SettingsButton extends StatelessWidget {
 class _SectionCard extends StatelessWidget {
   const _SectionCard({required this.palette, required this.child});
 
-  final _Palette palette;
+  final SpaceDevicePalette palette;
   final Widget child;
 
   @override
@@ -713,7 +715,7 @@ class _SectionCard extends StatelessWidget {
         border: Border.all(color: palette.border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(palette.isDark ? 0.22 : 0.06),
+            color: Colors.black.withValues(alpha: palette.isDark ? 0.22 : 0.06),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -741,7 +743,7 @@ class _InfoRow extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-  final _Palette palette;
+  final SpaceDevicePalette palette;
   final Color? valueColor;
   final TextStyle? valueStyle;
 
@@ -780,7 +782,7 @@ class _SensorChip extends StatelessWidget {
   const _SensorChip({required this.sensor, required this.palette});
 
   final HubSensorEntity sensor;
-  final _Palette palette;
+  final SpaceDevicePalette palette;
 
   IconData get _icon {
     switch (sensor.type) {
@@ -801,14 +803,14 @@ class _SensorChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final isOffline = sensor.currentValue == null;
     final chipColor =
-        isOffline ? palette.textMuted.withOpacity(0.4) : palette.accent;
+        isOffline ? palette.textMuted.withValues(alpha: 0.4) : palette.accent;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: chipColor.withOpacity(0.09),
+        color: chipColor.withValues(alpha: 0.09),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: chipColor.withOpacity(0.28)),
+        border: Border.all(color: chipColor.withValues(alpha: 0.28)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -850,7 +852,7 @@ class _SensorChip extends StatelessWidget {
 
 class WifiConfigBottomSheet extends StatefulWidget {
   const WifiConfigBottomSheet({super.key, required this.palette});
-  final _Palette palette;
+  final SpaceDevicePalette palette;
 
   @override
   State<WifiConfigBottomSheet> createState() => _WifiConfigBottomSheetState();
@@ -862,7 +864,7 @@ class _WifiConfigBottomSheetState extends State<WifiConfigBottomSheet> {
   bool _obscurePassword = true;
   bool _isLoading = false;
 
-  _Palette get _p => widget.palette;
+  SpaceDevicePalette get _p => widget.palette;
 
   @override
   void dispose() {
@@ -1030,7 +1032,7 @@ class _WifiConfigBottomSheetState extends State<WifiConfigBottomSheet> {
               style: FilledButton.styleFrom(
                 backgroundColor: _p.accent,
                 foregroundColor: _p.textOnAccent,
-                disabledBackgroundColor: _p.accent.withOpacity(0.5),
+                disabledBackgroundColor: _p.accent.withValues(alpha: 0.5),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14)),
               ),
@@ -1068,7 +1070,7 @@ class _WifiConfigBottomSheetState extends State<WifiConfigBottomSheet> {
 class BluetoothSpeakerSelectionSheet extends StatelessWidget {
   const BluetoothSpeakerSelectionSheet({super.key, required this.palette});
 
-  final _Palette palette;
+  final SpaceDevicePalette palette;
 
   static const _mockSpeakers = [
     'Marshall Stanmore III',
@@ -1149,7 +1151,7 @@ class BluetoothSpeakerSelectionSheet extends StatelessWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: palette.accent.withOpacity(0.12),
+                    color: palette.accent.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(Icons.speaker_rounded,
@@ -1200,8 +1202,8 @@ class BluetoothSpeakerSelectionSheet extends StatelessWidget {
 // Palette
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _Palette {
-  const _Palette({
+class SpaceDevicePalette {
+  const SpaceDevicePalette({
     required this.isDark,
     required this.bg,
     required this.card,
@@ -1212,10 +1214,10 @@ class _Palette {
     required this.textOnAccent,
   });
 
-  factory _Palette.fromBrightness(Brightness brightness) {
+  factory SpaceDevicePalette.fromBrightness(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
     if (isDark) {
-      return const _Palette(
+      return const SpaceDevicePalette(
         isDark: true,
         bg: AppColors.backgroundDarkPrimary,
         card: AppColors.surfaceDark,
@@ -1226,7 +1228,7 @@ class _Palette {
         textOnAccent: AppColors.textDarkPrimary,
       );
     }
-    return const _Palette(
+    return const SpaceDevicePalette(
       isDark: false,
       bg: AppColors.backgroundPrimary,
       card: AppColors.surface,

@@ -34,7 +34,7 @@ class ThemeToggleSwitch extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
         border: Border.all(
           color: isDark
-              ? AppColors.primaryCyan.withOpacity(0.3)
+              ? AppColors.primaryCyan.withValues(alpha: 0.3)
               : AppColors.borderLight,
           width: AppDimensions.borderWidthNormal,
         ),
@@ -155,14 +155,14 @@ class ThemeSelectorCard extends StatelessWidget {
         boxShadow: isDark
             ? [
                 BoxShadow(
-                  color: AppColors.primaryCyan.withOpacity(0.1),
+                  color: AppColors.primaryCyan.withValues(alpha: 0.1),
                   blurRadius: 15,
                   spreadRadius: 1,
                 ),
               ]
             : [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),

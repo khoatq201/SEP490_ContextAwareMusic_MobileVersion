@@ -43,7 +43,7 @@ class MusicControlRemoteDataSourceImpl implements MusicControlRemoteDataSource {
       );
 
       if (response.statusCode != 200) {
-        throw ServerException('Failed to override mood');
+        throw const ServerException('Failed to override mood');
       }
     } catch (e) {
       throw ServerException('Failed to override mood: $e');
@@ -61,7 +61,7 @@ class MusicControlRemoteDataSourceImpl implements MusicControlRemoteDataSource {
       );
 
       if (response.statusCode != 200) {
-        throw ServerException('Failed to send music control command');
+        throw const ServerException('Failed to send music control command');
       }
     } catch (e) {
       throw ServerException('Failed to send music control command: $e');

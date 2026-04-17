@@ -85,6 +85,15 @@ class SpaceScheduleSlotDeleted extends SpaceScheduleEvent {
   List<Object?> get props => [slotId];
 }
 
+class SpaceScheduleToggled extends SpaceScheduleEvent {
+  final bool enabled;
+
+  const SpaceScheduleToggled(this.enabled);
+
+  @override
+  List<Object?> get props => [enabled];
+}
+
 class SpaceScheduleSavedToLibrary extends SpaceScheduleEvent {
   final String title;
   final String? subtitle;

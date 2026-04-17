@@ -12,6 +12,10 @@ class SpaceSummaryModel {
   final int lightLevel;
   final bool isMusicPlaying;
   final String? currentTrack;
+  final bool isManualOverride;
+  final bool isScheduling;
+  final int? manualOverrideRemainingSeconds;
+  final int? schedulingRemainingSeconds;
   final int totalZones;
   final int activeZones;
   final bool hasMultiZoneMusic;
@@ -28,6 +32,10 @@ class SpaceSummaryModel {
     required this.lightLevel,
     required this.isMusicPlaying,
     this.currentTrack,
+    this.isManualOverride = false,
+    this.isScheduling = false,
+    this.manualOverrideRemainingSeconds,
+    this.schedulingRemainingSeconds,
     this.totalZones = 1,
     this.activeZones = 1,
     this.hasMultiZoneMusic = false,
@@ -51,6 +59,12 @@ class SpaceSummaryModel {
       lightLevel: json['lightLevel'] as int? ?? 0,
       isMusicPlaying: json['isMusicPlaying'] as bool? ?? false,
       currentTrack: json['currentTrack'] as String?,
+      isManualOverride: json['isManualOverride'] as bool? ?? false,
+      isScheduling: json['isScheduling'] as bool? ?? false,
+      manualOverrideRemainingSeconds:
+          (json['manualOverrideRemainingSeconds'] as num?)?.toInt(),
+      schedulingRemainingSeconds:
+          (json['schedulingRemainingSeconds'] as num?)?.toInt(),
       totalZones: json['totalZones'] as int? ?? 1,
       activeZones: json['activeZones'] as int? ?? 1,
       hasMultiZoneMusic: json['hasMultiZoneMusic'] as bool? ?? false,
@@ -70,6 +84,10 @@ class SpaceSummaryModel {
       lightLevel: lightLevel,
       isMusicPlaying: isMusicPlaying,
       currentTrack: currentTrack,
+      isManualOverride: isManualOverride,
+      isScheduling: isScheduling,
+      manualOverrideRemainingSeconds: manualOverrideRemainingSeconds,
+      schedulingRemainingSeconds: schedulingRemainingSeconds,
       totalZones: totalZones,
       activeZones: activeZones,
       hasMultiZoneMusic: hasMultiZoneMusic,
@@ -88,6 +106,10 @@ class SpaceSummaryModel {
     int? lightLevel,
     bool? isMusicPlaying,
     String? currentTrack,
+    bool? isManualOverride,
+    bool? isScheduling,
+    int? manualOverrideRemainingSeconds,
+    int? schedulingRemainingSeconds,
     int? totalZones,
     int? activeZones,
     bool? hasMultiZoneMusic,
@@ -104,6 +126,12 @@ class SpaceSummaryModel {
       lightLevel: lightLevel ?? this.lightLevel,
       isMusicPlaying: isMusicPlaying ?? this.isMusicPlaying,
       currentTrack: currentTrack ?? this.currentTrack,
+      isManualOverride: isManualOverride ?? this.isManualOverride,
+      isScheduling: isScheduling ?? this.isScheduling,
+      manualOverrideRemainingSeconds:
+          manualOverrideRemainingSeconds ?? this.manualOverrideRemainingSeconds,
+      schedulingRemainingSeconds:
+          schedulingRemainingSeconds ?? this.schedulingRemainingSeconds,
       totalZones: totalZones ?? this.totalZones,
       activeZones: activeZones ?? this.activeZones,
       hasMultiZoneMusic: hasMultiZoneMusic ?? this.hasMultiZoneMusic,
@@ -123,6 +151,10 @@ class SpaceSummaryModel {
       'lightLevel': lightLevel,
       'isMusicPlaying': isMusicPlaying,
       'currentTrack': currentTrack,
+      'isManualOverride': isManualOverride,
+      'isScheduling': isScheduling,
+      'manualOverrideRemainingSeconds': manualOverrideRemainingSeconds,
+      'schedulingRemainingSeconds': schedulingRemainingSeconds,
       'totalZones': totalZones,
       'activeZones': activeZones,
       'hasMultiZoneMusic': hasMultiZoneMusic,

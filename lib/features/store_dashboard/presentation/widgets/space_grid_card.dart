@@ -86,6 +86,28 @@ class SpaceGridCard extends StatelessWidget {
                 ),
               ),
 
+              if (space.isScheduling || space.isManualOverride) ...[
+                const SizedBox(height: AppDimensions.spacingXs),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    if (space.isScheduling)
+                      _RuntimeBadge(
+                        label: 'Scheduling',
+                        color: AppColors.info,
+                        isDark: isDark,
+                      ),
+                    if (space.isManualOverride)
+                      _RuntimeBadge(
+                        label: 'Manual',
+                        color: AppColors.warning,
+                        isDark: isDark,
+                      ),
+                  ],
+                ),
+              ],
+
               const SizedBox(height: AppDimensions.spacingSm),
 
               // Stats
@@ -176,6 +198,38 @@ class SpaceGridCard extends StatelessWidget {
 
     final collapsed = withSpaces.replaceAll(RegExp(r'\s+'), ' ').trim();
     return collapsed.toUpperCase();
+  }
+}
+
+class _RuntimeBadge extends StatelessWidget {
+  const _RuntimeBadge({
+    required this.label,
+    required this.color,
+    required this.isDark,
+  });
+
+  final String label;
+  final Color color;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: isDark ? 0.22 : 0.12),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+        border: Border.all(color: color.withValues(alpha: 0.7)),
+      ),
+      child: Text(
+        label,
+        style: AppTypography.labelSmall.copyWith(
+          color: color,
+          fontWeight: FontWeight.w800,
+          fontSize: 9,
+        ),
+      ),
+    );
   }
 }
 

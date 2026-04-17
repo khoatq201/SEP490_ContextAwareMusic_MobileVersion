@@ -592,6 +592,21 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
                     ),
                   ).animate().fadeIn(duration: 450.ms).slideY(begin: 0.12),
 
+                if (effectiveSpaceId != null &&
+                    (camsState.playbackState?.isManualOverride == true ||
+                        camsState.playbackState?.isScheduling == true)) ...[
+                  const SizedBox(height: 16),
+                  _RuntimeStatusPanel(
+                    playbackState: camsState.playbackState!,
+                    palette: palette,
+                    isBusy: camsState.isOverriding,
+                    onSchedulingChanged: (enabled) =>
+                        context.read<CamsPlaybackBloc>().add(
+                              CamsUpdateSchedulingState(isScheduling: enabled),
+                            ),
+                  ).animate().fadeIn(duration: 450.ms).slideY(begin: 0.12),
+                ],
+
                 const SizedBox(height: 100), // breathing space
               ],
             ),
@@ -1542,9 +1557,10 @@ class _QueueAudioControlsState extends State<_QueueAudioControls> {
               trackHeight: 3,
               thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
               activeTrackColor: widget.palette.textPrimary,
-              inactiveTrackColor: widget.palette.textMuted.withOpacity(0.25),
+              inactiveTrackColor:
+                  widget.palette.textMuted.withValues(alpha: 0.25),
               thumbColor: widget.palette.textPrimary,
-              overlayColor: widget.palette.textPrimary.withOpacity(0.15),
+              overlayColor: widget.palette.textPrimary.withValues(alpha: 0.15),
             ),
             child: Slider(
               value: displayedVolumePercent,
@@ -2062,7 +2078,7 @@ class _ControlsRow extends StatelessWidget {
           icon: LucideIcons.skipBack,
           color: hasPrevious
               ? palette.textPrimary
-              : palette.textMuted.withOpacity(0.4),
+              : palette.textMuted.withValues(alpha: 0.4),
           size: 26,
           onTap: onSkipBack,
         ),
@@ -2090,7 +2106,7 @@ class _ControlsRow extends StatelessWidget {
           icon: LucideIcons.skipForward,
           color: hasNext
               ? palette.textPrimary
-              : palette.textMuted.withOpacity(0.4),
+              : palette.textMuted.withValues(alpha: 0.4),
           size: 26,
           onTap: onSkip,
         ),
@@ -2522,7 +2538,7 @@ class _SensorCard extends StatelessWidget {
           Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                  color: accentColor.withOpacity(0.10),
+                  color: accentColor.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(10)),
               child: Icon(icon, color: accentColor, size: 18)),
           const Spacer(),
@@ -2558,6 +2574,209 @@ class _SensorCard extends StatelessWidget {
 // ============================================================================
 // Manual / Auto Override panel (same behavior as Home)
 // ============================================================================
+class _RuntimeStatusPanel extends StatelessWidget {
+  const _RuntimeStatusPanel({
+    required this.playbackState,
+    required this.palette,
+    required this.isBusy,
+    required this.onSchedulingChanged,
+  });
+
+  final SpacePlaybackState playbackState;
+  final _NPPalette palette;
+  final bool isBusy;
+  final ValueChanged<bool> onSchedulingChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final manualRows = <MapEntry<String, String>>[
+      if (playbackState.overrideReason?.trim().isNotEmpty == true)
+        MapEntry('Reason', playbackState.overrideReason!.trim()),
+      if (playbackState.manualOverrideRemainingSeconds != null)
+        MapEntry(
+          'Remaining',
+          _formatRuntimeSeconds(playbackState.manualOverrideRemainingSeconds!),
+        ),
+      if (playbackState.manualOverrideActivatedAtUtc != null)
+        MapEntry(
+          'Activated',
+          _formatRuntimeDateTime(playbackState.manualOverrideActivatedAtUtc!),
+        ),
+      if (playbackState.manualOverrideExpiresAtUtc != null)
+        MapEntry(
+          'Expires',
+          _formatRuntimeDateTime(playbackState.manualOverrideExpiresAtUtc!),
+        ),
+    ];
+    final schedulingRows = <MapEntry<String, String>>[
+      if (playbackState.schedulingOriginLabel != null)
+        MapEntry('Origin', playbackState.schedulingOriginLabel!),
+      if (playbackState.schedulingSlotId?.trim().isNotEmpty == true)
+        MapEntry('Slot', playbackState.schedulingSlotId!.trim()),
+      if (playbackState.schedulingRemainingSeconds != null)
+        MapEntry(
+          'Remaining',
+          _formatRuntimeSeconds(playbackState.schedulingRemainingSeconds!),
+        ),
+      if (playbackState.schedulingEndsAtUtc != null)
+        MapEntry(
+          'Ends',
+          _formatRuntimeDateTime(playbackState.schedulingEndsAtUtc!),
+        ),
+    ];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      decoration: BoxDecoration(
+        color: palette.card,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: palette.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.schedule_rounded, color: palette.accent, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Runtime status',
+                  style: GoogleFonts.poppins(
+                    color: palette.textPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Switch.adaptive(
+                value: playbackState.isScheduling,
+                activeThumbColor: palette.accent,
+                onChanged: isBusy ? null : onSchedulingChanged,
+              ),
+            ],
+          ),
+          if (playbackState.isManualOverride) ...[
+            const SizedBox(height: 12),
+            _RuntimeStatusSection(
+              title: 'Manual override',
+              rows: manualRows,
+              palette: palette,
+            ),
+          ],
+          if (playbackState.isScheduling) ...[
+            const SizedBox(height: 12),
+            _RuntimeStatusSection(
+              title: 'Scheduling runtime',
+              rows: schedulingRows,
+              palette: palette,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _RuntimeStatusSection extends StatelessWidget {
+  const _RuntimeStatusSection({
+    required this.title,
+    required this.rows,
+    required this.palette,
+  });
+
+  final String title;
+  final List<MapEntry<String, String>> rows;
+  final _NPPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: GoogleFonts.inter(
+            color: palette.textPrimary,
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: rows.isEmpty
+              ? [
+                  _RuntimePill(
+                    label: 'Active',
+                    value: 'Waiting for details',
+                    palette: palette,
+                  ),
+                ]
+              : rows
+                  .map(
+                    (entry) => _RuntimePill(
+                      label: entry.key,
+                      value: entry.value,
+                      palette: palette,
+                    ),
+                  )
+                  .toList(),
+        ),
+      ],
+    );
+  }
+}
+
+class _RuntimePill extends StatelessWidget {
+  const _RuntimePill({
+    required this.label,
+    required this.value,
+    required this.palette,
+  });
+
+  final String label;
+  final String value;
+  final _NPPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: palette.overlay,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: palette.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              color: palette.textMuted,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: GoogleFonts.inter(
+              color: palette.textPrimary,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _AiExplainabilityPanel extends StatelessWidget {
   const _AiExplainabilityPanel({
     required this.explainability,
@@ -3071,7 +3290,7 @@ class _SpaceSwapSheet extends StatelessWidget {
                       height: 42,
                       decoration: BoxDecoration(
                         color: isActive
-                            ? palette.accent.withOpacity(0.15)
+                            ? palette.accent.withValues(alpha: 0.15)
                             : palette.overlay,
                         borderRadius: BorderRadius.circular(12),
                         border: isActive
@@ -3119,6 +3338,25 @@ class _SpaceSwapSheet extends StatelessWidget {
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // Palette (kept from original)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+String _formatRuntimeSeconds(int seconds) {
+  final safeSeconds = seconds < 0 ? 0 : seconds;
+  final hours = safeSeconds ~/ 3600;
+  final minutes = (safeSeconds % 3600) ~/ 60;
+  if (hours > 0 && minutes > 0) return '${hours}h ${minutes}m';
+  if (hours > 0) return '${hours}h';
+  if (minutes > 0) return '${minutes}m';
+  return '${safeSeconds}s';
+}
+
+String _formatRuntimeDateTime(DateTime value) {
+  final local = value.toLocal();
+  final month = local.month.toString().padLeft(2, '0');
+  final day = local.day.toString().padLeft(2, '0');
+  final hour = local.hour.toString().padLeft(2, '0');
+  final minute = local.minute.toString().padLeft(2, '0');
+  return '$day/$month $hour:$minute';
+}
+
 class _NPPalette {
   const _NPPalette({
     required this.isDark,
@@ -3141,7 +3379,7 @@ class _NPPalette {
           isDark: true,
           bg: AppColors.backgroundDarkPrimary,
           card: AppColors.surfaceDark,
-          overlay: Colors.white.withOpacity(0.06),
+          overlay: Colors.white.withValues(alpha: 0.06),
           border: AppColors.borderDarkMedium,
           textPrimary: AppColors.textDarkPrimary,
           textMuted: AppColors.textDarkSecondary,

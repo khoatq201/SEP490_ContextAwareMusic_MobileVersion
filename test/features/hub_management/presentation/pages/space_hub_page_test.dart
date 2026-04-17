@@ -268,6 +268,7 @@ class _NoopProvisioningIdentityResolver
     return EspProvisioningIdentity(
       blePrefix: blePrefix,
       bleDeviceName: candidate.bleDeviceName,
+      deviceId: 'cam_esp32_01',
       proofOfPossession: proofOfPossession,
       source: EspProvisioningIdentitySource.blePrefixScan,
     );

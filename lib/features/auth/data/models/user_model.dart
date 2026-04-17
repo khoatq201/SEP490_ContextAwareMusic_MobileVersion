@@ -39,6 +39,14 @@ class UserModel extends User {
     final rolesList =
         (json['roles'] as List<dynamic>?)?.map((e) => _mapRole(e)).toList() ??
             [];
+    final directStoreId = json['storeId']?.toString();
+    final storeIds = <String>{
+      ...?(json['storeIds'] as List<dynamic>?)
+          ?.map((entry) => entry.toString())
+          .where((entry) => entry.trim().isNotEmpty),
+      if (directStoreId != null && directStoreId.trim().isNotEmpty) directStoreId,
+    }.toList(growable: false);
+
     return UserModel(
       id: json['id'] as String,
       username: json['username'] as String,
@@ -52,10 +60,7 @@ class UserModel extends User {
           : (json['role'] as String? ??
               (rolesList.isNotEmpty ? rolesList.first : '')),
       roles: rolesList,
-      storeIds: (json['storeIds'] as List<dynamic>?)
-              ?.map((e) => e as String)
-              .toList() ??
-          [],
+      storeIds: storeIds,
       avatarUrl: json['avatarUrl'] as String?,
       lastLogin: json['lastLogin'] != null
           ? DateTime.parse(json['lastLogin'] as String)
@@ -75,6 +80,7 @@ class UserModel extends User {
       'role': role,
       'roles': roles,
       'storeIds': storeIds,
+      if (storeIds.isNotEmpty) 'storeId': storeIds.first,
       'avatarUrl': avatarUrl,
       'lastLogin': lastLogin?.toIso8601String(),
     };

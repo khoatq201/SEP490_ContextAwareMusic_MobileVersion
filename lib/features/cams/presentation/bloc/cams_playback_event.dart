@@ -45,6 +45,7 @@ class CamsApplyOverride extends CamsPlaybackEvent {
   final String? moodId;
   final bool isClearManagerSelectedQueues;
   final bool isCutOver;
+  final int? manualOverrideTtlSeconds;
   final String? reason;
 
   const CamsApplyOverride({
@@ -53,6 +54,7 @@ class CamsApplyOverride extends CamsPlaybackEvent {
     this.moodId,
     this.isClearManagerSelectedQueues = false,
     this.isCutOver = false,
+    this.manualOverrideTtlSeconds,
     this.reason,
   });
 
@@ -75,6 +77,7 @@ class CamsApplyOverride extends CamsPlaybackEvent {
         moodId,
         isClearManagerSelectedQueues,
         isCutOver,
+        manualOverrideTtlSeconds,
         reason,
       ];
 }
@@ -183,6 +186,15 @@ class CamsUpdateAudioState extends CamsPlaybackEvent {
 
   @override
   List<Object?> get props => [volumePercent, isMuted, queueEndBehavior];
+}
+
+class CamsUpdateSchedulingState extends CamsPlaybackEvent {
+  final bool isScheduling;
+
+  const CamsUpdateSchedulingState({required this.isScheduling});
+
+  @override
+  List<Object?> get props => [isScheduling];
 }
 
 /// Cancel active override â€” AI scheduling resumes.

@@ -197,15 +197,15 @@ String _joinPromptWithinLimit(String prefix, String body, int maxLength) {
 
   final remainingBudget = maxLength - prefix.length - separator.length;
   if (remainingBudget < 80) {
-    return prefix.substring(0, maxLength.clamp(0, prefix.length) as int);
+    return prefix.substring(0, maxLength.clamp(0, prefix.length));
   }
 
   final truncatedBody = body.substring(
     0,
-    remainingBudget.clamp(0, body.length) as int,
+    remainingBudget.clamp(0, body.length),
   );
   final joined = '$prefix$separator$truncatedBody';
-  return joined.substring(0, joined.length.clamp(0, maxLength) as int);
+  return joined.substring(0, joined.length.clamp(0, maxLength));
 }
 
 String _formatNullable(num? value) {

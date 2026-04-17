@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
@@ -71,8 +70,8 @@ class CAMSCard extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
-          splashColor: AppColors.primaryOrange.withOpacity(0.1),
-          highlightColor: AppColors.primaryOrange.withOpacity(0.05),
+          splashColor: AppColors.primaryOrange.withValues(alpha: 0.1),
+          highlightColor: AppColors.primaryOrange.withValues(alpha: 0.05),
           child: cardContent,
         ),
       );
@@ -87,8 +86,6 @@ class CAMSCard extends StatelessWidget {
         return _solidDecoration();
       case CAMSCardVariant.outlined:
         return _outlinedDecoration();
-      default:
-        return _solidDecoration();
     }
   }
 
@@ -105,7 +102,7 @@ class CAMSCard extends StatelessWidget {
       boxShadow: showShadow
           ? [
               BoxShadow(
-                color: Colors.black.withOpacity(0.08),
+                color: Colors.black.withValues(alpha: 0.08),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
                 spreadRadius: 0,
@@ -168,7 +165,8 @@ class CAMSSensorCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(AppDimensions.spacing8),
             decoration: BoxDecoration(
-              color: (iconColor ?? AppColors.primaryOrange).withOpacity(0.1),
+              color:
+                  (iconColor ?? AppColors.primaryOrange).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
             ),
             child: Icon(
@@ -255,7 +253,8 @@ class CAMSInfoCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(AppDimensions.spacing12),
             decoration: BoxDecoration(
-              color: (iconColor ?? AppColors.primaryOrange).withOpacity(0.1),
+              color:
+                  (iconColor ?? AppColors.primaryOrange).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
             ),
             child: Icon(

@@ -44,6 +44,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     on<CamsRemoveQueueItems>(_onRemoveQueueItems);
     on<CamsClearQueue>(_onClearQueue);
     on<CamsUpdateAudioState>(_onUpdateAudioState);
+    on<CamsUpdateSchedulingState>(_onUpdateSchedulingState);
     on<CamsCancelOverride>(_onCancelOverride);
     on<CamsPreviousTapped>(_onPreviousTapped);
     on<CamsSendCommand>(_onSendCommand);
@@ -160,6 +161,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
       moodId: event.moodId,
       isClearManagerSelectedQueues: event.isClearManagerSelectedQueues,
       isCutOver: event.isCutOver,
+      manualOverrideTtlSeconds: event.manualOverrideTtlSeconds,
       reason: event.reason,
     );
   }
@@ -171,6 +173,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     String? moodId,
     bool? isClearManagerSelectedQueues,
     bool? isCutOver,
+    int? manualOverrideTtlSeconds,
     String? reason,
   }) async {
     if (!_hasActiveSessionScope('overrideMood')) return;
@@ -186,6 +189,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
       moodId: moodId,
       isClearManagerSelectedQueues: isClearManagerSelectedQueues,
       isCutOver: isCutOver,
+      manualOverrideTtlSeconds: manualOverrideTtlSeconds,
       reason: reason,
       usePlaybackDeviceScope: sessionCubit.state.isPlaybackDevice,
     );
@@ -374,6 +378,27 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     );
   }
 
+  Future<void> _onUpdateSchedulingState(
+    CamsUpdateSchedulingState event,
+    Emitter<CamsPlaybackState> emit,
+  ) async {
+    if (!_hasActiveSessionScope('updateSchedulingState')) return;
+
+    emit(state.copyWith(isOverriding: true, clearError: true));
+    final result = await runtime.patchSchedulingState(
+      isScheduling: event.isScheduling,
+    );
+
+    result.fold(
+      (failure) => emit(state.copyWith(
+        isOverriding: false,
+        errorMessage:
+            'Update scheduling failed: ${ErrorMapper.displayMessageForFailure(failure)}',
+      )),
+      (_) => emit(state.copyWith(isOverriding: false)),
+    );
+  }
+
   Future<void> _onCancelOverride(
     CamsCancelOverride event,
     Emitter<CamsPlaybackState> emit,
@@ -523,6 +548,18 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
       moodName: currentPlayback?.moodName,
       isManualOverride: event.isManualOverride,
       overrideMode: currentPlayback?.overrideMode,
+      overrideReason: currentPlayback?.overrideReason,
+      manualOverrideActivatedAtUtc:
+          currentPlayback?.manualOverrideActivatedAtUtc,
+      manualOverrideExpiresAtUtc: currentPlayback?.manualOverrideExpiresAtUtc,
+      manualOverrideTtlSeconds: currentPlayback?.manualOverrideTtlSeconds,
+      manualOverrideRemainingSeconds:
+          currentPlayback?.manualOverrideRemainingSeconds,
+      isScheduling: currentPlayback?.isScheduling ?? false,
+      schedulingSlotId: currentPlayback?.schedulingSlotId,
+      schedulingSlotOrigin: currentPlayback?.schedulingSlotOrigin,
+      schedulingEndsAtUtc: currentPlayback?.schedulingEndsAtUtc,
+      schedulingRemainingSeconds: currentPlayback?.schedulingRemainingSeconds,
       startedAtUtc: event.startedAtUtc,
       expectedEndAtUtc: currentPlayback?.expectedEndAtUtc,
       isPaused: false,
@@ -816,6 +853,8 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
         'pendingQueueItemId=${playbackState.pendingQueueItemId ?? '-'} '
         'currentTrack=${playbackState.currentTrackName ?? '-'} '
         'hls=${playbackState.hlsUrl ?? '-'} '
+        'manual=${playbackState.isManualOverride} '
+        'scheduling=${playbackState.isScheduling} '
         'queueCount=${playbackState.spaceQueueItems.length} '
         'queue=[$queuePreview]';
   }
