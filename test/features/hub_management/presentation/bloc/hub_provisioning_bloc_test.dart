@@ -4,6 +4,7 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cams_store_manager/core/error/failures.dart';
+import 'package:cams_store_manager/core/models/pagination_result.dart';
 import 'package:cams_store_manager/features/hub_management/data/services/ble_permission_service.dart';
 import 'package:cams_store_manager/features/hub_management/data/services/ble_provisioning_service.dart';
 import 'package:cams_store_manager/features/hub_management/data/services/location_capture_service.dart';
@@ -18,6 +19,11 @@ import 'package:cams_store_manager/features/hub_management/domain/usecases/space
 import 'package:cams_store_manager/features/hub_management/presentation/bloc/hub_provisioning_bloc.dart';
 import 'package:cams_store_manager/features/hub_management/presentation/bloc/hub_provisioning_event.dart';
 import 'package:cams_store_manager/features/hub_management/presentation/bloc/hub_provisioning_state.dart';
+import 'package:cams_store_manager/features/locations/data/datasources/location_remote_datasource.dart';
+import 'package:cams_store_manager/features/locations/domain/entities/location_space.dart';
+import 'package:cams_store_manager/features/locations/domain/repositories/location_repository.dart';
+import 'package:cams_store_manager/features/locations/domain/usecases/location_usecases.dart';
+import 'package:cams_store_manager/features/music_policy/data/models/fuzzy_override_profile_request.dart';
 
 void main() {
   group('HubProvisioningBloc', () {
@@ -39,6 +45,7 @@ void main() {
         upsertSpaceHubBinding: UpsertSpaceHubBinding(repository),
         deleteSpaceHubBinding: DeleteSpaceHubBinding(repository),
         restartSpaceHub: RestartSpaceHub(repository),
+        updateSpace: UpdateSpace(_FakeLocationRepository()),
         bleProvisioningService: bleProvisioningService,
         blePermissionService: blePermissionService,
         locationCaptureService: locationCaptureService,
@@ -375,6 +382,81 @@ class _FakeSpaceHubRepository implements SpaceHubRepository {
   }
 }
 
+class _FakeLocationRepository implements LocationRepository {
+  @override
+  Future<Either<Failure, SpaceMutationResult>> createSpace(
+    SpaceMutationRequest request,
+  ) async {
+    return const Right(SpaceMutationResult(isSuccess: true));
+  }
+
+  @override
+  Future<Either<Failure, SpaceMutationResult>> createFuzzyOverrideProfile(
+    String spaceId,
+    FuzzyOverrideProfileRequest request,
+  ) async {
+    return const Right(SpaceMutationResult(isSuccess: true));
+  }
+
+  @override
+  Future<Either<Failure, SpaceMutationResult>> deleteSpace(
+      String spaceId) async {
+    return const Right(SpaceMutationResult(isSuccess: true));
+  }
+
+  @override
+  Future<Either<Failure, LocationSpace>> getPairedSpace(
+    String spaceId,
+    String storeId,
+  ) async {
+    return Left(ServerFailure('Not implemented in test fake'));
+  }
+
+  @override
+  Future<Either<Failure, Map<String, PaginationResult<LocationSpace>>>>
+      getSpacesForBrand(
+    List<String> storeIds, {
+    int page = 1,
+    int pageSize = 10,
+  }) async {
+    return const Right({});
+  }
+
+  @override
+  Future<Either<Failure, PaginationResult<LocationSpace>>> getSpacesForStore(
+    String storeId, {
+    int page = 1,
+    int pageSize = 10,
+  }) async {
+    return const Right(
+      PaginationResult<LocationSpace>(
+        currentPage: 1,
+        pageSize: 10,
+        totalItems: 0,
+        totalPages: 0,
+        hasPrevious: false,
+        hasNext: false,
+        items: [],
+      ),
+    );
+  }
+
+  @override
+  Future<Either<Failure, SpaceMutationResult>> toggleSpaceStatus(
+    String spaceId,
+  ) async {
+    return const Right(SpaceMutationResult(isSuccess: true));
+  }
+
+  @override
+  Future<Either<Failure, SpaceMutationResult>> updateSpace(
+    String spaceId,
+    SpaceMutationRequest request,
+  ) async {
+    return const Right(SpaceMutationResult(isSuccess: true));
+  }
+}
+
 class _FakeBleProvisioningService implements BleProvisioningService {
   List<BleCandidate> scanDevicesResult = const [];
   List<WifiCandidate> scanWifiResult = const [];
@@ -481,6 +563,7 @@ class _FakeProvisioningIdentityResolver
     return EspProvisioningIdentity(
       blePrefix: blePrefix,
       bleDeviceName: candidate.bleDeviceName,
+      deviceId: 'cams_xbgqvj',
       proofOfPossession: proofOfPossession,
       source: EspProvisioningIdentitySource.blePrefixScan,
     );

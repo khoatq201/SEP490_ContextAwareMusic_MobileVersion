@@ -26,6 +26,7 @@ void main() {
         const EspProvisioningIdentity(
           blePrefix: 'CAM',
           bleDeviceName: 'CAM-ESP32-01',
+          deviceId: 'cam_esp32_01',
           proofOfPossession: 'shared-pop',
           source: EspProvisioningIdentitySource.blePrefixScan,
         ),

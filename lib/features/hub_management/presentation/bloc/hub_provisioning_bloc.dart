@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -8,12 +9,25 @@ import '../../data/services/ble_permission_service.dart';
 import '../../data/services/ble_provisioning_service.dart';
 import '../../data/services/location_capture_service.dart';
 import '../../data/services/provisioning_identity_resolver.dart';
+import '../../../locations/data/datasources/location_remote_datasource.dart';
+import '../../../locations/domain/usecases/location_usecases.dart';
 import '../../domain/entities/ble_candidate.dart';
+import '../../domain/entities/esp_provisioning_identity.dart';
 import '../../domain/entities/space_hub_binding.dart';
 import '../../domain/entities/wifi_candidate.dart';
 import '../../domain/usecases/space_hub_usecases.dart';
 import 'hub_provisioning_event.dart';
 import 'hub_provisioning_state.dart';
+
+class _NvrChannelDiscoveryResult {
+  const _NvrChannelDiscoveryResult({
+    required this.channels,
+    required this.scanComplete,
+  });
+
+  final List<NvrChannelPreview> channels;
+  final bool scanComplete;
+}
 
 class HubProvisioningBloc
     extends Bloc<HubProvisioningEvent, HubProvisioningState> {
@@ -22,6 +36,7 @@ class HubProvisioningBloc
     required this.upsertSpaceHubBinding,
     required this.deleteSpaceHubBinding,
     required this.restartSpaceHub,
+    required this.updateSpace,
     required this.bleProvisioningService,
     required this.blePermissionService,
     required this.locationCaptureService,
@@ -36,6 +51,9 @@ class HubProvisioningBloc
     on<HubProvisioningSecretCodeSubmitted>(_onSecretCodeSubmitted);
     on<HubProvisioningCredentialsSubmitted>(_onCredentialsSubmitted);
     on<HubProvisioningNvrConfigSubmitted>(_onNvrConfigSubmitted);
+    on<HubProvisioningNvrChannelSelected>(_onNvrChannelSelected);
+    on<HubProvisioningNvrChannelsRefreshRequested>(
+        _onNvrChannelsRefreshRequested);
     on<HubProvisioningRetrySyncRequested>(_onRetrySyncRequested);
     on<HubProvisioningDeleteBindingRequested>(_onDeleteBindingRequested);
     on<HubProvisioningRestartRequested>(_onRestartRequested);
@@ -45,6 +63,7 @@ class HubProvisioningBloc
   final UpsertSpaceHubBinding upsertSpaceHubBinding;
   final DeleteSpaceHubBinding deleteSpaceHubBinding;
   final RestartSpaceHub restartSpaceHub;
+  final UpdateSpace updateSpace;
   final BleProvisioningService bleProvisioningService;
   final BlePermissionService blePermissionService;
   final LocationCaptureService locationCaptureService;
@@ -68,6 +87,8 @@ class HubProvisioningBloc
         clearResolvedIdentity: true,
         clearPendingWifiSsid: true,
         clearPendingWifiPassphrase: true,
+        nvrChannels: const <NvrChannelPreview>[],
+        clearNvrPreviewBaseUrl: true,
         clearDraftLocation: true,
         bleCandidates: const <BleCandidate>[],
         wifiCandidates: const <WifiCandidate>[],
@@ -182,6 +203,9 @@ class HubProvisioningBloc
         clearSelectedBleCandidate: true,
         clearResolvedIdentity: true,
         clearPendingWifiSsid: true,
+        clearPendingWifiPassphrase: true,
+        nvrChannels: const <NvrChannelPreview>[],
+        clearNvrPreviewBaseUrl: true,
         clearDraftLocation: true,
         bleCandidates: const <BleCandidate>[],
         wifiCandidates: const <WifiCandidate>[],
@@ -225,6 +249,9 @@ class HubProvisioningBloc
         clearResolvedIdentity: true,
         clearMessage: true,
         clearPendingWifiSsid: true,
+        clearPendingWifiPassphrase: true,
+        nvrChannels: const <NvrChannelPreview>[],
+        clearNvrPreviewBaseUrl: true,
         wifiCandidates: const <WifiCandidate>[],
       ),
     );
@@ -388,10 +415,36 @@ class HubProvisioningBloc
         return;
       }
 
-      await _persistBindingAfterWifiProvisioning(
-        emit,
-        candidate: candidate,
-        wifiSsid: wifiSsid,
+      emit(
+        state.copyWith(
+          phase: HubProvisioningPhase.discoveringNvrChannels,
+          message:
+              'ESP32 is joining Wi-Fi and preparing camera previews. Keep this screen open.',
+          nvrChannels: const <NvrChannelPreview>[],
+          clearNvrPreviewBaseUrl: true,
+        ),
+      );
+      final previewBaseUrl = await _waitForNvrPreviewBaseUrl(identity);
+      final channels = await _waitForNvrChannels(previewBaseUrl);
+      if (channels.isEmpty) {
+        emit(
+          state.copyWith(
+            phase: HubProvisioningPhase.enterNvrConfig,
+            message:
+                'ESP32 connected, but no camera snapshots were available. Check the NVR credentials or network, then try again.',
+          ),
+        );
+        return;
+      }
+
+      emit(
+        state.copyWith(
+          phase: HubProvisioningPhase.selectNvrChannel,
+          nvrChannels: channels,
+          nvrPreviewBaseUrl: previewBaseUrl,
+          message:
+              'Choose the camera view for people counting. The ESP32 will only analyze the selected channel.',
+        ),
       );
     } on BleProvisioningException catch (error) {
       emit(
@@ -401,6 +454,264 @@ class HubProvisioningBloc
               'Unable to send NVR config over BLE: ${error.message}. Keep the ESP32 close and try again.',
         ),
       );
+    } on TimeoutException catch (error) {
+      emit(
+        state.copyWith(
+          phase: HubProvisioningPhase.enterNvrConfig,
+          message:
+              'ESP32 did not become reachable for preview in time: ${error.message ?? 'timeout'}.',
+        ),
+      );
+    } on SocketException catch (error) {
+      emit(
+        state.copyWith(
+          phase: HubProvisioningPhase.enterNvrConfig,
+          message:
+              'The phone could not reach the ESP32 preview server on the Wi-Fi network: ${error.message}.',
+        ),
+      );
+    } on FormatException catch (error) {
+      emit(
+        state.copyWith(
+          phase: HubProvisioningPhase.enterNvrConfig,
+          message:
+              'ESP32 preview response was not valid JSON: ${error.message}.',
+        ),
+      );
+    }
+  }
+
+  Future<void> _onNvrChannelsRefreshRequested(
+    HubProvisioningNvrChannelsRefreshRequested event,
+    Emitter<HubProvisioningState> emit,
+  ) async {
+    final previewBaseUrl = state.nvrPreviewBaseUrl;
+    if (previewBaseUrl == null || previewBaseUrl.trim().isEmpty) {
+      emit(
+        state.copyWith(
+          phase: HubProvisioningPhase.enterNvrConfig,
+          message: 'Preview server address is missing. Send NVR config again.',
+        ),
+      );
+      return;
+    }
+
+    emit(
+      state.copyWith(
+        phase: HubProvisioningPhase.discoveringNvrChannels,
+        message: 'Refreshing camera previews.',
+      ),
+    );
+
+    try {
+      final channels = await _waitForNvrChannels(
+        previewBaseUrl,
+        forceRefresh: true,
+      );
+      emit(
+        state.copyWith(
+          phase: HubProvisioningPhase.selectNvrChannel,
+          nvrChannels: channels,
+          message:
+              'Choose the camera view for people counting. The ESP32 will only analyze the selected channel.',
+        ),
+      );
+    } on SocketException catch (error) {
+      emit(
+        state.copyWith(
+          phase: HubProvisioningPhase.selectNvrChannel,
+          message: 'Unable to refresh camera previews: ${error.message}.',
+        ),
+      );
+    } on FormatException catch (error) {
+      emit(
+        state.copyWith(
+          phase: HubProvisioningPhase.selectNvrChannel,
+          message:
+              'Camera preview response was not valid JSON: ${error.message}.',
+        ),
+      );
+    }
+  }
+
+  Future<void> _onNvrChannelSelected(
+    HubProvisioningNvrChannelSelected event,
+    Emitter<HubProvisioningState> emit,
+  ) async {
+    final identity = state.resolvedIdentity;
+    final candidate = state.selectedBleCandidate;
+    final wifiSsid = state.pendingWifiSsid;
+    if (identity == null || candidate == null || wifiSsid == null) {
+      emit(
+        state.copyWith(
+          phase: HubProvisioningPhase.failure,
+          message:
+              'The BLE provisioning context was lost before saving the selected camera view.',
+        ),
+      );
+      return;
+    }
+
+    emit(
+      state.copyWith(
+        phase: HubProvisioningPhase.sendingNvrChannelSelection,
+        clearMessage: true,
+      ),
+    );
+
+    final payload = <String, Object?>{
+      'selected_channel': event.selectedChannel,
+    };
+
+    try {
+      final responseBytes = await bleProvisioningService.sendCustomData(
+        identity,
+        endpoint: 'nvr-select',
+        payload: Uint8List.fromList(utf8.encode(jsonEncode(payload))),
+      );
+      final response = utf8.decode(responseBytes, allowMalformed: true);
+      if (!response.contains('"ok"') && !response.contains('ok')) {
+        emit(
+          state.copyWith(
+            phase: HubProvisioningPhase.selectNvrChannel,
+            message: 'ESP32 rejected the selected camera channel: $response',
+          ),
+        );
+        return;
+      }
+
+      final iotDeviceId = await _loadEspIotDeviceId(identity) ??
+          identity.deviceId;
+
+      await _persistBindingAfterWifiProvisioning(
+        emit,
+        candidate: candidate,
+        wifiSsid: wifiSsid,
+        iotDeviceId: iotDeviceId,
+      );
+    } on BleProvisioningException catch (error) {
+      emit(
+        state.copyWith(
+          phase: HubProvisioningPhase.selectNvrChannel,
+          message:
+              'Unable to save selected camera channel over BLE: ${error.message}.',
+        ),
+      );
+    }
+  }
+
+  Future<String> _waitForNvrPreviewBaseUrl(
+    EspProvisioningIdentity identity,
+  ) async {
+    for (var attempt = 0; attempt < 180; attempt++) {
+      try {
+        final responseBytes = await bleProvisioningService.sendCustomData(
+          identity,
+          endpoint: 'nvr-status',
+          payload: Uint8List.fromList(utf8.encode('{}')),
+        );
+        final response = utf8.decode(responseBytes, allowMalformed: true);
+        final status = jsonDecode(response) as Map<String, dynamic>;
+        final wifiConnected =
+            status['wifi'] == 1 || status['wifi_connected'] == true;
+        final previewStarted =
+            status['preview'] == 1 || status['preview_server_started'] == true;
+        final nvrIp = ((status['nvr'] ?? status['nvr_ip']) as String?)?.trim();
+        final nvrDiscovered = status['nvr_discovered'] == true ||
+            (nvrIp != null && nvrIp.isNotEmpty);
+        final espIp = ((status['ip'] ?? status['esp_ip']) as String?)?.trim();
+        final previewPort =
+            ((status['port'] ?? status['preview_port']) as num?)?.toInt() ??
+                8080;
+        if (wifiConnected &&
+            previewStarted &&
+            nvrDiscovered &&
+            espIp != null &&
+            espIp.isNotEmpty) {
+          return 'http://$espIp:$previewPort';
+        }
+      } on BleProvisioningException {
+        if (attempt > 12) rethrow;
+      }
+      await Future<void>.delayed(const Duration(seconds: 1));
+    }
+
+    throw TimeoutException(
+        'waiting for ESP32 NVR discovery and preview server');
+  }
+
+  Future<String?> _loadEspIotDeviceId(
+    EspProvisioningIdentity identity,
+  ) async {
+    try {
+      final responseBytes = await bleProvisioningService.sendCustomData(
+        identity,
+        endpoint: 'nvr-status',
+        payload: Uint8List.fromList(utf8.encode('{}')),
+      );
+      final response = utf8.decode(responseBytes, allowMalformed: true);
+      final status = jsonDecode(response) as Map<String, dynamic>;
+      final deviceId = (status['device_id'] ?? status['deviceId'])
+          ?.toString()
+          .trim();
+      return deviceId == null || deviceId.isEmpty ? null : deviceId;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<List<NvrChannelPreview>> _waitForNvrChannels(
+    String baseUrl, {
+    bool forceRefresh = false,
+  }) async {
+    List<NvrChannelPreview> latestChannels = const <NvrChannelPreview>[];
+    for (var attempt = 0; attempt < 30; attempt++) {
+      final result = await _loadNvrChannelDiscoveryResult(
+        baseUrl,
+        refresh: forceRefresh && attempt == 0,
+      );
+      latestChannels = result.channels;
+      if (result.scanComplete) {
+        return result.channels;
+      }
+      await Future<void>.delayed(const Duration(seconds: 1));
+    }
+    return latestChannels;
+  }
+
+  Future<_NvrChannelDiscoveryResult> _loadNvrChannelDiscoveryResult(
+    String baseUrl, {
+    bool refresh = false,
+  }) async {
+    final client = HttpClient()..connectionTimeout = const Duration(seconds: 5);
+    try {
+      final uri = Uri.parse(
+        refresh ? '$baseUrl/channels?refresh=1' : '$baseUrl/channels',
+      );
+      final request =
+          await client.getUrl(uri).timeout(const Duration(seconds: 8));
+      final response =
+          await request.close().timeout(const Duration(seconds: 20));
+      final body = await response.transform(utf8.decoder).join();
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw SocketException(
+          'ESP32 preview server returned HTTP ${response.statusCode}: $body',
+        );
+      }
+
+      final decoded = jsonDecode(body) as Map<String, dynamic>;
+      final channelsJson = decoded['channels'] as List<dynamic>? ?? const [];
+      final channels = channelsJson
+          .whereType<Map<String, dynamic>>()
+          .map(NvrChannelPreview.fromJson)
+          .where((channel) => channel.channel > 0)
+          .toList(growable: false);
+      return _NvrChannelDiscoveryResult(
+        channels: channels,
+        scanComplete: decoded['scan_complete'] == true,
+      );
+    } finally {
+      client.close(force: true);
     }
   }
 
@@ -513,6 +824,7 @@ class HubProvisioningBloc
     Emitter<HubProvisioningState> emit, {
     required BleCandidate candidate,
     required String wifiSsid,
+    required String iotDeviceId,
   }) async {
     final bindingToSave = _buildBindingToSave(
       candidate: candidate,
@@ -525,29 +837,49 @@ class HubProvisioningBloc
       ),
     );
     final bindingResult = await upsertSpaceHubBinding(bindingToSave);
-    bindingResult.fold(
-      (failure) => emit(
+    await bindingResult.fold<Future<void>>(
+      (failure) async => emit(
         state.copyWith(
           phase: HubProvisioningPhase.failure,
           flowMode: HubProvisioningFlowMode.fullProvisioning,
           message: failure.message,
         ),
       ),
-      (binding) => emit(
-        state.copyWith(
-          phase: HubProvisioningPhase.success,
-          flowMode: HubProvisioningFlowMode.fullProvisioning,
-          binding: binding,
-          didMutateBinding: true,
-          clearSelectedBleCandidate: true,
-          clearResolvedIdentity: true,
-          clearPendingWifiSsid: true,
-          clearDraftLocation: true,
-          bleCandidates: const <BleCandidate>[],
-          wifiCandidates: const <WifiCandidate>[],
-          message: _buildSuccessMessage(binding),
-        ),
-      ),
+      (binding) async {
+        final spaceUpdateResult = await updateSpace(
+          state.spaceId,
+          SpaceMutationRequest(ioTDeviceId: iotDeviceId),
+        );
+
+        spaceUpdateResult.fold(
+          (failure) => emit(
+            state.copyWith(
+              phase: HubProvisioningPhase.failure,
+              flowMode: HubProvisioningFlowMode.fullProvisioning,
+              binding: binding,
+              didMutateBinding: true,
+              message:
+                  'ESP32 setup completed, but updating this space with IoT device ID $iotDeviceId failed: ${failure.message}',
+            ),
+          ),
+          (_) => emit(
+            state.copyWith(
+              phase: HubProvisioningPhase.success,
+              flowMode: HubProvisioningFlowMode.fullProvisioning,
+              binding: binding,
+              didMutateBinding: true,
+              clearSelectedBleCandidate: true,
+              clearResolvedIdentity: true,
+              clearPendingWifiSsid: true,
+              clearDraftLocation: true,
+              bleCandidates: const <BleCandidate>[],
+              wifiCandidates: const <WifiCandidate>[],
+              message:
+                  '${_buildSuccessMessage(binding)} IoT device ID $iotDeviceId saved to the space.',
+            ),
+          ),
+        );
+      },
     );
   }
 

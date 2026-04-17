@@ -24,22 +24,17 @@ class SpaceHubRepositoryImpl implements SpaceHubRepository {
   Future<Either<Failure, SpaceHubBinding?>> getBinding(String spaceId) async {
     try {
       final localBinding = await stubDataSource.getBinding(spaceId);
-      final isConnected = await networkInfo.isConnected;
-      if (!isConnected) {
-        return Right(localBinding);
+      if (localBinding?.isSyncPending ?? false) {
+        final boundBinding = localBinding!.copyWith(
+          status: SpaceHubBindingStatus.bound,
+          clearLastError: true,
+        );
+        await stubDataSource.upsertBinding(
+          SpaceHubBindingModel.fromEntity(boundBinding),
+        );
+        return Right(boundBinding);
       }
-
-      try {
-        final remoteBinding = await remoteDataSource.getBinding(spaceId);
-        if (remoteBinding == null) {
-          await stubDataSource.deleteBinding(spaceId);
-          return const Right(null);
-        }
-        await stubDataSource.upsertBinding(remoteBinding);
-        return Right(remoteBinding);
-      } on ServerException {
-        return Right(localBinding);
-      }
+      return Right(localBinding);
     } on CacheException catch (error) {
       return Left(CacheFailure(error.message));
     } catch (error) {
@@ -51,46 +46,16 @@ class SpaceHubRepositoryImpl implements SpaceHubRepository {
   Future<Either<Failure, SpaceHubBinding>> upsertBinding(
     SpaceHubBinding binding,
   ) async {
-    final pendingBinding = binding.copyWith(
-      status: SpaceHubBindingStatus.syncPending,
+    final boundBinding = binding.copyWith(
+      status: SpaceHubBindingStatus.bound,
       clearLastError: true,
     );
 
     try {
       await stubDataSource.upsertBinding(
-        SpaceHubBindingModel.fromEntity(pendingBinding),
+        SpaceHubBindingModel.fromEntity(boundBinding),
       );
-
-      final isConnected = await networkInfo.isConnected;
-      if (!isConnected) {
-        return Right(pendingBinding);
-      }
-
-      try {
-        final savedBinding = await remoteDataSource.upsertBinding(
-          SpaceHubBindingModel.fromEntity(
-            binding.copyWith(
-              status: SpaceHubBindingStatus.bound,
-              clearLastError: true,
-            ),
-          ),
-        );
-        final normalizedBinding = savedBinding.copyWith(
-          status: SpaceHubBindingStatus.bound,
-          clearLastError: true,
-        );
-        await stubDataSource.upsertBinding(
-          SpaceHubBindingModel.fromEntity(normalizedBinding),
-        );
-        return Right(normalizedBinding);
-      } on ServerException catch (error) {
-        final fallbackBinding =
-            pendingBinding.copyWith(lastError: error.message);
-        await stubDataSource.upsertBinding(
-          SpaceHubBindingModel.fromEntity(fallbackBinding),
-        );
-        return Right(fallbackBinding);
-      }
+      return Right(boundBinding);
     } on CacheException catch (error) {
       return Left(CacheFailure(error.message));
     } catch (error) {
