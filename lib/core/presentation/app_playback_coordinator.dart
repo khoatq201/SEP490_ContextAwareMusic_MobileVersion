@@ -69,6 +69,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
   /// waiting for CAMS to publish the next authoritative stream.
   DateTime? _trackEndedAtUtc;
   bool _hlsRefreshIssuedForCurrentStall = false;
+  bool _forceRemotePlaybackResyncOnNextCamsState = false;
   static const Duration _managerWarmupDuration = Duration(seconds: 4);
   static const double _managerWarmupCompensationSeconds = 2;
   static const Duration _managerProgressTickInterval =
@@ -116,10 +117,29 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      unawaited(
-        _attemptPlaybackDeviceRefreshIfNeeded(reason: 'app-resumed'),
-      );
+      unawaited(_handleAppResumed());
     }
+  }
+
+  Future<void> _handleAppResumed() async {
+    await _attemptPlaybackDeviceRefreshIfNeeded(reason: 'app-resumed');
+    if (!mounted) return;
+
+    final session = context.read<SessionCubit>().state;
+    final space = session.currentSpace;
+    if (space == null || space.id.isEmpty) {
+      return;
+    }
+
+    _debugLog(
+      'app resumed -> rebootstrap realtime playback sync '
+      'space=${space.id} playbackDevice=${session.isPlaybackDevice}',
+    );
+    _lastAppliedRemotePlaybackSignature = null;
+    _forceRemotePlaybackResyncOnNextCamsState = session.isPlaybackDevice;
+
+    _syncCamsState(context.read<CamsPlaybackBloc>().state);
+    _addCamsEvent(CamsInitPlayback(spaceId: space.id));
   }
 
   void _syncSession(SessionState session) {
@@ -169,6 +189,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
       _trackMetadataInFlight.clear();
       _clearTrackEndedGuard();
       _lastAppliedRemotePlaybackSignature = null;
+      _forceRemotePlaybackResyncOnNextCamsState = false;
       _stopManagerProgressTicker();
       _resetManagerWarmup();
       _stopExpectedEndWatcher();
@@ -190,6 +211,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
       _resetManagerWarmup();
       _stopExpectedEndWatcher();
       _resetPlaybackHealthTracking();
+      _forceRemotePlaybackResyncOnNextCamsState = false;
     }
 
     playerBloc.add(PlayerContextUpdated(
@@ -316,6 +338,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
     if (playbackState == null) {
       _clearTrackEndedGuard();
       _lastAppliedRemotePlaybackSignature = null;
+      _forceRemotePlaybackResyncOnNextCamsState = false;
       return;
     }
 
@@ -336,6 +359,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
             localQueueMatchesIncoming ||
             _matchesCompletedTrack(playbackState));
     if (shouldHoldExpiredCurrentStream) {
+      _forceRemotePlaybackResyncOnNextCamsState = false;
       _debugLog(
         'playback window expired for current HLS -> wait for next identity/HLS '
         'queueItemId=${playbackState.effectiveQueueItemId ?? '-'} '
@@ -434,6 +458,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
       _stopPlaybackHealthTicker();
       _clearTrackEndedGuard();
       _lastAppliedRemotePlaybackSignature = null;
+      _forceRemotePlaybackResyncOnNextCamsState = false;
       _debugLog('non-streaming snapshot with no queue identity -> stop player');
       _addPlayerEvent(const PlayerHlsStopped());
       return;
@@ -494,7 +519,15 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
     }
 
     final remotePlaybackSignature = _remotePlaybackSignatureFor(playbackState);
-    if (_lastAppliedRemotePlaybackSignature == remotePlaybackSignature) {
+    final forceRemotePlaybackResync =
+        _forceRemotePlaybackResyncOnNextCamsState && session.isPlaybackDevice;
+    final canKeepCurrentRemoteStream = !forceRemotePlaybackResync &&
+        _canKeepCurrentRemoteStream(
+          playerState: playerBloc.state,
+          playbackState: playbackState,
+        );
+    if (_lastAppliedRemotePlaybackSignature == remotePlaybackSignature &&
+        !forceRemotePlaybackResync) {
       _addPlayerEvent(PlayerAudioSettingsApplied(
         volumePercent: playbackState.volumePercent,
         isMuted: playbackState.isMuted,
@@ -505,10 +538,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
       return;
     }
 
-    if (_canKeepCurrentRemoteStream(
-      playerState: playerBloc.state,
-      playbackState: playbackState,
-    )) {
+    if (canKeepCurrentRemoteStream) {
       final shouldBePlaying = !playbackState.isPaused;
       final driftSeconds = _remotePositionDriftSeconds(
         playerState: playerBloc.state,
@@ -565,6 +595,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
     }
 
     _lastAppliedRemotePlaybackSignature = remotePlaybackSignature;
+    _forceRemotePlaybackResyncOnNextCamsState = false;
 
     _debugLog(
       'active HLS snapshot -> start player '
@@ -585,7 +616,8 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
       expectedEndAtUtc: playbackState.expectedEndAtUtc,
       serverClockOffsetMs: SpacePlaybackState.serverClockOffsetMs,
       isPaused: playbackState.isPaused,
-      playLocally: _shouldPlayRemoteAudioLocally(session),
+      playLocally: session.isPlaybackDevice,
+      forceReload: forceRemotePlaybackResync,
     ));
 
     _addPlayerEvent(PlayerAudioSettingsApplied(

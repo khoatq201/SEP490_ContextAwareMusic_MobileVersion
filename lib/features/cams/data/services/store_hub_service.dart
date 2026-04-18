@@ -84,6 +84,16 @@ class StoreHubService {
       return; // Already connected
     }
 
+    if (_connection != null) {
+      try {
+        await _connection!.stop();
+      } catch (_) {
+        // Best effort: a stale reconnecting connection should not block
+        // rebuilding the foreground realtime channel.
+      }
+      _connection = null;
+    }
+
     _connection = HubConnectionBuilder()
         .withUrl(
       ApiConstants.storeHubUrl,
