@@ -1,22 +1,74 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 class ApiConstants {
   // ==========================================
   // Configuration
   // ==========================================
 
-  /// Toggle between mock and real API datasources.
-  /// Set to `true` for demo mode (mock data, no backend required).
-  /// Set to `false` to use real backend API.
-  static const bool useMockData = false;
+  static const String _defaultBaseUrl = 'https://logcams.cloud';
+  static const String _dartDefinedApiBaseUrl =
+      String.fromEnvironment('API_BASE_URL');
+  static const String _dartDefinedBaseUrl = String.fromEnvironment('BASE_URL');
+  static const String _dartDefinedUseMockData =
+      String.fromEnvironment('USE_MOCK_DATA');
+  static const String _dartDefinedEnvName = String.fromEnvironment('ENV_NAME');
 
-  // Base URLs
-  // Override with:
-  // flutter run --dart-define=API_BASE_URL=http://10.0.2.2:7001
-  // Android emulator can use 10.0.2.2 for host localhost.
-  // Real devices should use a LAN IP or deployed API URL.
-  static const String baseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://192.168.1.3:7001',
-  );
+  /// Toggle between mock and real API datasources.
+  ///
+  /// Priority: --dart-define USE_MOCK_DATA > dotenv USE_MOCK_DATA > false.
+  static bool get useMockData {
+    final value = _firstNonEmpty([
+      _dartDefinedUseMockData,
+      _dotenvValue(['USE_MOCK_DATA']),
+    ]);
+    return value?.toLowerCase() == 'true';
+  }
+
+  /// Base URL for all API and SignalR requests.
+  ///
+  /// Priority:
+  /// 1. --dart-define API_BASE_URL or BASE_URL
+  /// 2. dotenv API_BASE_URL or BASE_URL
+  /// 3. production fallback
+  static String get baseUrl {
+    final value = _firstNonEmpty([
+      _dartDefinedApiBaseUrl,
+      _dartDefinedBaseUrl,
+      _dotenvValue(['API_BASE_URL', 'BASE_URL', 'api_base_url']),
+      _defaultBaseUrl,
+    ]);
+    return _withoutTrailingSlash(value!);
+  }
+
+  static String get envName =>
+      _firstNonEmpty([
+        _dartDefinedEnvName,
+        _dotenvValue(['ENV_NAME']),
+      ]) ??
+      'release';
+
+  static String? _dotenvValue(List<String> keys) {
+    for (final key in keys) {
+      final value = dotenv.env[key]?.trim();
+      if (value != null && value.isNotEmpty) {
+        return value;
+      }
+    }
+    return null;
+  }
+
+  static String? _firstNonEmpty(Iterable<String?> values) {
+    for (final value in values) {
+      final trimmed = value?.trim();
+      if (trimmed != null && trimmed.isNotEmpty) {
+        return trimmed;
+      }
+    }
+    return null;
+  }
+
+  static String _withoutTrailingSlash(String value) =>
+      value.replaceFirst(RegExp(r'/+$'), '');
 
   // Default request headers
   static const Map<String, String> defaultHeaders = {

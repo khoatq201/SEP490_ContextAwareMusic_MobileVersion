@@ -51,3 +51,9 @@ docs/
 docs copy 2/
 analyze*.txt
 src/
+
+# Environment files
+.env
+.env.release
+.env.staging
+!.env.example

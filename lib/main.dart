@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'injection_container.dart';
 import 'router.dart';
@@ -32,6 +34,10 @@ const bool _isE2ERun = bool.fromEnvironment('E2E_RUN', defaultValue: false);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await dotenv.load(
+    fileName: kDebugMode ? '.env' : '.env.release',
+  );
 
   final audioPlayerService = AudioPlayerService();
   await audioPlayerService.configureForBackgroundPlayback();
@@ -170,7 +176,7 @@ class _MyAppState extends State<MyApp> {
     final storedBaseUrl =
         localStorage.getSetting(ApiConstants.lastApiBaseUrlKey);
     final previousBaseUrl = storedBaseUrl is String ? storedBaseUrl : null;
-    const currentBaseUrl = ApiConstants.baseUrl;
+    final currentBaseUrl = ApiConstants.baseUrl;
 
     if (previousBaseUrl != null && previousBaseUrl != currentBaseUrl) {
       if (!_isE2ERun) {
