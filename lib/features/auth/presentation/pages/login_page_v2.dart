@@ -313,6 +313,8 @@ class _LoginPageV2State extends State<LoginPageV2>
           ),
           const SizedBox(height: 14),
           _buildGoogleSignInButton(isDark),
+          const SizedBox(height: 18),
+          _buildAuthNavigationLinks(isDark),
         ],
       ),
     );
@@ -527,6 +529,114 @@ class _LoginPageV2State extends State<LoginPageV2>
         },
         icon: const _GoogleIcon(),
         label: const Text('Continue with Google'),
+      ),
+    );
+  }
+
+  Widget _buildAuthNavigationLinks(bool isDark) {
+    final accentColor =
+        isDark ? AppColors.primaryCyan : AppColors.primaryOrange;
+    final mutedColor =
+        isDark ? AppColors.textDarkSecondary : AppColors.textSecondary;
+    final textColor =
+        isDark ? AppColors.textDarkPrimary : AppColors.textPrimary;
+
+    return Column(
+      children: [
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 8,
+          runSpacing: 4,
+          children: [
+            TextButton.icon(
+              key: const ValueKey('login_back_welcome_button'),
+              style: TextButton.styleFrom(
+                foregroundColor: mutedColor,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                minimumSize: const Size(0, 34),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              onPressed: () => context.go('/welcome'),
+              icon: const Icon(Icons.arrow_back_rounded, size: 18),
+              label: Text(
+                'Welcome',
+                style: AppTypography.titleSmall.copyWith(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: mutedColor,
+                ),
+              ),
+            ),
+            TextButton.icon(
+              key: const ValueKey('login_pair_device_button'),
+              style: TextButton.styleFrom(
+                foregroundColor: mutedColor,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                minimumSize: const Size(0, 34),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              onPressed: () => context.push('/pair-device'),
+              icon: const Icon(Icons.qr_code_2_rounded, size: 18),
+              label: Text(
+                'Pair device',
+                style: AppTypography.titleSmall.copyWith(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: mutedColor,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 2,
+          runSpacing: 2,
+          children: [
+            Text(
+              "Don't have an account?",
+              style: AppTypography.titleSmall.copyWith(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: textColor,
+              ),
+            ),
+            TextButton(
+              key: const ValueKey('login_signup_button'),
+              style: TextButton.styleFrom(
+                foregroundColor: accentColor,
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                minimumSize: const Size(0, 30),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              onPressed: _showRegistrationComingSoon,
+              child: Text(
+                'Sign up',
+                style: AppTypography.titleSmall.copyWith(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: accentColor,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  void _showRegistrationComingSoon() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Registration portal coming soon!'),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+        ),
       ),
     );
   }

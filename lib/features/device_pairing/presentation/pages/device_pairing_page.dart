@@ -29,6 +29,15 @@ class _DevicePairingPageState extends State<DevicePairingPage> {
   final _pairCodeController = TextEditingController();
   bool _isPairing = false;
 
+  void _navigateBack() {
+    final router = GoRouter.of(context);
+    if (router.canPop()) {
+      router.pop();
+    } else {
+      context.go('/welcome');
+    }
+  }
+
   Future<void> _onPairPressed() async {
     final code = _pairCodeController.text.trim();
     if (code.isEmpty) {
@@ -77,197 +86,206 @@ class _DevicePairingPageState extends State<DevicePairingPage> {
     final primaryColor =
         isDark ? AppColors.primaryCyan : AppColors.primaryOrange;
 
-    return Scaffold(
-      backgroundColor: backgroundColor,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new, color: textColorPrimary),
-          onPressed: () => context.pop(),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        _navigateBack();
+      },
+      child: Scaffold(
+        backgroundColor: backgroundColor,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            tooltip: 'Back',
+            icon: Icon(Icons.arrow_back_ios_new, color: textColorPrimary),
+            onPressed: _navigateBack,
+          ),
         ),
-      ),
-      body: BlocListener<DevicePairingBloc, DevicePairingState>(
-        listener: (context, state) {
-          if (state.status == DevicePairingStatus.loading) {
-            setState(() => _isPairing = true);
-          } else if (state.status == DevicePairingStatus.failure) {
-            setState(() => _isPairing = false);
-          } else if (state.status == DevicePairingStatus.success &&
-              state.pairingResult != null) {
-            setState(() => _isPairing = false);
+        body: BlocListener<DevicePairingBloc, DevicePairingState>(
+          listener: (context, state) {
+            if (state.status == DevicePairingStatus.loading) {
+              setState(() => _isPairing = true);
+            } else if (state.status == DevicePairingStatus.failure) {
+              setState(() => _isPairing = false);
+            } else if (state.status == DevicePairingStatus.success &&
+                state.pairingResult != null) {
+              setState(() => _isPairing = false);
 
-            // Success! Set up session for playback device
-            final result = state.pairingResult!;
-            final sessionCubit = context.read<SessionCubit>();
+              // Success! Set up session for playback device
+              final result = state.pairingResult!;
+              final sessionCubit = context.read<SessionCubit>();
 
-            sessionCubit.setPlaybackMode(
-              store: Store(
-                id: result.storeId,
-                name: result.storeName,
-                brandId: result.brandId,
-                address: 'Paired Location Route',
-              ),
-              space: Space(
-                id: result.spaceId,
-                name: result.spaceName,
-                type: SpaceTypeEnum.hall,
-                status: EntityStatusEnum.active,
-                assignedHubId: 'hub-123',
-                storeId: result.storeId,
-              ),
-              deviceId: result.pairedDeviceId,
-            );
+              sessionCubit.setPlaybackMode(
+                store: Store(
+                  id: result.storeId,
+                  name: result.storeName,
+                  brandId: result.brandId,
+                  address: 'Paired Location Route',
+                ),
+                space: Space(
+                  id: result.spaceId,
+                  name: result.spaceName,
+                  type: SpaceTypeEnum.hall,
+                  status: EntityStatusEnum.active,
+                  assignedHubId: 'hub-123',
+                  storeId: result.storeId,
+                ),
+                deviceId: result.pairedDeviceId,
+              );
 
-            AppFeedbackPresenter.show(
-              context,
-              AppFeedback.success(
-                'Paired with ${result.storeName} - ${result.spaceName}',
-                title: 'Device connected',
-              ),
-            );
+              AppFeedbackPresenter.show(
+                context,
+                AppFeedback.success(
+                  'Paired with ${result.storeName} - ${result.spaceName}',
+                  title: 'Device connected',
+                ),
+              );
 
-            context.go('/home');
-          }
-        },
-        child: BlocBuilder<DevicePairingBloc, DevicePairingState>(
-          builder: (context, state) {
-            return SafeArea(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  const horizontalPadding = 24.0;
-                  const topPadding = 24.0;
-                  const bottomPadding = 16.0;
-                  final contentMinHeight =
-                      constraints.maxHeight - topPadding - bottomPadding;
+              context.go('/home');
+            }
+          },
+          child: BlocBuilder<DevicePairingBloc, DevicePairingState>(
+            builder: (context, state) {
+              return SafeArea(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    const horizontalPadding = 24.0;
+                    const topPadding = 24.0;
+                    const bottomPadding = 16.0;
+                    final contentMinHeight =
+                        constraints.maxHeight - topPadding - bottomPadding;
 
-                  return SingleChildScrollView(
-                    keyboardDismissBehavior:
-                        ScrollViewKeyboardDismissBehavior.onDrag,
-                    padding: EdgeInsets.fromLTRB(
-                      horizontalPadding,
-                      topPadding,
-                      horizontalPadding,
-                      bottomPadding + keyboardInset,
-                    ),
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight: contentMinHeight > 0 ? contentMinHeight : 0,
+                    return SingleChildScrollView(
+                      keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
+                      padding: EdgeInsets.fromLTRB(
+                        horizontalPadding,
+                        topPadding,
+                        horizontalPadding,
+                        bottomPadding + keyboardInset,
                       ),
-                      child: IntrinsicHeight(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            const SizedBox(height: 48),
-                            Text(
-                              'Playback Device\nSetup',
-                              style: GoogleFonts.outfit(
-                                fontSize: 36,
-                                fontWeight: FontWeight.bold,
-                                color: textColorPrimary,
-                                height: 1.2,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Enter the 6-digit pairing code shown on your management dashboard to link this device to a space.',
-                              style: GoogleFonts.inter(
-                                fontSize: 16,
-                                color: textColorSecondary,
-                                height: 1.5,
-                              ),
-                            ),
-                            const SizedBox(height: 48),
-                            if (state.failure != null) ...[
-                              AppInlineErrorCard(
-                                failure: state.failure,
-                                title: 'Pairing failed',
-                                margin: const EdgeInsets.only(bottom: 20),
-                              ),
-                            ],
-                            TextField(
-                              controller: _pairCodeController,
-                              keyboardType: TextInputType.text,
-                              textCapitalization:
-                                  TextCapitalization.characters,
-                              maxLength: 7,
-                              inputFormatters: [
-                                FilteringTextInputFormatter.allow(
-                                  RegExp(r'[A-Za-z0-9-]'),
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minHeight:
+                              contentMinHeight > 0 ? contentMinHeight : 0,
+                        ),
+                        child: IntrinsicHeight(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              const SizedBox(height: 48),
+                              Text(
+                                'Playback Device\nSetup',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 36,
+                                  fontWeight: FontWeight.bold,
+                                  color: textColorPrimary,
+                                  height: 1.2,
                                 ),
-                                TextInputFormatter.withFunction(
-                                  (oldValue, newValue) {
-                                    return newValue.copyWith(
-                                      text: newValue.text.toUpperCase(),
-                                      selection: newValue.selection,
-                                    );
-                                  },
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Enter the 6-digit pairing code shown on your management dashboard to link this device to a space.',
+                                style: GoogleFonts.inter(
+                                  fontSize: 16,
+                                  color: textColorSecondary,
+                                  height: 1.5,
+                                ),
+                              ),
+                              const SizedBox(height: 48),
+                              if (state.failure != null) ...[
+                                AppInlineErrorCard(
+                                  failure: state.failure,
+                                  title: 'Pairing failed',
+                                  margin: const EdgeInsets.only(bottom: 20),
                                 ),
                               ],
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.outfit(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 8,
-                                color: textColorPrimary,
-                              ),
-                              decoration: InputDecoration(
-                                counterText: '',
-                                hintText: '000000',
-                                hintStyle: GoogleFonts.outfit(
-                                  color: textColorSecondary.withAlpha(76),
+                              TextField(
+                                controller: _pairCodeController,
+                                keyboardType: TextInputType.text,
+                                textCapitalization:
+                                    TextCapitalization.characters,
+                                maxLength: 7,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.allow(
+                                    RegExp(r'[A-Za-z0-9-]'),
+                                  ),
+                                  TextInputFormatter.withFunction(
+                                    (oldValue, newValue) {
+                                      return newValue.copyWith(
+                                        text: newValue.text.toUpperCase(),
+                                        selection: newValue.selection,
+                                      );
+                                    },
+                                  ),
+                                ],
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.outfit(
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 8,
+                                  color: textColorPrimary,
                                 ),
-                                filled: true,
-                                fillColor: surfaceColor,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  borderSide: BorderSide.none,
+                                decoration: InputDecoration(
+                                  counterText: '',
+                                  hintText: '000000',
+                                  hintStyle: GoogleFonts.outfit(
+                                    color: textColorSecondary.withAlpha(76),
+                                  ),
+                                  filled: true,
+                                  fillColor: surfaceColor,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  contentPadding:
+                                      const EdgeInsets.symmetric(vertical: 24),
                                 ),
-                                contentPadding:
-                                    const EdgeInsets.symmetric(vertical: 24),
                               ),
-                            ),
-                            const Spacer(),
-                            ElevatedButton(
-                              onPressed: _isPairing ? null : _onPairPressed,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: primaryColor,
-                                disabledBackgroundColor:
-                                    primaryColor.withAlpha(128),
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                              const Spacer(),
+                              ElevatedButton(
+                                onPressed: _isPairing ? null : _onPairPressed,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: primaryColor,
+                                  disabledBackgroundColor:
+                                      primaryColor.withAlpha(128),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  elevation: 0,
                                 ),
-                                elevation: 0,
-                              ),
-                              child: _isPairing
-                                  ? const SizedBox(
-                                      height: 24,
-                                      width: 24,
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 2,
+                                child: _isPairing
+                                    ? const SizedBox(
+                                        height: 24,
+                                        width: 24,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : Text(
+                                        'Pair Device',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white,
+                                        ),
                                       ),
-                                    )
-                                  : Text(
-                                      'Pair Device',
-                                      style: GoogleFonts.inter(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                            ),
-                          ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                },
-              ),
-            );
-          },
+                    );
+                  },
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
