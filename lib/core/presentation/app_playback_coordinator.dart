@@ -616,7 +616,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
       expectedEndAtUtc: playbackState.expectedEndAtUtc,
       serverClockOffsetMs: SpacePlaybackState.serverClockOffsetMs,
       isPaused: playbackState.isPaused,
-      playLocally: session.isPlaybackDevice,
+      playLocally: _shouldPlayRemoteAudioLocally(session),
       forceReload: forceRemotePlaybackResync,
     ));
 
