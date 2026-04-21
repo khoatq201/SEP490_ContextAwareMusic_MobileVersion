@@ -65,7 +65,7 @@ Future<void> seedDraftSchedule(
       slots: const [
         ScheduleSlotModel(
           id: 'seed-slot-001',
-          daysOfWeek: [7],
+          daysOfWeek: [0],
           startTime: '14:00',
           endTime: '16:00',
           musicId: 'music-001',

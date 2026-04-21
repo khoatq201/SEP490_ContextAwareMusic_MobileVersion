@@ -56,9 +56,22 @@ void main() {
       expect(adapter.lastMethod, 'GET');
       expect(adapter.lastPath, '/api/cms/schedule/spaces/space-1/bootstrap');
       expect(result.draftSchedule?.slots.single.musicId, 'playlist-1');
+      expect(result.draftSchedule?.slots.single.daysOfWeek, [0, 1]);
       expect(result.librarySources.single.id, 'library-1');
       expect(result.templateSources.single.id, 'template-1');
       expect(result.musicCatalog.single.title, 'Lunch Mix');
+    });
+
+    test('normalizes web and legacy Sunday day values', () {
+      final slot = ScheduleSlotModel.fromJson(const {
+        'id': 'slot-1',
+        'daysOfWeek': [0, 7, 1, 9],
+        'startTime': '09:00',
+        'endTime': '11:00',
+        'musicId': 'playlist-1',
+      });
+
+      expect(slot.daysOfWeek, [0, 1]);
     });
 
     test('upserts slot with playlistId body', () async {
@@ -131,7 +144,7 @@ Map<String, dynamic> _bootstrapPayload() {
     'slots': [
       {
         'id': 'slot-1',
-        'daysOfWeek': [1, 2],
+        'daysOfWeek': [0, 1],
         'startTime': '09:00',
         'endTime': '11:00',
         'musicId': 'playlist-1',

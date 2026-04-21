@@ -48,13 +48,24 @@ class ApiConstants {
       'release';
 
   static String? _dotenvValue(List<String> keys) {
+    final env = _safeDotenvEnv();
+    if (env == null) return null;
+
     for (final key in keys) {
-      final value = dotenv.env[key]?.trim();
+      final value = env[key]?.trim();
       if (value != null && value.isNotEmpty) {
         return value;
       }
     }
     return null;
+  }
+
+  static Map<String, String>? _safeDotenvEnv() {
+    try {
+      return dotenv.env;
+    } catch (_) {
+      return null;
+    }
   }
 
   static String? _firstNonEmpty(Iterable<String?> values) {

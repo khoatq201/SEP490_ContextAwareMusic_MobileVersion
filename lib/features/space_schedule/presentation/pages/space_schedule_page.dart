@@ -134,6 +134,7 @@ class SpaceSchedulePage extends StatelessWidget {
                   onAddSlot: () => _openSlotEditor(context, state: state),
                   onSlotTap: (slot) =>
                       _openSlotEditor(context, state: state, slot: slot),
+                  onSlotDelete: (slot) => _confirmDeleteSlot(context, slot),
                   onActionSelected: (action) =>
                       _handleEditorAction(context, action, state),
                 );
@@ -218,6 +219,36 @@ class SpaceSchedulePage extends StatelessWidget {
 
     if (!context.mounted || result == null) return;
     context.read<SpaceScheduleBloc>().add(SpaceScheduleSlotSaved(result));
+  }
+
+  Future<void> _confirmDeleteSlot(
+    BuildContext context,
+    ScheduleSlot slot,
+  ) async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete schedule slot?'),
+        content: Text('Remove ${slot.startTime} - ${slot.endTime}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (!context.mounted || shouldDelete != true) return;
+    context.read<SpaceScheduleBloc>().add(SpaceScheduleSlotDeleted(slot.id));
   }
 }
 
@@ -782,6 +813,7 @@ class _ScheduleEditorView extends StatelessWidget {
     required this.onClose,
     required this.onAddSlot,
     required this.onSlotTap,
+    required this.onSlotDelete,
     required this.onActionSelected,
   });
 
@@ -791,6 +823,7 @@ class _ScheduleEditorView extends StatelessWidget {
   final VoidCallback onClose;
   final VoidCallback onAddSlot;
   final ValueChanged<ScheduleSlot> onSlotTap;
+  final ValueChanged<ScheduleSlot> onSlotDelete;
   final Future<void> Function(_EditorAction action) onActionSelected;
 
   @override
@@ -949,6 +982,7 @@ class _ScheduleEditorView extends StatelessWidget {
                   slots: daySlots,
                   musicCatalog: state.musicCatalog,
                   onSlotTap: onSlotTap,
+                  onSlotDelete: onSlotDelete,
                 ),
         ),
       ],
@@ -1238,12 +1272,14 @@ class _ScheduleTimeline extends StatelessWidget {
     required this.slots,
     required this.musicCatalog,
     required this.onSlotTap,
+    required this.onSlotDelete,
   });
 
   final _SchedulePalette palette;
   final List<ScheduleSlot> slots;
   final List<ScheduleMusicItem> musicCatalog;
   final ValueChanged<ScheduleSlot> onSlotTap;
+  final ValueChanged<ScheduleSlot> onSlotDelete;
 
   static const double _hourHeight = 88;
   static const int _startHour = 8;
@@ -1396,9 +1432,33 @@ class _ScheduleTimeline extends StatelessWidget {
                     ],
                   ),
                 ),
-                Icon(
-                  Icons.edit_outlined,
-                  color: Colors.white.withValues(alpha: 0.9),
+                const SizedBox(width: 6),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.edit_outlined,
+                      color: Colors.white.withValues(alpha: 0.9),
+                      size: 22,
+                    ),
+                    const SizedBox(height: 8),
+                    IconButton(
+                      key: ValueKey('schedule-slot-delete-${slot.id}'),
+                      tooltip: 'Delete slot',
+                      onPressed: () => onSlotDelete(slot),
+                      padding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                      constraints: const BoxConstraints.tightFor(
+                        width: 34,
+                        height: 34,
+                      ),
+                      icon: Icon(
+                        Icons.delete_outline,
+                        color: Colors.white.withValues(alpha: 0.92),
+                        size: 22,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -2472,9 +2532,17 @@ String _formatDateTime(DateTime value) {
   return '$day/$month $hour:$minute';
 }
 
-int _domainDayFromUi(int value) => value == 0 ? 7 : value;
+int _domainDayFromUi(int value) {
+  if (value >= 0 && value <= 6) return value;
+  if (value == 7) return 0;
+  return 0;
+}
 
-int _uiDayFromDomainDay(int value) => value == 7 ? 0 : value;
+int _uiDayFromDomainDay(int value) {
+  if (value == 7) return 0;
+  if (value >= 0 && value <= 6) return value;
+  return 0;
+}
 
 String _formatTime(TimeOfDay time) {
   final hour = time.hour.toString().padLeft(2, '0');

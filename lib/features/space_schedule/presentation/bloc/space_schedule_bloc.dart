@@ -177,7 +177,7 @@ class SpaceScheduleBloc extends Bloc<SpaceScheduleEvent, SpaceScheduleState> {
     SpaceScheduleDaySelected event,
     Emitter<SpaceScheduleState> emit,
   ) {
-    emit(state.copyWith(selectedDay: event.day));
+    emit(state.copyWith(selectedDay: _uiDayFromDomainDay(event.day)));
   }
 
   Future<void> _onSlotSaved(
@@ -441,11 +441,12 @@ class SpaceScheduleBloc extends Bloc<SpaceScheduleEvent, SpaceScheduleState> {
   }
 
   int _todayDomainDay() {
-    final weekday = DateTime.now().weekday;
-    return weekday == DateTime.sunday ? 7 : weekday;
+    return DateTime.now().weekday % DateTime.sunday;
   }
 
   int _uiDayFromDomainDay(int domainDay) {
-    return domainDay == 7 ? 0 : domainDay;
+    if (domainDay == 7) return 0;
+    if (domainDay >= 0 && domainDay <= 6) return domainDay;
+    return 0;
   }
 }

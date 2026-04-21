@@ -135,5 +135,51 @@ void main() {
 
       expect(find.text('Indie Pop Pillow'), findsOneWidget);
     });
+
+    testWidgets('deletes an existing slot from the timeline', (tester) async {
+      final storage = InMemoryLocalStorageService();
+      final bloc = buildSpaceScheduleBloc(storage: storage);
+      addTearDown(() => closeBloc(bloc));
+
+      await seedDraftSchedule(storage, spaceId: 'space-delete');
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: BlocProvider.value(
+            value: bloc
+              ..add(
+                const SpaceScheduleStarted(
+                  spaceId: 'space-delete',
+                  storeId: 'store-1',
+                  spaceName: 'Delete Room',
+                ),
+              ),
+            child: const SpaceSchedulePage(
+              spaceId: 'space-delete',
+              storeId: 'store-1',
+              spaceName: 'Delete Room',
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle(const Duration(milliseconds: 900));
+
+      expect(find.text('Indie Pop Pillow'), findsOneWidget);
+
+      final deleteButton =
+          find.byKey(const ValueKey('schedule-slot-delete-seed-slot-001'));
+      await tester.ensureVisible(deleteButton);
+      await tester.tap(deleteButton);
+      await tester.pumpAndSettle(const Duration(milliseconds: 300));
+
+      expect(find.text('Delete schedule slot?'), findsOneWidget);
+
+      await tester.tap(find.text('Delete'));
+      await tester.pumpAndSettle(const Duration(milliseconds: 900));
+
+      expect(find.text('Indie Pop Pillow'), findsNothing);
+      expect(find.text('No music scheduled yet.'), findsOneWidget);
+    });
   });
 }

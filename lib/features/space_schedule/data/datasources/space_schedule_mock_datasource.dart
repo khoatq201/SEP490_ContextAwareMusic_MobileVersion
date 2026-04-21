@@ -81,21 +81,21 @@ class SpaceScheduleMockDataSource {
           slots: const [
             ScheduleSlotModel(
               id: 'slot-template-001',
-              daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
+              daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
               startTime: '08:00',
               endTime: '12:00',
               musicId: 'music-003',
             ),
             ScheduleSlotModel(
               id: 'slot-template-002',
-              daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
+              daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
               startTime: '12:00',
               endTime: '16:00',
               musicId: 'music-001',
             ),
             ScheduleSlotModel(
               id: 'slot-template-003',
-              daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
+              daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
               startTime: '16:00',
               endTime: '21:00',
               musicId: 'music-006',
@@ -140,14 +140,14 @@ class SpaceScheduleMockDataSource {
           slots: const [
             ScheduleSlotModel(
               id: 'slot-template-006',
-              daysOfWeek: [6, 7],
+              daysOfWeek: [0, 6],
               startTime: '10:00',
               endTime: '15:00',
               musicId: 'music-005',
             ),
             ScheduleSlotModel(
               id: 'slot-template-007',
-              daysOfWeek: [6, 7],
+              daysOfWeek: [0, 6],
               startTime: '15:00',
               endTime: '20:00',
               musicId: 'music-003',
@@ -166,7 +166,7 @@ class SpaceScheduleMockDataSource {
           slots: const [
             ScheduleSlotModel(
               id: 'slot-template-008',
-              daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
+              daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
               startTime: '11:00',
               endTime: '21:00',
               musicId: 'music-006',
@@ -220,14 +220,14 @@ class SpaceScheduleMockDataSource {
           slots: const [
             ScheduleSlotModel(
               id: 'slot-library-003',
-              daysOfWeek: [6, 7],
+              daysOfWeek: [0, 6],
               startTime: '13:00',
               endTime: '17:00',
               musicId: 'music-002',
             ),
             ScheduleSlotModel(
               id: 'slot-library-004',
-              daysOfWeek: [6, 7],
+              daysOfWeek: [0, 6],
               startTime: '17:00',
               endTime: '21:00',
               musicId: 'music-006',

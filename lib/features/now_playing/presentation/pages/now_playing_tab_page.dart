@@ -27,7 +27,6 @@ import '../../../../features/moods/domain/entities/mood.dart';
 import '../models/queue_sheet_view_data.dart';
 import '../widgets/queue_management_sheets.dart';
 import '../../../../features/space_control/domain/entities/space.dart';
-import '../../../../features/space_control/domain/entities/sensor_data.dart';
 import '../../../../features/space_control/presentation/bloc/music_control_bloc.dart';
 import '../../../../features/space_control/presentation/bloc/music_control_event.dart';
 import '../../../../features/space_control/presentation/bloc/space_monitoring_bloc.dart';
@@ -405,16 +404,6 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 8),
-
-                // Sensor dashboard (if monitoring)
-                if (spaceState.latestSensorData != null ||
-                    spaceState.status == SpaceMonitoringStatus.monitoring) ...[
-                  _SensorDashboard(
-                    sensorData: spaceState.latestSensorData,
-                    palette: palette,
-                  ).animate().fadeIn(duration: 350.ms).slideY(begin: 0.08),
-                  const SizedBox(height: 16),
-                ],
 
                 // â”€â”€ Album art â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 Center(
@@ -2432,145 +2421,7 @@ class _QueueTrackActions extends StatelessWidget {
 }
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// Sensor Dashboard (kept from original)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-class _SensorDashboard extends StatelessWidget {
-  const _SensorDashboard({required this.sensorData, required this.palette});
-  final SensorData? sensorData;
-  final _NPPalette palette;
-
-  @override
-  Widget build(BuildContext context) {
-    final cards = [
-      _SensorCard(
-          icon: LucideIcons.thermometer,
-          label: 'Temperature',
-          value: sensorData != null
-              ? '${sensorData!.temperature.toStringAsFixed(1)}C'
-              : '--',
-          badge: 'Stable',
-          palette: palette,
-          isAlert: false),
-      _SensorCard(
-          icon: LucideIcons.volume2,
-          label: 'Noise',
-          value: sensorData != null
-              ? '${sensorData!.noiseLevel.toStringAsFixed(0)} dB'
-              : '--',
-          badge: _noiseBadge(sensorData?.noiseLevel),
-          palette: palette,
-          isAlert: _noiseBadge(sensorData?.noiseLevel) == 'Loud'),
-      _SensorCard(
-          icon: LucideIcons.users,
-          label: 'Crowd',
-          value: sensorData != null ? _crowdEstimate(sensorData!) : 'N/A',
-          badge: 'Live',
-          palette: palette,
-          isAlert: false),
-      _SensorCard(
-          icon: LucideIcons.cloudRain,
-          label: 'Humidity',
-          value: sensorData != null
-              ? '${sensorData!.humidity.toStringAsFixed(0)}%'
-              : '--',
-          badge: _humidityBadge(sensorData?.humidity),
-          palette: palette,
-          isAlert: false),
-    ];
-    return SizedBox(
-      height: 140,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: cards.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (_, i) => cards[i],
-      ),
-    );
-  }
-
-  String _noiseBadge(double? n) {
-    if (n == null) return 'N/A';
-    if (n < 50) return 'Quiet';
-    if (n < 70) return 'Moderate';
-    return 'Loud';
-  }
-
-  String _crowdEstimate(SensorData d) {
-    if (d.noiseLevel < 45) return 'Low';
-    if (d.noiseLevel < 65) return 'Medium';
-    return 'High';
-  }
-
-  String _humidityBadge(double? h) {
-    if (h == null) return 'N/A';
-    if (h < 30) return 'Dry';
-    if (h < 60) return 'Optimal';
-    return 'Humid';
-  }
-}
-
-class _SensorCard extends StatelessWidget {
-  const _SensorCard(
-      {required this.icon,
-      required this.label,
-      required this.value,
-      required this.badge,
-      required this.palette,
-      required this.isAlert});
-  final IconData icon;
-  final String label, value, badge;
-  final _NPPalette palette;
-  final bool isAlert;
-
-  @override
-  Widget build(BuildContext context) {
-    final accentColor =
-        isAlert ? Theme.of(context).colorScheme.error : palette.accent;
-    return Container(
-      width: 160,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-          color: palette.card,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: palette.border)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(10)),
-              child: Icon(icon, color: accentColor, size: 18)),
-          const Spacer(),
-          Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                  color: palette.overlay,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: palette.border)),
-              child: Text(badge,
-                  style: GoogleFonts.inter(
-                      color: palette.textMuted,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600))),
-        ]),
-        const Spacer(),
-        Text(value,
-            style: GoogleFonts.poppins(
-                color: palette.textPrimary,
-                fontSize: 22,
-                fontWeight: FontWeight.w700)),
-        const SizedBox(height: 4),
-        Text(label,
-            style: GoogleFonts.inter(
-                color: palette.textMuted,
-                fontSize: 12,
-                fontWeight: FontWeight.w500)),
-      ]),
-    );
-  }
-}
-
 // ============================================================================
 // Manual / Auto Override panel (same behavior as Home)
 // ============================================================================
@@ -3261,7 +3112,7 @@ class _SpaceSwapSheet extends StatelessWidget {
                       fontWeight: FontWeight.w700)),
             ]),
             const SizedBox(height: 4),
-            Text('Switching space will update sensors, music and Hub status.',
+            Text('Switching space will update music and Hub status.',
                 style:
                     GoogleFonts.inter(color: palette.textMuted, fontSize: 12)),
             const SizedBox(height: 16),

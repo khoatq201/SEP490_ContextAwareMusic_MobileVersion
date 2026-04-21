@@ -14,13 +14,22 @@ class ScheduleSlotModel extends ScheduleSlot {
     return ScheduleSlotModel(
       id: json['id']?.toString() ?? '',
       daysOfWeek: (json['daysOfWeek'] as List<dynamic>? ?? const [])
-          .map((day) => int.tryParse(day.toString()) ?? 0)
-          .where((day) => day >= 1 && day <= 7)
+          .map((day) => int.tryParse(day.toString()))
+          .whereType<int>()
+          .map(_normalizeDayOfWeek)
+          .whereType<int>()
+          .toSet()
           .toList(),
       startTime: json['startTime']?.toString() ?? '00:00',
       endTime: json['endTime']?.toString() ?? '00:00',
       musicId: rawMusicId?.toString() ?? '',
     );
+  }
+
+  static int? _normalizeDayOfWeek(int day) {
+    if (day >= 0 && day <= 6) return day;
+    if (day == 7) return 0;
+    return null;
   }
 
   Map<String, dynamic> toJson() {
