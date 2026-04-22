@@ -823,6 +823,7 @@ Future<void> initializeDependencies() async {
     () => HomeRemoteDataSourceImpl(
       moodDataSource: sl(),
       playlistDataSource: sl(),
+      dioClient: sl(),
     ),
   );
 

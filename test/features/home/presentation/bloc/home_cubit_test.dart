@@ -98,7 +98,10 @@ class _FakeHomeRepository implements HomeRepository {
   }
 
   @override
-  Future<Either<Failure, List<SensorEntity>>> getSensorData() async {
+  Future<Either<Failure, List<SensorEntity>>> getSensorData({
+    String? storeId,
+    String? spaceId,
+  }) async {
     return const Right([]);
   }
 }

@@ -107,6 +107,8 @@ class ApiConstants {
       '/api/stores/$storeId/toggle-status';
   static String storeFuzzyProfiles(String storeId) =>
       '/api/stores/$storeId/fuzzy-profiles';
+  static String storeContextLogs(String storeId) =>
+      '/api/stores/$storeId/context-logs';
   static const String getSpacesEndpoint = '/api/spaces';
   static const String getSpaceDetailEndpoint = '/api/spaces/{spaceId}';
   static String getSpaceDetail(String spaceId) => '/api/spaces/$spaceId';

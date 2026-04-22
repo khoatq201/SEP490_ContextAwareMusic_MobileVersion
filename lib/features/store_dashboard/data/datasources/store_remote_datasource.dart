@@ -135,6 +135,7 @@ class StoreRemoteDataSourceImpl implements StoreRemoteDataSource {
       final summaries = rawItems
           .map((e) => SpaceSummaryModel.fromJson(e as Map<String, dynamic>))
           .toList();
+      final latestTelemetryBySpace = await _getLatestTelemetryBySpace(storeId);
 
       return Future.wait(
         summaries.map((summary) async {
@@ -142,8 +143,22 @@ class StoreRemoteDataSourceImpl implements StoreRemoteDataSource {
             spaceId: summary.id,
             fallbackMood: summary.currentMood,
           );
+          final telemetry = _findTelemetryForSpace(
+            latestTelemetryBySpace,
+            summary,
+          );
           return summary.copyWith(
             currentMood: runtimeState.moodName,
+            isOnline: runtimeState.isIotDeviceOffline == null
+                ? summary.isOnline
+                : summary.isOnline && !runtimeState.isIotDeviceOffline!,
+            customerCount: telemetry?.crowdDensity,
+            noiseLevel: telemetry?.avgNoise,
+            isMusicPlaying:
+                runtimeState.isMusicPlaying ?? summary.isMusicPlaying,
+            currentTrack: runtimeState.currentTrack,
+            clearCurrentTrack: runtimeState.hasPlaybackState &&
+                (runtimeState.currentTrack?.trim().isEmpty ?? true),
             isManualOverride: runtimeState.isManualOverride,
             isScheduling: runtimeState.isScheduling,
             manualOverrideRemainingSeconds:
@@ -250,6 +265,67 @@ class StoreRemoteDataSourceImpl implements StoreRemoteDataSource {
     }
   }
 
+  Future<Map<String, _SpaceIotTelemetry>> _getLatestTelemetryBySpace(
+    String storeId,
+  ) async {
+    try {
+      final response = await dioClient.get(
+        ApiConstants.storeContextLogs(storeId),
+        queryParameters: const {
+          'page': 1,
+          'pageSize': 200,
+        },
+      );
+      final data = response.data;
+      final page =
+          data is Map<String, dynamic> && data['data'] is Map<String, dynamic>
+              ? data['data'] as Map<String, dynamic>
+              : data;
+      final rawItems = <dynamic>[
+        if (page is Map<String, dynamic>)
+          ...(page['items'] as List<dynamic>? ?? [])
+        else if (page is List)
+          ...page,
+      ];
+
+      final latestByKey = <String, _SpaceIotTelemetry>{};
+      for (final raw in rawItems) {
+        if (raw is! Map) continue;
+        final telemetry = _SpaceIotTelemetry.fromJson(
+          Map<String, dynamic>.from(raw),
+        );
+        if (!telemetry.hasDisplayData) continue;
+        _putLatestTelemetry(latestByKey, telemetry.spaceId, telemetry);
+        _putLatestTelemetry(latestByKey, telemetry.spaceName, telemetry);
+      }
+      return latestByKey;
+    } catch (_) {
+      // IoT telemetry is helpful but should not block the store dashboard.
+      return const {};
+    }
+  }
+
+  _SpaceIotTelemetry? _findTelemetryForSpace(
+    Map<String, _SpaceIotTelemetry> latestByKey,
+    SpaceSummaryModel summary,
+  ) {
+    return latestByKey[_telemetryKey(summary.id)] ??
+        latestByKey[_telemetryKey(summary.name)];
+  }
+
+  void _putLatestTelemetry(
+    Map<String, _SpaceIotTelemetry> latestByKey,
+    String? rawKey,
+    _SpaceIotTelemetry telemetry,
+  ) {
+    final key = _telemetryKey(rawKey);
+    if (key == null) return;
+    final previous = latestByKey[key];
+    if (previous == null || telemetry.isNewerThan(previous)) {
+      latestByKey[key] = telemetry;
+    }
+  }
+
   Future<_SpaceRuntimeSummary> _getRuntimeFromSpaceState({
     required String spaceId,
     required String fallbackMood,
@@ -260,17 +336,33 @@ class StoreRemoteDataSourceImpl implements StoreRemoteDataSource {
       if (data is Map<String, dynamic>) {
         final payload = data['data'];
         if (payload is Map<String, dynamic>) {
-          final moodName = payload['moodName']?.toString();
+          final normalized = Map<String, dynamic>.from(payload);
+          final moodName = _readString(normalized, 'moodName');
+          final currentTrack = _readString(normalized, 'currentTrackName') ??
+              _readString(normalized, 'currentPlaylistName');
+          final hlsUrl = _readString(normalized, 'hlsUrl');
+          final currentQueueItemId =
+              _readString(normalized, 'currentQueueItemId') ??
+                  _readString(normalized, 'currentPlaylistId');
+          final hasPlayback = _hasText(currentTrack) ||
+              _hasText(hlsUrl) ||
+              _hasText(currentQueueItemId);
+          final isPaused = _readBool(normalized, 'isPaused') ?? false;
           return _SpaceRuntimeSummary(
             moodName: moodName != null && moodName.trim().isNotEmpty
                 ? moodName
                 : fallbackMood,
-            isManualOverride: payload['isManualOverride'] == true,
-            isScheduling: payload['isScheduling'] == true,
+            hasPlaybackState: true,
+            currentTrack: _hasText(currentTrack) ? currentTrack!.trim() : null,
+            isMusicPlaying: hasPlayback && !isPaused,
+            isIotDeviceOffline: _readBool(normalized, 'isIotDeviceOffline'),
+            isManualOverride:
+                _readBool(normalized, 'isManualOverride') ?? false,
+            isScheduling: _readBool(normalized, 'isScheduling') ?? false,
             manualOverrideRemainingSeconds:
-                (payload['manualOverrideRemainingSeconds'] as num?)?.toInt(),
+                _readNum(normalized, 'manualOverrideRemainingSeconds')?.toInt(),
             schedulingRemainingSeconds:
-                (payload['schedulingRemainingSeconds'] as num?)?.toInt(),
+                _readNum(normalized, 'schedulingRemainingSeconds')?.toInt(),
           );
         }
       }
@@ -331,6 +423,10 @@ class StoreRemoteDataSourceImpl implements StoreRemoteDataSource {
 class _SpaceRuntimeSummary {
   const _SpaceRuntimeSummary({
     required this.moodName,
+    this.hasPlaybackState = false,
+    this.currentTrack,
+    this.isMusicPlaying,
+    this.isIotDeviceOffline,
     this.isManualOverride = false,
     this.isScheduling = false,
     this.manualOverrideRemainingSeconds,
@@ -338,8 +434,94 @@ class _SpaceRuntimeSummary {
   });
 
   final String moodName;
+  final bool hasPlaybackState;
+  final String? currentTrack;
+  final bool? isMusicPlaying;
+  final bool? isIotDeviceOffline;
   final bool isManualOverride;
   final bool isScheduling;
   final int? manualOverrideRemainingSeconds;
   final int? schedulingRemainingSeconds;
+}
+
+class _SpaceIotTelemetry {
+  const _SpaceIotTelemetry({
+    this.spaceId,
+    this.spaceName,
+    this.measuredAtUtc,
+    this.avgNoise,
+    this.crowdDensity,
+  });
+
+  final String? spaceId;
+  final String? spaceName;
+  final DateTime? measuredAtUtc;
+  final double? avgNoise;
+  final int? crowdDensity;
+
+  bool get hasDisplayData => avgNoise != null || crowdDensity != null;
+
+  bool isNewerThan(_SpaceIotTelemetry other) {
+    final current = measuredAtUtc;
+    final previous = other.measuredAtUtc;
+    if (current == null) return previous == null;
+    if (previous == null) return true;
+    return current.isAfter(previous);
+  }
+
+  factory _SpaceIotTelemetry.fromJson(Map<String, dynamic> json) {
+    return _SpaceIotTelemetry(
+      spaceId: _readString(json, 'spaceId'),
+      spaceName: _readString(json, 'spaceName'),
+      measuredAtUtc: _readDateTime(json, 'measuredAtUtc'),
+      avgNoise: _readNum(json, 'avgNoise')?.toDouble(),
+      crowdDensity: _readNum(json, 'crowdDensity')?.round(),
+    );
+  }
+}
+
+String? _telemetryKey(String? value) {
+  final trimmed = value?.trim().toLowerCase();
+  return trimmed == null || trimmed.isEmpty ? null : trimmed;
+}
+
+bool _hasText(String? value) => value != null && value.trim().isNotEmpty;
+
+dynamic _readValue(Map<String, dynamic> json, String key) {
+  if (json.containsKey(key)) return json[key];
+  if (key.isEmpty) return null;
+  final pascalCaseKey = '${key[0].toUpperCase()}${key.substring(1)}';
+  return json[pascalCaseKey];
+}
+
+String? _readString(Map<String, dynamic> json, String key) {
+  final value = _readValue(json, key);
+  if (value == null) return null;
+  if (value is String) return value;
+  return value.toString();
+}
+
+num? _readNum(Map<String, dynamic> json, String key) {
+  final value = _readValue(json, key);
+  if (value is num) return value;
+  if (value is String) return num.tryParse(value);
+  return null;
+}
+
+bool? _readBool(Map<String, dynamic> json, String key) {
+  final value = _readValue(json, key);
+  if (value is bool) return value;
+  if (value is String) {
+    final normalized = value.toLowerCase();
+    if (normalized == 'true') return true;
+    if (normalized == 'false') return false;
+  }
+  return null;
+}
+
+DateTime? _readDateTime(Map<String, dynamic> json, String key) {
+  final value = _readValue(json, key);
+  if (value is DateTime) return value;
+  if (value is String) return DateTime.tryParse(value);
+  return null;
 }

@@ -77,6 +77,7 @@ void main() {
 
       expect(authBloc.state.user?.isBrandManager, isTrue);
       expect(storeSelectionBloc.state, isA<StoreSelectionLoaded>());
+      expect(find.byTooltip('Brand schedule'), findsOneWidget);
       expect(find.byTooltip('Bulk governance'), findsOneWidget);
 
       await tester.tap(find.byTooltip('Bulk governance'));

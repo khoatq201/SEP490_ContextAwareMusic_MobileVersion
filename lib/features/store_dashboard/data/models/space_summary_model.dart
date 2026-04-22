@@ -6,7 +6,8 @@ class SpaceSummaryModel {
   final String storeId;
   final String currentMood;
   final bool isOnline;
-  final int customerCount;
+  final int? customerCount;
+  final double? noiseLevel;
   final double temperature;
   final double humidity;
   final int lightLevel;
@@ -27,6 +28,7 @@ class SpaceSummaryModel {
     required this.currentMood,
     required this.isOnline,
     required this.customerCount,
+    this.noiseLevel,
     required this.temperature,
     required this.humidity,
     required this.lightLevel,
@@ -53,9 +55,23 @@ class SpaceSummaryModel {
       storeId: json['storeId'] as String? ?? '',
       currentMood: json['currentMood'] as String? ?? 'neutral',
       isOnline: derivedIsOnline,
-      customerCount: json['customerCount'] as int? ?? 0,
-      temperature: (json['temperature'] as num?)?.toDouble() ?? 0.0,
-      humidity: (json['humidity'] as num?)?.toDouble() ?? 0.0,
+      customerCount: _readInt(json, const [
+        'customerCount',
+        'crowdDensity',
+        'avgCrowdDensity',
+        'peopleCount',
+        'occupancy',
+      ]),
+      noiseLevel: _readDouble(json, const [
+        'avgNoise',
+        'noiseLevel',
+        'noise',
+        'decibel',
+        'decibelLevel',
+      ]),
+      temperature:
+          _readDouble(json, const ['temperature', 'avgTemperature']) ?? 0.0,
+      humidity: _readDouble(json, const ['humidity', 'avgHumidity']) ?? 0.0,
       lightLevel: json['lightLevel'] as int? ?? 0,
       isMusicPlaying: json['isMusicPlaying'] as bool? ?? false,
       currentTrack: json['currentTrack'] as String?,
@@ -79,6 +95,7 @@ class SpaceSummaryModel {
       currentMood: currentMood,
       isOnline: isOnline,
       customerCount: customerCount,
+      noiseLevel: noiseLevel,
       temperature: temperature,
       humidity: humidity,
       lightLevel: lightLevel,
@@ -101,6 +118,7 @@ class SpaceSummaryModel {
     String? currentMood,
     bool? isOnline,
     int? customerCount,
+    double? noiseLevel,
     double? temperature,
     double? humidity,
     int? lightLevel,
@@ -113,6 +131,7 @@ class SpaceSummaryModel {
     int? totalZones,
     int? activeZones,
     bool? hasMultiZoneMusic,
+    bool clearCurrentTrack = false,
   }) {
     return SpaceSummaryModel(
       id: id ?? this.id,
@@ -121,11 +140,13 @@ class SpaceSummaryModel {
       currentMood: currentMood ?? this.currentMood,
       isOnline: isOnline ?? this.isOnline,
       customerCount: customerCount ?? this.customerCount,
+      noiseLevel: noiseLevel ?? this.noiseLevel,
       temperature: temperature ?? this.temperature,
       humidity: humidity ?? this.humidity,
       lightLevel: lightLevel ?? this.lightLevel,
       isMusicPlaying: isMusicPlaying ?? this.isMusicPlaying,
-      currentTrack: currentTrack ?? this.currentTrack,
+      currentTrack:
+          clearCurrentTrack ? null : (currentTrack ?? this.currentTrack),
       isManualOverride: isManualOverride ?? this.isManualOverride,
       isScheduling: isScheduling ?? this.isScheduling,
       manualOverrideRemainingSeconds:
@@ -146,6 +167,7 @@ class SpaceSummaryModel {
       'currentMood': currentMood,
       'isOnline': isOnline,
       'customerCount': customerCount,
+      'noiseLevel': noiseLevel,
       'temperature': temperature,
       'humidity': humidity,
       'lightLevel': lightLevel,
@@ -159,5 +181,33 @@ class SpaceSummaryModel {
       'activeZones': activeZones,
       'hasMultiZoneMusic': hasMultiZoneMusic,
     };
+  }
+
+  static int? _readInt(Map<String, dynamic> json, List<String> keys) {
+    final value = _readNum(json, keys);
+    return value?.round();
+  }
+
+  static double? _readDouble(Map<String, dynamic> json, List<String> keys) {
+    return _readNum(json, keys)?.toDouble();
+  }
+
+  static num? _readNum(Map<String, dynamic> json, List<String> keys) {
+    for (final key in keys) {
+      final value = _readValue(json, key);
+      if (value is num) return value;
+      if (value is String) {
+        final parsed = num.tryParse(value);
+        if (parsed != null) return parsed;
+      }
+    }
+    return null;
+  }
+
+  static dynamic _readValue(Map<String, dynamic> json, String key) {
+    if (json.containsKey(key)) return json[key];
+    if (key.isEmpty) return null;
+    final pascalCaseKey = '${key[0].toUpperCase()}${key.substring(1)}';
+    return json[pascalCaseKey];
   }
 }

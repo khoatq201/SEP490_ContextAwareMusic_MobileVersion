@@ -31,16 +31,20 @@ class HomeTabPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final sessionState = context.read<SessionCubit>().state;
     final isPlaybackDevice = sessionState.isPlaybackDevice;
+    final storeId = sessionState.currentStore?.id;
+    final spaceId = sessionState.currentSpace?.id;
     return BlocProvider(
       create: (_) {
         final cubit = sl<HomeCubit>()
           ..load(
             includeCatalog: true,
             loadMoods: !isPlaybackDevice,
+            storeId: storeId,
+            spaceId: spaceId,
           );
-        final spaceId = sessionState.currentSpace?.id;
         cubit.syncForSpace(
           spaceId,
+          storeId: storeId,
           loadMoods: !isPlaybackDevice,
           usePlaybackDeviceScope: isPlaybackDevice,
         );
@@ -77,6 +81,7 @@ class _HomeDashboardView extends StatelessWidget {
         final isPlaybackDevice = sessionState.isPlaybackDevice;
         context.read<HomeCubit>().syncForSpace(
               sessionState.currentSpace?.id,
+              storeId: sessionState.currentStore?.id,
               loadMoods: !isPlaybackDevice,
               usePlaybackDeviceScope: isPlaybackDevice,
             );
@@ -96,10 +101,15 @@ class _HomeDashboardView extends StatelessWidget {
               return _ErrorView(
                 message: state.errorMessage,
                 palette: palette,
-                onRetry: () => context.read<HomeCubit>().load(
-                      includeCatalog: true,
-                      loadMoods: !isPlaybackDevice,
-                    ),
+                onRetry: () {
+                  final session = context.read<SessionCubit>().state;
+                  context.read<HomeCubit>().load(
+                        includeCatalog: true,
+                        loadMoods: !isPlaybackDevice,
+                        storeId: session.currentStore?.id,
+                        spaceId: session.currentSpace?.id,
+                      );
+                },
               );
             }
 
@@ -121,12 +131,13 @@ class _HomeDashboardView extends StatelessWidget {
                   ),
 
                 // 3. Sensors Row
-                SliverToBoxAdapter(
-                  child: _SensorsRow(sensors: state.sensors, palette: palette)
-                      .animate()
-                      .fadeIn(duration: 350.ms)
-                      .slideY(begin: 0.06),
-                ),
+                if (state.sensors.isNotEmpty)
+                  SliverToBoxAdapter(
+                    child: _SensorsRow(sensors: state.sensors, palette: palette)
+                        .animate()
+                        .fadeIn(duration: 350.ms)
+                        .slideY(begin: 0.06),
+                  ),
 
                 // 4. Master Control Card
                 SliverToBoxAdapter(

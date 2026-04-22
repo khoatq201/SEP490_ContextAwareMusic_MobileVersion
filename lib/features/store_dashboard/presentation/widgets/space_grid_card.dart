@@ -18,6 +18,13 @@ class SpaceGridCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final moodLabel = _formatMoodLabel(space.currentMood);
+    final hasPlaybackLabel =
+        space.currentTrack != null && space.currentTrack!.trim().isNotEmpty;
+    final musicLabel = space.isMusicPlaying
+        ? (hasPlaybackLabel ? space.currentTrack!.trim() : 'Playing')
+        : hasPlaybackLabel
+            ? 'Paused - ${space.currentTrack!.trim()}'
+            : 'No music';
     return Card(
       elevation: AppDimensions.elevationMd,
       child: InkWell(
@@ -117,13 +124,15 @@ class SpaceGridCard extends StatelessWidget {
                 children: [
                   _StatRow(
                     icon: Icons.people_outline,
-                    value: '${space.customerCount}',
+                    value: space.customerCount?.toString() ?? '--',
                     color: AppColors.primaryOrange,
                   ),
                   const SizedBox(height: 2),
                   _StatRow(
-                    icon: Icons.thermostat_outlined,
-                    value: '${space.temperature.toStringAsFixed(1)}°C',
+                    icon: Icons.volume_up_outlined,
+                    value: space.noiseLevel == null
+                        ? '-- dB'
+                        : '${space.noiseLevel!.toStringAsFixed(1)} dB',
                     color: AppColors.secondaryTeal,
                   ),
                 ],
@@ -137,9 +146,11 @@ class SpaceGridCard extends StatelessWidget {
               Row(
                 children: [
                   Icon(
-                    space.isMusicPlaying ? Icons.music_note : Icons.music_off,
+                    space.isMusicPlaying || hasPlaybackLabel
+                        ? Icons.music_note
+                        : Icons.music_off,
                     size: 16,
-                    color: space.isMusicPlaying
+                    color: space.isMusicPlaying || hasPlaybackLabel
                         ? AppColors.success
                         : (isDark
                             ? AppColors.textDarkTertiary
@@ -148,9 +159,7 @@ class SpaceGridCard extends StatelessWidget {
                   const SizedBox(width: AppDimensions.spacingXs),
                   Expanded(
                     child: Text(
-                      space.isMusicPlaying
-                          ? (space.currentTrack ?? 'Playing')
-                          : 'No music',
+                      musicLabel,
                       style: AppTypography.labelSmall.copyWith(
                         color: isDark
                             ? AppColors.textDarkSecondary

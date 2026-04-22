@@ -34,61 +34,54 @@ class HomeCubit extends Cubit<HomeState> {
   Future<void> load({
     bool includeCatalog = true,
     bool loadMoods = true,
+    String? storeId,
+    String? spaceId,
   }) async {
     emit(state.copyWith(
       status: HomeStatus.loading,
       clearError: true,
     ));
 
-    final sensorsResult = await _repository.getSensorData();
+    final sensorsResult = await _repository.getSensorData(
+      storeId: storeId,
+      spaceId: spaceId,
+    );
     if (!includeCatalog) {
-      sensorsResult.fold(
-        (failure) => emit(state.copyWith(
-          status: HomeStatus.error,
-          errorMessage: ErrorMapper.displayMessageForFailure(failure),
-        )),
-        (sensors) => emit(state.copyWith(
-          status: HomeStatus.loaded,
-          sensors: sensors,
-          categories: const [],
-          moods: const [],
-        )),
-      );
+      emit(state.copyWith(
+        status: HomeStatus.loaded,
+        sensors: sensorsResult.getOrElse(() => const []),
+        categories: const [],
+        moods: const [],
+      ));
       return;
     }
 
     final categoriesResult = await _repository.getCategories();
     final moodsResult = loadMoods ? await _getMoods() : null;
 
-    sensorsResult.fold(
+    final sensors = sensorsResult.getOrElse(() => const []);
+    categoriesResult.fold(
       (failure) => emit(state.copyWith(
         status: HomeStatus.error,
         errorMessage: ErrorMapper.displayMessageForFailure(failure),
       )),
-      (sensors) {
-        categoriesResult.fold(
-          (failure) => emit(state.copyWith(
-            status: HomeStatus.error,
-            errorMessage: ErrorMapper.displayMessageForFailure(failure),
-          )),
-          (categories) {
-            final moods = loadMoods
-                ? moodsResult!.fold((_) => state.moods, (data) => data)
-                : const <Mood>[];
-            emit(state.copyWith(
-              status: HomeStatus.loaded,
-              sensors: sensors,
-              categories: categories,
-              moods: moods,
-            ));
-          },
-        );
+      (categories) {
+        final moods = loadMoods
+            ? moodsResult!.fold((_) => state.moods, (data) => data)
+            : const <Mood>[];
+        emit(state.copyWith(
+          status: HomeStatus.loaded,
+          sensors: sensors,
+          categories: categories,
+          moods: moods,
+        ));
       },
     );
   }
 
   Future<void> syncForSpace(
     String? spaceId, {
+    String? storeId,
     bool loadMoods = true,
     bool usePlaybackDeviceScope = false,
   }) async {
@@ -104,6 +97,7 @@ class HomeCubit extends Cubit<HomeState> {
         clearPlaylist: true,
         clearModeMessage: true,
         clearExplainability: true,
+        sensors: const [],
       ));
       return;
     }
@@ -116,6 +110,7 @@ class HomeCubit extends Cubit<HomeState> {
     if (loadMoods) {
       await _ensureMoodsLoaded();
     }
+    await _refreshSensors(storeId: storeId, spaceId: spaceId);
     await loadSpacePlaybackState(
       spaceId,
       usePlaybackDeviceScope: usePlaybackDeviceScope,
@@ -290,6 +285,20 @@ class HomeCubit extends Cubit<HomeState> {
     result.fold(
       (_) {},
       (moods) => emit(state.copyWith(moods: moods)),
+    );
+  }
+
+  Future<void> _refreshSensors({
+    String? storeId,
+    String? spaceId,
+  }) async {
+    final result = await _repository.getSensorData(
+      storeId: storeId,
+      spaceId: spaceId,
+    );
+    result.fold(
+      (_) {},
+      (sensors) => emit(state.copyWith(sensors: sensors)),
     );
   }
 }

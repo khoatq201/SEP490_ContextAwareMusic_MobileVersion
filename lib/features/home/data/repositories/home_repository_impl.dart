@@ -15,9 +15,15 @@ class HomeRepositoryImpl implements HomeRepository {
   HomeRepositoryImpl({required this.dataSource});
 
   @override
-  Future<Either<Failure, List<SensorEntity>>> getSensorData() async {
+  Future<Either<Failure, List<SensorEntity>>> getSensorData({
+    String? storeId,
+    String? spaceId,
+  }) async {
     try {
-      final sensors = await dataSource.getSensorData();
+      final sensors = await dataSource.getSensorData(
+        storeId: storeId,
+        spaceId: spaceId,
+      );
       return Right(sensors);
     } catch (e) {
       return Left(

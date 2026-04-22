@@ -6,7 +6,8 @@ class SpaceSummary extends Equatable {
   final String storeId;
   final String currentMood;
   final bool isOnline;
-  final int customerCount;
+  final int? customerCount;
+  final double? noiseLevel;
   final double temperature;
   final double humidity;
   final int lightLevel;
@@ -33,6 +34,7 @@ class SpaceSummary extends Equatable {
     required this.currentMood,
     required this.isOnline,
     required this.customerCount,
+    this.noiseLevel,
     required this.temperature,
     required this.humidity,
     required this.lightLevel,
@@ -55,6 +57,7 @@ class SpaceSummary extends Equatable {
         currentMood,
         isOnline,
         customerCount,
+        noiseLevel,
         temperature,
         humidity,
         lightLevel,

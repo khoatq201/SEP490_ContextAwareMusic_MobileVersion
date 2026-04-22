@@ -16,9 +16,15 @@ class MockHomeRepositoryImpl implements HomeRepository {
       : dataSource = dataSource ?? MockHomeDataSource();
 
   @override
-  Future<Either<Failure, List<SensorEntity>>> getSensorData() async {
+  Future<Either<Failure, List<SensorEntity>>> getSensorData({
+    String? storeId,
+    String? spaceId,
+  }) async {
     try {
-      final sensors = await dataSource.getSensorData();
+      final sensors = await dataSource.getSensorData(
+        storeId: storeId,
+        spaceId: spaceId,
+      );
       return Right(sensors);
     } catch (e) {
       return Left(ServerFailure('Failed to load sensor data: ${e.toString()}'));

@@ -14,36 +14,23 @@ class MockHomeDataSource {
       'https://picsum.photos/seed/${keyword}_$seed/400/400';
 
   // ── Sensors ──────────────────────────────────────────────────────────────
-  Future<List<SensorEntity>> getSensorData() async {
+  Future<List<SensorEntity>> getSensorData({
+    String? storeId,
+    String? spaceId,
+  }) async {
     await Future.delayed(const Duration(seconds: 1));
     return const [
       SensorEntity(
-        id: 'sensor-temp',
-        name: 'Temperature',
-        value: '32°C',
-        icon: Icons.thermostat_outlined,
-        accentColor: Color(0xFFF97316), // orange
-        badge: 'Stable',
-      ),
-      SensorEntity(
-        id: 'sensor-humidity',
-        name: 'Humidity',
-        value: '65%',
-        icon: Icons.water_drop_outlined,
-        accentColor: Color(0xFF38BDF8), // sky
-        badge: 'Optimal',
-      ),
-      SensorEntity(
         id: 'sensor-crowd',
-        name: 'Crowd Level',
-        value: 'Moderate',
+        name: 'Crowd',
+        value: '12',
         icon: Icons.people_outline,
         accentColor: Color(0xFFA78BFA), // violet
         badge: 'Live',
       ),
       SensorEntity(
         id: 'sensor-noise',
-        name: 'Noise Level',
+        name: 'Noise',
         value: '58 dB',
         icon: Icons.volume_up_outlined,
         accentColor: Color(0xFF34D399), // emerald

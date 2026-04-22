@@ -11,6 +11,10 @@ import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../config_governance/domain/entities/config_governance_enums.dart';
 import '../../../config_governance/domain/entities/config_value_upsert_request.dart';
 import '../../../config_governance/domain/usecases/config_governance_usecases.dart';
+import '../../../playlists/data/datasources/playlist_remote_datasource.dart';
+import '../../../space_schedule/data/datasources/space_schedule_remote_datasource.dart';
+import '../../../space_schedule/domain/entities/schedule_music_item.dart';
+import '../../../space_schedule/presentation/widgets/brand_schedule_editor_sheet.dart';
 import '../bloc/store_selection_bloc.dart';
 import '../bloc/store_selection_event.dart';
 import '../bloc/store_selection_state.dart';
@@ -50,6 +54,8 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
     final authUser = context.watch<AuthBloc>().state.user;
     final isStoreManager = authUser?.isStoreManager == true;
     final canUseBulkGovernance = authUser?.isBrandManager == true;
+    final canManageBrandSchedule =
+        authUser?.isBrandManager == true || authUser?.isSystemAdmin == true;
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
@@ -75,6 +81,24 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                 ),
                 automaticallyImplyLeading: false,
                 actions: [
+                  if (canManageBrandSchedule)
+                    BlocBuilder<StoreSelectionBloc, StoreSelectionState>(
+                      builder: (context, state) {
+                        final stores = state is StoreSelectionLoaded
+                            ? state.stores
+                            : const <StoreSummary>[];
+                        return IconButton(
+                          icon: const Icon(Icons.event_note_outlined),
+                          onPressed: _isBulkSelectionMode || stores.isEmpty
+                              ? null
+                              : () => _openBrandScheduleFromSelection(
+                                    context,
+                                    stores,
+                                  ),
+                          tooltip: 'Brand schedule',
+                        );
+                      },
+                    ),
                   if (canUseBulkGovernance)
                     IconButton(
                       icon: Icon(
@@ -661,6 +685,154 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
 
   void _clearSelectedStores() {
     setState(() => _selectedStoreIds.clear());
+  }
+
+  Future<List<ScheduleMusicItem>> _loadBrandScheduleMusicCatalog(
+    String brandId,
+  ) async {
+    final response = await sl<PlaylistRemoteDataSource>().getPlaylists(
+      page: 1,
+      pageSize: 100,
+      brandId: brandId,
+    );
+    return response.items
+        .map(
+          (playlist) => ScheduleMusicItem(
+            id: playlist.id,
+            title: playlist.name,
+            artist: playlist.storeName ?? 'Brand playlist',
+            collection: playlist.moodName,
+            artworkLabel: playlist.name,
+            primaryHex: '#335C67',
+            secondaryHex: '#2A9D8F',
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  Future<void> _openBrandScheduleFromSelection(
+    BuildContext context,
+    List<StoreSummary> stores,
+  ) async {
+    final storesByBrand = _groupStoresByBrand(stores);
+    if (storesByBrand.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No brand is available for schedule setup.'),
+        ),
+      );
+      return;
+    }
+
+    final brandId = storesByBrand.length == 1
+        ? storesByBrand.keys.single
+        : await _showBrandScheduleBrandPicker(context, storesByBrand);
+    if (!context.mounted || brandId == null) return;
+
+    await _showBrandScheduleEditorSheetForBrand(context, brandId);
+  }
+
+  Map<String, List<StoreSummary>> _groupStoresByBrand(
+    List<StoreSummary> stores,
+  ) {
+    final storesByBrand = <String, List<StoreSummary>>{};
+    for (final store in stores) {
+      final brandId = store.brandId.trim();
+      if (brandId.isEmpty) continue;
+      storesByBrand.putIfAbsent(brandId, () => <StoreSummary>[]).add(store);
+    }
+    return storesByBrand;
+  }
+
+  Future<String?> _showBrandScheduleBrandPicker(
+    BuildContext context,
+    Map<String, List<StoreSummary>> storesByBrand,
+  ) {
+    final entries = storesByBrand.entries.toList(growable: false)
+      ..sort((a, b) => a.key.compareTo(b.key));
+
+    return showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: ListView.separated(
+          shrinkWrap: true,
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+          itemCount: entries.length + 1,
+          separatorBuilder: (_, index) =>
+              index == 0 ? const SizedBox(height: 8) : const Divider(),
+          itemBuilder: (context, index) {
+            if (index == 0) {
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+                child: Text(
+                  'Choose brand schedule',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                ),
+              );
+            }
+
+            final entry = entries[index - 1];
+            final stores = entry.value;
+            final firstStoreName =
+                stores.isEmpty ? 'No stores' : stores.first.name;
+            return ListTile(
+              leading: const CircleAvatar(
+                child: Icon(Icons.business_outlined),
+              ),
+              title: Text(_brandSchedulePickerTitle(entry.key)),
+              subtitle: Text(
+                '${stores.length} store(s), including $firstStoreName',
+              ),
+              onTap: () => Navigator.of(sheetContext).pop(entry.key),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  String _brandSchedulePickerTitle(String brandId) {
+    final trimmed = brandId.trim();
+    if (trimmed.length <= 8) return 'Brand $trimmed';
+    return 'Brand ${trimmed.substring(0, 8)}';
+  }
+
+  Future<void> _showBrandScheduleEditorSheetForBrand(
+    BuildContext context,
+    String brandId,
+  ) async {
+    List<ScheduleMusicItem> musicCatalog;
+    try {
+      musicCatalog = await _loadBrandScheduleMusicCatalog(brandId);
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to load playlists for brand schedule: $error'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+    if (!context.mounted) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => BrandScheduleEditorSheet(
+        brandId: brandId,
+        musicCatalog: musicCatalog,
+        remoteDataSource: sl<SpaceScheduleRemoteDataSource>(),
+      ),
+    );
+
+    if (!context.mounted) return;
+    context.read<StoreSelectionBloc>().add(const LoadUserStores());
   }
 
   Future<void> _showBulkGovernanceModeDialog() async {

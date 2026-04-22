@@ -7,7 +7,10 @@ import '../entities/category_entity.dart';
 /// Implementations can be mock (for dev/test) or real (API / MQTT).
 abstract class HomeRepository {
   /// Returns a list of sensor readings for the overview cards.
-  Future<Either<Failure, List<SensorEntity>>> getSensorData();
+  Future<Either<Failure, List<SensorEntity>>> getSensorData({
+    String? storeId,
+    String? spaceId,
+  });
 
   /// Returns a list of music categories, each containing playlists.
   Future<Either<Failure, List<CategoryEntity>>> getCategories();
