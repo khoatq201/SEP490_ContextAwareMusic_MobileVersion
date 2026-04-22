@@ -14,6 +14,9 @@ import '../../domain/entities/schedule_source.dart';
 import '../bloc/space_schedule_bloc.dart';
 import '../bloc/space_schedule_event.dart';
 import '../bloc/space_schedule_state.dart';
+import '../widgets/schedule_controlled_banner.dart';
+import '../widgets/schedule_slot_form_sheet.dart';
+import '../widgets/schedule_source_form_dialog.dart';
 
 class SpaceSchedulePage extends StatelessWidget {
   final String spaceId;
@@ -97,6 +100,15 @@ class SpaceSchedulePage extends StatelessWidget {
               );
             }
 
+            if (state.isBrandScheduleControlled &&
+                state.draftSchedule == null) {
+              return _BrandControlledOnlyView(
+                palette: palette,
+                spaceName: spaceName,
+                onClose: () => context.pop(),
+              );
+            }
+
             switch (state.stage) {
               case SpaceScheduleStage.welcome:
                 return _ScheduleWelcomeView(
@@ -150,6 +162,11 @@ class SpaceSchedulePage extends StatelessWidget {
     _EditorAction action,
     SpaceScheduleState state,
   ) async {
+    if (state.isBrandScheduleControlled && action != _EditorAction.about) {
+      _showBrandControlledSnack(context);
+      return;
+    }
+
     switch (action) {
       case _EditorAction.loadSchedule:
         context.read<SpaceScheduleBloc>().add(
@@ -159,14 +176,14 @@ class SpaceSchedulePage extends StatelessWidget {
             );
         break;
       case _EditorAction.saveToLibrary:
-        final result = await showModalBottomSheet<_SaveToLibraryPayload>(
+        final result = await showDialog<ScheduleSourceFormPayload>(
           context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (_) => _SaveToLibrarySheet(
-            palette: _SchedulePalette.of(context),
+          builder: (_) => ScheduleSourceFormDialog(
+            title: 'Save to library',
+            actionLabel: 'Save copy',
             initialTitle:
                 state.draftSchedule?.name ?? '${state.spaceName} copy',
+            showDescription: false,
           ),
         );
         if (!context.mounted || result == null) return;
@@ -205,15 +222,21 @@ class SpaceSchedulePage extends StatelessWidget {
     required SpaceScheduleState state,
     ScheduleSlot? slot,
   }) async {
+    if (state.isBrandScheduleControlled) {
+      _showBrandControlledSnack(context);
+      return;
+    }
+
     final result = await showModalBottomSheet<ScheduleSlot>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _SlotEditorSheet(
-        palette: _SchedulePalette.of(context),
+      builder: (_) => ScheduleSlotFormSheet(
+        title: slot == null ? 'Add schedule slot' : 'Edit schedule slot',
         slot: slot,
-        selectedDay: state.selectedDay,
+        initialDay: state.selectedDay,
         musicCatalog: state.musicCatalog,
+        generatedIdPrefix: 'slot',
       ),
     );
 
@@ -225,6 +248,12 @@ class SpaceSchedulePage extends StatelessWidget {
     BuildContext context,
     ScheduleSlot slot,
   ) async {
+    final state = context.read<SpaceScheduleBloc>().state;
+    if (state.isBrandScheduleControlled) {
+      _showBrandControlledSnack(context);
+      return;
+    }
+
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -336,6 +365,72 @@ class _ScheduleErrorView extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _BrandControlledOnlyView extends StatelessWidget {
+  const _BrandControlledOnlyView({
+    required this.palette,
+    required this.spaceName,
+    required this.onClose,
+  });
+
+  final _SchedulePalette palette;
+  final String spaceName;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Align(
+            alignment: Alignment.centerRight,
+            child: IconButton(
+              onPressed: onClose,
+              icon: Icon(Icons.close, color: palette.textMuted),
+            ),
+          ),
+          const Spacer(),
+          Icon(LucideIcons.lock, color: palette.accent, size: 38),
+          const SizedBox(height: 18),
+          Text(
+            'Controlled by brand schedule',
+            style: GoogleFonts.poppins(
+              color: palette.textPrimary,
+              fontSize: 30,
+              height: 1.02,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            '$spaceName follows the brand schedule because its store is in Strict Sync. Local space slots are read-only here.',
+            style: GoogleFonts.inter(
+              color: palette.textMuted,
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              height: 1.4,
+            ),
+          ),
+          const Spacer(),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: onClose,
+              style: FilledButton.styleFrom(
+                backgroundColor: palette.accent,
+                foregroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(52),
+              ),
+              child: const Text('Done'),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -829,6 +924,7 @@ class _ScheduleEditorView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final draft = state.draftSchedule;
+    final isBrandControlled = state.isBrandScheduleControlled;
     final allSlots = draft?.slots ?? const <ScheduleSlot>[];
     final daySlots = allSlots
         .where(
@@ -894,7 +990,9 @@ class _ScheduleEditorView extends StatelessWidget {
               _CircleActionButton(
                 palette: palette,
                 icon: Icons.add,
-                onTap: onAddSlot,
+                onTap: isBrandControlled
+                    ? () => _showBrandControlledSnack(context)
+                    : onAddSlot,
               ),
               const SizedBox(width: 10),
               _CircleActionButton(
@@ -915,6 +1013,20 @@ class _ScheduleEditorView extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
+        if (isBrandControlled) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: ScheduleControlledBanner(
+              backgroundColor: palette.accent.withValues(alpha: 0.12),
+              borderColor: palette.accent.withValues(alpha: 0.28),
+              iconColor: palette.accent,
+              textColor: palette.textPrimary,
+              message:
+                  'Controlled by brand schedule. This store is in Strict Sync, so local edits and toggles are locked.',
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
         if (draft != null) ...[
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -923,10 +1035,13 @@ class _ScheduleEditorView extends StatelessWidget {
                     palette: palette,
                     configEnabled: draft.enabled,
                     isSaving: state.status == SpaceScheduleStatus.saving,
+                    isBrandControlled: isBrandControlled,
                     camsState: null,
-                    onConfigChanged: (enabled) => context
-                        .read<SpaceScheduleBloc>()
-                        .add(SpaceScheduleToggled(enabled)),
+                    onConfigChanged: isBrandControlled
+                        ? null
+                        : (enabled) => context
+                            .read<SpaceScheduleBloc>()
+                            .add(SpaceScheduleToggled(enabled)),
                     onRuntimeChanged: null,
                   )
                 : BlocBuilder<CamsPlaybackBloc, CamsPlaybackState>(
@@ -936,14 +1051,18 @@ class _ScheduleEditorView extends StatelessWidget {
                         configEnabled: draft.enabled,
                         isSaving: state.status == SpaceScheduleStatus.saving ||
                             camsState.isOverriding,
+                        isBrandControlled: isBrandControlled,
                         camsState: camsState,
-                        onConfigChanged: (enabled) => context
-                            .read<SpaceScheduleBloc>()
-                            .add(SpaceScheduleToggled(enabled)),
-                        onRuntimeChanged: (enabled) => context
-                            .read<CamsPlaybackBloc>()
-                            .add(CamsUpdateSchedulingState(
-                                isScheduling: enabled)),
+                        onConfigChanged: isBrandControlled
+                            ? null
+                            : (enabled) => context
+                                .read<SpaceScheduleBloc>()
+                                .add(SpaceScheduleToggled(enabled)),
+                        onRuntimeChanged: isBrandControlled
+                            ? null
+                            : (enabled) => context.read<CamsPlaybackBloc>().add(
+                                CamsUpdateSchedulingState(
+                                    isScheduling: enabled)),
                       );
                     },
                   ),
@@ -975,14 +1094,20 @@ class _ScheduleEditorView extends StatelessWidget {
           child: daySlots.isEmpty
               ? _EmptyTimelineView(
                   palette: palette,
-                  onAddSlot: onAddSlot,
+                  onAddSlot: isBrandControlled
+                      ? () => _showBrandControlledSnack(context)
+                      : onAddSlot,
                 )
               : _ScheduleTimeline(
                   palette: palette,
                   slots: daySlots,
                   musicCatalog: state.musicCatalog,
-                  onSlotTap: onSlotTap,
-                  onSlotDelete: onSlotDelete,
+                  onSlotTap: isBrandControlled
+                      ? (_) => _showBrandControlledSnack(context)
+                      : onSlotTap,
+                  onSlotDelete: isBrandControlled
+                      ? (_) => _showBrandControlledSnack(context)
+                      : onSlotDelete,
                 ),
         ),
       ],
@@ -995,6 +1120,7 @@ class _ScheduleModeControls extends StatelessWidget {
     required this.palette,
     required this.configEnabled,
     required this.isSaving,
+    required this.isBrandControlled,
     required this.camsState,
     required this.onConfigChanged,
     required this.onRuntimeChanged,
@@ -1003,8 +1129,9 @@ class _ScheduleModeControls extends StatelessWidget {
   final _SchedulePalette palette;
   final bool configEnabled;
   final bool isSaving;
+  final bool isBrandControlled;
   final CamsPlaybackState? camsState;
-  final ValueChanged<bool> onConfigChanged;
+  final ValueChanged<bool>? onConfigChanged;
   final ValueChanged<bool>? onRuntimeChanged;
 
   @override
@@ -1034,23 +1161,32 @@ class _ScheduleModeControls extends StatelessWidget {
         children: [
           _ScheduleSwitchRow(
             palette: palette,
-            title: 'Space-level scheduling',
-            subtitle: configEnabled
-                ? 'Weekly slots are enabled for this space.'
-                : 'Weekly slots are saved but disabled.',
+            title: isBrandControlled
+                ? 'Brand-controlled scheduling'
+                : 'Space-level scheduling',
+            subtitle: isBrandControlled
+                ? 'This store is in Strict Sync. Local slots are read-only.'
+                : configEnabled
+                    ? 'Weekly slots are enabled for this space.'
+                    : 'Weekly slots are saved but disabled.',
             value: configEnabled,
-            enabled: !isSaving,
+            enabled: !isSaving && !isBrandControlled,
             onChanged: onConfigChanged,
           ),
           Divider(height: 18, color: palette.line),
           _ScheduleSwitchRow(
             palette: palette,
-            title: 'Scheduling runtime',
-            subtitle: runtimeDetails.isEmpty
-                ? 'CAMS will report the active slot when scheduling takes ownership.'
-                : runtimeDetails.join('  |  '),
+            title: isBrandControlled
+                ? 'Brand schedule runtime'
+                : 'Scheduling runtime',
+            subtitle: isBrandControlled
+                ? 'Runtime is activated by the brand schedule from backend.'
+                : runtimeDetails.isEmpty
+                    ? 'CAMS will report the active slot when scheduling takes ownership.'
+                    : runtimeDetails.join('  |  '),
             value: runtimeEnabled,
-            enabled: !isSaving && onRuntimeChanged != null,
+            enabled:
+                !isSaving && !isBrandControlled && onRuntimeChanged != null,
             onChanged: onRuntimeChanged,
           ),
         ],
@@ -1707,710 +1843,6 @@ class _InfoSheet extends StatelessWidget {
   }
 }
 
-class _SlotEditorSheet extends StatefulWidget {
-  const _SlotEditorSheet({
-    required this.palette,
-    required this.slot,
-    required this.selectedDay,
-    required this.musicCatalog,
-  });
-
-  final _SchedulePalette palette;
-  final ScheduleSlot? slot;
-  final int selectedDay;
-  final List<ScheduleMusicItem> musicCatalog;
-
-  @override
-  State<_SlotEditorSheet> createState() => _SlotEditorSheetState();
-}
-
-class _SlotEditorSheetState extends State<_SlotEditorSheet> {
-  late int _selectedDay;
-  late TimeOfDay _fromTime;
-  late TimeOfDay _toTime;
-  ScheduleMusicItem? _selectedMusic;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedDay = widget.slot?.daysOfWeek.isNotEmpty == true
-        ? _uiDayFromDomainDay(widget.slot!.daysOfWeek.first)
-        : widget.selectedDay;
-    _fromTime = _timeOfDayFromString(widget.slot?.startTime ?? '14:00');
-    _toTime = _timeOfDayFromString(widget.slot?.endTime ?? '16:00');
-    _selectedMusic = widget.slot == null
-        ? null
-        : _findMusic(widget.musicCatalog, widget.slot!.musicId);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = widget.palette;
-    final durationMinutes = _toTime.hour * 60 +
-        _toTime.minute -
-        (_fromTime.hour * 60 + _fromTime.minute);
-    final isLocallyValid = _selectedMusic != null && durationMinutes > 0;
-
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: Container(
-          decoration: BoxDecoration(
-            color: palette.background,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 52,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: palette.line,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Day & Time',
-                        style: GoogleFonts.poppins(
-                          color: palette.textPrimary,
-                          fontSize: 34,
-                          height: 1,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: Icon(Icons.close, color: palette.textMuted),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                _DecoratedField(
-                  palette: palette,
-                  label: 'Day',
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<int>(
-                      value: _selectedDay,
-                      dropdownColor: palette.cardMuted,
-                      isExpanded: true,
-                      iconEnabledColor: palette.textMuted,
-                      style: GoogleFonts.inter(
-                        color: palette.textPrimary,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      items: List.generate(
-                        _uiDayLabels.length,
-                        (index) => DropdownMenuItem(
-                          value: index,
-                          child: Text(_fullDayLabels[index]),
-                        ),
-                      ),
-                      onChanged: (value) {
-                        if (value == null) return;
-                        setState(() => _selectedDay = value);
-                      },
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _TimeField(
-                        palette: palette,
-                        label: 'From',
-                        time: _fromTime,
-                        onTap: () async {
-                          final picked = await showTimePicker(
-                            context: context,
-                            initialTime: _fromTime,
-                          );
-                          if (picked != null) {
-                            setState(() => _fromTime = picked);
-                          }
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _TimeField(
-                        palette: palette,
-                        label: 'To',
-                        time: _toTime,
-                        onTap: () async {
-                          final picked = await showTimePicker(
-                            context: context,
-                            initialTime: _toTime,
-                          );
-                          if (picked != null) {
-                            setState(() => _toTime = picked);
-                          }
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _DecoratedField(
-                        palette: palette,
-                        label: 'Duration',
-                        child: Text(
-                          durationMinutes > 0
-                              ? _formatDuration(durationMinutes)
-                              : 'Invalid',
-                          style: GoogleFonts.inter(
-                            color: durationMinutes > 0
-                                ? palette.textPrimary
-                                : AppColors.error,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 26),
-                Text(
-                  'Music',
-                  style: GoogleFonts.poppins(
-                    color: palette.textPrimary,
-                    fontSize: 26,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                Text(
-                  'Add something to get started!',
-                  style: GoogleFonts.inter(
-                    color: palette.textMuted,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                InkWell(
-                  onTap: () async {
-                    final music = await showModalBottomSheet<ScheduleMusicItem>(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (_) => _MusicPickerSheet(
-                        palette: palette,
-                        musicCatalog: widget.musicCatalog,
-                      ),
-                    );
-                    if (music != null) {
-                      setState(() => _selectedMusic = music);
-                    }
-                  },
-                  borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    width: 148,
-                    height: 212,
-                    decoration: BoxDecoration(
-                      color: palette.cardSoft,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: palette.line),
-                    ),
-                    child: _selectedMusic == null
-                        ? Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.add,
-                                  color: palette.textMuted, size: 40),
-                              const SizedBox(height: 10),
-                              Text(
-                                'Add music',
-                                style: GoogleFonts.inter(
-                                  color: palette.textMuted,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          )
-                        : Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  child: _MiniArtwork(
-                                    label: _selectedMusic!.artworkLabel,
-                                    primaryHex: _selectedMusic!.primaryHex,
-                                    secondaryHex: _selectedMusic!.secondaryHex,
-                                    width: double.infinity,
-                                    height: double.infinity,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  _selectedMusic!.title,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.poppins(
-                                    color: palette.textPrimary,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
-                                    height: 1.05,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  _selectedMusic!.artist,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.inter(
-                                    color: palette.textMuted,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                  ),
-                ),
-                const SizedBox(height: 26),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: isLocallyValid
-                        ? () {
-                            Navigator.pop(
-                              context,
-                              ScheduleSlot(
-                                id: widget.slot?.id ??
-                                    'slot-${DateTime.now().millisecondsSinceEpoch}',
-                                daysOfWeek: [_domainDayFromUi(_selectedDay)],
-                                startTime: _formatTime(_fromTime),
-                                endTime: _formatTime(_toTime),
-                                musicId: _selectedMusic!.id,
-                              ),
-                            );
-                          }
-                        : null,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.error,
-                      disabledBackgroundColor:
-                          AppColors.error.withValues(alpha: 0.35),
-                      minimumSize: const Size.fromHeight(56),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
-                    key: const ValueKey('slot-editor-save'),
-                    child: Text(
-                      'Save',
-                      style: GoogleFonts.inter(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _DecoratedField extends StatelessWidget {
-  const _DecoratedField({
-    required this.palette,
-    required this.label,
-    required this.child,
-  });
-
-  final _SchedulePalette palette;
-  final String label;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: palette.cardMuted,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              color: palette.textMuted,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 6),
-          child,
-        ],
-      ),
-    );
-  }
-}
-
-class _TimeField extends StatelessWidget {
-  const _TimeField({
-    required this.palette,
-    required this.label,
-    required this.time,
-    required this.onTap,
-  });
-
-  final _SchedulePalette palette;
-  final String label;
-  final TimeOfDay time;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: _DecoratedField(
-        palette: palette,
-        label: label,
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                _formatTimeLabel(time),
-                style: GoogleFonts.inter(
-                  color: palette.textPrimary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            Icon(Icons.keyboard_arrow_down, color: palette.textMuted),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MusicPickerSheet extends StatelessWidget {
-  const _MusicPickerSheet({
-    required this.palette,
-    required this.musicCatalog,
-  });
-
-  final _SchedulePalette palette;
-  final List<ScheduleMusicItem> musicCatalog;
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Container(
-        decoration: BoxDecoration(
-          color: palette.background,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 10),
-            Container(
-              width: 52,
-              height: 5,
-              decoration: BoxDecoration(
-                color: palette.line,
-                borderRadius: BorderRadius.circular(999),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 18, 12, 0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Add music',
-                      style: GoogleFonts.poppins(
-                        color: palette.textPrimary,
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: Icon(Icons.close, color: palette.textMuted),
-                  ),
-                ],
-              ),
-            ),
-            Flexible(
-              child: ListView.separated(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                shrinkWrap: true,
-                itemCount: musicCatalog.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 10),
-                itemBuilder: (context, index) {
-                  final music = musicCatalog[index];
-                  return InkWell(
-                    key: ValueKey('music-option-${music.id}'),
-                    onTap: () => Navigator.pop(context, music),
-                    borderRadius: BorderRadius.circular(18),
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: palette.cardSoft,
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: palette.line),
-                      ),
-                      child: Row(
-                        children: [
-                          _MiniArtwork(
-                            label: music.artworkLabel,
-                            primaryHex: music.primaryHex,
-                            secondaryHex: music.secondaryHex,
-                            width: 76,
-                            height: 86,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  music.title,
-                                  style: GoogleFonts.poppins(
-                                    color: palette.textPrimary,
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  music.artist,
-                                  style: GoogleFonts.inter(
-                                    color: palette.textMuted,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                if (music.collection != null) ...[
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    music.collection!,
-                                    style: GoogleFonts.inter(
-                                      color: palette.accent,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                          Icon(Icons.add_circle_outline,
-                              color: palette.textMuted, size: 22),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SaveToLibrarySheet extends StatefulWidget {
-  const _SaveToLibrarySheet({
-    required this.palette,
-    required this.initialTitle,
-  });
-
-  final _SchedulePalette palette;
-  final String initialTitle;
-
-  @override
-  State<_SaveToLibrarySheet> createState() => _SaveToLibrarySheetState();
-}
-
-class _SaveToLibrarySheetState extends State<_SaveToLibrarySheet> {
-  late final TextEditingController _titleController;
-  late final TextEditingController _subtitleController;
-
-  @override
-  void initState() {
-    super.initState();
-    _titleController = TextEditingController(text: widget.initialTitle);
-    _subtitleController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _subtitleController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = widget.palette;
-
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: Container(
-          decoration: BoxDecoration(
-            color: palette.background,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 52,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: palette.line,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 18),
-              Text(
-                'Save to library',
-                style: GoogleFonts.poppins(
-                  color: palette.textPrimary,
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Create a reusable schedule source you can load into any space later.',
-                style: GoogleFonts.inter(
-                  color: palette.textMuted,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 18),
-              TextField(
-                controller: _titleController,
-                style: GoogleFonts.inter(color: palette.textPrimary),
-                decoration: _inputDecoration(
-                  palette,
-                  'Title',
-                  'Lunch Rush Copy',
-                ),
-                onChanged: (_) => setState(() {}),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _subtitleController,
-                style: GoogleFonts.inter(color: palette.textPrimary),
-                decoration: _inputDecoration(
-                  palette,
-                  'Subtitle',
-                  'Optional note for your team',
-                ),
-              ),
-              const SizedBox(height: 18),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: _titleController.text.trim().isEmpty
-                      ? null
-                      : () {
-                          Navigator.pop(
-                            context,
-                            _SaveToLibraryPayload(
-                              title: _titleController.text.trim(),
-                              subtitle: _subtitleController.text.trim().isEmpty
-                                  ? null
-                                  : _subtitleController.text.trim(),
-                            ),
-                          );
-                        },
-                  style: FilledButton.styleFrom(
-                    backgroundColor: palette.accent,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size.fromHeight(54),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                  ),
-                  child: Text(
-                    'Save copy',
-                    style: GoogleFonts.inter(fontWeight: FontWeight.w700),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  InputDecoration _inputDecoration(
-    _SchedulePalette palette,
-    String label,
-    String hint,
-  ) {
-    return InputDecoration(
-      labelText: label,
-      hintText: hint,
-      labelStyle: GoogleFonts.inter(color: palette.textMuted),
-      hintStyle: GoogleFonts.inter(color: palette.textMuted),
-      filled: true,
-      fillColor: palette.cardMuted,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide.none,
-      ),
-    );
-  }
-}
-
-class _SaveToLibraryPayload {
-  final String title;
-  final String? subtitle;
-
-  const _SaveToLibraryPayload({
-    required this.title,
-    this.subtitle,
-  });
-}
-
 class _SchedulePalette {
   final Color background;
   final Color card;
@@ -2478,15 +1910,6 @@ const List<String> _uiDayLabels = [
   'Fri',
   'Sat',
 ];
-const List<String> _fullDayLabels = [
-  'Sunday',
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-];
 
 String _formatHourLabel(int hour) {
   final suffix = hour >= 12 ? 'PM' : 'AM';
@@ -2499,18 +1922,6 @@ int _minutesOfDay(String value) {
   final hour = int.tryParse(segments.first) ?? 0;
   final minute = int.tryParse(segments.last) ?? 0;
   return hour * 60 + minute;
-}
-
-String _formatDuration(int minutes) {
-  final hours = minutes ~/ 60;
-  final remaining = minutes % 60;
-  if (hours > 0 && remaining > 0) {
-    return '${hours}h ${remaining}m';
-  }
-  if (hours > 0) {
-    return '$hours hours';
-  }
-  return '$minutes min';
 }
 
 String _formatSeconds(int seconds) {
@@ -2538,39 +1949,23 @@ int _domainDayFromUi(int value) {
   return 0;
 }
 
-int _uiDayFromDomainDay(int value) {
-  if (value == 7) return 0;
-  if (value >= 0 && value <= 6) return value;
-  return 0;
-}
-
-String _formatTime(TimeOfDay time) {
-  final hour = time.hour.toString().padLeft(2, '0');
-  final minute = time.minute.toString().padLeft(2, '0');
-  return '$hour:$minute';
-}
-
-String _formatTimeLabel(TimeOfDay time) {
-  final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
-  final minute = time.minute.toString().padLeft(2, '0');
-  final suffix = time.period == DayPeriod.am ? 'AM' : 'PM';
-  return '$hour:$minute $suffix';
-}
-
-TimeOfDay _timeOfDayFromString(String value) {
-  final segments = value.split(':');
-  return TimeOfDay(
-    hour: int.tryParse(segments.first) ?? 0,
-    minute: int.tryParse(segments.last) ?? 0,
-  );
-}
-
 CamsPlaybackBloc? _maybeCamsBlocOf(BuildContext context) {
   try {
     return context.read<CamsPlaybackBloc>();
   } catch (_) {
     return null;
   }
+}
+
+void _showBrandControlledSnack(BuildContext context) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text(
+        'This space follows the brand schedule in Strict Sync mode.',
+      ),
+      behavior: SnackBarBehavior.floating,
+    ),
+  );
 }
 
 ScheduleMusicItem? _findMusic(

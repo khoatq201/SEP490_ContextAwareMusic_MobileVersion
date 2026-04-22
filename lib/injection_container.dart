@@ -434,6 +434,7 @@ Future<void> initializeDependencies() async {
       toggleSpaceSchedule: sl(),
       saveScheduleToLibrary: sl(),
       deleteScheduleSlot: sl(),
+      getStoreDetails: sl(),
     ),
   );
 

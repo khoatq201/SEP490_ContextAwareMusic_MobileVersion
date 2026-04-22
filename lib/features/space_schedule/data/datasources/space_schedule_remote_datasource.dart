@@ -14,6 +14,8 @@ import '../models/space_schedule_model.dart';
 abstract class SpaceScheduleRemoteDataSource {
   Future<SpaceScheduleBootstrap> getBootstrap(String spaceId);
 
+  Future<List<ScheduleSourceModel>> getBrandLibrary(String brandId);
+
   Future<String> upsertSlot({
     required String spaceId,
     required ScheduleSlot slot,
@@ -38,6 +40,34 @@ abstract class SpaceScheduleRemoteDataSource {
   Future<String> toggle({
     required String spaceId,
     required bool enabled,
+  });
+
+  Future<String> createBrandSource({
+    required String title,
+    String? subtitle,
+    String? description,
+    bool isTemplate = false,
+  });
+
+  Future<String> updateBrandSource({
+    required String sourceId,
+    required String title,
+    String? subtitle,
+    String? description,
+  });
+
+  Future<String> deleteBrandSource({
+    required String sourceId,
+  });
+
+  Future<String> upsertBrandSlot({
+    required String sourceId,
+    required ScheduleSlot slot,
+  });
+
+  Future<String> deleteBrandSlot({
+    required String sourceId,
+    required String slotId,
   });
 }
 
@@ -75,6 +105,35 @@ class SpaceScheduleRemoteDataSourceImpl
     } catch (error) {
       if (error is ServerException) rethrow;
       throw ServerException('Failed to load schedule data: $error');
+    }
+  }
+
+  @override
+  Future<List<ScheduleSourceModel>> getBrandLibrary(String brandId) async {
+    final normalizedBrandId = _requireId(brandId, 'Brand id is required.');
+    try {
+      final response = await dioClient.get(
+        ApiConstants.cmsScheduleBrandLibrary(normalizedBrandId),
+      );
+      final payload = _requireResultMap(response.data);
+      final result = ApiResult<List<ScheduleSourceModel>>.fromJson(
+        payload,
+        fromData: (data) => _parseSourceList(data),
+      );
+      if (!result.isSuccess || result.data == null) {
+        throw ServerException(result.userFriendlyError);
+      }
+      return result.data!;
+    } on DioException catch (error) {
+      throw ServerException(
+        _extractDioErrorMessage(
+          error,
+          fallback: 'Failed to load brand schedule library.',
+        ),
+      );
+    } catch (error) {
+      if (error is ServerException) rethrow;
+      throw ServerException('Failed to load brand schedule library: $error');
     }
   }
 
@@ -169,6 +228,111 @@ class SpaceScheduleRemoteDataSourceImpl
         data: {'enabled': enabled},
       ),
       fallback: enabled ? 'Schedule enabled.' : 'Schedule disabled.',
+    );
+  }
+
+  @override
+  Future<String> createBrandSource({
+    required String title,
+    String? subtitle,
+    String? description,
+    bool isTemplate = false,
+  }) async {
+    final normalizedTitle = _requireId(title, 'Schedule title is required.');
+    return _sendResult(
+      () => dioClient.post(
+        ApiConstants.cmsScheduleBrandSources,
+        data: {
+          'title': normalizedTitle,
+          'subtitle': subtitle?.trim() ?? '',
+          if (description != null && description.trim().isNotEmpty)
+            'description': description.trim(),
+          'isTemplate': isTemplate,
+        },
+      ),
+      fallback: 'Brand schedule source created.',
+    );
+  }
+
+  @override
+  Future<String> updateBrandSource({
+    required String sourceId,
+    required String title,
+    String? subtitle,
+    String? description,
+  }) async {
+    final normalizedSourceId =
+        _requireId(sourceId, 'Schedule source id is required.');
+    final normalizedTitle = _requireId(title, 'Schedule title is required.');
+    return _sendResult(
+      () => dioClient.patch(
+        ApiConstants.cmsScheduleBrandSource(normalizedSourceId),
+        data: {
+          'title': normalizedTitle,
+          'subtitle': subtitle?.trim() ?? '',
+          if (description != null && description.trim().isNotEmpty)
+            'description': description.trim(),
+        },
+      ),
+      fallback: 'Brand schedule source updated.',
+    );
+  }
+
+  @override
+  Future<String> deleteBrandSource({
+    required String sourceId,
+  }) async {
+    final normalizedSourceId =
+        _requireId(sourceId, 'Schedule source id is required.');
+    return _sendResult(
+      () => dioClient.delete(
+        ApiConstants.cmsScheduleBrandSource(normalizedSourceId),
+      ),
+      fallback: 'Brand schedule source deleted.',
+    );
+  }
+
+  @override
+  Future<String> upsertBrandSlot({
+    required String sourceId,
+    required ScheduleSlot slot,
+  }) async {
+    final normalizedSourceId =
+        _requireId(sourceId, 'Schedule source id is required.');
+    final normalizedSlotId = _requireId(slot.id, 'Slot id is required.');
+    return _sendResult(
+      () => dioClient.put(
+        ApiConstants.cmsScheduleBrandSourceSlot(
+          normalizedSourceId,
+          normalizedSlotId,
+        ),
+        data: {
+          'daysOfWeek': slot.daysOfWeek,
+          'startTime': slot.startTime,
+          'endTime': slot.endTime,
+          'playlistId': slot.musicId,
+        },
+      ),
+      fallback: 'Brand schedule slot saved.',
+    );
+  }
+
+  @override
+  Future<String> deleteBrandSlot({
+    required String sourceId,
+    required String slotId,
+  }) async {
+    final normalizedSourceId =
+        _requireId(sourceId, 'Schedule source id is required.');
+    final normalizedSlotId = _requireId(slotId, 'Slot id is required.');
+    return _sendResult(
+      () => dioClient.delete(
+        ApiConstants.cmsScheduleBrandSourceSlot(
+          normalizedSourceId,
+          normalizedSlotId,
+        ),
+      ),
+      fallback: 'Brand schedule slot removed.',
     );
   }
 

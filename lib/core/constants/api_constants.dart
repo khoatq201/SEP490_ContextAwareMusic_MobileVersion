@@ -230,6 +230,16 @@ class ApiConstants {
       '$cmsScheduleBase/spaces/$spaceId/save-to-library';
   static String cmsScheduleSpaceToggle(String spaceId) =>
       '$cmsScheduleBase/spaces/$spaceId/toggle';
+  static String cmsScheduleBrandLibrary(String brandId) =>
+      '$cmsScheduleBase/brands/$brandId/library';
+  static String cmsScheduleBrandTemplates(String brandId) =>
+      '$cmsScheduleBase/brands/$brandId/templates';
+  static const String cmsScheduleBrandSources =
+      '$cmsScheduleBase/brands/sources';
+  static String cmsScheduleBrandSource(String sourceId) =>
+      '$cmsScheduleBrandSources/$sourceId';
+  static String cmsScheduleBrandSourceSlot(String sourceId, String slotId) =>
+      '$cmsScheduleBrandSources/$sourceId/slots/$slotId';
 
   // SignalR
   static String get storeHubUrl => '$baseUrl/hubs/store';

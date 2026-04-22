@@ -33,6 +33,18 @@ void main() {
         ApiConstants.cmsScheduleSpaceToggle('space-1'),
         '/api/cms/schedule/spaces/space-1/toggle',
       );
+      expect(
+        ApiConstants.cmsScheduleBrandLibrary('brand-1'),
+        '/api/cms/schedule/brands/brand-1/library',
+      );
+      expect(
+        ApiConstants.cmsScheduleBrandSource('source-1'),
+        '/api/cms/schedule/brands/sources/source-1',
+      );
+      expect(
+        ApiConstants.cmsScheduleBrandSourceSlot('source-1', 'slot-1'),
+        '/api/cms/schedule/brands/sources/source-1/slots/slot-1',
+      );
     });
   });
 
@@ -131,6 +143,68 @@ void main() {
       expect(adapter.lastMethod, 'DELETE');
       expect(adapter.lastPath, '/api/cms/schedule/spaces/space-1/slots/slot-1');
     });
+
+    test('loads and mutates brand schedule sources and slots', () async {
+      adapter.responsePayload = _brandLibraryPayload();
+
+      final sources = await dataSource.getBrandLibrary('brand-1');
+      expect(adapter.lastMethod, 'GET');
+      expect(adapter.lastPath, '/api/cms/schedule/brands/brand-1/library');
+      expect(sources.single.title, 'Brand dayparts');
+
+      adapter.responsePayload = _successPayload('source-1');
+      await dataSource.createBrandSource(
+        title: 'Brand dayparts',
+        subtitle: 'Required schedule',
+      );
+      expect(adapter.lastMethod, 'POST');
+      expect(adapter.lastPath, '/api/cms/schedule/brands/sources');
+      expect(adapter.lastBody, {
+        'title': 'Brand dayparts',
+        'subtitle': 'Required schedule',
+        'isTemplate': false,
+      });
+
+      await dataSource.updateBrandSource(
+        sourceId: 'source-1',
+        title: 'Updated brand dayparts',
+      );
+      expect(adapter.lastMethod, 'PATCH');
+      expect(adapter.lastPath, '/api/cms/schedule/brands/sources/source-1');
+
+      await dataSource.upsertBrandSlot(
+        sourceId: 'source-1',
+        slot: const ScheduleSlotModel(
+          id: 'slot-1',
+          daysOfWeek: [0, 1],
+          startTime: '09:00',
+          endTime: '12:00',
+          musicId: 'playlist-1',
+        ),
+      );
+      expect(adapter.lastMethod, 'PUT');
+      expect(
+        adapter.lastPath,
+        '/api/cms/schedule/brands/sources/source-1/slots/slot-1',
+      );
+      expect(adapter.lastBody, {
+        'daysOfWeek': [0, 1],
+        'startTime': '09:00',
+        'endTime': '12:00',
+        'playlistId': 'playlist-1',
+      });
+
+      await dataSource.deleteBrandSlot(sourceId: 'source-1', slotId: 'slot-1');
+      expect(adapter.lastMethod, 'DELETE');
+      expect(
+        adapter.lastPath,
+        '/api/cms/schedule/brands/sources/source-1/slots/slot-1',
+      );
+
+      await dataSource.deleteBrandSource(sourceId: 'source-1');
+      expect(adapter.lastMethod, 'DELETE');
+      expect(adapter.lastPath, '/api/cms/schedule/brands/sources/source-1');
+    });
   });
 }
 
@@ -196,6 +270,39 @@ Map<String, dynamic> _successPayload(String data) {
     'isSuccess': true,
     'message': 'Saved.',
     'data': data,
+  };
+}
+
+Map<String, dynamic> _brandLibraryPayload() {
+  final schedule = {
+    'id': 'schedule-brand-1',
+    'name': 'Brand dayparts',
+    'spaceId': null,
+    'enabled': true,
+    'updatedAt': '2026-04-17T08:00:00Z',
+    'slots': [
+      {
+        'id': 'slot-1',
+        'daysOfWeek': [0, 1],
+        'startTime': '09:00',
+        'endTime': '12:00',
+        'playlistId': 'playlist-1',
+      },
+    ],
+  };
+
+  return {
+    'isSuccess': true,
+    'data': [
+      {
+        'id': 'source-1',
+        'title': 'Brand dayparts',
+        'subtitle': 'Required schedule',
+        'type': 'library',
+        'schedule': schedule,
+        'isUserCreated': true,
+      },
+    ],
   };
 }
 

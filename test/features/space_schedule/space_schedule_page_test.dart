@@ -121,12 +121,7 @@ void main() {
       await tester.tap(find.byIcon(Icons.add).first);
       await tester.pumpAndSettle(const Duration(milliseconds: 500));
 
-      expect(find.text('Day & Time'), findsOneWidget);
-      await tester.tap(find.text('Add music'));
-      await tester.pumpAndSettle(const Duration(milliseconds: 500));
-
-      await tester.tap(find.byKey(const ValueKey('music-option-music-001')));
-      await tester.pumpAndSettle(const Duration(milliseconds: 500));
+      expect(find.text('Add schedule slot'), findsOneWidget);
 
       await tester
           .ensureVisible(find.byKey(const ValueKey('slot-editor-save')));

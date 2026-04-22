@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../config_governance/domain/entities/config_governance_enums.dart';
 import '../../domain/entities/schedule_music_item.dart';
 import '../../domain/entities/schedule_source.dart';
 import '../../domain/entities/space_schedule.dart';
@@ -20,6 +21,7 @@ class SpaceScheduleState extends Equatable {
   final List<ScheduleTemplate> templateSources;
   final List<ScheduleMusicItem> musicCatalog;
   final ScheduleSourceType sourcePickerTab;
+  final StoreGovernanceMode? storeGovernanceMode;
   final String? errorMessage;
   final String? feedbackMessage;
 
@@ -35,9 +37,13 @@ class SpaceScheduleState extends Equatable {
     this.templateSources = const [],
     this.musicCatalog = const [],
     this.sourcePickerTab = ScheduleSourceType.library,
+    this.storeGovernanceMode,
     this.errorMessage,
     this.feedbackMessage,
   });
+
+  bool get isBrandScheduleControlled =>
+      storeGovernanceMode == StoreGovernanceMode.strictSync;
 
   SpaceScheduleState copyWith({
     SpaceScheduleStatus? status,
@@ -51,8 +57,10 @@ class SpaceScheduleState extends Equatable {
     List<ScheduleTemplate>? templateSources,
     List<ScheduleMusicItem>? musicCatalog,
     ScheduleSourceType? sourcePickerTab,
+    StoreGovernanceMode? storeGovernanceMode,
     String? errorMessage,
     String? feedbackMessage,
+    bool clearStoreGovernanceMode = false,
     bool clearErrorMessage = false,
     bool clearFeedbackMessage = false,
   }) {
@@ -68,6 +76,9 @@ class SpaceScheduleState extends Equatable {
       templateSources: templateSources ?? this.templateSources,
       musicCatalog: musicCatalog ?? this.musicCatalog,
       sourcePickerTab: sourcePickerTab ?? this.sourcePickerTab,
+      storeGovernanceMode: clearStoreGovernanceMode
+          ? null
+          : (storeGovernanceMode ?? this.storeGovernanceMode),
       errorMessage:
           clearErrorMessage ? null : (errorMessage ?? this.errorMessage),
       feedbackMessage: clearFeedbackMessage
@@ -89,6 +100,7 @@ class SpaceScheduleState extends Equatable {
         templateSources,
         musicCatalog,
         sourcePickerTab,
+        storeGovernanceMode,
         errorMessage,
         feedbackMessage,
       ];

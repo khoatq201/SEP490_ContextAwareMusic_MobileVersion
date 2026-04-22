@@ -29,6 +29,11 @@ import '../../../space_control/presentation/bloc/music_control_bloc.dart';
 import '../../../space_control/presentation/bloc/music_control_event.dart';
 import '../../../space_control/presentation/bloc/space_monitoring_bloc.dart';
 import '../../../space_control/presentation/bloc/space_monitoring_event.dart';
+import '../../../space_schedule/data/datasources/space_schedule_remote_datasource.dart';
+import '../../../space_schedule/domain/entities/schedule_music_item.dart';
+import '../../../space_schedule/presentation/widgets/brand_schedule_editor_sheet.dart';
+import '../../../store_selection/domain/entities/store_summary.dart';
+import '../../../store_selection/domain/usecases/get_user_stores.dart';
 import '../../../music_policy/data/models/fuzzy_override_profile_request.dart';
 import '../../../music_policy/presentation/widgets/fuzzy_override_editor_sheet.dart';
 import '../../../playlists/data/datasources/playlist_remote_datasource.dart';
@@ -45,6 +50,8 @@ enum _StoreDashboardToolAction {
   refresh,
   storeGovernance,
   governanceMode,
+  strictSyncStores,
+  brandSchedule,
   publishConfigVersion,
   rollbackConfigVersion,
   musicPolicy,
@@ -477,6 +484,157 @@ class StoreDashboardPage extends StatelessWidget {
           ),
         )
         .toList(growable: false);
+  }
+
+  Future<List<ScheduleMusicItem>> _loadBrandScheduleMusicCatalog(
+    Store store,
+  ) async {
+    final response = await sl<PlaylistRemoteDataSource>().getPlaylists(
+      page: 1,
+      pageSize: 100,
+      brandId: store.brandId,
+    );
+    return response.items
+        .map(
+          (playlist) => ScheduleMusicItem(
+            id: playlist.id,
+            title: playlist.name,
+            artist: playlist.storeName ?? 'Brand playlist',
+            collection: playlist.moodName,
+            artworkLabel: playlist.name,
+            primaryHex: '#335C67',
+            secondaryHex: '#2A9D8F',
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  Future<void> _showBrandScheduleEditorSheet(
+    BuildContext context,
+    Store store,
+  ) async {
+    List<ScheduleMusicItem> musicCatalog;
+    try {
+      musicCatalog = await _loadBrandScheduleMusicCatalog(store);
+    } catch (error) {
+      if (!context.mounted) return;
+      _showStoreSnackBar(
+        context,
+        'Failed to load playlists for brand schedule: $error',
+        isError: true,
+      );
+      return;
+    }
+    if (!context.mounted) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => BrandScheduleEditorSheet(
+        brandId: store.brandId,
+        musicCatalog: musicCatalog,
+        remoteDataSource: sl<SpaceScheduleRemoteDataSource>(),
+      ),
+    );
+
+    if (!context.mounted) return;
+    context.read<StoreDashboardBloc>().add(
+          RefreshStoreDashboard(storeId: store.id),
+        );
+  }
+
+  Future<void> _showStrictSyncStoresSheet(
+    BuildContext context,
+    Store store,
+  ) async {
+    final storesResult = await sl<GetUserStores>()();
+    if (!context.mounted) return;
+
+    final stores = storesResult.fold<List<StoreSummary>?>(
+      (failure) {
+        _showStoreFailure(
+          context,
+          failure,
+          title: 'Strict Sync stores unavailable',
+        );
+        return null;
+      },
+      (stores) => stores,
+    );
+    if (stores == null || stores.isEmpty) return;
+
+    final selection = await showModalBottomSheet<Set<String>>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => _StrictSyncStoresSheet(
+        stores: stores,
+        currentStoreId: store.id,
+      ),
+    );
+    if (selection == null || !context.mounted) return;
+
+    final currentlyStrict = stores
+        .where((item) => item.governanceMode == StoreGovernanceMode.strictSync)
+        .map((item) => item.id)
+        .toSet();
+    final selectedIds = selection.toList(growable: false);
+    final releasedIds = currentlyStrict
+        .where((storeId) => !selection.contains(storeId))
+        .toList(growable: false);
+
+    final setMode = sl<SetStoreGovernanceMode>();
+    if (selectedIds.isNotEmpty) {
+      final result = await setMode(
+        request: SetStoreGovernanceModeRequest(
+          storeIds: selectedIds,
+          mode: StoreGovernanceMode.strictSync,
+        ),
+      );
+      if (!context.mounted) return;
+      final failed = result.fold((failure) => failure, (_) => null);
+      if (failed != null) {
+        _showStoreFailure(
+          context,
+          failed,
+          title: 'Strict Sync update failed',
+        );
+        return;
+      }
+    }
+
+    if (releasedIds.isNotEmpty) {
+      final result = await setMode(
+        request: SetStoreGovernanceModeRequest(
+          storeIds: releasedIds,
+          mode: StoreGovernanceMode.freedom,
+        ),
+      );
+      if (!context.mounted) return;
+      final failed = result.fold((failure) => failure, (_) => null);
+      if (failed != null) {
+        _showStoreFailure(
+          context,
+          failed,
+          title: 'Strict Sync release failed',
+        );
+        return;
+      }
+    }
+
+    context.read<StoreDashboardBloc>().add(
+          RefreshStoreDashboard(storeId: store.id),
+        );
+    _showStoreSnackBar(
+      context,
+      'Strict Sync store selection updated.',
+    );
   }
 
   Future<void> _showStoreFuzzyOverrideSheet(
@@ -946,6 +1104,28 @@ class StoreDashboardPage extends StatelessWidget {
                         ),
                       if (canManageStore)
                         ListTile(
+                          leading: const Icon(Icons.sync_alt_rounded),
+                          title: const Text('Strict Sync stores'),
+                          subtitle: const Text(
+                            'Choose stores that must follow brand schedule',
+                          ),
+                          onTap: () => Navigator.of(sheetContext).pop(
+                            _StoreDashboardToolAction.strictSyncStores,
+                          ),
+                        ),
+                      if (canManageStore)
+                        ListTile(
+                          leading: const Icon(Icons.event_note_outlined),
+                          title: const Text('Brand schedule'),
+                          subtitle: const Text(
+                            'Edit brand schedule sources and slots',
+                          ),
+                          onTap: () => Navigator.of(sheetContext).pop(
+                            _StoreDashboardToolAction.brandSchedule,
+                          ),
+                        ),
+                      if (canManageStore)
+                        ListTile(
                           leading: const Icon(Icons.publish_outlined),
                           title: const Text('Publish config snapshot'),
                           subtitle: const Text(
@@ -1000,6 +1180,12 @@ class StoreDashboardPage extends StatelessWidget {
         return;
       case _StoreDashboardToolAction.governanceMode:
         await _showGovernanceModeDialog(context, store);
+        return;
+      case _StoreDashboardToolAction.strictSyncStores:
+        await _showStrictSyncStoresSheet(context, store);
+        return;
+      case _StoreDashboardToolAction.brandSchedule:
+        await _showBrandScheduleEditorSheet(context, store);
         return;
       case _StoreDashboardToolAction.publishConfigVersion:
         await _showPublishConfigVersionDialog(context, store);
@@ -1281,6 +1467,136 @@ class StoreDashboardPage extends StatelessWidget {
               ),
             );
           },
+        ),
+      ),
+    );
+  }
+}
+
+class _StrictSyncStoresSheet extends StatefulWidget {
+  const _StrictSyncStoresSheet({
+    required this.stores,
+    required this.currentStoreId,
+  });
+
+  final List<StoreSummary> stores;
+  final String currentStoreId;
+
+  @override
+  State<_StrictSyncStoresSheet> createState() => _StrictSyncStoresSheetState();
+}
+
+class _StrictSyncStoresSheetState extends State<_StrictSyncStoresSheet> {
+  late final Set<String> _selectedStoreIds;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedStoreIds = widget.stores
+        .where(
+            (store) => store.governanceMode == StoreGovernanceMode.strictSync)
+        .map((store) => store.id)
+        .toSet();
+    if (_selectedStoreIds.isEmpty) {
+      _selectedStoreIds.add(widget.currentStoreId);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return SafeArea(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.86,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                margin: const EdgeInsets.only(top: 10, bottom: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: theme.dividerColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Strict Sync stores',
+                    style: AppTypography.titleMedium.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Selected stores must follow brand scheduling. Stores removed from this list are moved to Freedom mode.',
+                  ),
+                ],
+              ),
+            ),
+            Flexible(
+              child: ListView.separated(
+                shrinkWrap: true,
+                padding: const EdgeInsets.fromLTRB(8, 4, 8, 12),
+                itemCount: widget.stores.length,
+                separatorBuilder: (_, __) => const Divider(height: 1),
+                itemBuilder: (context, index) {
+                  final store = widget.stores[index];
+                  final selected = _selectedStoreIds.contains(store.id);
+                  return CheckboxListTile(
+                    value: selected,
+                    title: Text(store.name),
+                    subtitle: Text(
+                      store.governanceMode?.label ?? 'No governance mode',
+                    ),
+                    secondary: store.id == widget.currentStoreId
+                        ? const Icon(Icons.storefront_rounded)
+                        : null,
+                    onChanged: (value) {
+                      setState(() {
+                        if (value == true) {
+                          _selectedStoreIds.add(store.id);
+                        } else {
+                          _selectedStoreIds.remove(store.id);
+                        }
+                      });
+                    },
+                  );
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () =>
+                          Navigator.pop(context, _selectedStoreIds),
+                      child: const Text('Apply'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

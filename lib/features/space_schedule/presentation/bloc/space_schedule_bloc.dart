@@ -5,6 +5,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/error/error_mapper.dart';
 import '../../../../core/error/failures.dart';
+import '../../../config_governance/domain/entities/config_governance_enums.dart';
+import '../../../store_dashboard/domain/usecases/get_store_details.dart';
 import '../../domain/entities/schedule_music_item.dart';
 import '../../domain/entities/schedule_slot.dart';
 import '../../domain/entities/space_schedule.dart';
@@ -19,6 +21,7 @@ class SpaceScheduleBloc extends Bloc<SpaceScheduleEvent, SpaceScheduleState> {
   final ToggleSpaceSchedule toggleSpaceSchedule;
   final SaveScheduleToLibrary saveScheduleToLibrary;
   final DeleteScheduleSlot deleteScheduleSlot;
+  final GetStoreDetails? getStoreDetails;
 
   SpaceScheduleBloc({
     required this.getSpaceScheduleBootstrap,
@@ -27,6 +30,7 @@ class SpaceScheduleBloc extends Bloc<SpaceScheduleEvent, SpaceScheduleState> {
     required this.toggleSpaceSchedule,
     required this.saveScheduleToLibrary,
     required this.deleteScheduleSlot,
+    this.getStoreDetails,
   }) : super(const SpaceScheduleState()) {
     on<SpaceScheduleStarted>(_onStarted);
     on<SpaceScheduleCreateNewRequested>(_onCreateNewRequested);
@@ -52,11 +56,13 @@ class SpaceScheduleBloc extends Bloc<SpaceScheduleEvent, SpaceScheduleState> {
         spaceId: event.spaceId,
         storeId: event.storeId,
         spaceName: event.spaceName,
+        clearStoreGovernanceMode: true,
         clearErrorMessage: true,
         clearFeedbackMessage: true,
       ),
     );
 
+    final governanceMode = await _resolveGovernanceMode(event.storeId);
     final result = await getSpaceScheduleBootstrap(
       spaceId: event.spaceId,
       spaceName: event.spaceName,
@@ -81,6 +87,7 @@ class SpaceScheduleBloc extends Bloc<SpaceScheduleEvent, SpaceScheduleState> {
             librarySources: bootstrap.librarySources,
             templateSources: bootstrap.templateSources,
             musicCatalog: bootstrap.musicCatalog,
+            storeGovernanceMode: governanceMode,
             selectedDay: _preferredInitialDay(bootstrap.draftSchedule),
             clearErrorMessage: true,
             clearFeedbackMessage: true,
@@ -442,6 +449,16 @@ class SpaceScheduleBloc extends Bloc<SpaceScheduleEvent, SpaceScheduleState> {
 
   int _todayDomainDay() {
     return DateTime.now().weekday % DateTime.sunday;
+  }
+
+  Future<StoreGovernanceMode?> _resolveGovernanceMode(String storeId) async {
+    final loader = getStoreDetails;
+    if (loader == null) return null;
+    final result = await loader(storeId);
+    return result.fold(
+      (_) => null,
+      (store) => store.governanceMode,
+    );
   }
 
   int _uiDayFromDomainDay(int domainDay) {
