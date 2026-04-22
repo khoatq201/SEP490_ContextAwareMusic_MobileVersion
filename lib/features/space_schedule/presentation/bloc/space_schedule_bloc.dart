@@ -62,7 +62,8 @@ class SpaceScheduleBloc extends Bloc<SpaceScheduleEvent, SpaceScheduleState> {
       ),
     );
 
-    final governanceMode = await _resolveGovernanceMode(event.storeId);
+    final governanceMode = event.initialStoreGovernanceMode ??
+        await _resolveGovernanceMode(event.storeId);
     final result = await getSpaceScheduleBootstrap(
       spaceId: event.spaceId,
       spaceName: event.spaceName,

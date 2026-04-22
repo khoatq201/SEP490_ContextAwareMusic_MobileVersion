@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../config_governance/domain/entities/config_governance_enums.dart';
 import '../../domain/entities/schedule_source.dart';
 import '../../domain/entities/schedule_slot.dart';
 
@@ -14,15 +15,22 @@ class SpaceScheduleStarted extends SpaceScheduleEvent {
   final String spaceId;
   final String storeId;
   final String spaceName;
+  final StoreGovernanceMode? initialStoreGovernanceMode;
 
   const SpaceScheduleStarted({
     required this.spaceId,
     required this.storeId,
     required this.spaceName,
+    this.initialStoreGovernanceMode,
   });
 
   @override
-  List<Object?> get props => [spaceId, storeId, spaceName];
+  List<Object?> get props => [
+        spaceId,
+        storeId,
+        spaceName,
+        initialStoreGovernanceMode,
+      ];
 }
 
 class SpaceScheduleCreateNewRequested extends SpaceScheduleEvent {

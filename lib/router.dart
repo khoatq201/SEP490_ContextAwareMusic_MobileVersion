@@ -91,9 +91,8 @@ class AppRouter {
     if (session.currentStore != null) {
       return '/store/${session.currentStore!.id}';
     }
-    final assignedStoreId = user?.storeIds.isNotEmpty == true
-        ? user!.storeIds.first
-        : null;
+    final assignedStoreId =
+        user?.storeIds.isNotEmpty == true ? user!.storeIds.first : null;
     if (assignedStoreId != null && assignedStoreId.isNotEmpty) {
       return '/store/$assignedStoreId';
     }
@@ -101,457 +100,464 @@ class AppRouter {
   }
 
   static GoRouter buildRouter() => GoRouter(
-    navigatorKey: _rootNavigatorKey,
-    initialLocation: '/welcome',
-    refreshListenable: GoRouterRefreshStream([
-      sl<AuthBloc>().stream,
-      sl<SessionCubit>().stream,
-    ]),
-    redirect: (BuildContext context, GoRouterState state) {
-      final authBloc = sl<AuthBloc>();
-      final sessionCubit = sl<SessionCubit>();
+        navigatorKey: _rootNavigatorKey,
+        initialLocation: '/welcome',
+        refreshListenable: GoRouterRefreshStream([
+          sl<AuthBloc>().stream,
+          sl<SessionCubit>().stream,
+        ]),
+        redirect: (BuildContext context, GoRouterState state) {
+          final authBloc = sl<AuthBloc>();
+          final sessionCubit = sl<SessionCubit>();
 
-      final isAuthenticated = authBloc.state.status == AuthStatus.authenticated;
-      final isPaired = sessionCubit.state.isPlaybackDevice;
-      final location = state.matchedLocation;
-      final isPublic = location == '/welcome' ||
-          location == '/login' ||
-          location == '/forgot-password' ||
-          location == '/pair-device';
+          final isAuthenticated =
+              authBloc.state.status == AuthStatus.authenticated;
+          final isPaired = sessionCubit.state.isPlaybackDevice;
+          final location = state.matchedLocation;
+          final isPublic = location == '/welcome' ||
+              location == '/login' ||
+              location == '/forgot-password' ||
+              location == '/pair-device';
 
-      // 1. If operating as a paired playback device, force them into the shell (home)
-      // unless they are already on a valid tab. Do not let them go to login.
-      if (isPaired) {
-        if (location == '/welcome' ||
-            location == '/login' ||
-            location == '/pair-device' ||
-            location == '/store-selection') {
-          return '/home';
-        }
-        return null;
-      }
-
-      // 2. If not authenticated and not public, force login.
-      if (!isAuthenticated && !isPublic) return '/login';
-
-      // 3. Whenever authenticated, ensure role is in sync with user data.
-      if (isAuthenticated) {
-        final user = authBloc.state.user;
-        if (user != null) {
-          // Always keep the session role in sync with the user's role.
-          // This guards against any code path that might reset the role.
-          sessionCubit.setRoleFromString(user.role);
-        }
-
-        // If on welcome/login/pair page, redirect based on role.
-        if (location == '/welcome' ||
-            location == '/login' ||
-            location == '/forgot-password' ||
-            location == '/pair-device') {
-          return _managerLandingLocation(sessionCubit, user: user);
-        }
-
-        // Prevent StoreManager from staying on /store-selection.
-        // They should be redirected automatically via the page's BLoC listener,
-        // but if they somehow navigate here after already selecting a store,
-        // send them to their store dashboard.
-        if (location == '/store-selection' &&
-            user != null &&
-            user.isStoreManager) {
-          final target = _managerLandingLocation(sessionCubit, user: user);
-          if (target != location) {
-            return target;
+          // 1. If operating as a paired playback device, force them into the shell (home)
+          // unless they are already on a valid tab. Do not let them go to login.
+          if (isPaired) {
+            if (location == '/welcome' ||
+                location == '/login' ||
+                location == '/pair-device' ||
+                location == '/store-selection') {
+              return '/home';
+            }
+            return null;
           }
-        }
-      }
 
-      return null;
-    },
-    routes: [
-      // ---------------------------------------------------------------
-      // Public / pre-auth routes
-      // ---------------------------------------------------------------
-      GoRoute(
-        path: '/welcome',
-        name: 'welcome',
-        builder: (context, state) => const WelcomePage(),
-      ),
-      GoRoute(
-        path: '/login',
-        name: 'login',
-        builder: (context, state) => BlocProvider.value(
-          value: sl<AuthBloc>(),
-          child: const LoginPageV2(),
-        ),
-      ),
-      GoRoute(
-        path: '/forgot-password',
-        name: 'forgot-password',
-        builder: (context, state) => BlocProvider.value(
-          value: sl<AuthBloc>(),
-          child: const ForgotPasswordPage(),
-        ),
-      ),
-      GoRoute(
-        path: '/pair-device',
-        name: 'pair-device',
-        builder: (context, state) => BlocProvider(
-          create: (_) => sl<DevicePairingBloc>(),
-          child: const DevicePairingPage(),
-        ),
-      ),
+          // 2. If not authenticated and not public, force login.
+          if (!isAuthenticated && !isPublic) return '/login';
 
-      // ---------------------------------------------------------------
-      // Store / Space selection (post-login, pre-home)
-      // ---------------------------------------------------------------
-      GoRoute(
-        path: '/store-selection',
-        name: 'store-selection',
-        builder: (context, state) => MultiBlocProvider(
-          providers: [
-            BlocProvider.value(value: sl<AuthBloc>()),
-            BlocProvider(create: (_) => sl<StoreSelectionBloc>()),
-          ],
-          child: const StoreSelectionPage(),
-        ),
-      ),
-      GoRoute(
-        path: '/store/:storeId',
-        name: 'store-dashboard',
-        builder: (context, state) {
-          final storeId = state.pathParameters['storeId']!;
-          return MultiBlocProvider(
-            providers: [
-              BlocProvider.value(value: sl<AuthBloc>()),
-              BlocProvider(
-                create: (_) => sl<StoreDashboardBloc>()
-                  ..add(LoadStoreDashboard(storeId: storeId)),
-              ),
-            ],
-            child: StoreDashboardPage(storeId: storeId),
-          );
+          // 3. Whenever authenticated, ensure role is in sync with user data.
+          if (isAuthenticated) {
+            final user = authBloc.state.user;
+            if (user != null) {
+              // Always keep the session role in sync with the user's role.
+              // This guards against any code path that might reset the role.
+              sessionCubit.setRoleFromString(user.role);
+            }
+
+            // If on welcome/login/pair page, redirect based on role.
+            if (location == '/welcome' ||
+                location == '/login' ||
+                location == '/forgot-password' ||
+                location == '/pair-device') {
+              return _managerLandingLocation(sessionCubit, user: user);
+            }
+
+            // Prevent StoreManager from staying on /store-selection.
+            // They should be redirected automatically via the page's BLoC listener,
+            // but if they somehow navigate here after already selecting a store,
+            // send them to their store dashboard.
+            if (location == '/store-selection' &&
+                user != null &&
+                user.isStoreManager) {
+              final target = _managerLandingLocation(sessionCubit, user: user);
+              if (target != location) {
+                return target;
+              }
+            }
+          }
+
+          return null;
         },
-      ),
-      // ---------------------------------------------------------------
-      // Main Shell – 5-tab BottomNavigationBar
-      // /space lives here so BottomBar stays visible after space selection
-      // ---------------------------------------------------------------
-      ShellRoute(
-        builder: (context, state, child) => MainShellPage(child: child),
         routes: [
+          // ---------------------------------------------------------------
+          // Public / pre-auth routes
+          // ---------------------------------------------------------------
           GoRoute(
-            path: '/home',
-            name: 'home',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: HomeTabPage(),
-            ),
-            routes: [
-              // Sub-route: Space detail pushed on top of Home tab
-              GoRoute(
-                path: 'space',
-                name: 'space-detail',
-                builder: (context, state) {
-                  final storeId =
-                      state.uri.queryParameters['storeId'] ?? 'store-1';
-                  final spaceId =
-                      state.uri.queryParameters['spaceId'] ?? 'space-1';
-                  return MultiBlocProvider(
-                    providers: [
-                      BlocProvider.value(value: sl<AuthBloc>()),
-                      // Reuse global singletons so NowPlayingTab stays in sync
-                      BlocProvider.value(
-                          value: context.read<SpaceMonitoringBloc>()),
-                      BlocProvider.value(
-                          value: context.read<MusicControlBloc>()),
-                      BlocProvider(create: (_) => sl<OfflineLibraryBloc>()),
-                    ],
-                    child: SpaceDetailPage(storeId: storeId, spaceId: spaceId),
-                  );
-                },
-              ),
-              // Sub-route: Playlist detail — loads full detail (incl. tracks)
-              // from backend, initialises CamsPlaybackBloc, then shows the page.
-              GoRoute(
-                path: 'playlist-detail',
-                name: 'playlist-detail',
-                builder: (context, state) {
-                  final playlistId = state.extra as String;
-                  return PlaylistDetailLoader(playlistId: playlistId);
-                },
-              ),
-            ],
+            path: '/welcome',
+            name: 'welcome',
+            builder: (context, state) => const WelcomePage(),
           ),
           GoRoute(
-            path: '/settings',
-            name: 'settings',
-            builder: (context, state) => MultiBlocProvider(
-              providers: [
-                BlocProvider.value(value: sl<AuthBloc>()),
-                BlocProvider(create: (_) => sl<SettingsCubit>()..load()),
-              ],
-              child: const SettingsPage(),
-            ),
-          ),
-          GoRoute(
-            path: '/settings/user',
-            name: 'settings-user',
+            path: '/login',
+            name: 'login',
             builder: (context, state) => BlocProvider.value(
               value: sl<AuthBloc>(),
-              child: const SettingsUserPage(),
+              child: const LoginPageV2(),
             ),
           ),
           GoRoute(
-            path: '/settings/company',
-            name: 'settings-company',
+            path: '/forgot-password',
+            name: 'forgot-password',
+            builder: (context, state) => BlocProvider.value(
+              value: sl<AuthBloc>(),
+              child: const ForgotPasswordPage(),
+            ),
+          ),
+          GoRoute(
+            path: '/pair-device',
+            name: 'pair-device',
+            builder: (context, state) => BlocProvider(
+              create: (_) => sl<DevicePairingBloc>(),
+              child: const DevicePairingPage(),
+            ),
+          ),
+
+          // ---------------------------------------------------------------
+          // Store / Space selection (post-login, pre-home)
+          // ---------------------------------------------------------------
+          GoRoute(
+            path: '/store-selection',
+            name: 'store-selection',
             builder: (context, state) => MultiBlocProvider(
               providers: [
                 BlocProvider.value(value: sl<AuthBloc>()),
-                BlocProvider(create: (_) => sl<SettingsCubit>()..load()),
+                BlocProvider(create: (_) => sl<StoreSelectionBloc>()),
               ],
-              child: const SettingsCompanyPage(),
+              child: const StoreSelectionPage(),
             ),
           ),
           GoRoute(
-            path: '/search',
-            name: 'search',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: SearchTabPage(),
-            ),
+            path: '/store/:storeId',
+            name: 'store-dashboard',
+            builder: (context, state) {
+              final storeId = state.pathParameters['storeId']!;
+              return MultiBlocProvider(
+                providers: [
+                  BlocProvider.value(value: sl<AuthBloc>()),
+                  BlocProvider(
+                    create: (_) => sl<StoreDashboardBloc>()
+                      ..add(LoadStoreDashboard(storeId: storeId)),
+                  ),
+                ],
+                child: StoreDashboardPage(storeId: storeId),
+              );
+            },
+          ),
+          // ---------------------------------------------------------------
+          // Main Shell – 5-tab BottomNavigationBar
+          // /space lives here so BottomBar stays visible after space selection
+          // ---------------------------------------------------------------
+          ShellRoute(
+            builder: (context, state, child) => MainShellPage(child: child),
             routes: [
               GoRoute(
-                path: 'artist/:artistId',
-                name: 'search-artist-detail',
-                builder: (context, state) {
-                  final artistId = state.pathParameters['artistId']!;
-                  return ArtistDetailPage(artistId: artistId);
-                },
+                path: '/home',
+                name: 'home',
+                pageBuilder: (context, state) => const NoTransitionPage(
+                  child: HomeTabPage(),
+                ),
+                routes: [
+                  // Sub-route: Space detail pushed on top of Home tab
+                  GoRoute(
+                    path: 'space',
+                    name: 'space-detail',
+                    builder: (context, state) {
+                      final storeId =
+                          state.uri.queryParameters['storeId'] ?? 'store-1';
+                      final spaceId =
+                          state.uri.queryParameters['spaceId'] ?? 'space-1';
+                      return MultiBlocProvider(
+                        providers: [
+                          BlocProvider.value(value: sl<AuthBloc>()),
+                          // Reuse global singletons so NowPlayingTab stays in sync
+                          BlocProvider.value(
+                              value: context.read<SpaceMonitoringBloc>()),
+                          BlocProvider.value(
+                              value: context.read<MusicControlBloc>()),
+                          BlocProvider(create: (_) => sl<OfflineLibraryBloc>()),
+                        ],
+                        child:
+                            SpaceDetailPage(storeId: storeId, spaceId: spaceId),
+                      );
+                    },
+                  ),
+                  // Sub-route: Playlist detail — loads full detail (incl. tracks)
+                  // from backend, initialises CamsPlaybackBloc, then shows the page.
+                  GoRoute(
+                    path: 'playlist-detail',
+                    name: 'playlist-detail',
+                    builder: (context, state) {
+                      final playlistId = state.extra as String;
+                      return PlaylistDetailLoader(playlistId: playlistId);
+                    },
+                  ),
+                ],
               ),
               GoRoute(
-                path: 'album/:albumId',
-                name: 'search-album-detail',
-                builder: (context, state) {
-                  final albumId = state.pathParameters['albumId']!;
-                  return AlbumDetailPage(albumId: albumId);
-                },
+                path: '/settings',
+                name: 'settings',
+                builder: (context, state) => MultiBlocProvider(
+                  providers: [
+                    BlocProvider.value(value: sl<AuthBloc>()),
+                    BlocProvider(create: (_) => sl<SettingsCubit>()..load()),
+                  ],
+                  child: const SettingsPage(),
+                ),
               ),
               GoRoute(
-                path: 'playlist/:playlistId',
-                name: 'search-playlist-detail',
-                builder: (context, state) {
-                  final playlistId = state.pathParameters['playlistId']!;
-                  return PlaylistDetailLoader(playlistId: playlistId);
-                },
+                path: '/settings/user',
+                name: 'settings-user',
+                builder: (context, state) => BlocProvider.value(
+                  value: sl<AuthBloc>(),
+                  child: const SettingsUserPage(),
+                ),
               ),
               GoRoute(
-                path: 'category/:categoryId',
-                name: 'search-category-detail',
-                builder: (context, state) {
-                  final categoryId = state.pathParameters['categoryId']!;
-                  final categoryName = state.extra as String?;
-                  return CategoryDetailPage(
-                    categoryId: categoryId,
-                    categoryName: categoryName,
-                  );
-                },
+                path: '/settings/company',
+                name: 'settings-company',
+                builder: (context, state) => MultiBlocProvider(
+                  providers: [
+                    BlocProvider.value(value: sl<AuthBloc>()),
+                    BlocProvider(create: (_) => sl<SettingsCubit>()..load()),
+                  ],
+                  child: const SettingsCompanyPage(),
+                ),
+              ),
+              GoRoute(
+                path: '/search',
+                name: 'search',
+                pageBuilder: (context, state) => const NoTransitionPage(
+                  child: SearchTabPage(),
+                ),
+                routes: [
+                  GoRoute(
+                    path: 'artist/:artistId',
+                    name: 'search-artist-detail',
+                    builder: (context, state) {
+                      final artistId = state.pathParameters['artistId']!;
+                      return ArtistDetailPage(artistId: artistId);
+                    },
+                  ),
+                  GoRoute(
+                    path: 'album/:albumId',
+                    name: 'search-album-detail',
+                    builder: (context, state) {
+                      final albumId = state.pathParameters['albumId']!;
+                      return AlbumDetailPage(albumId: albumId);
+                    },
+                  ),
+                  GoRoute(
+                    path: 'playlist/:playlistId',
+                    name: 'search-playlist-detail',
+                    builder: (context, state) {
+                      final playlistId = state.pathParameters['playlistId']!;
+                      return PlaylistDetailLoader(playlistId: playlistId);
+                    },
+                  ),
+                  GoRoute(
+                    path: 'category/:categoryId',
+                    name: 'search-category-detail',
+                    builder: (context, state) {
+                      final categoryId = state.pathParameters['categoryId']!;
+                      final categoryName = state.extra as String?;
+                      return CategoryDetailPage(
+                        categoryId: categoryId,
+                        categoryName: categoryName,
+                      );
+                    },
+                  ),
+                ],
+              ),
+              GoRoute(
+                path: '/create',
+                name: 'create',
+                pageBuilder: (context, state) => const NoTransitionPage(
+                  child: ContextRulesPage(
+                    showBackButton: false,
+                    createRulePath: '/create/new',
+                  ),
+                ),
+                routes: [
+                  GoRoute(
+                    path: 'new',
+                    name: 'create-rule-tab',
+                    builder: (context, state) => const CreateRulePage(),
+                  ),
+                ],
+              ),
+              GoRoute(
+                path: '/now-playing',
+                name: 'now-playing',
+                pageBuilder: (context, state) =>
+                    const NoTransitionPage(child: NowPlayingTabPage()),
+              ),
+              GoRoute(
+                path: '/library',
+                name: 'library',
+                pageBuilder: (context, state) => const NoTransitionPage(
+                  child: LibraryTabPage(),
+                ),
+              ),
+              GoRoute(
+                path: '/locations',
+                name: 'locations',
+                pageBuilder: (context, state) => const NoTransitionPage(
+                  child: LocationsTabPage(),
+                ),
               ),
             ],
           ),
+
+          // ---------------------------------------------------------------
+          // Standalone pages (outside the shell)
+          // ---------------------------------------------------------------
+
+          // Full-screen Now Playing — pushed over any screen, pop returns to origin
           GoRoute(
-            path: '/create',
-            name: 'create',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: ContextRulesPage(
-                showBackButton: false,
-                createRulePath: '/create/new',
-              ),
+            parentNavigatorKey: _rootNavigatorKey,
+            path: '/now-playing-full',
+            name: 'now-playing-full',
+            pageBuilder: (context, state) => const MaterialPage(
+              fullscreenDialog: true,
+              child: NowPlayingTabPage(),
             ),
+          ),
+          GoRoute(
+            parentNavigatorKey: _rootNavigatorKey,
+            path: '/space-schedule',
+            name: 'space-schedule',
+            pageBuilder: (context, state) {
+              final spaceId = state.uri.queryParameters['spaceId'];
+              final storeId = state.uri.queryParameters['storeId'];
+              final spaceName = state.uri.queryParameters['spaceName'];
+              final currentStore = sl<SessionCubit>().state.currentStore;
+              final initialGovernanceMode = currentStore?.id == storeId
+                  ? currentStore?.governanceMode
+                  : null;
+
+              if (spaceId == null || storeId == null || spaceName == null) {
+                return MaterialPage(
+                  fullscreenDialog: true,
+                  child: Scaffold(
+                    body: AppErrorView(
+                      title: 'Schedule unavailable',
+                      message:
+                          'The schedule page is missing the space information it needs.',
+                      onSecondaryAction: () => Navigator.of(context).maybePop(),
+                      secondaryLabel: 'Go back',
+                    ),
+                  ),
+                );
+              }
+
+              return MaterialPage(
+                fullscreenDialog: true,
+                child: BlocProvider(
+                  create: (_) => sl<SpaceScheduleBloc>()
+                    ..add(
+                      SpaceScheduleStarted(
+                        spaceId: spaceId,
+                        storeId: storeId,
+                        spaceName: spaceName,
+                        initialStoreGovernanceMode: initialGovernanceMode,
+                      ),
+                    ),
+                  child: SpaceSchedulePage(
+                    spaceId: spaceId,
+                    storeId: storeId,
+                    spaceName: spaceName,
+                  ),
+                ),
+              );
+            },
+          ),
+          GoRoute(
+            parentNavigatorKey: _rootNavigatorKey,
+            path: '/space-hub',
+            name: 'space-hub',
+            pageBuilder: (context, state) {
+              final spaceId = state.uri.queryParameters['spaceId'];
+              final storeId = state.uri.queryParameters['storeId'];
+              final spaceName = state.uri.queryParameters['spaceName'];
+
+              if (spaceId == null || storeId == null || spaceName == null) {
+                return MaterialPage(
+                  fullscreenDialog: true,
+                  child: Scaffold(
+                    body: AppErrorView(
+                      title: 'Hub setup unavailable',
+                      message:
+                          'The hub setup page is missing the space information it needs.',
+                      onSecondaryAction: () => Navigator.of(context).maybePop(),
+                      secondaryLabel: 'Go back',
+                    ),
+                  ),
+                );
+              }
+
+              return MaterialPage(
+                fullscreenDialog: true,
+                child: BlocProvider(
+                  create: (_) => sl<HubProvisioningBloc>()
+                    ..add(
+                      HubProvisioningStarted(
+                        spaceId: spaceId,
+                        storeId: storeId,
+                        spaceName: spaceName,
+                      ),
+                    ),
+                  child: SpaceHubPage(
+                    spaceId: spaceId,
+                    storeId: storeId,
+                    spaceName: spaceName,
+                  ),
+                ),
+              );
+            },
+          ),
+          GoRoute(
+            path: '/profile',
+            name: 'profile',
+            builder: (context, state) => BlocProvider.value(
+              value: sl<AuthBloc>(),
+              child: const ProfilePage(),
+            ),
+          ),
+          GoRoute(
+            path: '/playlists',
+            name: 'playlists',
+            builder: (context, state) => BlocProvider.value(
+              value: sl<AuthBloc>(),
+              child: const PlaylistManagementPage(),
+            ),
+          ),
+          GoRoute(
+            path: '/showcase',
+            name: 'component-showcase',
+            builder: (context, state) => const ComponentShowcasePage(),
+          ),
+          GoRoute(
+            path: '/theme',
+            name: 'theme-showcase',
+            builder: (context, state) => const CAMSThemeShowcase(),
+          ),
+          GoRoute(
+            path: '/theme-demo',
+            name: 'theme-demo',
+            builder: (context, state) => const ThemeDemoPage(),
+          ),
+          GoRoute(
+            path: '/context-rules',
+            name: 'context-rules',
+            builder: (context, state) => const ContextRulesPage(),
             routes: [
               GoRoute(
-                path: 'new',
-                name: 'create-rule-tab',
+                path: 'create',
+                name: 'create-rule',
                 builder: (context, state) => const CreateRulePage(),
               ),
             ],
           ),
-          GoRoute(
-            path: '/now-playing',
-            name: 'now-playing',
-            pageBuilder: (context, state) =>
-                const NoTransitionPage(child: NowPlayingTabPage()),
-          ),
-          GoRoute(
-            path: '/library',
-            name: 'library',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: LibraryTabPage(),
-            ),
-          ),
-          GoRoute(
-            path: '/locations',
-            name: 'locations',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: LocationsTabPage(),
-            ),
-          ),
         ],
-      ),
-
-      // ---------------------------------------------------------------
-      // Standalone pages (outside the shell)
-      // ---------------------------------------------------------------
-
-      // Full-screen Now Playing — pushed over any screen, pop returns to origin
-      GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
-        path: '/now-playing-full',
-        name: 'now-playing-full',
-        pageBuilder: (context, state) => const MaterialPage(
-          fullscreenDialog: true,
-          child: NowPlayingTabPage(),
-        ),
-      ),
-      GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
-        path: '/space-schedule',
-        name: 'space-schedule',
-        pageBuilder: (context, state) {
-          final spaceId = state.uri.queryParameters['spaceId'];
-          final storeId = state.uri.queryParameters['storeId'];
-          final spaceName = state.uri.queryParameters['spaceName'];
-
-          if (spaceId == null || storeId == null || spaceName == null) {
-            return MaterialPage(
-              fullscreenDialog: true,
-              child: Scaffold(
-                body: AppErrorView(
-                  title: 'Schedule unavailable',
-                  message:
-                      'The schedule page is missing the space information it needs.',
-                  onSecondaryAction: () => Navigator.of(context).maybePop(),
-                  secondaryLabel: 'Go back',
-                ),
-              ),
-            );
-          }
-
-          return MaterialPage(
-            fullscreenDialog: true,
-            child: BlocProvider(
-              create: (_) => sl<SpaceScheduleBloc>()
-                ..add(
-                  SpaceScheduleStarted(
-                    spaceId: spaceId,
-                    storeId: storeId,
-                    spaceName: spaceName,
-                  ),
-                ),
-              child: SpaceSchedulePage(
-                spaceId: spaceId,
-                storeId: storeId,
-                spaceName: spaceName,
-              ),
-            ),
-          );
-        },
-      ),
-      GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
-        path: '/space-hub',
-        name: 'space-hub',
-        pageBuilder: (context, state) {
-          final spaceId = state.uri.queryParameters['spaceId'];
-          final storeId = state.uri.queryParameters['storeId'];
-          final spaceName = state.uri.queryParameters['spaceName'];
-
-          if (spaceId == null || storeId == null || spaceName == null) {
-            return MaterialPage(
-              fullscreenDialog: true,
-              child: Scaffold(
-                body: AppErrorView(
-                  title: 'Hub setup unavailable',
-                  message:
-                      'The hub setup page is missing the space information it needs.',
-                  onSecondaryAction: () => Navigator.of(context).maybePop(),
-                  secondaryLabel: 'Go back',
-                ),
-              ),
-            );
-          }
-
-          return MaterialPage(
-            fullscreenDialog: true,
-            child: BlocProvider(
-              create: (_) => sl<HubProvisioningBloc>()
-                ..add(
-                  HubProvisioningStarted(
-                    spaceId: spaceId,
-                    storeId: storeId,
-                    spaceName: spaceName,
-                  ),
-                ),
-              child: SpaceHubPage(
-                spaceId: spaceId,
-                storeId: storeId,
-                spaceName: spaceName,
-              ),
-            ),
-          );
-        },
-      ),
-      GoRoute(
-        path: '/profile',
-        name: 'profile',
-        builder: (context, state) => BlocProvider.value(
-          value: sl<AuthBloc>(),
-          child: const ProfilePage(),
-        ),
-      ),
-      GoRoute(
-        path: '/playlists',
-        name: 'playlists',
-        builder: (context, state) => BlocProvider.value(
-          value: sl<AuthBloc>(),
-          child: const PlaylistManagementPage(),
-        ),
-      ),
-      GoRoute(
-        path: '/showcase',
-        name: 'component-showcase',
-        builder: (context, state) => const ComponentShowcasePage(),
-      ),
-      GoRoute(
-        path: '/theme',
-        name: 'theme-showcase',
-        builder: (context, state) => const CAMSThemeShowcase(),
-      ),
-      GoRoute(
-        path: '/theme-demo',
-        name: 'theme-demo',
-        builder: (context, state) => const ThemeDemoPage(),
-      ),
-      GoRoute(
-        path: '/context-rules',
-        name: 'context-rules',
-        builder: (context, state) => const ContextRulesPage(),
-        routes: [
-          GoRoute(
-            path: 'create',
-            name: 'create-rule',
-            builder: (context, state) => const CreateRulePage(),
+        errorBuilder: (context, state) => Scaffold(
+          body: AppErrorView(
+            title: 'Page not found',
+            message:
+                'The page you requested is unavailable or the link is no longer valid.',
+            onSecondaryAction: () => context.go('/home'),
+            secondaryLabel: 'Go home',
           ),
-        ],
-      ),
-    ],
-    errorBuilder: (context, state) => Scaffold(
-      body: AppErrorView(
-        title: 'Page not found',
-        message:
-            'The page you requested is unavailable or the link is no longer valid.',
-        onSecondaryAction: () => context.go('/home'),
-        secondaryLabel: 'Go home',
-      ),
-    ),
-  );
+        ),
+      );
 
   static GoRouter router = buildRouter();
 

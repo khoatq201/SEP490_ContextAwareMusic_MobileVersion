@@ -974,6 +974,7 @@ class _ScheduleEditorView extends StatelessWidget {
               _CircleActionButton(
                 palette: palette,
                 icon: Icons.play_arrow_rounded,
+                semanticLabel: 'Preview schedule playback',
                 background: AppColors.error,
                 foreground: Colors.white,
                 onTap: () {
@@ -990,6 +991,7 @@ class _ScheduleEditorView extends StatelessWidget {
               _CircleActionButton(
                 palette: palette,
                 icon: Icons.add,
+                semanticLabel: 'Add schedule slot',
                 onTap: isBrandControlled
                     ? () => _showBrandControlledSnack(context)
                     : onAddSlot,
@@ -998,6 +1000,8 @@ class _ScheduleEditorView extends StatelessWidget {
               _CircleActionButton(
                 palette: palette,
                 icon: Icons.more_vert_rounded,
+                semanticLabel: 'Schedule options',
+                controlKey: const ValueKey('schedule-options-button'),
                 onTap: () async {
                   final action = await showModalBottomSheet<_EditorAction>(
                     context: context,
@@ -1164,6 +1168,7 @@ class _ScheduleModeControls extends StatelessWidget {
             title: isBrandControlled
                 ? 'Brand-controlled scheduling'
                 : 'Space-level scheduling',
+            semanticLabel: 'Schedule configuration toggle',
             subtitle: isBrandControlled
                 ? 'This store is in Strict Sync. Local slots are read-only.'
                 : configEnabled
@@ -1179,6 +1184,8 @@ class _ScheduleModeControls extends StatelessWidget {
             title: isBrandControlled
                 ? 'Brand schedule runtime'
                 : 'Scheduling runtime',
+            controlKey: const ValueKey('schedule-runtime-toggle'),
+            semanticLabel: 'Scheduling runtime toggle',
             subtitle: isBrandControlled
                 ? 'Runtime is activated by the brand schedule from backend.'
                 : runtimeDetails.isEmpty
@@ -1199,18 +1206,22 @@ class _ScheduleSwitchRow extends StatelessWidget {
   const _ScheduleSwitchRow({
     required this.palette,
     required this.title,
+    required this.semanticLabel,
     required this.subtitle,
     required this.value,
     required this.enabled,
     required this.onChanged,
+    this.controlKey,
   });
 
   final _SchedulePalette palette;
   final String title;
+  final String semanticLabel;
   final String subtitle;
   final bool value;
   final bool enabled;
   final ValueChanged<bool>? onChanged;
+  final Key? controlKey;
 
   @override
   Widget build(BuildContext context) {
@@ -1241,10 +1252,16 @@ class _ScheduleSwitchRow extends StatelessWidget {
             ],
           ),
         ),
-        Switch.adaptive(
-          value: value,
-          activeThumbColor: palette.accent,
-          onChanged: enabled ? onChanged : null,
+        Semantics(
+          label: semanticLabel,
+          button: true,
+          toggled: value,
+          child: Switch.adaptive(
+            key: controlKey,
+            value: value,
+            activeThumbColor: palette.accent,
+            onChanged: enabled ? onChanged : null,
+          ),
         ),
       ],
     );
@@ -1256,31 +1273,40 @@ class _CircleActionButton extends StatelessWidget {
     required this.palette,
     required this.icon,
     required this.onTap,
+    required this.semanticLabel,
     this.background,
     this.foreground,
+    this.controlKey,
   });
 
   final _SchedulePalette palette;
   final IconData icon;
   final VoidCallback onTap;
+  final String semanticLabel;
   final Color? background;
   final Color? foreground;
+  final Key? controlKey;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: background ?? palette.cardMuted,
-      shape: const CircleBorder(),
-      child: InkWell(
-        onTap: onTap,
-        customBorder: const CircleBorder(),
-        child: SizedBox(
-          width: 52,
-          height: 52,
-          child: Icon(
-            icon,
-            color: foreground ?? palette.textPrimary,
-            size: 24,
+    return Semantics(
+      label: semanticLabel,
+      button: true,
+      child: Material(
+        key: controlKey,
+        color: background ?? palette.cardMuted,
+        shape: const CircleBorder(),
+        child: InkWell(
+          onTap: onTap,
+          customBorder: const CircleBorder(),
+          child: SizedBox(
+            width: 52,
+            height: 52,
+            child: Icon(
+              icon,
+              color: foreground ?? palette.textPrimary,
+              size: 24,
+            ),
           ),
         ),
       ),
@@ -1490,6 +1516,17 @@ class _ScheduleTimeline extends StatelessWidget {
     final top = ((startMinutes - (_startHour * 60)) / 60) * _hourHeight;
     final rawHeight = ((endMinutes - startMinutes) / 60) * _hourHeight;
     final cardHeight = rawHeight < 96 ? 96.0 : rawHeight;
+    final compact = cardHeight <= 110;
+    final contentPadding = EdgeInsets.symmetric(
+      horizontal: compact ? 12 : 16,
+      vertical: compact ? 10 : 16,
+    );
+    final artworkWidth = compact ? 52.0 : 70.0;
+    final artworkHeight = compact ? 56.0 : 82.0;
+    final titleSize = compact ? 14.0 : 18.0;
+    final detailSize = compact ? 11.0 : 13.0;
+    final actionSize = compact ? 30.0 : 34.0;
+    final actionIconSize = compact ? 20.0 : 22.0;
 
     return Positioned(
       top: top,
@@ -1520,78 +1557,86 @@ class _ScheduleTimeline extends StatelessWidget {
             ],
           ),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: contentPadding,
             child: Row(
               children: [
                 _MiniArtwork(
                   label: music?.artworkLabel ?? 'Add\nMusic',
                   primaryHex: music?.primaryHex ?? '#3F3F3F',
                   secondaryHex: music?.secondaryHex ?? '#666666',
-                  width: 70,
-                  height: 82,
+                  width: artworkWidth,
+                  height: artworkHeight,
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: compact ? 10 : 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         music?.title ?? 'Missing music',
-                        maxLines: 2,
+                        maxLines: compact ? 1 : 2,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.poppins(
                           color: Colors.white,
-                          fontSize: 18,
+                          fontSize: titleSize,
                           fontWeight: FontWeight.w700,
                           height: 1.05,
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      SizedBox(height: compact ? 3 : 6),
                       Text(
                         '${slot.startTime} - ${slot.endTime}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.inter(
                           color: Colors.white.withValues(alpha: 0.76),
-                          fontSize: 13,
+                          fontSize: detailSize,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        music?.artist ?? 'Tap to choose music',
-                        style: GoogleFonts.inter(
-                          color: Colors.white.withValues(alpha: 0.76),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
+                      if (!compact) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          music?.artist ?? 'Tap to choose music',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(
+                            color: Colors.white.withValues(alpha: 0.76),
+                            fontSize: detailSize,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 ),
                 const SizedBox(width: 6),
                 Column(
                   mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       Icons.edit_outlined,
                       color: Colors.white.withValues(alpha: 0.9),
-                      size: 22,
+                      size: actionIconSize,
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: compact ? 4 : 8),
                     IconButton(
                       key: ValueKey('schedule-slot-delete-${slot.id}'),
-                      tooltip: 'Delete slot',
+                      tooltip: 'Delete schedule slot',
                       onPressed: () => onSlotDelete(slot),
                       padding: EdgeInsets.zero,
                       visualDensity: VisualDensity.compact,
-                      constraints: const BoxConstraints.tightFor(
-                        width: 34,
-                        height: 34,
+                      constraints: BoxConstraints.tightFor(
+                        width: actionSize,
+                        height: actionSize,
                       ),
                       icon: Icon(
                         Icons.delete_outline,
                         color: Colors.white.withValues(alpha: 0.92),
-                        size: 22,
+                        size: actionIconSize,
                       ),
                     ),
                   ],
