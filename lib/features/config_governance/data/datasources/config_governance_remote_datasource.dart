@@ -40,14 +40,6 @@ abstract class ConfigGovernanceRemoteDataSource {
   Future<String> setStoreGovernanceMode({
     required SetStoreGovernanceModeRequest request,
   });
-
-  Future<String> publishConfigVersion({
-    required PublishConfigVersionRequest request,
-  });
-
-  Future<String> rollbackConfigVersion({
-    required RollbackConfigVersionRequest request,
-  });
 }
 
 class ConfigGovernanceRemoteDataSourceImpl
@@ -147,28 +139,6 @@ class ConfigGovernanceRemoteDataSourceImpl
     );
   }
 
-  @override
-  Future<String> publishConfigVersion({
-    required PublishConfigVersionRequest request,
-  }) {
-    return _post(
-      path: ApiConstants.cmsConfigVersionPublish,
-      data: request.toJson(),
-      fallbackMessage: 'Config version published.',
-    );
-  }
-
-  @override
-  Future<String> rollbackConfigVersion({
-    required RollbackConfigVersionRequest request,
-  }) {
-    return _post(
-      path: ApiConstants.cmsConfigVersionRollback,
-      data: request.toJson(),
-      fallbackMessage: 'Config version rolled back.',
-    );
-  }
-
   Future<PaginationResult<ConfigFlatRowModel>> _getConfig({
     required String path,
     required ConfigQuery query,
@@ -260,48 +230,6 @@ class ConfigGovernanceRemoteDataSourceImpl
     } catch (error) {
       if (error is ServerException) rethrow;
       throw ServerException('Failed to update governance mode: $error');
-    }
-  }
-
-  Future<String> _post({
-    required String path,
-    required Map<String, dynamic> data,
-    required String fallbackMessage,
-  }) async {
-    try {
-      final response = await dioClient.post(path, data: data);
-      final payload = _requireMap(response.data);
-      if (payload['isSuccess'] == false) {
-        throw ServerException(_extractErrorMessage(payload));
-      }
-
-      final message = payload['message']?.toString().trim();
-      if (message != null && message.isNotEmpty) {
-        final responseData = payload['data']?.toString().trim();
-        if (responseData != null &&
-            responseData.isNotEmpty &&
-            !message.contains(responseData)) {
-          return '$message ($responseData)';
-        }
-        return message;
-      }
-
-      final responseData = payload['data']?.toString().trim();
-      if (responseData != null && responseData.isNotEmpty) {
-        return '$fallbackMessage ($responseData)';
-      }
-
-      return fallbackMessage;
-    } on DioException catch (error) {
-      throw ServerException(
-        _extractDioErrorMessage(
-          error,
-          fallback: fallbackMessage,
-        ),
-      );
-    } catch (error) {
-      if (error is ServerException) rethrow;
-      throw ServerException('$fallbackMessage: $error');
     }
   }
 

@@ -85,6 +85,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     emit(state.copyWith(
       status: CamsStatus.loading,
       spaceId: event.spaceId,
+      clearPlaybackState: true,
       clearError: true,
       clearPendingTrackJump: true,
       clearLastCommand: true,
@@ -139,6 +140,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     await _submitOverride(
       emit,
       moodId: event.moodId,
+      manualOverrideTtlSeconds: event.manualOverrideTtlSeconds,
       reason: event.reason,
     );
   }
@@ -436,7 +438,10 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     Emitter<CamsPlaybackState> emit,
   ) async {
     if (!_hasActiveSessionScope('sendCommand:${event.command.name}')) return;
-    if (_isLegacyOptimisticCommand(event.command)) {
+    if (_shouldRelayCommandOptimistically(
+      command: event.command,
+      targetQueueItemId: event.targetQueueItemId,
+    )) {
       _emitPlaybackCommandRelay(
         emit,
         command: event.command,
@@ -569,6 +574,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
       pendingPlaylistId: null,
       pendingOverrideReason: null,
       volumePercent: currentPlayback?.volumePercent ?? 100,
+      isIotDeviceOffline: currentPlayback?.isIotDeviceOffline ?? false,
       isMuted: currentPlayback?.isMuted ?? false,
       queueEndBehavior: currentPlayback?.queueEndBehavior ?? 0,
       spaceQueueItems: currentPlayback?.spaceQueueItems ?? const [],
@@ -592,7 +598,10 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
       return;
     }
 
-    if (!_isLegacyOptimisticCommand(event.command)) {
+    if (!_shouldRelayCommandOptimistically(
+      command: event.command,
+      targetQueueItemId: event.targetQueueItemId,
+    )) {
       return;
     }
 
@@ -609,6 +618,18 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     CamsStateSyncReceived event,
     Emitter<CamsPlaybackState> emit,
   ) {
+    final activeSpaceId = state.spaceId;
+    if (activeSpaceId != null &&
+        activeSpaceId.isNotEmpty &&
+        event.playbackState.spaceId.toLowerCase() !=
+            activeSpaceId.toLowerCase()) {
+      _debugLog(
+        'ignore runtime state for inactive space '
+        'active=$activeSpaceId incoming=${event.playbackState.spaceId}',
+      );
+      return;
+    }
+
     _emitRuntimeState(
       emit,
       event.playbackState,
@@ -703,6 +724,17 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     SpacePlaybackState playbackState, {
     required bool isHubConnected,
   }) {
+    final activeSpaceId = state.spaceId;
+    if (activeSpaceId != null &&
+        activeSpaceId.isNotEmpty &&
+        playbackState.spaceId.toLowerCase() != activeSpaceId.toLowerCase()) {
+      _debugLog(
+        'ignore runtime state for inactive space '
+        'active=$activeSpaceId incoming=${playbackState.spaceId}',
+      );
+      return;
+    }
+
     _debugLog('runtimeState ${_describePlaybackState(playbackState)}');
     emit(state.copyWith(
       status: (playbackState.isStreaming || playbackState.hasPendingPlayback)
@@ -762,6 +794,20 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
         command == PlaybackCommandEnum.seek ||
         command == PlaybackCommandEnum.seekForward ||
         command == PlaybackCommandEnum.seekBackward;
+  }
+
+  bool _shouldRelayCommandOptimistically({
+    required PlaybackCommandEnum command,
+    String? targetQueueItemId,
+  }) {
+    if (_isLegacyOptimisticCommand(command)) return true;
+    final hasTargetQueueItem =
+        targetQueueItemId != null && targetQueueItemId.isNotEmpty;
+    return hasTargetQueueItem &&
+        (command == PlaybackCommandEnum.skipNext ||
+            command == PlaybackCommandEnum.skipPrevious ||
+            command == PlaybackCommandEnum.skipToTrack ||
+            command == PlaybackCommandEnum.trackEnded);
   }
 
   String _previousTapIdentity(SpacePlaybackState playbackState) {

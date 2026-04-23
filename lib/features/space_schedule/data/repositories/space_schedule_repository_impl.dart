@@ -71,6 +71,14 @@ class SpaceScheduleRepositoryImpl implements SpaceScheduleRepository {
     required String spaceName,
     required ScheduleSource source,
   }) async {
+    if (source.type == ScheduleSourceType.template) {
+      return const Left(
+        ServerFailure(
+          'Template sources cannot be applied directly. Use Strict Sync governance to link a template.',
+        ),
+      );
+    }
+
     if (remoteDataSource != null) {
       return _applyRemoteScheduleSource(
         spaceId: spaceId,
@@ -84,8 +92,6 @@ class SpaceScheduleRepositoryImpl implements SpaceScheduleRepository {
         schedule: source.schedule,
         spaceId: spaceId,
         fallbackName: source.title,
-        sourceId: source.id,
-        sourceLabel: source.title,
       );
       await localDataSource.saveDraftSchedule(_toScheduleModel(applied));
       return Right(applied);
@@ -310,8 +316,6 @@ class SpaceScheduleRepositoryImpl implements SpaceScheduleRepository {
             schedule: source.schedule,
             spaceId: spaceId,
             fallbackName: fallbackName,
-            sourceId: source.id,
-            sourceLabel: source.title,
           );
       await localDataSource.saveDraftSchedule(_toScheduleModel(applied));
       return Right(applied);
@@ -496,8 +500,6 @@ class SpaceScheduleRepositoryImpl implements SpaceScheduleRepository {
     required SpaceSchedule schedule,
     required String spaceId,
     required String fallbackName,
-    required String sourceId,
-    required String sourceLabel,
   }) {
     final now = DateTime.now();
     return SpaceSchedule(
@@ -513,8 +515,8 @@ class SpaceScheduleRepositoryImpl implements SpaceScheduleRepository {
           )
           .toList(),
       enabled: schedule.enabled,
-      sourceId: sourceId,
-      sourceLabel: sourceLabel,
+      sourceId: null,
+      sourceLabel: null,
       updatedAt: now,
     );
   }

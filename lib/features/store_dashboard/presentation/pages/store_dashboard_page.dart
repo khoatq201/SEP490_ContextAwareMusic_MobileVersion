@@ -31,6 +31,7 @@ import '../../../space_control/presentation/bloc/space_monitoring_bloc.dart';
 import '../../../space_control/presentation/bloc/space_monitoring_event.dart';
 import '../../../space_schedule/data/datasources/space_schedule_remote_datasource.dart';
 import '../../../space_schedule/domain/entities/schedule_music_item.dart';
+import '../../../space_schedule/domain/entities/schedule_source.dart';
 import '../../../space_schedule/presentation/widgets/brand_schedule_editor_sheet.dart';
 import '../../../store_selection/domain/entities/store_summary.dart';
 import '../../../store_selection/domain/usecases/get_user_stores.dart';
@@ -52,8 +53,6 @@ enum _StoreDashboardToolAction {
   governanceMode,
   strictSyncStores,
   brandSchedule,
-  publishConfigVersion,
-  rollbackConfigVersion,
   musicPolicy,
 }
 
@@ -298,12 +297,6 @@ class StoreDashboardPage extends StatelessWidget {
 
   Future<void> _waitForRouteTeardown() async {
     await WidgetsBinding.instance.endOfFrame;
-  }
-
-  bool _isValidGuid(String value) {
-    return RegExp(
-      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
-    ).hasMatch(value.trim());
   }
 
   Future<void> _showEditStoreDialog(
@@ -565,7 +558,7 @@ class StoreDashboardPage extends StatelessWidget {
     );
     if (stores == null || stores.isEmpty) return;
 
-    final selection = await showModalBottomSheet<Set<String>>(
+    final selection = await showModalBottomSheet<_StrictSyncSelection>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
@@ -574,6 +567,7 @@ class StoreDashboardPage extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (_) => _StrictSyncStoresSheet(
+        brandId: store.brandId,
         stores: stores,
         currentStoreId: store.id,
       ),
@@ -584,9 +578,9 @@ class StoreDashboardPage extends StatelessWidget {
         .where((item) => item.governanceMode == StoreGovernanceMode.strictSync)
         .map((item) => item.id)
         .toSet();
-    final selectedIds = selection.toList(growable: false);
+    final selectedIds = selection.storeIds.toList(growable: false);
     final releasedIds = currentlyStrict
-        .where((storeId) => !selection.contains(storeId))
+        .where((storeId) => !selection.storeIds.contains(storeId))
         .toList(growable: false);
 
     final setMode = sl<SetStoreGovernanceMode>();
@@ -595,6 +589,7 @@ class StoreDashboardPage extends StatelessWidget {
         request: SetStoreGovernanceModeRequest(
           storeIds: selectedIds,
           mode: StoreGovernanceMode.strictSync,
+          sourceId: selection.sourceId,
         ),
       );
       if (!context.mounted) return;
@@ -819,181 +814,6 @@ class StoreDashboardPage extends StatelessWidget {
     );
   }
 
-  Future<void> _showPublishConfigVersionDialog(
-    BuildContext context,
-    Store store,
-  ) async {
-    final noteController = TextEditingController();
-    final request = await showDialog<PublishConfigVersionRequest>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Publish store config snapshot'),
-        content: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 420),
-          child: TextField(
-            controller: noteController,
-            maxLines: 3,
-            decoration: const InputDecoration(
-              labelText: 'Note (optional)',
-              hintText: 'Why this store config snapshot is being published',
-              border: OutlineInputBorder(),
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => _unfocusAndPop<PublishConfigVersionRequest>(
-              dialogContext,
-            ),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () {
-              final note = noteController.text.trim();
-              _unfocusAndPop<PublishConfigVersionRequest>(
-                dialogContext,
-                PublishConfigVersionRequest(
-                  scopeType: ConfigScopeType.store,
-                  scopeId: store.id,
-                  note: note.isEmpty ? null : note,
-                ),
-              );
-            },
-            child: const Text('Publish'),
-          ),
-        ],
-      ),
-    );
-    await _waitForRouteTeardown();
-    noteController.dispose();
-    if (request == null || !context.mounted) return;
-
-    final result = await sl<PublishConfigVersion>()(
-      request: request,
-    );
-    if (!context.mounted) return;
-
-    result.fold(
-      (failure) => _showStoreFailure(
-        context,
-        failure,
-        title: 'Publish config failed',
-      ),
-      (message) => _showStoreSnackBar(
-        context,
-        message.isNotEmpty ? message : 'Store config version published.',
-      ),
-    );
-  }
-
-  Future<void> _showRollbackConfigVersionDialog(
-    BuildContext context,
-    Store store,
-  ) async {
-    final versionController = TextEditingController();
-    final noteController = TextEditingController();
-    String? versionError;
-    final request = await showDialog<RollbackConfigVersionRequest>(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('Rollback store config'),
-          content: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: versionController,
-                  autofocus: true,
-                  onChanged: (_) {
-                    if (versionError != null) {
-                      setState(() => versionError = null);
-                    }
-                  },
-                  decoration: InputDecoration(
-                    labelText: 'Version ID',
-                    hintText: '00000000-0000-0000-0000-000000000000',
-                    helperText: 'Paste the UUID returned by publish snapshot.',
-                    errorText: versionError,
-                    border: const OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: noteController,
-                  maxLines: 3,
-                  decoration: const InputDecoration(
-                    labelText: 'Note (optional)',
-                    hintText: 'Why this rollback is needed',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => _unfocusAndPop<RollbackConfigVersionRequest>(
-                dialogContext,
-              ),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () {
-                final versionId = versionController.text.trim();
-                if (versionId.isEmpty) {
-                  setState(() => versionError = 'Version ID is required.');
-                  return;
-                }
-                if (!_isValidGuid(versionId)) {
-                  setState(
-                    () => versionError = 'Use only the published version UUID.',
-                  );
-                  return;
-                }
-
-                final note = noteController.text.trim();
-                _unfocusAndPop<RollbackConfigVersionRequest>(
-                  dialogContext,
-                  RollbackConfigVersionRequest(
-                    versionId: versionId,
-                    note: note.isEmpty ? null : note,
-                  ),
-                );
-              },
-              child: const Text('Rollback'),
-            ),
-          ],
-        ),
-      ),
-    );
-    await _waitForRouteTeardown();
-    versionController.dispose();
-    noteController.dispose();
-    if (request == null || !context.mounted) return;
-
-    final result = await sl<RollbackConfigVersion>()(request: request);
-    if (!context.mounted) return;
-
-    result.fold(
-      (failure) => _showStoreFailure(
-        context,
-        failure,
-        title: 'Rollback config failed',
-      ),
-      (message) {
-        context.read<StoreDashboardBloc>().add(
-              RefreshStoreDashboard(storeId: store.id),
-            );
-        _showStoreSnackBar(
-          context,
-          message.isNotEmpty ? message : 'Store config version rolled back.',
-        );
-      },
-    );
-  }
-
   String _musicPolicySummary(Store store) {
     if (store.fuzzyOverrideSummary?.hasAnyData == true) {
       return store.fuzzyOverrideLevel?.displayName ?? 'Store override active';
@@ -1124,28 +944,6 @@ class StoreDashboardPage extends StatelessWidget {
                             _StoreDashboardToolAction.brandSchedule,
                           ),
                         ),
-                      if (canManageStore)
-                        ListTile(
-                          leading: const Icon(Icons.publish_outlined),
-                          title: const Text('Publish config snapshot'),
-                          subtitle: const Text(
-                            'Create a store-scope config version',
-                          ),
-                          onTap: () => Navigator.of(sheetContext).pop(
-                            _StoreDashboardToolAction.publishConfigVersion,
-                          ),
-                        ),
-                      if (canManageStore)
-                        ListTile(
-                          leading: const Icon(Icons.restore_outlined),
-                          title: const Text('Rollback config version'),
-                          subtitle: const Text(
-                            'Restore from a published version ID',
-                          ),
-                          onTap: () => Navigator.of(sheetContext).pop(
-                            _StoreDashboardToolAction.rollbackConfigVersion,
-                          ),
-                        ),
                       if (canManageMusicPolicy)
                         ListTile(
                           leading: const Icon(Icons.library_music_outlined),
@@ -1186,12 +984,6 @@ class StoreDashboardPage extends StatelessWidget {
         return;
       case _StoreDashboardToolAction.brandSchedule:
         await _showBrandScheduleEditorSheet(context, store);
-        return;
-      case _StoreDashboardToolAction.publishConfigVersion:
-        await _showPublishConfigVersionDialog(context, store);
-        return;
-      case _StoreDashboardToolAction.rollbackConfigVersion:
-        await _showRollbackConfigVersionDialog(context, store);
         return;
       case _StoreDashboardToolAction.musicPolicy:
         await _showStoreFuzzyOverrideSheet(context, store);
@@ -1405,7 +1197,7 @@ class StoreDashboardPage extends StatelessWidget {
                           crossAxisCount: 2,
                           crossAxisSpacing: AppDimensions.spacingMd,
                           mainAxisSpacing: AppDimensions.spacingMd,
-                          childAspectRatio: 0.85,
+                          childAspectRatio: 0.78,
                         ),
                         itemCount: state.spaces.length,
                         itemBuilder: (context, index) {
@@ -1473,12 +1265,24 @@ class StoreDashboardPage extends StatelessWidget {
   }
 }
 
+class _StrictSyncSelection {
+  const _StrictSyncSelection({
+    required this.storeIds,
+    this.sourceId,
+  });
+
+  final Set<String> storeIds;
+  final String? sourceId;
+}
+
 class _StrictSyncStoresSheet extends StatefulWidget {
   const _StrictSyncStoresSheet({
+    required this.brandId,
     required this.stores,
     required this.currentStoreId,
   });
 
+  final String brandId;
   final List<StoreSummary> stores;
   final String currentStoreId;
 
@@ -1488,6 +1292,10 @@ class _StrictSyncStoresSheet extends StatefulWidget {
 
 class _StrictSyncStoresSheetState extends State<_StrictSyncStoresSheet> {
   late final Set<String> _selectedStoreIds;
+  List<ScheduleSource> _templates = const <ScheduleSource>[];
+  bool _isLoadingTemplates = true;
+  String? _templateError;
+  String? _selectedSourceId;
 
   @override
   void initState() {
@@ -1499,6 +1307,35 @@ class _StrictSyncStoresSheetState extends State<_StrictSyncStoresSheet> {
         .toSet();
     if (_selectedStoreIds.isEmpty) {
       _selectedStoreIds.add(widget.currentStoreId);
+    }
+    _loadTemplates();
+  }
+
+  Future<void> _loadTemplates() async {
+    setState(() {
+      _isLoadingTemplates = true;
+      _templateError = null;
+    });
+
+    try {
+      final templates =
+          await sl<SpaceScheduleRemoteDataSource>().getBrandTemplates(
+        widget.brandId,
+      );
+      if (!mounted) return;
+      setState(() {
+        _templates = templates;
+        _selectedSourceId = templates.isNotEmpty ? templates.first.id : null;
+        _isLoadingTemplates = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _templates = const <ScheduleSource>[];
+        _selectedSourceId = null;
+        _isLoadingTemplates = false;
+        _templateError = error.toString();
+      });
     }
   }
 
@@ -1542,6 +1379,17 @@ class _StrictSyncStoresSheetState extends State<_StrictSyncStoresSheet> {
                     'Selected stores must follow brand scheduling. Stores removed from this list are moved to Freedom mode.',
                   ),
                 ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+              child: _StrictSyncTemplatePicker(
+                templates: _templates,
+                selectedSourceId: _selectedSourceId,
+                isLoading: _isLoadingTemplates,
+                errorMessage: _templateError,
+                onRefresh: _loadTemplates,
+                onChanged: (value) => setState(() => _selectedSourceId = value),
               ),
             ),
             Flexible(
@@ -1588,8 +1436,13 @@ class _StrictSyncStoresSheetState extends State<_StrictSyncStoresSheet> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: FilledButton(
-                      onPressed: () =>
-                          Navigator.pop(context, _selectedStoreIds),
+                      onPressed: () => Navigator.pop(
+                        context,
+                        _StrictSyncSelection(
+                          storeIds: Set<String>.from(_selectedStoreIds),
+                          sourceId: _selectedSourceId,
+                        ),
+                      ),
                       child: const Text('Apply'),
                     ),
                   ),
@@ -1599,6 +1452,104 @@ class _StrictSyncStoresSheetState extends State<_StrictSyncStoresSheet> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _StrictSyncTemplatePicker extends StatelessWidget {
+  const _StrictSyncTemplatePicker({
+    required this.templates,
+    required this.selectedSourceId,
+    required this.isLoading,
+    required this.errorMessage,
+    required this.onRefresh,
+    required this.onChanged,
+  });
+
+  final List<ScheduleSource> templates;
+  final String? selectedSourceId;
+  final bool isLoading;
+  final String? errorMessage;
+  final VoidCallback onRefresh;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    if (isLoading) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest.withAlpha(110),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: theme.colorScheme.outlineVariant),
+        ),
+        child: const Row(
+          children: [
+            SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            SizedBox(width: 12),
+            Expanded(child: Text('Loading Strict Sync templates...')),
+          ],
+        ),
+      );
+    }
+
+    if (errorMessage != null) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.errorContainer.withAlpha(80),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: theme.colorScheme.error.withAlpha(90)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.error_outline_rounded, color: theme.colorScheme.error),
+            const SizedBox(width: 10),
+            const Expanded(
+              child:
+                  Text('Cannot load templates. Strict Sync can still be set.'),
+            ),
+            TextButton(
+              onPressed: onRefresh,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return DropdownButtonFormField<String?>(
+      initialValue: selectedSourceId,
+      isExpanded: true,
+      decoration: const InputDecoration(
+        labelText: 'Strict Sync source template',
+        helperText: 'Optional. Selected template is linked to chosen stores.',
+      ),
+      items: [
+        const DropdownMenuItem<String?>(
+          value: null,
+          child: Text('Link template later'),
+        ),
+        ...templates.map(
+          (template) => DropdownMenuItem<String?>(
+            value: template.id,
+            child: Text(
+              template.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+      ],
+      onChanged: onChanged,
     );
   }
 }

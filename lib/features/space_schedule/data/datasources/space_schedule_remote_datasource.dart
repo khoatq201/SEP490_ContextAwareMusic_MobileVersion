@@ -16,6 +16,8 @@ abstract class SpaceScheduleRemoteDataSource {
 
   Future<List<ScheduleSourceModel>> getBrandLibrary(String brandId);
 
+  Future<List<ScheduleSourceModel>> getBrandTemplates(String brandId);
+
   Future<String> upsertSlot({
     required String spaceId,
     required ScheduleSlot slot,
@@ -134,6 +136,37 @@ class SpaceScheduleRemoteDataSourceImpl
     } catch (error) {
       if (error is ServerException) rethrow;
       throw ServerException('Failed to load brand schedule library: $error');
+    }
+  }
+
+  @override
+  Future<List<ScheduleSourceModel>> getBrandTemplates(String brandId) async {
+    final normalizedBrandId = _requireId(brandId, 'Brand id is required.');
+    try {
+      final response = await dioClient.get(
+        ApiConstants.cmsScheduleBrandTemplates(normalizedBrandId),
+      );
+      final payload = _requireResultMap(response.data);
+      final result = ApiResult<List<ScheduleSourceModel>>.fromJson(
+        payload,
+        fromData: (data) => _parseSourceList(data)
+            .where((source) => source.type == ScheduleSourceType.template)
+            .toList(growable: false),
+      );
+      if (!result.isSuccess || result.data == null) {
+        throw ServerException(result.userFriendlyError);
+      }
+      return result.data!;
+    } on DioException catch (error) {
+      throw ServerException(
+        _extractDioErrorMessage(
+          error,
+          fallback: 'Failed to load brand schedule templates.',
+        ),
+      );
+    } catch (error) {
+      if (error is ServerException) rethrow;
+      throw ServerException('Failed to load brand schedule templates: $error');
     }
   }
 
@@ -338,18 +371,10 @@ class SpaceScheduleRemoteDataSourceImpl
 
   SpaceScheduleBootstrap _parseBootstrap(Map<String, dynamic> json) {
     final draftJson = json['draftSchedule'];
-    final librarySources = _parseSourceList(json['librarySources']);
-    final templateSources = _parseSourceList(json['templateSources'])
-        .map(
-          (source) => ScheduleTemplate(
-            id: source.id,
-            title: source.title,
-            subtitle: source.subtitle,
-            description: source.description,
-            schedule: source.schedule,
-          ),
-        )
+    final librarySources = _parseSourceList(json['librarySources'])
+        .where((source) => source.type != ScheduleSourceType.template)
         .toList(growable: false);
+    const templateSources = <ScheduleTemplate>[];
     final musicCatalog = (json['musicCatalog'] as List<dynamic>? ?? const [])
         .whereType<Map>()
         .map(
@@ -449,6 +474,10 @@ class SpaceScheduleRemoteDataSourceImpl
   }
 
   String _extractErrorMessage(Map<String, dynamic> payload) {
+    final errorCode = payload['errorCode']?.toString();
+    if (errorCode == 'Cams_Error_TemplateSourceNotApplicable') {
+      return 'Template sources cannot be applied directly. Use Strict Sync governance to link a template.';
+    }
     final errors = payload['errors'];
     if (errors is List && errors.isNotEmpty) {
       final detail = errors.first.toString();

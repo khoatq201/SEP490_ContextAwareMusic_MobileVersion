@@ -245,6 +245,7 @@ void main() {
         request: const SetStoreGovernanceModeRequest(
           storeIds: [' store-1 ', '', 'store-2'],
           mode: StoreGovernanceMode.aiMode,
+          sourceId: ' source-template-1 ',
         ),
       );
 
@@ -254,46 +255,7 @@ void main() {
       expect(adapter.lastBody, {
         'storeIds': ['store-1', 'store-2'],
         'mode': 2,
-      });
-    });
-
-    test('publishes store config version', () async {
-      adapter.responsePayload = _successPayload('Config version published.');
-
-      final message = await dataSource.publishConfigVersion(
-        request: const PublishConfigVersionRequest(
-          scopeType: ConfigScopeType.store,
-          scopeId: 'store-1',
-          note: ' Campaign A ',
-        ),
-      );
-
-      expect(message, contains('Config version published.'));
-      expect(adapter.lastMethod, 'POST');
-      expect(adapter.lastPath, '/api/cms/config/version/publish');
-      expect(adapter.lastBody, {
-        'scopeType': 2,
-        'scopeId': 'store-1',
-        'note': 'Campaign A',
-      });
-    });
-
-    test('rolls back config version', () async {
-      adapter.responsePayload = _successPayload('Config version rolled back.');
-
-      final message = await dataSource.rollbackConfigVersion(
-        request: const RollbackConfigVersionRequest(
-          versionId: 'version-1',
-          note: ' Revert campaign ',
-        ),
-      );
-
-      expect(message, contains('Config version rolled back.'));
-      expect(adapter.lastMethod, 'POST');
-      expect(adapter.lastPath, '/api/cms/config/version/rollback');
-      expect(adapter.lastBody, {
-        'versionId': 'version-1',
-        'note': 'Revert campaign',
+        'sourceId': 'source-template-1',
       });
     });
   });

@@ -122,6 +122,36 @@ void main() {
         'trackIds': ['track-1', 'track-2'],
       });
     });
+
+    test('can create brand-wide playlist without storeId', () async {
+      dataSource.createResult = const PlaylistMutationResult(
+        isSuccess: true,
+      );
+      dataSource.playlists = [
+        ApiPlaylistModel.fromJson(const {
+          'id': 'playlist-brand',
+          'name': 'Brand Flow',
+          'storeId': null,
+          'createdAt': '2026-03-25T08:00:00Z',
+        }),
+      ];
+
+      final result = await createLibraryPlaylist(
+        playlistDataSource: dataSource,
+        name: 'Brand Flow',
+        storeId: null,
+        brandId: 'brand-1',
+        createBrandWide: true,
+      );
+
+      expect(result, 'playlist-brand');
+      expect(dataSource.lastCreateRequest?.toJson(), {
+        'name': 'Brand Flow',
+        'storeId': null,
+      });
+      expect(dataSource.lastBrandId, 'brand-1');
+      expect(dataSource.lastStoreId, isNull);
+    });
   });
 }
 
@@ -130,6 +160,7 @@ class _FakePlaylistRemoteDataSource implements PlaylistRemoteDataSource {
   int getPlaylistsCalls = 0;
   PlaylistMutationRequest? lastCreateRequest;
   String? lastSearch;
+  String? lastBrandId;
   String? lastStoreId;
   PlaylistMutationResult createResult =
       const PlaylistMutationResult(isSuccess: true);
@@ -161,6 +192,7 @@ class _FakePlaylistRemoteDataSource implements PlaylistRemoteDataSource {
   }) async {
     getPlaylistsCalls += 1;
     lastSearch = search;
+    lastBrandId = brandId;
     lastStoreId = storeId;
     return PlaylistListResponse(
       items: playlists,

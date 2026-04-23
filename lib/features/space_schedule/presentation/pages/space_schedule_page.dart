@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -477,7 +479,7 @@ class _ScheduleWelcomeView extends StatelessWidget {
           _WelcomeActionCard(
             palette: palette,
             title: 'Load schedule',
-            subtitle: 'Start from your own schedule or a template',
+            subtitle: 'Start from a saved schedule source',
             onTap: onLoadSchedule,
             primaryHex: '#4C117F',
             secondaryHex: '#9E5FFF',
@@ -632,7 +634,9 @@ class _ScheduleSourcePickerView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isLibrary = state.sourcePickerTab == ScheduleSourceType.library;
+    final hasTemplates = state.templateSources.isNotEmpty;
+    final isLibrary =
+        state.sourcePickerTab == ScheduleSourceType.library || !hasTemplates;
     final items = isLibrary
         ? state.librarySources
         : state.templateSources.cast<ScheduleSource>();
@@ -691,16 +695,18 @@ class _ScheduleSourcePickerView extends StatelessWidget {
                           ScheduleSourceType.library),
                     ),
               ),
-              const SizedBox(width: 10),
-              _SourceFilterChip(
-                palette: palette,
-                label: 'Templates',
-                selected: !isLibrary,
-                onTap: () => context.read<SpaceScheduleBloc>().add(
-                      const SpaceScheduleSourceTabChanged(
-                          ScheduleSourceType.template),
-                    ),
-              ),
+              if (hasTemplates) ...[
+                const SizedBox(width: 10),
+                _SourceFilterChip(
+                  palette: palette,
+                  label: 'Templates',
+                  selected: !isLibrary,
+                  onTap: () => context.read<SpaceScheduleBloc>().add(
+                        const SpaceScheduleSourceTabChanged(
+                            ScheduleSourceType.template),
+                      ),
+                ),
+              ],
             ],
           ),
         ),
@@ -1119,7 +1125,7 @@ class _ScheduleEditorView extends StatelessWidget {
   }
 }
 
-class _ScheduleModeControls extends StatelessWidget {
+class _ScheduleModeControls extends StatefulWidget {
   const _ScheduleModeControls({
     required this.palette,
     required this.configEnabled,
@@ -1139,16 +1145,47 @@ class _ScheduleModeControls extends StatelessWidget {
   final ValueChanged<bool>? onRuntimeChanged;
 
   @override
+  State<_ScheduleModeControls> createState() => _ScheduleModeControlsState();
+}
+
+class _ScheduleModeControlsState extends State<_ScheduleModeControls> {
+  late final Timer _ticker;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _ticker.cancel();
+    super.dispose();
+  }
+
+  int? _remainingSecondsUntil(DateTime? utcDeadline) {
+    if (utcDeadline == null) return null;
+    final remaining = utcDeadline.toUtc().difference(DateTime.now().toUtc());
+    return remaining.inSeconds < 0 ? 0 : remaining.inSeconds;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final playback = camsState?.playbackState;
+    final palette = widget.palette;
+    final playback = widget.camsState?.playbackState;
     final runtimeEnabled = playback?.isScheduling ?? false;
+    final remainingSeconds =
+        _remainingSecondsUntil(playback?.schedulingEndsAtUtc) ??
+            playback?.schedulingRemainingSeconds;
     final runtimeDetails = <String>[
       if (runtimeEnabled && playback?.schedulingOriginLabel != null)
         'Origin: ${playback!.schedulingOriginLabel}',
       if (runtimeEnabled && playback?.schedulingSlotId?.isNotEmpty == true)
         'Slot: ${playback!.schedulingSlotId}',
-      if (runtimeEnabled && playback?.schedulingRemainingSeconds != null)
-        'Remaining: ${_formatSeconds(playback!.schedulingRemainingSeconds!)}',
+      if (runtimeEnabled && remainingSeconds != null)
+        'Remaining: ${_formatSeconds(remainingSeconds)}',
       if (runtimeEnabled && playback?.schedulingEndsAtUtc != null)
         'Ends: ${_formatDateTime(playback!.schedulingEndsAtUtc!)}',
     ];
@@ -1165,36 +1202,37 @@ class _ScheduleModeControls extends StatelessWidget {
         children: [
           _ScheduleSwitchRow(
             palette: palette,
-            title: isBrandControlled
+            title: widget.isBrandControlled
                 ? 'Brand-controlled scheduling'
                 : 'Space-level scheduling',
             semanticLabel: 'Schedule configuration toggle',
-            subtitle: isBrandControlled
+            subtitle: widget.isBrandControlled
                 ? 'This store is in Strict Sync. Local slots are read-only.'
-                : configEnabled
+                : widget.configEnabled
                     ? 'Weekly slots are enabled for this space.'
                     : 'Weekly slots are saved but disabled.',
-            value: configEnabled,
-            enabled: !isSaving && !isBrandControlled,
-            onChanged: onConfigChanged,
+            value: widget.configEnabled,
+            enabled: !widget.isSaving && !widget.isBrandControlled,
+            onChanged: widget.onConfigChanged,
           ),
           Divider(height: 18, color: palette.line),
           _ScheduleSwitchRow(
             palette: palette,
-            title: isBrandControlled
+            title: widget.isBrandControlled
                 ? 'Brand schedule runtime'
                 : 'Scheduling runtime',
             controlKey: const ValueKey('schedule-runtime-toggle'),
             semanticLabel: 'Scheduling runtime toggle',
-            subtitle: isBrandControlled
+            subtitle: widget.isBrandControlled
                 ? 'Runtime is activated by the brand schedule from backend.'
                 : runtimeDetails.isEmpty
                     ? 'CAMS will report the active slot when scheduling takes ownership.'
                     : runtimeDetails.join('  |  '),
             value: runtimeEnabled,
-            enabled:
-                !isSaving && !isBrandControlled && onRuntimeChanged != null,
-            onChanged: onRuntimeChanged,
+            enabled: !widget.isSaving &&
+                !widget.isBrandControlled &&
+                widget.onRuntimeChanged != null,
+            onChanged: widget.onRuntimeChanged,
           ),
         ],
       ),

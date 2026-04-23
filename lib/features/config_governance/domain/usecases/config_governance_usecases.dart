@@ -94,27 +94,3 @@ class SetStoreGovernanceMode {
     return repository.setStoreGovernanceMode(request: request);
   }
 }
-
-class PublishConfigVersion {
-  final ConfigGovernanceRepository repository;
-
-  PublishConfigVersion(this.repository);
-
-  Future<Either<Failure, String>> call({
-    required PublishConfigVersionRequest request,
-  }) {
-    return repository.publishConfigVersion(request: request);
-  }
-}
-
-class RollbackConfigVersion {
-  final ConfigGovernanceRepository repository;
-
-  RollbackConfigVersion(this.repository);
-
-  Future<Either<Failure, String>> call({
-    required RollbackConfigVersionRequest request,
-  }) {
-    return repository.rollbackConfigVersion(request: request);
-  }
-}

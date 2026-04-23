@@ -122,7 +122,9 @@ void main() {
     });
 
     tearDown(() async {
-      await bloc.close();
+      if (!bloc.isClosed) {
+        await bloc.close();
+      }
       await authBloc.close();
       await sessionCubit.close();
       storeHubService.dispose();
@@ -262,6 +264,26 @@ void main() {
         bloc.state.storeSpaces?.items.map((space) => space.id).toList(),
         ['space-1', 'space-2'],
       );
+    });
+
+    test('keeps shared StoreHubService alive when LocationBloc closes',
+        () async {
+      bloc.add(const LoadLocationsRequested());
+      await _waitUntil(
+        () =>
+            bloc.state.status == LocationStatus.success &&
+            storeHubService.joinManagerRoomCallCount >= 1,
+      );
+
+      await bloc.close();
+
+      expect(storeHubService.disconnectCallCount, 0);
+      expect(storeHubService.disposeCallCount, 0);
+
+      await storeHubService.disconnect();
+      await storeHubService.connect();
+
+      expect(storeHubService.disposeCallCount, 0);
     });
   });
 }
@@ -580,6 +602,9 @@ class _FakeStoreHubService extends StoreHubService {
   final _connectionController = StreamController<ConnectionStatus>.broadcast();
   ConnectionStatus _status = ConnectionStatus.disconnected;
   int joinManagerRoomCallCount = 0;
+  int disconnectCallCount = 0;
+  int disposeCallCount = 0;
+  bool _isDisposed = false;
 
   @override
   Stream<PlayStreamEvent> get onPlayStream => _playStreamController.stream;
@@ -601,6 +626,9 @@ class _FakeStoreHubService extends StoreHubService {
 
   @override
   Future<void> connect() async {
+    if (_isDisposed) {
+      throw StateError('StoreHubService was disposed');
+    }
     if (_status == ConnectionStatus.connected) {
       return;
     }
@@ -610,6 +638,10 @@ class _FakeStoreHubService extends StoreHubService {
 
   @override
   Future<void> disconnect() async {
+    disconnectCallCount += 1;
+    if (_isDisposed) {
+      throw StateError('StoreHubService was disposed');
+    }
     if (_status == ConnectionStatus.disconnected) {
       return;
     }
@@ -633,6 +665,11 @@ class _FakeStoreHubService extends StoreHubService {
 
   @override
   void dispose() {
+    if (_isDisposed) {
+      return;
+    }
+    _isDisposed = true;
+    disposeCallCount += 1;
     _playStreamController.close();
     _playbackCommandController.close();
     _stateSyncController.close();

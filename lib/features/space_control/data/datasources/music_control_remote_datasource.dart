@@ -9,7 +9,7 @@ abstract class MusicControlRemoteDataSource {
   Future<void> overrideMood({
     required String spaceId,
     required String moodId,
-    required int duration,
+    required int manualOverrideTtlSeconds,
   });
 
   Future<void> sendMusicControl(String spaceId, String action);
@@ -31,14 +31,14 @@ class MusicControlRemoteDataSourceImpl implements MusicControlRemoteDataSource {
   Future<void> overrideMood({
     required String spaceId,
     required String moodId,
-    required int duration,
+    required int manualOverrideTtlSeconds,
   }) async {
     try {
       final response = await dioClient.post(
         ApiConstants.camsOverride(spaceId),
         data: {
           'moodId': moodId,
-          'duration': duration,
+          'manualOverrideTtlSeconds': manualOverrideTtlSeconds,
         },
       );
 

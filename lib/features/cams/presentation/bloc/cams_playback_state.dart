@@ -103,6 +103,7 @@ class CamsPlaybackState extends Equatable {
     String? pendingTrackPlaylistId,
     String? pendingTrackId,
     bool clearError = false,
+    bool clearPlaybackState = false,
     bool clearOverrideResponse = false,
     bool clearLastCommand = false,
     bool clearLastSeekPosition = false,
@@ -113,7 +114,8 @@ class CamsPlaybackState extends Equatable {
     return CamsPlaybackState(
       status: status ?? this.status,
       spaceId: spaceId ?? this.spaceId,
-      playbackState: playbackState ?? this.playbackState,
+      playbackState:
+          clearPlaybackState ? null : (playbackState ?? this.playbackState),
       moods: moods ?? this.moods,
       isOverriding: isOverriding ?? this.isOverriding,
       lastOverrideResponse: clearOverrideResponse

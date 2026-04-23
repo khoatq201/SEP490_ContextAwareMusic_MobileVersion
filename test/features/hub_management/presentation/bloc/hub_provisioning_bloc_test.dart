@@ -442,7 +442,7 @@ class _FakeLocationRepository implements LocationRepository {
     String spaceId,
     String storeId,
   ) async {
-    return Left(ServerFailure('Not implemented in test fake'));
+    return const Left(ServerFailure('Not implemented in test fake'));
   }
 
   @override

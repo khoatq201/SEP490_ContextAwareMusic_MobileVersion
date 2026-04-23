@@ -7,7 +7,7 @@ abstract class MusicControlRepository {
   Future<Either<Failure, void>> overrideMood({
     required String spaceId,
     required String moodId,
-    required int duration,
+    required int manualOverrideTtlSeconds,
   });
 
   /// Send play command to Hub

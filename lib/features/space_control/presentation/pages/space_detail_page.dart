@@ -1282,7 +1282,8 @@ class ManualOverrideCTA extends StatelessWidget {
       ),
       builder: (sheetContext) {
         String mood = currentMood ?? 'happy';
-        int duration = 30;
+        int ttlSeconds = 1800;
+        String ttlInput = ttlSeconds.toString();
         final moods = ['happy', 'chill', 'energetic', 'romantic', 'focus'];
 
         return StatefulBuilder(
@@ -1344,21 +1345,32 @@ class ManualOverrideCTA extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    'Duration (minutes)',
+                    'Override TTL seconds',
                     style: GoogleFonts.inter(
                         color: palette.textMuted, fontSize: 12),
                   ),
-                  Slider(
-                    value: duration.toDouble(),
-                    min: 10,
-                    max: 120,
-                    divisions: 11,
-                    activeColor: palette.accent,
-                    inactiveColor: palette.textMuted.withValues(alpha: 0.2),
-                    label: '$duration',
-                    onChanged: (v) => setModalState(() {
-                      duration = v.round();
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    initialValue: ttlInput,
+                    keyboardType: TextInputType.number,
+                    onChanged: (value) => setModalState(() {
+                      ttlInput = value;
+                      final parsed = int.tryParse(value);
+                      if (parsed != null && parsed > 0) {
+                        ttlSeconds = parsed;
+                      }
                     }),
+                    autovalidateMode: AutovalidateMode.always,
+                    validator: (value) {
+                      final parsed = int.tryParse(value?.trim() ?? '');
+                      if (parsed == null || parsed <= 0) {
+                        return 'Enter a positive number of seconds.';
+                      }
+                      return null;
+                    },
+                    decoration: const InputDecoration(
+                      hintText: '1800',
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Row(
@@ -1387,16 +1399,18 @@ class ManualOverrideCTA extends StatelessWidget {
                             ),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
-                          onPressed: () {
-                            context.read<MusicControlBloc>().add(
-                                  OverrideMoodRequested(
-                                    spaceId: spaceId,
-                                    moodId: mood,
-                                    duration: duration,
-                                  ),
-                                );
-                            Navigator.pop(sheetContext);
-                          },
+                          onPressed: (int.tryParse(ttlInput) ?? 0) > 0
+                              ? () {
+                                  context.read<MusicControlBloc>().add(
+                                        OverrideMoodRequested(
+                                          spaceId: spaceId,
+                                          moodId: mood,
+                                          manualOverrideTtlSeconds: ttlSeconds,
+                                        ),
+                                      );
+                                  Navigator.pop(sheetContext);
+                                }
+                              : null,
                           child: const Text(
                             'Apply',
                             style: TextStyle(fontWeight: FontWeight.w700),

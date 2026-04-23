@@ -472,6 +472,9 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
   Future<void> _showCreatePlaylistDialog() async {
     final session = context.read<SessionCubit>().state;
     final storeId = session.currentStore?.id;
+    final brandId = session.currentStore?.brandId;
+    final canCreateBrandWide =
+        session.currentRole == UserRole.brandManager && brandId != null;
     final guardResult = evaluatePlaylistCreationGuard(
       isPlaybackDevice: session.isPlaybackDevice,
       currentRole: session.currentRole,
@@ -492,6 +495,7 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
         moods: _moods,
         tracks: _tracks,
         storeName: session.currentStore?.name,
+        canCreateBrandWide: canCreateBrandWide,
       ),
     );
 
@@ -503,11 +507,13 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
       final createdPlaylistId = await createLibraryPlaylist(
         playlistDataSource: sl<PlaylistRemoteDataSource>(),
         name: draft.name,
-        storeId: resolvedStoreId,
+        storeId: draft.isBrandWide ? null : resolvedStoreId,
+        brandId: draft.isBrandWide ? brandId : null,
         description: draft.description,
         moodId: draft.moodId,
         isDefault: draft.isDefault ? true : null,
         trackIds: draft.trackIds,
+        createBrandWide: draft.isBrandWide,
       );
 
       await _loadPlaylists();
@@ -515,8 +521,10 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
 
       _showSnackBar(
         draft.trackIds.isEmpty
-            ? 'Playlist created.'
-            : 'Playlist created with ${draft.trackIds.length} track${draft.trackIds.length == 1 ? '' : 's'}.',
+            ? (draft.isBrandWide
+                ? 'Brand-wide playlist created.'
+                : 'Playlist created.')
+            : '${draft.isBrandWide ? 'Brand-wide playlist' : 'Playlist'} created with ${draft.trackIds.length} track${draft.trackIds.length == 1 ? '' : 's'}.',
       );
 
       if (createdPlaylistId != null && createdPlaylistId.isNotEmpty) {
@@ -4084,6 +4092,7 @@ class _CreatePlaylistDraft {
     this.description,
     this.moodId,
     required this.isDefault,
+    required this.isBrandWide,
     required this.trackIds,
   });
 
@@ -4091,6 +4100,7 @@ class _CreatePlaylistDraft {
   final String? description;
   final String? moodId;
   final bool isDefault;
+  final bool isBrandWide;
   final List<String> trackIds;
 }
 
@@ -4099,11 +4109,13 @@ class _CreatePlaylistBottomSheet extends StatefulWidget {
     required this.moods,
     required this.tracks,
     this.storeName,
+    this.canCreateBrandWide = false,
   });
 
   final List<Mood> moods;
   final List<ApiTrack> tracks;
   final String? storeName;
+  final bool canCreateBrandWide;
 
   @override
   State<_CreatePlaylistBottomSheet> createState() =>
@@ -4119,6 +4131,7 @@ class _CreatePlaylistBottomSheetState
   final Set<String> _selectedTrackIds = <String>{};
   String? _selectedMoodId;
   bool _isDefault = false;
+  bool _isBrandWide = false;
 
   @override
   void initState() {
@@ -4189,6 +4202,7 @@ class _CreatePlaylistBottomSheetState
         description: _nullable(_descriptionController.text),
         moodId: _selectedMoodId,
         isDefault: _isDefault,
+        isBrandWide: _isBrandWide,
         trackIds: _selectedTrackIds.toList(growable: false),
       ),
     );
@@ -4266,7 +4280,7 @@ class _CreatePlaylistBottomSheetState
                             const SizedBox(height: 6),
                             Text(
                               widget.storeName?.trim().isNotEmpty == true
-                                  ? 'This playlist will be created for ${widget.storeName}. Add mood, description, default status, or a few starter tracks now.'
+                                  ? 'Create this for ${widget.storeName}, or share it across the brand if available. Add mood, description, default status, or starter tracks now.'
                                   : 'Add mood, description, default status, or a few starter tracks now.',
                               style: GoogleFonts.inter(
                                 color: palette.textMuted,
@@ -4312,7 +4326,7 @@ class _CreatePlaylistBottomSheetState
                               ),
                             ),
                             child: Text(
-                              'Playlist name is required and must stay unique inside the current store. Description, mood, default flag, and starter tracks are optional.',
+                              'Playlist name is required. Brand managers can leave store scope to create a brand-wide playlist shared across stores.',
                               style: GoogleFonts.inter(
                                 color: palette.textMuted,
                                 fontSize: 12,
@@ -4448,6 +4462,34 @@ class _CreatePlaylistBottomSheetState
                               setState(() => _isDefault = value);
                             },
                           ),
+                          if (widget.canCreateBrandWide) ...[
+                            const SizedBox(height: 4),
+                            SwitchListTile.adaptive(
+                              value: _isBrandWide,
+                              contentPadding: EdgeInsets.zero,
+                              activeThumbColor: palette.accent,
+                              activeTrackColor:
+                                  palette.accent.withValues(alpha: 0.32),
+                              title: Text(
+                                'Create as brand-wide playlist',
+                                style: GoogleFonts.inter(
+                                  color: palette.textPrimary,
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              subtitle: Text(
+                                'Shared playlist with no storeId; Brand Managers can manage it across the brand.',
+                                style: GoogleFonts.inter(
+                                  color: palette.textMuted,
+                                  fontSize: 11.5,
+                                ),
+                              ),
+                              onChanged: (value) {
+                                setState(() => _isBrandWide = value);
+                              },
+                            ),
+                          ],
                           const SizedBox(height: 8),
                           Container(
                             width: double.infinity,

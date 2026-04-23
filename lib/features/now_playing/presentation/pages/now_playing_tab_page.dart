@@ -464,6 +464,10 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
                   const SizedBox(height: 12),
                   _LocalPreviewBanner(palette: palette),
                 ],
+                if (camsState.playbackState?.isIotDeviceOffline == true) ...[
+                  const SizedBox(height: 12),
+                  _IotOfflineBanner(palette: palette),
+                ],
 
                 const SizedBox(height: 24),
 
@@ -1765,6 +1769,46 @@ class _LocalPreviewBanner extends StatelessWidget {
   }
 }
 
+class _IotOfflineBanner extends StatelessWidget {
+  const _IotOfflineBanner({required this.palette});
+
+  final _NPPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: palette.overlay,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: palette.border),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            LucideIcons.wifiOff,
+            color: AppColors.warning,
+            size: 18,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'IoT device is offline. Manual override remains available while CAMS waits for fresh telemetry.',
+              style: GoogleFonts.inter(
+                color: palette.textMuted,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                height: 1.35,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _TopBar extends StatelessWidget {
   const _TopBar({
     required this.spaceName,
@@ -2425,7 +2469,7 @@ class _QueueTrackActions extends StatelessWidget {
 // ============================================================================
 // Manual / Auto Override panel (same behavior as Home)
 // ============================================================================
-class _RuntimeStatusPanel extends StatelessWidget {
+class _RuntimeStatusPanel extends StatefulWidget {
   const _RuntimeStatusPanel({
     required this.playbackState,
     required this.palette,
@@ -2439,14 +2483,49 @@ class _RuntimeStatusPanel extends StatelessWidget {
   final ValueChanged<bool> onSchedulingChanged;
 
   @override
+  State<_RuntimeStatusPanel> createState() => _RuntimeStatusPanelState();
+}
+
+class _RuntimeStatusPanelState extends State<_RuntimeStatusPanel> {
+  late final Timer _ticker;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _ticker.cancel();
+    super.dispose();
+  }
+
+  int? _remainingSecondsUntil(DateTime? utcDeadline) {
+    if (utcDeadline == null) return null;
+    final remaining = utcDeadline.toUtc().difference(DateTime.now().toUtc());
+    return remaining.inSeconds < 0 ? 0 : remaining.inSeconds;
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final playbackState = widget.playbackState;
+    final palette = widget.palette;
+    final manualRemainingSeconds =
+        _remainingSecondsUntil(playbackState.manualOverrideExpiresAtUtc) ??
+            playbackState.manualOverrideRemainingSeconds;
+    final schedulingRemainingSeconds =
+        _remainingSecondsUntil(playbackState.schedulingEndsAtUtc) ??
+            playbackState.schedulingRemainingSeconds;
     final manualRows = <MapEntry<String, String>>[
       if (playbackState.overrideReason?.trim().isNotEmpty == true)
         MapEntry('Reason', playbackState.overrideReason!.trim()),
-      if (playbackState.manualOverrideRemainingSeconds != null)
+      if (manualRemainingSeconds != null)
         MapEntry(
           'Remaining',
-          _formatRuntimeSeconds(playbackState.manualOverrideRemainingSeconds!),
+          _formatRuntimeSeconds(manualRemainingSeconds),
         ),
       if (playbackState.manualOverrideActivatedAtUtc != null)
         MapEntry(
@@ -2464,10 +2543,10 @@ class _RuntimeStatusPanel extends StatelessWidget {
         MapEntry('Origin', playbackState.schedulingOriginLabel!),
       if (playbackState.schedulingSlotId?.trim().isNotEmpty == true)
         MapEntry('Slot', playbackState.schedulingSlotId!.trim()),
-      if (playbackState.schedulingRemainingSeconds != null)
+      if (schedulingRemainingSeconds != null)
         MapEntry(
           'Remaining',
-          _formatRuntimeSeconds(playbackState.schedulingRemainingSeconds!),
+          _formatRuntimeSeconds(schedulingRemainingSeconds),
         ),
       if (playbackState.schedulingEndsAtUtc != null)
         MapEntry(
@@ -2504,7 +2583,7 @@ class _RuntimeStatusPanel extends StatelessWidget {
               Switch.adaptive(
                 value: playbackState.isScheduling,
                 activeThumbColor: palette.accent,
-                onChanged: isBusy ? null : onSchedulingChanged,
+                onChanged: widget.isBusy ? null : widget.onSchedulingChanged,
               ),
             ],
           ),
@@ -2647,10 +2726,10 @@ class _AiExplainabilityPanel extends StatelessWidget {
 
     if (!showManualState && data != null) {
       if (data.moodName?.trim().isNotEmpty ?? false) {
-        stats.add(MapEntry('Mood', data.moodName!.trim()));
+        stats.add(MapEntry('Current Mood', data.moodName!.trim()));
       }
       if (data.bpmBandLabel != null) {
-        stats.add(MapEntry('BPM band', data.bpmBandLabel!));
+        stats.add(MapEntry('BPM Range', data.bpmBandLabel!));
       }
       if (data.bpmTargetLabel != null) {
         stats.add(MapEntry('Target', data.bpmTargetLabel!));

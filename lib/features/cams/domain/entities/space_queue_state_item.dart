@@ -9,6 +9,7 @@ class SpaceQueueStateItem extends Equatable {
   final int queueStatus;
   final int source;
   final String? hlsUrl;
+  final String? coverImageUrl;
   final bool isReadyToStream;
 
   const SpaceQueueStateItem({
@@ -19,6 +20,7 @@ class SpaceQueueStateItem extends Equatable {
     required this.queueStatus,
     required this.source,
     this.hlsUrl,
+    this.coverImageUrl,
     this.isReadyToStream = false,
   });
 
@@ -31,6 +33,7 @@ class SpaceQueueStateItem extends Equatable {
         queueStatus,
         source,
         hlsUrl,
+        coverImageUrl,
         isReadyToStream,
       ];
 }

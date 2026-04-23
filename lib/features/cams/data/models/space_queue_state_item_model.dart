@@ -9,6 +9,7 @@ class SpaceQueueStateItemModel extends SpaceQueueStateItem {
     required super.queueStatus,
     required super.source,
     super.hlsUrl,
+    super.coverImageUrl,
     super.isReadyToStream,
   });
 
@@ -21,6 +22,7 @@ class SpaceQueueStateItemModel extends SpaceQueueStateItem {
       queueStatus: _readNum(json, 'queueStatus')?.toInt() ?? 0,
       source: _readNum(json, 'source')?.toInt() ?? 0,
       hlsUrl: _readString(json, 'hlsUrl'),
+      coverImageUrl: _readString(json, 'coverImageUrl'),
       isReadyToStream: _readBool(json, 'isReadyToStream') ?? false,
     );
   }
@@ -34,6 +36,7 @@ class SpaceQueueStateItemModel extends SpaceQueueStateItem {
       'queueStatus': queueStatus,
       'source': source,
       'hlsUrl': hlsUrl,
+      'coverImageUrl': coverImageUrl,
       'isReadyToStream': isReadyToStream,
     };
   }

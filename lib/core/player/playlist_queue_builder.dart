@@ -57,10 +57,9 @@ List<Track> buildSpaceQueue(
     final resolvedTitle = (queueItem.trackName?.trim().isNotEmpty ?? false)
         ? queueItem.trackName!.trim()
         : metadata?.title ?? 'Unknown Track';
-    final resolvedArtist =
-        (metadata?.artist.trim().isNotEmpty ?? false)
-            ? metadata!.artist
-            : 'Unknown Artist';
+    final resolvedArtist = (metadata?.artist.trim().isNotEmpty ?? false)
+        ? metadata!.artist
+        : 'Unknown Artist';
     return Track(
       id: queueItem.trackId,
       queueItemId: queueItem.queueItemId,
@@ -70,7 +69,7 @@ List<Track> buildSpaceQueue(
       localPath: metadata?.localPath,
       moodTags: metadata?.moodTags ?? const [],
       duration: metadata?.duration,
-      albumArt: metadata?.albumArt,
+      albumArt: queueItem.coverImageUrl ?? metadata?.albumArt,
       seekOffsetSeconds: metadata?.seekOffsetSeconds,
     );
   });

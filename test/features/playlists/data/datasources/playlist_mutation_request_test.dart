@@ -28,6 +28,18 @@ void main() {
         'trackIds': <String>[],
       });
     });
+
+    test('serializes explicit brand-wide playlist with storeId null', () {
+      const request = PlaylistMutationRequest(
+        name: 'Brand Flow',
+        explicitBrandWide: true,
+      );
+
+      expect(request.toJson(), {
+        'name': 'Brand Flow',
+        'storeId': null,
+      });
+    });
   });
 
   group('PlaylistMutationResult', () {

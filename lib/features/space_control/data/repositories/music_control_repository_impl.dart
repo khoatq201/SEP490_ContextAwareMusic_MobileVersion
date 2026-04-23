@@ -20,7 +20,7 @@ class MusicControlRepositoryImpl implements MusicControlRepository {
   Future<Either<Failure, void>> overrideMood({
     required String spaceId,
     required String moodId,
-    required int duration,
+    required int manualOverrideTtlSeconds,
   }) async {
     if (!await networkInfo.isConnected) {
       return const Left(NetworkFailure());
@@ -30,7 +30,7 @@ class MusicControlRepositoryImpl implements MusicControlRepository {
       await remoteDataSource.overrideMood(
         spaceId: spaceId,
         moodId: moodId,
-        duration: duration,
+        manualOverrideTtlSeconds: manualOverrideTtlSeconds,
       );
       return const Right(null);
     } on ServerException catch (e) {

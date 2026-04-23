@@ -91,6 +91,7 @@ class PlaylistMutationRequest {
   final String? description;
   final bool? isDefault;
   final List<String>? trackIds;
+  final bool explicitBrandWide;
 
   const PlaylistMutationRequest({
     this.name,
@@ -99,12 +100,16 @@ class PlaylistMutationRequest {
     this.description,
     this.isDefault,
     this.trackIds,
+    this.explicitBrandWide = false,
   });
 
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
       if (name != null && name!.trim().isNotEmpty) 'name': name!.trim(),
-      if (storeId != null && storeId!.trim().isNotEmpty) 'storeId': storeId,
+      if (storeId != null && storeId!.trim().isNotEmpty)
+        'storeId': storeId!.trim()
+      else if (explicitBrandWide)
+        'storeId': null,
       if (moodId != null && moodId!.trim().isNotEmpty) 'moodId': moodId,
       if (description != null) 'description': description,
       if (isDefault != null) 'isDefault': isDefault,

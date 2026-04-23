@@ -70,7 +70,7 @@ void main() {
       expect(result.draftSchedule?.slots.single.musicId, 'playlist-1');
       expect(result.draftSchedule?.slots.single.daysOfWeek, [0, 1]);
       expect(result.librarySources.single.id, 'library-1');
-      expect(result.templateSources.single.id, 'template-1');
+      expect(result.templateSources, isEmpty);
       expect(result.musicCatalog.single.title, 'Lunch Mix');
     });
 

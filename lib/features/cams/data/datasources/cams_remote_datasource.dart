@@ -3,6 +3,7 @@ import '../models/space_queue_state_item_model.dart';
 import '../models/override_response_model.dart';
 import '../models/pair_code_snapshot_model.dart';
 import '../models/pair_device_info_model.dart';
+import '../../domain/entities/space_playback_state.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/error/exceptions.dart';
@@ -109,6 +110,12 @@ abstract class CamsRemoteDataSource {
   });
 
   Future<SpacePlaybackStateModel> getSpaceStateForPlaybackDevice();
+
+  Future<SpacePlaybackExplainability?> getFuzzyProfileBpmGuidance({
+    required String spaceId,
+    required String? storeId,
+    required String? moodName,
+  });
 
   Future<PairDeviceInfoModel> getPairDeviceInfoForManager(String spaceId);
 
@@ -496,6 +503,47 @@ class CamsRemoteDataSourceImpl implements CamsRemoteDataSource {
     }
   }
 
+  @override
+  Future<SpacePlaybackExplainability?> getFuzzyProfileBpmGuidance({
+    required String spaceId,
+    required String? storeId,
+    required String? moodName,
+  }) async {
+    final bandKey = _resolveBpmBandKey(moodName);
+    if (bandKey == null) return null;
+
+    final paths = <String>[
+      if (spaceId.trim().isNotEmpty)
+        ApiConstants.fuzzyMusicProfileForSpace(spaceId.trim()),
+      if (storeId?.trim().isNotEmpty ?? false)
+        ApiConstants.fuzzyMusicProfileForStore(storeId!.trim()),
+      ApiConstants.fuzzyMusicProfileForCurrentStore,
+    ];
+
+    for (final path in paths) {
+      try {
+        final response = await dioClient.get(path);
+        final profile = _extractFuzzyProfilePayload(response.data);
+        if (profile == null) continue;
+        final guidance = _buildBpmGuidanceFromProfile(
+          profile: profile,
+          bandKey: bandKey,
+          moodName: moodName,
+        );
+        if (guidance != null) return guidance;
+      } on DioException catch (e) {
+        if (_isScopeFallbackStatusCode(e.response?.statusCode)) {
+          continue;
+        }
+        continue;
+      } catch (_) {
+        continue;
+      }
+    }
+
+    return null;
+  }
+
   Future<void> _postWithScope({
     required String spaceId,
     required String Function(String spaceId) managerScopedPathBuilder,
@@ -623,6 +671,96 @@ class CamsRemoteDataSourceImpl implements CamsRemoteDataSource {
       return SpaceQueueStateItemModel.listFromDynamic(body);
     }
     throw const ServerException('Invalid queue response');
+  }
+
+  Map<String, dynamic>? _extractFuzzyProfilePayload(dynamic body) {
+    if (body is Map<String, dynamic>) {
+      final data = body['data'];
+      if (data is Map<String, dynamic>) return data;
+      if (data is Map) return Map<String, dynamic>.from(data);
+      if (data is List) return _firstMap(data);
+      return body;
+    }
+    if (body is Map) {
+      final normalized = Map<String, dynamic>.from(body);
+      final data = normalized['data'];
+      if (data is Map<String, dynamic>) return data;
+      if (data is Map) return Map<String, dynamic>.from(data);
+      if (data is List) return _firstMap(data);
+      return normalized;
+    }
+    if (body is List) return _firstMap(body);
+    return null;
+  }
+
+  Map<String, dynamic>? _firstMap(List<dynamic> entries) {
+    for (final entry in entries) {
+      if (entry is Map<String, dynamic>) return entry;
+      if (entry is Map) return Map<String, dynamic>.from(entry);
+    }
+    return null;
+  }
+
+  SpacePlaybackExplainability? _buildBpmGuidanceFromProfile({
+    required Map<String, dynamic> profile,
+    required String bandKey,
+    required String? moodName,
+  }) {
+    final min = _readInt(profile, '${bandKey}BpmMin');
+    final max = _readInt(profile, '${bandKey}BpmMax');
+    if (min == null || max == null) return null;
+
+    final target =
+        _readInt(profile, '${bandKey}BpmTarget') ?? ((min + max) / 2).round();
+    return SpacePlaybackExplainability(
+      moodName: moodName?.trim(),
+      recommendedBpmMin: min,
+      recommendedBpmMax: max,
+      recommendedBpmTarget: target,
+      fuzzyProfileName: _readString(profile, 'name') ??
+          _readString(profile, 'profileName') ??
+          _readString(profile, 'fuzzyProfileName'),
+      fuzzyProfileTemplate: _readString(profile, 'templateKey') ??
+          _readString(profile, 'templateName') ??
+          _readString(profile, 'fuzzyProfileTemplate'),
+    );
+  }
+
+  String? _resolveBpmBandKey(String? moodName) {
+    final normalized = moodName?.trim().toLowerCase();
+    if (normalized == null || normalized.isEmpty) return null;
+    if (normalized.contains('focus')) return 'focus';
+    if (normalized.contains('chill') || normalized.contains('calm')) {
+      return 'chill';
+    }
+    if (normalized.contains('energetic') ||
+        normalized.contains('energy') ||
+        normalized.contains('active')) {
+      return 'energetic';
+    }
+    return null;
+  }
+
+  dynamic _readValue(Map<String, dynamic> json, String key) {
+    if (json.containsKey(key)) return json[key];
+    if (key.isEmpty) return null;
+    final pascalCaseKey = '${key[0].toUpperCase()}${key.substring(1)}';
+    return json[pascalCaseKey];
+  }
+
+  int? _readInt(Map<String, dynamic> json, String key) {
+    final value = _readValue(json, key);
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value.trim());
+    return null;
+  }
+
+  String? _readString(Map<String, dynamic> json, String key) {
+    final value = _readValue(json, key);
+    if (value == null) return null;
+    final text = value.toString().trim();
+    return text.isEmpty ? null : text;
   }
 
   @override

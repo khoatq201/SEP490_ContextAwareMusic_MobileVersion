@@ -84,10 +84,12 @@ class ConfigValueUpsertRequest extends Equatable {
 class SetStoreGovernanceModeRequest extends Equatable {
   final List<String> storeIds;
   final StoreGovernanceMode mode;
+  final String? sourceId;
 
   const SetStoreGovernanceModeRequest({
     required this.storeIds,
     required this.mode,
+    this.sourceId,
   });
 
   Map<String, dynamic> toJson() {
@@ -95,58 +97,16 @@ class SetStoreGovernanceModeRequest extends Equatable {
         .map((id) => id.trim())
         .where((id) => id.isNotEmpty)
         .toList(growable: false);
+    final normalizedSourceId = sourceId?.trim();
 
     return {
       'storeIds': normalizedStoreIds,
       'mode': mode.value,
+      if (normalizedSourceId != null && normalizedSourceId.isNotEmpty)
+        'sourceId': normalizedSourceId,
     };
   }
 
   @override
-  List<Object?> get props => [storeIds, mode];
-}
-
-class PublishConfigVersionRequest extends Equatable {
-  final ConfigScopeType scopeType;
-  final String scopeId;
-  final String? note;
-
-  const PublishConfigVersionRequest({
-    required this.scopeType,
-    required this.scopeId,
-    this.note,
-  });
-
-  Map<String, dynamic> toJson() {
-    final trimmedNote = note?.trim();
-    return {
-      'scopeType': scopeType.value,
-      'scopeId': scopeId.trim(),
-      if (trimmedNote != null && trimmedNote.isNotEmpty) 'note': trimmedNote,
-    };
-  }
-
-  @override
-  List<Object?> get props => [scopeType, scopeId, note];
-}
-
-class RollbackConfigVersionRequest extends Equatable {
-  final String versionId;
-  final String? note;
-
-  const RollbackConfigVersionRequest({
-    required this.versionId,
-    this.note,
-  });
-
-  Map<String, dynamic> toJson() {
-    final trimmedNote = note?.trim();
-    return {
-      'versionId': versionId.trim(),
-      if (trimmedNote != null && trimmedNote.isNotEmpty) 'note': trimmedNote,
-    };
-  }
-
-  @override
-  List<Object?> get props => [versionId, note];
+  List<Object?> get props => [storeIds, mode, sourceId];
 }

@@ -382,13 +382,36 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     ));
   }
 
-  void _onContextUpdated(
-      PlayerContextUpdated event, Emitter<PlayerState> emit) {
+  Future<void> _onContextUpdated(
+      PlayerContextUpdated event, Emitter<PlayerState> emit) async {
+    final isSpaceChanged = state.activeSpaceId != null &&
+        state.activeSpaceId!.toLowerCase() != event.spaceId.toLowerCase();
+    final previousSpaceId = state.activeSpaceId;
+    final availableSpaces =
+        event.availableSpaces.isNotEmpty || state.activeStoreId != event.storeId
+            ? event.availableSpaces
+            : state.availableSpaces;
+
+    if (isSpaceChanged) {
+      await _audioService.stop();
+      emit(PlayerState(
+        activeStoreId: event.storeId,
+        activeSpaceId: event.spaceId,
+        activeSpaceName: event.spaceName,
+        availableSpaces: availableSpaces,
+      ));
+      _debugLog(
+        'context switched from ${previousSpaceId ?? '-'} '
+        'to ${event.spaceId} -> cleared playback state',
+      );
+      return;
+    }
+
     emit(state.copyWith(
       activeStoreId: event.storeId,
       activeSpaceId: event.spaceId,
       activeSpaceName: event.spaceName,
-      availableSpaces: event.availableSpaces,
+      availableSpaces: availableSpaces,
     ));
   }
 

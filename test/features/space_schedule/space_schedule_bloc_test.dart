@@ -47,7 +47,7 @@ void main() {
       expect(bloc.state.draftSchedule!.slots.length, 1);
     });
 
-    test('applies template source and saves a library copy', () async {
+    test('applies library source and saves a library copy', () async {
       final storage = InMemoryLocalStorageService();
       final bloc = buildSpaceScheduleBloc(storage: storage);
       addTearDown(() => closeBloc(bloc));
@@ -61,12 +61,12 @@ void main() {
       );
       await waitForScheduleData();
 
-      final template = bloc.state.templateSources.first;
-      bloc.add(SpaceScheduleSourceSelected(template));
+      final source = bloc.state.librarySources.first;
+      bloc.add(SpaceScheduleSourceSelected(source));
       await waitForScheduleData();
 
       expect(bloc.state.stage, SpaceScheduleStage.editor);
-      expect(bloc.state.draftSchedule?.sourceId, template.id);
+      expect(bloc.state.draftSchedule?.sourceId, isNull);
 
       bloc.add(
         const SpaceScheduleSavedToLibrary(

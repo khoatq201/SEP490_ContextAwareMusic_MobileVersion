@@ -3,11 +3,13 @@ import '../../playlists/data/datasources/playlist_remote_datasource.dart';
 Future<String?> createLibraryPlaylist({
   required PlaylistRemoteDataSource playlistDataSource,
   required String name,
-  required String storeId,
+  String? storeId,
+  String? brandId,
   String? description,
   String? moodId,
   bool? isDefault,
   List<String>? trackIds,
+  bool createBrandWide = false,
   int listPageSize = 50,
 }) async {
   final trimmedName = name.trim();
@@ -15,7 +17,8 @@ Future<String?> createLibraryPlaylist({
     return null;
   }
 
-  final trimmedStoreId = storeId.trim();
+  final trimmedStoreId = _trimOrNull(storeId);
+  final trimmedBrandId = _trimOrNull(brandId);
   final normalizedDescription = _trimOrNull(description);
   final normalizedMoodId = _trimOrNull(moodId);
   final normalizedTrackIds = _normalizeTrackIds(trackIds);
@@ -28,6 +31,7 @@ Future<String?> createLibraryPlaylist({
       moodId: normalizedMoodId,
       isDefault: isDefault,
       trackIds: normalizedTrackIds,
+      explicitBrandWide: createBrandWide,
     ),
   );
 
@@ -39,7 +43,8 @@ Future<String?> createLibraryPlaylist({
   final playlists = await playlistDataSource.getPlaylists(
     page: 1,
     pageSize: listPageSize,
-    storeId: trimmedStoreId,
+    brandId: createBrandWide ? trimmedBrandId : null,
+    storeId: createBrandWide ? null : trimmedStoreId,
     search: trimmedName,
   );
 

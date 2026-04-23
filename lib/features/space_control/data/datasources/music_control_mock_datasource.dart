@@ -46,12 +46,12 @@ class MusicControlMockDataSource implements MusicControlRemoteDataSource {
   Future<void> overrideMood({
     required String spaceId,
     required String moodId,
-    required int duration,
+    required int manualOverrideTtlSeconds,
   }) async {
     await Future.delayed(const Duration(milliseconds: 200));
     // Mock mood override - in real app would trigger playlist change
     developer.log(
-      'Mock: Overriding mood to $moodId for $duration minutes in space $spaceId',
+      'Mock: Overriding mood to $moodId for $manualOverrideTtlSeconds seconds in space $spaceId',
       name: 'MusicControlMockDataSource',
     );
   }

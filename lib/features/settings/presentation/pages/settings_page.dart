@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/enums/user_role.dart';
 import '../../../../core/player/player_bloc.dart';
 import '../../../../core/presentation/shell_layout_metrics.dart';
 import '../../../../core/session/session_cubit.dart';
@@ -16,6 +17,8 @@ import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../cams/domain/usecases/pairing_usecases.dart';
+import '../../../music_policy/data/datasources/fuzzy_music_profile_remote_datasource.dart';
+import '../../../music_policy/domain/entities/fuzzy_music_profile.dart';
 import '../bloc/settings_cubit.dart';
 import '../bloc/settings_state.dart';
 
@@ -167,6 +170,16 @@ class SettingsPage extends StatelessWidget {
                         .read<SessionCubit>()
                         .setManagerLocalPlaybackEnabled(enabled),
                   ),
+                  if (session.currentStore != null) ...[
+                    const SizedBox(height: 12),
+                    _AutoVolumeSettingsCard(
+                      palette: palette,
+                      storeId: session.currentStore!.id,
+                      spaceId: session.currentSpace?.id,
+                      useStoreSessionScope:
+                          session.currentRole != UserRole.brandManager,
+                    ),
+                  ],
                 ],
                 const SizedBox(height: 20),
                 _SectionTitle(title: 'Quick Access', palette: palette),
@@ -987,6 +1000,311 @@ class _ManagerPlaybackPreferenceCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _AutoVolumeSettingsCard extends StatefulWidget {
+  const _AutoVolumeSettingsCard({
+    required this.palette,
+    required this.storeId,
+    required this.spaceId,
+    required this.useStoreSessionScope,
+  });
+
+  final _SettingsPalette palette;
+  final String storeId;
+  final String? spaceId;
+  final bool useStoreSessionScope;
+
+  @override
+  State<_AutoVolumeSettingsCard> createState() =>
+      _AutoVolumeSettingsCardState();
+}
+
+class _AutoVolumeSettingsCardState extends State<_AutoVolumeSettingsCard> {
+  FuzzyMusicProfile? _profile;
+  bool _isLoading = true;
+  bool _isSaving = false;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  @override
+  void didUpdateWidget(covariant _AutoVolumeSettingsCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.storeId != widget.storeId ||
+        oldWidget.spaceId != widget.spaceId ||
+        oldWidget.useStoreSessionScope != widget.useStoreSessionScope) {
+      _loadProfile();
+    }
+  }
+
+  Future<void> _loadProfile() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final dataSource = sl<FuzzyMusicProfileRemoteDataSource>();
+      FuzzyMusicProfile profile;
+      final spaceId = widget.spaceId?.trim();
+      if (spaceId != null && spaceId.isNotEmpty) {
+        try {
+          profile = await dataSource.getSpaceProfile(spaceId);
+        } catch (_) {
+          profile = widget.useStoreSessionScope
+              ? await dataSource.getCurrentStoreProfile()
+              : await dataSource.getStoreProfile(widget.storeId);
+        }
+      } else {
+        profile = widget.useStoreSessionScope
+            ? await dataSource.getCurrentStoreProfile()
+            : await dataSource.getStoreProfile(widget.storeId);
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _profile = profile;
+        _isLoading = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _profile = null;
+        _isLoading = false;
+        _errorMessage = error.toString();
+      });
+    }
+  }
+
+  Future<void> _setAutoVolume(bool enabled) async {
+    final current = _profile;
+    if (current == null || _isSaving) return;
+
+    setState(() {
+      _isSaving = true;
+      _errorMessage = null;
+      _profile = current.copyWith(autoVolumeEnabled: enabled);
+    });
+
+    try {
+      final dataSource = sl<FuzzyMusicProfileRemoteDataSource>();
+      final spaceId = widget.spaceId?.trim();
+      if (spaceId != null && spaceId.isNotEmpty) {
+        await dataSource.setSpaceAutoVolume(
+          spaceId: spaceId,
+          enabled: enabled,
+        );
+      } else if (widget.useStoreSessionScope) {
+        await dataSource.setCurrentStoreAutoVolume(enabled: enabled);
+      } else {
+        await dataSource.setStoreAutoVolume(
+          storeId: widget.storeId,
+          enabled: enabled,
+        );
+      }
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _profile = current;
+        _isSaving = false;
+        _errorMessage = error.toString();
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = widget.palette;
+    final profile = _profile;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: palette.card,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: palette.border),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: palette.panel,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(
+              LucideIcons.activity,
+              size: 18,
+              color: palette.accent,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Auto Volume',
+                  style: GoogleFonts.poppins(
+                    color: palette.textPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                if (_isLoading)
+                  Text(
+                    'Loading music profile...',
+                    style: GoogleFonts.inter(
+                      color: palette.textMuted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  )
+                else if (profile == null)
+                  _AutoVolumeErrorRow(
+                    palette: palette,
+                    message: 'Music profile unavailable.',
+                    onRetry: _loadProfile,
+                  )
+                else ...[
+                  Text(
+                    profile.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      color: palette.textMuted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _AutoVolumeMetric(
+                        label: 'Range',
+                        value: profile.autoVolumeRangeLabel,
+                        palette: palette,
+                      ),
+                      _AutoVolumeMetric(
+                        label: 'Quiet/Mod/Loud',
+                        value: profile.autoVolumeStepsLabel,
+                        palette: palette,
+                      ),
+                      _AutoVolumeMetric(
+                        label: 'Deadband',
+                        value: '${profile.autoVolumeDeadbandPercent}%',
+                        palette: palette,
+                      ),
+                    ],
+                  ),
+                ],
+                if (_errorMessage != null && profile != null) ...[
+                  const SizedBox(height: 10),
+                  _AutoVolumeErrorRow(
+                    palette: palette,
+                    message: 'Update failed.',
+                    onRetry: _loadProfile,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          if (_isLoading)
+            const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          else
+            Switch.adaptive(
+              value: profile?.autoVolumeEnabled ?? false,
+              onChanged: profile == null || _isSaving ? null : _setAutoVolume,
+              activeThumbColor: palette.accent,
+              activeTrackColor: palette.accent.withAlpha(72),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AutoVolumeMetric extends StatelessWidget {
+  const _AutoVolumeMetric({
+    required this.label,
+    required this.value,
+    required this.palette,
+  });
+
+  final String label;
+  final String value;
+  final _SettingsPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: palette.panel,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: palette.border),
+      ),
+      child: Text(
+        '$label: $value',
+        style: GoogleFonts.inter(
+          color: palette.textSecondary,
+          fontSize: 11.5,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _AutoVolumeErrorRow extends StatelessWidget {
+  const _AutoVolumeErrorRow({
+    required this.palette,
+    required this.message,
+    required this.onRetry,
+  });
+
+  final _SettingsPalette palette;
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            message,
+            style: GoogleFonts.inter(
+              color: palette.dangerForeground,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        TextButton(
+          onPressed: onRetry,
+          child: const Text('Retry'),
+        ),
+      ],
     );
   }
 }

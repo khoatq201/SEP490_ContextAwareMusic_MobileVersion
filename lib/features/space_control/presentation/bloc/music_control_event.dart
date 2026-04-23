@@ -55,16 +55,16 @@ class SkipMusic extends MusicControlEvent {
 class OverrideMoodRequested extends MusicControlEvent {
   final String spaceId;
   final String moodId;
-  final int duration;
+  final int manualOverrideTtlSeconds;
 
   const OverrideMoodRequested({
     required this.spaceId,
     required this.moodId,
-    required this.duration,
+    required this.manualOverrideTtlSeconds,
   });
 
   @override
-  List<Object?> get props => [spaceId, moodId, duration];
+  List<Object?> get props => [spaceId, moodId, manualOverrideTtlSeconds];
 }
 
 class MusicPlayerStateUpdated extends MusicControlEvent {

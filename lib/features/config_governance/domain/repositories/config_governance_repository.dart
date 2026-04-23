@@ -38,12 +38,4 @@ abstract class ConfigGovernanceRepository {
   Future<Either<Failure, String>> setStoreGovernanceMode({
     required SetStoreGovernanceModeRequest request,
   });
-
-  Future<Either<Failure, String>> publishConfigVersion({
-    required PublishConfigVersionRequest request,
-  });
-
-  Future<Either<Failure, String>> rollbackConfigVersion({
-    required RollbackConfigVersionRequest request,
-  });
 }

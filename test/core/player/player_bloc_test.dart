@@ -7,6 +7,7 @@ import 'package:cams_store_manager/core/audio/audio_player_service.dart';
 import 'package:cams_store_manager/core/enums/playback_command_enum.dart';
 import 'package:cams_store_manager/core/player/player_bloc.dart';
 import 'package:cams_store_manager/core/player/player_event.dart';
+import 'package:cams_store_manager/core/player/space_info.dart';
 import 'package:cams_store_manager/features/space_control/domain/entities/track.dart';
 
 void main() {
@@ -687,6 +688,59 @@ void main() {
       expect(bloc.state.hlsUrl, isNull);
       expect(audioService.loadedUrl, isNull);
       expect(audioService.stopCallCount, 1);
+    });
+
+    test('clears playback state when active space context changes', () async {
+      bloc.add(const PlayerContextUpdated(
+        storeId: 'store-1',
+        spaceId: 'space-1',
+        spaceName: 'Space 1',
+        availableSpaces: [
+          SpaceInfo(
+            id: 'space-1',
+            storeId: 'store-1',
+            name: 'Space 1',
+            isOnline: true,
+          ),
+          SpaceInfo(
+            id: 'space-2',
+            storeId: 'store-1',
+            name: 'Space 2',
+            isOnline: true,
+          ),
+        ],
+      ));
+      await _tick();
+
+      bloc.add(const PlayerHlsStarted(
+        hlsUrl: 'https://stream.example.com/space-1.m3u8',
+        queueItemId: 'queue-1',
+        trackId: 'track-1',
+        trackName: 'Track 1',
+        playLocally: true,
+      ));
+      await _tick();
+
+      expect(bloc.state.isSyncedCamsPlayback, isTrue);
+      expect(audioService.loadedUrl, 'https://stream.example.com/space-1.m3u8');
+
+      bloc.add(const PlayerContextUpdated(
+        storeId: 'store-1',
+        spaceId: 'space-2',
+        spaceName: 'Space 2',
+      ));
+      await _tick();
+
+      expect(audioService.loadedUrl, isNull);
+      expect(audioService.stopCallCount, 1);
+      expect(bloc.state.activeSpaceId, 'space-2');
+      expect(bloc.state.hasTrack, isFalse);
+      expect(bloc.state.queue, isEmpty);
+      expect(bloc.state.hlsUrl, isNull);
+      expect(
+        bloc.state.availableSpaces.map((space) => space.id),
+        ['space-1', 'space-2'],
+      );
     });
   });
 }

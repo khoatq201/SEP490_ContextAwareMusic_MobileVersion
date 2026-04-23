@@ -10,12 +10,12 @@ class OverrideMood {
   Future<Either<Failure, void>> call({
     required String spaceId,
     required String moodId,
-    required int duration,
+    required int manualOverrideTtlSeconds,
   }) async {
     return await repository.overrideMood(
       spaceId: spaceId,
       moodId: moodId,
-      duration: duration,
+      manualOverrideTtlSeconds: manualOverrideTtlSeconds,
     );
   }
 }

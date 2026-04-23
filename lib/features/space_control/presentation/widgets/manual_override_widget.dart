@@ -16,7 +16,8 @@ class ManualOverrideWidget extends StatelessWidget {
 
   void _showOverrideDialog(BuildContext context) {
     String selectedMood = currentMood ?? AppConstants.availableMoods.first;
-    int duration = AppConstants.defaultOverrideDuration;
+    int ttlSeconds = AppConstants.defaultOverrideDuration * 60;
+    String ttlInput = ttlSeconds.toString();
 
     showDialog(
       context: context,
@@ -59,16 +60,29 @@ class ManualOverrideWidget extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               TextFormField(
-                initialValue: duration.toString(),
+                initialValue: ttlInput,
                 decoration: const InputDecoration(
-                  labelText: 'Duration (minutes)',
+                  labelText: 'Override TTL seconds',
                   border: OutlineInputBorder(),
-                  suffixText: 'min',
+                  hintText: '1800',
                 ),
                 keyboardType: TextInputType.number,
                 onChanged: (value) {
-                  duration = int.tryParse(value) ??
-                      AppConstants.defaultOverrideDuration;
+                  setState(() {
+                    ttlInput = value;
+                    final parsed = int.tryParse(value);
+                    if (parsed != null && parsed > 0) {
+                      ttlSeconds = parsed;
+                    }
+                  });
+                },
+                autovalidateMode: AutovalidateMode.always,
+                validator: (value) {
+                  final parsed = int.tryParse(value?.trim() ?? '');
+                  if (parsed == null || parsed <= 0) {
+                    return 'Enter a positive number of seconds.';
+                  }
+                  return null;
                 },
               ),
             ],
@@ -79,24 +93,26 @@ class ManualOverrideWidget extends StatelessWidget {
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: () {
-                context.read<MusicControlBloc>().add(
-                      OverrideMoodRequested(
-                        spaceId: spaceId,
-                        moodId: selectedMood.toLowerCase(),
-                        duration: duration,
-                      ),
-                    );
-                Navigator.of(dialogContext).pop();
+              onPressed: (int.tryParse(ttlInput) ?? 0) > 0
+                  ? () {
+                      context.read<MusicControlBloc>().add(
+                            OverrideMoodRequested(
+                              spaceId: spaceId,
+                              moodId: selectedMood.toLowerCase(),
+                              manualOverrideTtlSeconds: ttlSeconds,
+                            ),
+                          );
+                      Navigator.of(dialogContext).pop();
 
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                        'Mood overridden to $selectedMood for $duration minutes'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-              },
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                              'Mood overridden to $selectedMood for $ttlSeconds seconds'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  : null,
               child: const Text('Apply'),
             ),
           ],

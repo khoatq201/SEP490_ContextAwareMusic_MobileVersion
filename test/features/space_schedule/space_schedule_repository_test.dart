@@ -57,7 +57,8 @@ void main() {
       );
     });
 
-    test('applyScheduleSource clones template into the target space draft',
+    test(
+        'applyScheduleSource clones library source into the target space draft',
         () async {
       final storage = InMemoryLocalStorageService();
       final repository = buildSpaceScheduleRepository(storage: storage);
@@ -68,6 +69,44 @@ void main() {
         spaceName: 'VIP Area',
       );
 
+      final source = bootstrap
+          .getOrElse(
+            () => throw StateError('Bootstrap failed'),
+          )
+          .librarySources
+          .first;
+
+      final result = await repository.applyScheduleSource(
+        spaceId: 'space-9',
+        spaceName: 'VIP Area',
+        source: source,
+      );
+
+      result.fold(
+        (failure) =>
+            fail('Expected applyScheduleSource to succeed: ${failure.message}'),
+        (schedule) {
+          expect(schedule.spaceId, 'space-9');
+          expect(schedule.id, 'space-schedule-space-9');
+          expect(schedule.sourceId, isNull);
+          expect(schedule.slots, isNotEmpty);
+        },
+      );
+
+      final persisted = localDataSource.getDraftSchedule('space-9');
+      expect(persisted, isNotNull);
+      expect(persisted!.spaceId, 'space-9');
+      expect(source.schedule.spaceId, isNull);
+    });
+
+    test('applyScheduleSource blocks direct template sources', () async {
+      final storage = InMemoryLocalStorageService();
+      final repository = buildSpaceScheduleRepository(storage: storage);
+
+      final bootstrap = await repository.getBootstrap(
+        spaceId: 'space-9',
+        spaceName: 'VIP Area',
+      );
       final template = bootstrap
           .getOrElse(
             () => throw StateError('Bootstrap failed'),
@@ -82,20 +121,12 @@ void main() {
       );
 
       result.fold(
-        (failure) =>
-            fail('Expected applyScheduleSource to succeed: ${failure.message}'),
-        (schedule) {
-          expect(schedule.spaceId, 'space-9');
-          expect(schedule.id, 'space-schedule-space-9');
-          expect(schedule.sourceId, template.id);
-          expect(schedule.slots, isNotEmpty);
-        },
+        (failure) => expect(
+          failure.message,
+          contains('Template sources cannot be applied directly'),
+        ),
+        (_) => fail('Expected template apply to be blocked'),
       );
-
-      final persisted = localDataSource.getDraftSchedule('space-9');
-      expect(persisted, isNotNull);
-      expect(persisted!.spaceId, 'space-9');
-      expect(template.schedule.spaceId, isNull);
     });
 
     test('deleteScheduleSlot updates persisted draft', () async {

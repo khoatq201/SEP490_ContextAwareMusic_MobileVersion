@@ -170,8 +170,6 @@ class _FakeConfigGovernanceRemoteDataSource
   ConfigValueUpsertRequest? lastStoreUpsertRequest;
   ConfigValueUpsertRequest? lastSpaceUpsertRequest;
   SetStoreGovernanceModeRequest? lastGovernanceModeRequest;
-  PublishConfigVersionRequest? lastPublishConfigVersionRequest;
-  RollbackConfigVersionRequest? lastRollbackConfigVersionRequest;
 
   @override
   Future<PaginationResult<ConfigFlatRowModel>> getBrandConfig({
@@ -241,21 +239,5 @@ class _FakeConfigGovernanceRemoteDataSource
   }) async {
     lastGovernanceModeRequest = request;
     return 'Store governance mode updated.';
-  }
-
-  @override
-  Future<String> publishConfigVersion({
-    required PublishConfigVersionRequest request,
-  }) async {
-    lastPublishConfigVersionRequest = request;
-    return 'Config version published.';
-  }
-
-  @override
-  Future<String> rollbackConfigVersion({
-    required RollbackConfigVersionRequest request,
-  }) async {
-    lastRollbackConfigVersionRequest = request;
-    return 'Config version rolled back.';
   }
 }

@@ -148,6 +148,7 @@ import 'features/suno/data/datasources/suno_remote_datasource.dart';
 import 'features/suno/data/repositories/suno_repository_impl.dart';
 import 'features/suno/domain/services/suno_playback_orchestrator.dart';
 import 'features/suno/domain/usecases/suno_usecases.dart';
+import 'features/music_policy/data/datasources/fuzzy_music_profile_remote_datasource.dart';
 
 // Config Governance Feature
 import 'features/config_governance/data/datasources/config_governance_remote_datasource.dart';
@@ -729,8 +730,10 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(() => UpsertStoreConfigValue(sl()));
   sl.registerLazySingleton(() => UpsertSpaceConfigValue(sl()));
   sl.registerLazySingleton(() => SetStoreGovernanceMode(sl()));
-  sl.registerLazySingleton(() => PublishConfigVersion(sl()));
-  sl.registerLazySingleton(() => RollbackConfigVersion(sl()));
+
+  sl.registerLazySingleton<FuzzyMusicProfileRemoteDataSource>(
+    () => FuzzyMusicProfileRemoteDataSourceImpl(dioClient: sl()),
+  );
 
   sl.registerFactory(
     () => ConfigGovernanceCubit(

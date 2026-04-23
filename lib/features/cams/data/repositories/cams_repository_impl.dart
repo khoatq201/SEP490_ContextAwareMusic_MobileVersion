@@ -378,7 +378,8 @@ class CamsRepositoryImpl implements CamsRepository {
         spaceId,
         usePlaybackDeviceScope: usePlaybackDeviceScope,
       );
-      return Right(state);
+      final enrichedState = await _withProfileBpmGuidance(state);
+      return Right(enrichedState);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
     } catch (e) {
@@ -391,12 +392,98 @@ class CamsRepositoryImpl implements CamsRepository {
       getSpaceStateForPlaybackDevice() async {
     try {
       final state = await remoteDataSource.getSpaceStateForPlaybackDevice();
-      return Right(state);
+      final enrichedState = await _withProfileBpmGuidance(state);
+      return Right(enrichedState);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
     } catch (e) {
       return Left(ServerFailure('Failed to get playback device state: $e'));
     }
+  }
+
+  Future<SpacePlaybackState> _withProfileBpmGuidance(
+    SpacePlaybackState state,
+  ) async {
+    final moodName = state.explainability?.moodName ?? state.moodName;
+    final baseExplainability = _ensureMoodExplainability(
+      state.explainability,
+      moodName,
+    );
+
+    if (_hasCompleteBpmGuidance(baseExplainability)) {
+      return state.copyWith(explainability: baseExplainability);
+    }
+
+    SpacePlaybackExplainability? profileGuidance;
+    try {
+      profileGuidance = await remoteDataSource.getFuzzyProfileBpmGuidance(
+        spaceId: state.spaceId,
+        storeId: state.storeId,
+        moodName: moodName,
+      );
+    } catch (_) {
+      profileGuidance = null;
+    }
+
+    final merged = _mergeExplainability(
+      baseExplainability,
+      profileGuidance,
+    );
+    return merged == null ? state : state.copyWith(explainability: merged);
+  }
+
+  bool _hasCompleteBpmGuidance(SpacePlaybackExplainability? explainability) {
+    return explainability?.hasBpmBand == true &&
+        explainability?.recommendedBpmTarget != null;
+  }
+
+  SpacePlaybackExplainability? _ensureMoodExplainability(
+    SpacePlaybackExplainability? explainability,
+    String? moodName,
+  ) {
+    final trimmedMood = moodName?.trim();
+    if (trimmedMood == null || trimmedMood.isEmpty) return explainability;
+    if (explainability == null) {
+      return SpacePlaybackExplainability(moodName: trimmedMood);
+    }
+    if (explainability.moodName?.trim().isNotEmpty ?? false) {
+      return explainability;
+    }
+    return _mergeExplainability(
+      explainability,
+      SpacePlaybackExplainability(moodName: trimmedMood),
+    );
+  }
+
+  SpacePlaybackExplainability? _mergeExplainability(
+    SpacePlaybackExplainability? primary,
+    SpacePlaybackExplainability? fallback,
+  ) {
+    if (primary == null) return fallback;
+    if (fallback == null) return primary;
+    return SpacePlaybackExplainability(
+      triggeredRule: primary.triggeredRule ?? fallback.triggeredRule,
+      reason: primary.reason ?? fallback.reason,
+      moodName: primary.moodName ?? fallback.moodName,
+      recommendedBpmMin:
+          primary.recommendedBpmMin ?? fallback.recommendedBpmMin,
+      recommendedBpmMax:
+          primary.recommendedBpmMax ?? fallback.recommendedBpmMax,
+      recommendedBpmTarget:
+          primary.recommendedBpmTarget ?? fallback.recommendedBpmTarget,
+      usedMoodOnlyFallback:
+          primary.usedMoodOnlyFallback ?? fallback.usedMoodOnlyFallback,
+      moodOnlyCount: primary.moodOnlyCount ?? fallback.moodOnlyCount,
+      bpmFilteredCount: primary.bpmFilteredCount ?? fallback.bpmFilteredCount,
+      aiGenerationMode: primary.aiGenerationMode ?? fallback.aiGenerationMode,
+      fuzzyProfileName: primary.fuzzyProfileName ?? fallback.fuzzyProfileName,
+      fuzzyProfileTemplate:
+          primary.fuzzyProfileTemplate ?? fallback.fuzzyProfileTemplate,
+      restrictedToAllowedPlaylists: primary.restrictedToAllowedPlaylists ??
+          fallback.restrictedToAllowedPlaylists,
+      allowedPlaylistCount:
+          primary.allowedPlaylistCount ?? fallback.allowedPlaylistCount,
+    );
   }
 
   @override

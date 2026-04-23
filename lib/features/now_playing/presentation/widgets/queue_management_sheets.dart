@@ -695,20 +695,39 @@ class _NowPlayingOverrideMusicSheetState
   @override
   void initState() {
     super.initState();
+    _ttlController.addListener(_handleTtlChanged);
     _loadTracks();
     _loadPlaylists();
   }
 
   @override
   void dispose() {
+    _ttlController.removeListener(_handleTtlChanged);
     _searchController.dispose();
     _reasonController.dispose();
     _ttlController.dispose();
     super.dispose();
   }
 
+  int? get _ttlSeconds {
+    final parsed = int.tryParse(_ttlController.text.trim());
+    return parsed != null && parsed > 0 ? parsed : null;
+  }
+
+  bool get _requiresMoodTtl =>
+      _sourceTab == _MusicSourceTab.mood &&
+      (_selectedMoodId?.trim().isNotEmpty ?? false);
+
+  bool get _hasValidMoodTtl => !_requiresMoodTtl || _ttlSeconds != null;
+
   bool get _canSubmit {
-    return true;
+    return _hasValidMoodTtl;
+  }
+
+  void _handleTtlChanged() {
+    if (_requiresMoodTtl && mounted) {
+      setState(() {});
+    }
   }
 
   List<ApiTrack> get _filteredTracks {
@@ -841,7 +860,7 @@ class _NowPlayingOverrideMusicSheetState
     final playlistId =
         _sourceTab == _MusicSourceTab.playlist ? _selectedPlaylistId : null;
     final moodId = _sourceTab == _MusicSourceTab.mood ? _selectedMoodId : null;
-    final ttlSeconds = int.tryParse(_ttlController.text.trim());
+    final ttlSeconds = _ttlSeconds;
     context.read<CamsPlaybackBloc>().add(
           CamsApplyOverride(
             trackIds: trackIds,
@@ -951,9 +970,17 @@ class _NowPlayingOverrideMusicSheetState
               controller: _ttlController,
               keyboardType: TextInputType.number,
               style: GoogleFonts.inter(color: palette.textPrimary),
-              decoration: const InputDecoration(
-                labelText: 'Override TTL seconds (optional)',
+              decoration: InputDecoration(
+                labelText: _requiresMoodTtl
+                    ? 'Override TTL seconds *'
+                    : 'Override TTL seconds (optional)',
                 hintText: 'Example: 1800',
+                helperText: _requiresMoodTtl
+                    ? 'Required when mood override has no tracks or playlist.'
+                    : 'Required only for mood-only AI take-over.',
+                errorText: _requiresMoodTtl && !_hasValidMoodTtl
+                    ? 'Enter seconds.'
+                    : null,
               ),
             ),
             const SizedBox(height: 12),

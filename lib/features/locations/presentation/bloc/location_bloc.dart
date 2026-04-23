@@ -834,8 +834,12 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
   Future<void> close() async {
     await _stateSyncSub?.cancel();
     await _connectionSub?.cancel();
-    await storeHubService.disconnect();
-    storeHubService.dispose();
+    _stateSyncSub = null;
+    _connectionSub = null;
+    // StoreHubService is an app-level singleton shared with CAMS playback.
+    // LocationBloc only owns the listeners above; closing the hub here would
+    // close shared stream controllers and break playback bootstrap after a
+    // space switch.
     return super.close();
   }
 }

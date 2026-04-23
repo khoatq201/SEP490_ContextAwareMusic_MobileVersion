@@ -190,8 +190,11 @@ class _HomeDashboardView extends StatelessWidget {
                         palette: palette,
                         onClose: () =>
                             context.read<HomeCubit>().closeManualSelection(),
-                        onSelectMood: (mood) {
-                          context.read<HomeCubit>().applyMoodOverride(mood.id);
+                        onApplyMood: (mood, ttlSeconds) {
+                          context.read<HomeCubit>().applyMoodOverride(
+                                mood.id,
+                                manualOverrideTtlSeconds: ttlSeconds,
+                              );
                         },
                       ),
                     ),
@@ -1224,14 +1227,14 @@ class _ExplainabilityTag extends StatelessWidget {
   }
 }
 
-class _MoodPickerCard extends StatelessWidget {
+class _MoodPickerCard extends StatefulWidget {
   const _MoodPickerCard({
     required this.moods,
     required this.currentMoodName,
     required this.isLoading,
     required this.palette,
     required this.onClose,
-    required this.onSelectMood,
+    required this.onApplyMood,
   });
 
   final List<Mood> moods;
@@ -1239,17 +1242,86 @@ class _MoodPickerCard extends StatelessWidget {
   final bool isLoading;
   final _Palette palette;
   final VoidCallback onClose;
-  final ValueChanged<Mood> onSelectMood;
+  final void Function(Mood mood, int ttlSeconds) onApplyMood;
+
+  @override
+  State<_MoodPickerCard> createState() => _MoodPickerCardState();
+}
+
+class _MoodPickerCardState extends State<_MoodPickerCard> {
+  late final TextEditingController _ttlController;
+  String? _selectedMoodId;
+
+  @override
+  void initState() {
+    super.initState();
+    _ttlController = TextEditingController();
+    _selectedMoodId = _resolveInitialMoodId();
+  }
+
+  @override
+  void didUpdateWidget(covariant _MoodPickerCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final currentSelectionStillExists = widget.moods.any(
+      (mood) => mood.id == _selectedMoodId,
+    );
+    if (!currentSelectionStillExists) {
+      _selectedMoodId = _resolveInitialMoodId();
+    }
+  }
+
+  @override
+  void dispose() {
+    _ttlController.dispose();
+    super.dispose();
+  }
+
+  String? _resolveInitialMoodId() {
+    final normalizedCurrentMood = widget.currentMoodName?.trim().toLowerCase();
+    if (normalizedCurrentMood == null || normalizedCurrentMood.isEmpty) {
+      return widget.moods.isNotEmpty ? widget.moods.first.id : null;
+    }
+
+    for (final mood in widget.moods) {
+      if (mood.name.trim().toLowerCase() == normalizedCurrentMood ||
+          mood.id.trim().toLowerCase() == normalizedCurrentMood) {
+        return mood.id;
+      }
+    }
+
+    return widget.moods.isNotEmpty ? widget.moods.first.id : null;
+  }
+
+  int? get _ttlSeconds {
+    final raw = _ttlController.text.trim();
+    if (raw.isEmpty) return null;
+    final parsed = int.tryParse(raw);
+    if (parsed == null || parsed <= 0) return null;
+    return parsed;
+  }
+
+  bool get _hasValidTtl => _ttlSeconds != null;
+
+  bool get _canApply =>
+      !widget.isLoading && _selectedMoodId != null && _hasValidTtl;
 
   @override
   Widget build(BuildContext context) {
+    Mood? selectedMood;
+    for (final mood in widget.moods) {
+      if (mood.id == _selectedMoodId) {
+        selectedMood = mood;
+        break;
+      }
+    }
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
       decoration: BoxDecoration(
-        color: palette.card,
+        color: widget.palette.card,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: palette.border),
+        border: Border.all(color: widget.palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1260,16 +1332,16 @@ class _MoodPickerCard extends StatelessWidget {
                 child: Text(
                   'Select mood override',
                   style: GoogleFonts.poppins(
-                    color: palette.textPrimary,
+                    color: widget.palette.textPrimary,
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
               TextButton(
-                onPressed: isLoading ? null : onClose,
+                onPressed: widget.isLoading ? null : widget.onClose,
                 style: TextButton.styleFrom(
-                  foregroundColor: palette.textMuted,
+                  foregroundColor: widget.palette.textMuted,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
                     vertical: 4,
@@ -1291,17 +1363,17 @@ class _MoodPickerCard extends StatelessWidget {
           Text(
             'Choose a mood only when you want to take control away from AI for this space.',
             style: GoogleFonts.inter(
-              color: palette.textMuted,
+              color: widget.palette.textMuted,
               fontSize: 12,
               fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 12),
-          if (moods.isEmpty)
+          if (widget.moods.isEmpty)
             Text(
               'No moods available.',
               style: GoogleFonts.inter(
-                color: palette.textMuted,
+                color: widget.palette.textMuted,
                 fontSize: 12,
               ),
             )
@@ -1309,28 +1381,75 @@ class _MoodPickerCard extends StatelessWidget {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: moods.map((mood) {
-                final selected = currentMoodName != null &&
-                    currentMoodName!.toLowerCase() == mood.name.toLowerCase();
+              children: widget.moods.map((mood) {
+                final selected = _selectedMoodId == mood.id;
                 return ChoiceChip(
                   label: Text(
                     mood.name.toUpperCase(),
                     style: GoogleFonts.inter(
-                      color:
-                          selected ? palette.textOnAccent : palette.textPrimary,
+                      color: selected
+                          ? widget.palette.textOnAccent
+                          : widget.palette.textPrimary,
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   selected: selected,
-                  selectedColor: palette.accent,
-                  backgroundColor: palette.overlay,
+                  selectedColor: widget.palette.accent,
+                  backgroundColor: widget.palette.overlay,
                   side: BorderSide(
-                      color: selected ? palette.accent : palette.border),
-                  onSelected: isLoading ? null : (_) => onSelectMood(mood),
+                    color: selected
+                        ? widget.palette.accent
+                        : widget.palette.border,
+                  ),
+                  onSelected: widget.isLoading
+                      ? null
+                      : (_) => setState(() => _selectedMoodId = mood.id),
                 );
               }).toList(),
             ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _ttlController,
+            keyboardType: TextInputType.number,
+            onChanged: (_) => setState(() {}),
+            style: GoogleFonts.inter(color: widget.palette.textPrimary),
+            decoration: InputDecoration(
+              labelText: 'Override TTL seconds *',
+              hintText: 'Example: 1800',
+              helperText: 'Required for mood-only AI take-over.',
+              errorText: _ttlController.text.trim().isEmpty || _hasValidTtl
+                  ? null
+                  : 'Enter a positive number of seconds.',
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _canApply && selectedMood != null
+                  ? () => widget.onApplyMood(selectedMood!, _ttlSeconds!)
+                  : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: widget.palette.accent,
+                foregroundColor: widget.palette.textOnAccent,
+                disabledBackgroundColor: widget.palette.overlay,
+                disabledForegroundColor:
+                    widget.palette.textMuted.withValues(alpha: 0.8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              child: Text(
+                'Apply Mood Override',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );

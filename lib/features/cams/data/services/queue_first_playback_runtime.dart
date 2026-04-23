@@ -25,6 +25,8 @@ import 'store_hub_service.dart';
 /// UI state should always be derived from [playbackStateStream] rather than
 /// local optimistic queue mutations.
 class QueueFirstPlaybackRuntime {
+  static const Duration _pendingTrackJumpHoldDuration = Duration(seconds: 5);
+
   QueueFirstPlaybackRuntime({
     required this.getSpaceState,
     required this.queueTracks,
@@ -73,6 +75,8 @@ class QueueFirstPlaybackRuntime {
   String? _pendingTraceTargetQueueItemId;
   String? _pendingTraceTargetTrackId;
   DateTime? _pendingTraceIssuedAtUtc;
+  String? _pendingTrackJumpQueueItemId;
+  DateTime? _pendingTrackJumpIssuedAtUtc;
 
   Stream<SpacePlaybackState> get playbackStateStream =>
       _playbackStateController.stream;
@@ -115,6 +119,13 @@ class QueueFirstPlaybackRuntime {
       }
     }
 
+    if (isSpaceChanged || isManagerRoomChanged) {
+      _currentState = null;
+      _lastFingerprint = null;
+      _clearPendingTraceCommand();
+      _clearPendingTrackJump();
+    }
+
     _activeSpaceId = spaceId;
     _activeManagerStoreId = managerStoreId;
     _usePlaybackDeviceScope = usePlaybackDeviceScope;
@@ -142,6 +153,7 @@ class QueueFirstPlaybackRuntime {
     _activeManagerStoreId = null;
     _currentState = null;
     _lastFingerprint = null;
+    _clearPendingTrackJump();
 
     if (activeSpaceId != null) {
       try {
@@ -181,16 +193,16 @@ class QueueFirstPlaybackRuntime {
       },
       (playbackState) async {
         final normalizedState = await _normalizeIncomingState(playbackState);
+        final guardedState = _applyPendingTrackJumpGuard(normalizedState);
         _maybeTraceStateSync(
           source: 'http-refresh',
-          playbackState: normalizedState,
+          playbackState: guardedState,
         );
         if (!silent) {
-          _debugLog(
-              'refreshState -> ${_describePlaybackState(normalizedState)}');
+          _debugLog('refreshState -> ${_describePlaybackState(guardedState)}');
         }
-        _emitState(normalizedState);
-        return Right(normalizedState);
+        _emitState(guardedState);
+        return Right(guardedState);
       },
     );
   }
@@ -415,6 +427,8 @@ class QueueFirstPlaybackRuntime {
             current: _currentState,
             command: command,
             seekPositionSeconds: seekPositionSeconds,
+            targetQueueItemId: targetQueueItemId,
+            targetTrackId: targetTrackId,
           );
           if (patchedState != null) {
             _emitState(patchedState);
@@ -553,9 +567,13 @@ class QueueFirstPlaybackRuntime {
           current: _currentState,
           command: event.command,
           seekPositionSeconds: event.seekPositionSeconds,
+          targetQueueItemId: event.targetQueueItemId,
+          targetTrackId: event.targetTrackId,
         );
         if (patchedState != null) {
           _emitState(patchedState);
+        } else {
+          unawaited(refreshState(silent: true));
         }
       } else {
         unawaited(refreshState(silent: true));
@@ -598,11 +616,12 @@ class QueueFirstPlaybackRuntime {
     SpacePlaybackState playbackState,
   ) async {
     final normalizedState = await _normalizeIncomingState(playbackState);
+    final guardedState = _applyPendingTrackJumpGuard(normalizedState);
     _maybeTraceStateSync(
       source: 'signalr-state-sync',
-      playbackState: normalizedState,
+      playbackState: guardedState,
     );
-    _emitState(normalizedState);
+    _emitState(guardedState);
   }
 
   Future<SpacePlaybackState> _normalizeIncomingState(
@@ -610,6 +629,10 @@ class QueueFirstPlaybackRuntime {
   ) async {
     var normalizedState = _normalizePlaybackStateForClientClock(
       incoming: playbackState,
+      current: _currentState,
+    );
+    normalizedState = _preserveExplainabilityFallback(
+      incoming: normalizedState,
       current: _currentState,
     );
 
@@ -632,6 +655,78 @@ class QueueFirstPlaybackRuntime {
     }
 
     return normalizedState;
+  }
+
+  SpacePlaybackState _preserveExplainabilityFallback({
+    required SpacePlaybackState incoming,
+    required SpacePlaybackState? current,
+  }) {
+    if (incoming.explainability?.hasAnyData == true) return incoming;
+    final currentExplainability = current?.explainability;
+    if (currentExplainability?.hasAnyData != true) return incoming;
+
+    final incomingMood = incoming.moodName?.trim().toLowerCase();
+    final currentMood = (currentExplainability!.moodName ?? current?.moodName)
+        ?.trim()
+        .toLowerCase();
+    if (incomingMood != null &&
+        incomingMood.isNotEmpty &&
+        currentMood != null &&
+        currentMood.isNotEmpty &&
+        incomingMood != currentMood) {
+      return incoming;
+    }
+
+    return incoming.copyWith(explainability: currentExplainability);
+  }
+
+  SpacePlaybackState _applyPendingTrackJumpGuard(
+    SpacePlaybackState incoming,
+  ) {
+    final pendingQueueItemId = _pendingTrackJumpQueueItemId;
+    final pendingIssuedAtUtc = _pendingTrackJumpIssuedAtUtc;
+    if (pendingQueueItemId == null || pendingIssuedAtUtc == null) {
+      return incoming;
+    }
+
+    final pendingAge = DateTime.now().toUtc().difference(pendingIssuedAtUtc);
+    if (pendingAge > _pendingTrackJumpHoldDuration) {
+      _clearPendingTrackJump();
+      return incoming;
+    }
+
+    final incomingQueueItemId = incoming.effectiveQueueItemId;
+    if (incomingQueueItemId != null &&
+        incomingQueueItemId.toLowerCase() == pendingQueueItemId.toLowerCase()) {
+      _clearPendingTrackJump();
+      return incoming;
+    }
+
+    final current = _currentState;
+    if (current == null ||
+        current.effectiveQueueItemId?.toLowerCase() !=
+            pendingQueueItemId.toLowerCase()) {
+      return incoming;
+    }
+
+    _debugLog(
+      'hold stale state while track jump is pending '
+      'target=$pendingQueueItemId incoming=${incomingQueueItemId ?? '-'}',
+    );
+    return current.copyWith(
+      isPaused: incoming.isPaused,
+      pausePositionSeconds: incoming.pausePositionSeconds,
+      clearPausePositionSeconds: incoming.pausePositionSeconds == null,
+      seekOffsetSeconds:
+          incoming.seekOffsetSeconds ?? current.seekOffsetSeconds,
+      volumePercent: incoming.volumePercent,
+      isIotDeviceOffline: incoming.isIotDeviceOffline,
+      isMuted: incoming.isMuted,
+      queueEndBehavior: incoming.queueEndBehavior,
+      manualOverrideRemainingSeconds: incoming.manualOverrideRemainingSeconds,
+      manualOverrideTtlSeconds: incoming.manualOverrideTtlSeconds,
+      manualOverrideExpiresAtUtc: incoming.manualOverrideExpiresAtUtc,
+    );
   }
 
   Future<void> _refreshAfterMutation({
@@ -677,6 +772,7 @@ class QueueFirstPlaybackRuntime {
               item.position,
               item.queueStatus,
               item.hlsUrl ?? '',
+              item.coverImageUrl ?? '',
             ].join(':'))
         .join('|');
 
@@ -705,8 +801,18 @@ class QueueFirstPlaybackRuntime {
       playbackState.seekOffsetSeconds?.toStringAsFixed(3) ?? '',
       playbackState.pausePositionSeconds?.toString() ?? '',
       playbackState.volumePercent.toString(),
+      playbackState.isIotDeviceOffline ? '1' : '0',
       playbackState.isMuted ? '1' : '0',
       playbackState.queueEndBehavior.toString(),
+      playbackState.explainability?.moodName ?? '',
+      playbackState.explainability?.recommendedBpmMin?.toString() ?? '',
+      playbackState.explainability?.recommendedBpmMax?.toString() ?? '',
+      playbackState.explainability?.recommendedBpmTarget?.toString() ?? '',
+      playbackState.explainability?.triggeredRule ?? '',
+      playbackState.explainability?.reason ?? '',
+      playbackState.explainability?.usedMoodOnlyFallback?.toString() ?? '',
+      playbackState.explainability?.fuzzyProfileName ?? '',
+      playbackState.explainability?.fuzzyProfileTemplate ?? '',
       queueFingerprint,
     ].join('||');
   }
@@ -740,13 +846,19 @@ class QueueFirstPlaybackRuntime {
         command == PlaybackCommandEnum.resume ||
         command == PlaybackCommandEnum.seek ||
         command == PlaybackCommandEnum.seekForward ||
-        command == PlaybackCommandEnum.seekBackward;
+        command == PlaybackCommandEnum.seekBackward ||
+        command == PlaybackCommandEnum.skipNext ||
+        command == PlaybackCommandEnum.skipPrevious ||
+        command == PlaybackCommandEnum.skipToTrack ||
+        command == PlaybackCommandEnum.trackEnded;
   }
 
   SpacePlaybackState? _applyPlaybackCommandPatch({
     required SpacePlaybackState? current,
     required PlaybackCommandEnum command,
     required double? seekPositionSeconds,
+    String? targetQueueItemId,
+    String? targetTrackId,
   }) {
     if (current == null) return null;
 
@@ -789,8 +901,138 @@ class QueueFirstPlaybackRuntime {
       case PlaybackCommandEnum.skipPrevious:
       case PlaybackCommandEnum.skipToTrack:
       case PlaybackCommandEnum.trackEnded:
-        return current;
+        final targetQueueItem = _resolveCommandTargetQueueItem(
+          current: current,
+          command: command,
+          targetQueueItemId: targetQueueItemId,
+          targetTrackId: targetTrackId,
+        );
+        if (targetQueueItem == null) return null;
+        _rememberPendingTrackJump(targetQueueItem.queueItemId);
+        return _applyTrackJumpPatch(
+          current: current,
+          targetQueueItem: targetQueueItem,
+          nowUtc: nowUtc,
+        );
     }
+  }
+
+  SpaceQueueStateItem? _resolveCommandTargetQueueItem({
+    required SpacePlaybackState current,
+    required PlaybackCommandEnum command,
+    String? targetQueueItemId,
+    String? targetTrackId,
+  }) {
+    final sortedItems = current.sortedQueueItems;
+    if (sortedItems.isEmpty) return null;
+
+    if (targetQueueItemId != null && targetQueueItemId.isNotEmpty) {
+      for (final item in sortedItems) {
+        if (item.queueItemId == targetQueueItemId) return item;
+      }
+    }
+
+    if (targetTrackId != null && targetTrackId.isNotEmpty) {
+      for (final item in sortedItems) {
+        if (item.trackId == targetTrackId) return item;
+      }
+    }
+
+    final focusedIndex = sortedItems.indexWhere(
+      (item) => item.queueItemId == current.effectiveQueueItemId,
+    );
+    final fallbackIndex = focusedIndex >= 0
+        ? focusedIndex
+        : sortedItems.indexWhere(
+            (item) => item.queueStatus == SpacePlaybackState.queueStatusPlaying,
+          );
+
+    switch (command) {
+      case PlaybackCommandEnum.skipNext:
+      case PlaybackCommandEnum.trackEnded:
+        final nextIndex = fallbackIndex + 1;
+        if (fallbackIndex >= 0 && nextIndex < sortedItems.length) {
+          return sortedItems[nextIndex];
+        }
+        return null;
+      case PlaybackCommandEnum.skipPrevious:
+        final previousIndex = fallbackIndex - 1;
+        if (fallbackIndex > 0 && previousIndex < sortedItems.length) {
+          return sortedItems[previousIndex];
+        }
+        return null;
+      case PlaybackCommandEnum.skipToTrack:
+        return null;
+      case PlaybackCommandEnum.pause:
+      case PlaybackCommandEnum.resume:
+      case PlaybackCommandEnum.seek:
+      case PlaybackCommandEnum.seekForward:
+      case PlaybackCommandEnum.seekBackward:
+        return null;
+    }
+  }
+
+  SpacePlaybackState _applyTrackJumpPatch({
+    required SpacePlaybackState current,
+    required SpaceQueueStateItem targetQueueItem,
+    required DateTime nowUtc,
+  }) {
+    final targetHlsUrl = targetQueueItem.hlsUrl?.trim();
+    final targetTrackName = targetQueueItem.trackName?.trim();
+    final hasTargetHlsUrl = targetHlsUrl != null && targetHlsUrl.isNotEmpty;
+    return current.copyWith(
+      currentQueueItemId: targetQueueItem.queueItemId,
+      currentTrackName: targetTrackName != null && targetTrackName.isNotEmpty
+          ? targetTrackName
+          : null,
+      clearCurrentTrackName: targetTrackName == null || targetTrackName.isEmpty,
+      hlsUrl: hasTargetHlsUrl ? targetHlsUrl : null,
+      clearHlsUrl: !hasTargetHlsUrl,
+      startedAtUtc: nowUtc,
+      isPaused: false,
+      clearPausePositionSeconds: true,
+      seekOffsetSeconds: 0,
+      clearPendingQueueItemId: true,
+      spaceQueueItems: _markQueueItemPlaying(
+        current.spaceQueueItems,
+        targetQueueItem.queueItemId,
+      ),
+    );
+  }
+
+  List<SpaceQueueStateItem> _markQueueItemPlaying(
+    List<SpaceQueueStateItem> queueItems,
+    String targetQueueItemId,
+  ) {
+    if (queueItems.isEmpty) return queueItems;
+    SpaceQueueStateItem? target;
+    for (final item in queueItems) {
+      if (item.queueItemId == targetQueueItemId) {
+        target = item;
+        break;
+      }
+    }
+    if (target == null) return queueItems;
+    final targetPosition = target.position;
+
+    return queueItems.map((item) {
+      final nextStatus = item.queueItemId == targetQueueItemId
+          ? SpacePlaybackState.queueStatusPlaying
+          : item.position < targetPosition
+              ? SpacePlaybackState.queueStatusPlayed
+              : SpacePlaybackState.queueStatusPending;
+      return SpaceQueueStateItem(
+        queueItemId: item.queueItemId,
+        trackId: item.trackId,
+        trackName: item.trackName,
+        position: item.position,
+        queueStatus: nextStatus,
+        source: item.source,
+        hlsUrl: item.hlsUrl,
+        coverImageUrl: item.coverImageUrl,
+        isReadyToStream: item.isReadyToStream,
+      );
+    }).toList(growable: false);
   }
 
   SpacePlaybackState? _applyAudioStatePatch({
@@ -941,6 +1183,16 @@ class QueueFirstPlaybackRuntime {
     _pendingTraceTargetQueueItemId = null;
     _pendingTraceTargetTrackId = null;
     _pendingTraceIssuedAtUtc = null;
+  }
+
+  void _rememberPendingTrackJump(String queueItemId) {
+    _pendingTrackJumpQueueItemId = queueItemId;
+    _pendingTrackJumpIssuedAtUtc = DateTime.now().toUtc();
+  }
+
+  void _clearPendingTrackJump() {
+    _pendingTrackJumpQueueItemId = null;
+    _pendingTrackJumpIssuedAtUtc = null;
   }
 
   String _describePlaybackState(SpacePlaybackState playbackState) {

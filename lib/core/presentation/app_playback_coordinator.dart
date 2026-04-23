@@ -321,6 +321,31 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
       'playerHls=${playerBloc.state.hlsUrl ?? '-'}',
     );
 
+    final activeSessionSpaceId = session.currentSpace?.id;
+    if (playbackState != null &&
+        activeSessionSpaceId != null &&
+        activeSessionSpaceId.isNotEmpty &&
+        playbackState.spaceId.toLowerCase() !=
+            activeSessionSpaceId.toLowerCase()) {
+      _debugLog(
+        'ignore CAMS playback for inactive space '
+        'active=$activeSessionSpaceId incoming=${playbackState.spaceId}',
+      );
+      _clearTrackEndedGuard();
+      _lastAppliedRemotePlaybackSignature = null;
+      _forceRemotePlaybackResyncOnNextCamsState = false;
+      _stopManagerProgressTicker();
+      _stopExpectedEndWatcher();
+      _stopPlaybackHealthTicker();
+      final playerSpaceId = playerBloc.state.activeSpaceId;
+      final playerStillOnIncomingSpace = playerSpaceId == null ||
+          playerSpaceId.toLowerCase() == playbackState.spaceId.toLowerCase();
+      if (playerBloc.state.isSyncedCamsPlayback && playerStillOnIncomingSpace) {
+        _addPlayerEvent(const PlayerHlsStopped());
+      }
+      return;
+    }
+
     _syncManagerProgressTicker(
       session: session,
       playbackState: playbackState,
@@ -747,6 +772,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
             item.position,
             item.queueStatus,
             item.hlsUrl ?? '',
+            item.coverImageUrl ?? '',
             item.isReadyToStream ? 1 : 0,
           ].join(':'),
         )
@@ -873,6 +899,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
           item.position,
           item.queueStatus,
           item.hlsUrl ?? '',
+          item.coverImageUrl ?? '',
           item.isReadyToStream ? 1 : 0,
         ].join(':'),
       ),

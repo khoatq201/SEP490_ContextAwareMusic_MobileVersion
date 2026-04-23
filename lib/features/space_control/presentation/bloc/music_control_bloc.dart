@@ -129,7 +129,7 @@ class MusicControlBloc extends Bloc<MusicControlEvent, MusicControlState> {
     final result = await overrideMood(
       spaceId: event.spaceId,
       moodId: event.moodId,
-      duration: event.duration,
+      manualOverrideTtlSeconds: event.manualOverrideTtlSeconds,
     );
 
     result.fold(

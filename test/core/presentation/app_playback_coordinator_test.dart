@@ -877,6 +877,131 @@ void main() {
         'https://stream.example.com/t1.m3u8',
       );
     });
+
+    testWidgets('ignores stale CAMS playback snapshots after switching spaces',
+        (tester) async {
+      addTearDown(() async {
+        await _disposeHarness(tester);
+      });
+
+      await _pumpCoordinator(
+          tester, notificationService, sessionCubit, playerBloc, camsBloc);
+
+      camsBloc.seed(
+        SpacePlaybackState(
+          spaceId: 'space-1',
+          storeId: 'store-1',
+          currentQueueItemId: 'queue-1',
+          currentTrackName: 'Track One',
+          hlsUrl: 'https://stream.example.com/space-1.m3u8',
+          startedAtUtc:
+              DateTime.now().toUtc().subtract(const Duration(seconds: 4)),
+          isPaused: false,
+          spaceQueueItems: const [
+            SpaceQueueStateItem(
+              queueItemId: 'queue-1',
+              trackId: 'track-1',
+              trackName: 'Track One',
+              position: 1,
+              queueStatus: SpacePlaybackState.queueStatusPlaying,
+              source: 1,
+              hlsUrl: 'https://stream.example.com/space-1.m3u8',
+              isReadyToStream: true,
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      await _waitUntil(
+        tester,
+        () =>
+            playerBloc.state.isSyncedCamsPlayback &&
+            audioService.loadedUrl == 'https://stream.example.com/space-1.m3u8',
+      );
+
+      sessionCubit.changeSpace(const Space(
+        id: 'space-2',
+        name: 'Space 2',
+        storeId: 'store-1',
+        type: SpaceTypeEnum.hall,
+        status: EntityStatusEnum.active,
+      ));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 10)),
+      );
+      await tester.pump();
+      await _waitUntil(
+        tester,
+        () =>
+            playerBloc.state.activeSpaceId == 'space-2' &&
+            !playerBloc.state.hasTrack,
+        timeout: const Duration(seconds: 8),
+      );
+
+      expect(audioService.loadedUrl, isNull);
+
+      camsBloc.seed(const SpacePlaybackState(
+        spaceId: 'space-1',
+        storeId: 'store-1',
+        currentQueueItemId: 'queue-stale',
+        currentTrackName: 'Stale Track',
+        hlsUrl: 'https://stream.example.com/stale-space-1.m3u8',
+      ));
+      await tester.pump();
+
+      expect(playerBloc.state.activeSpaceId, 'space-2');
+      expect(playerBloc.state.hasTrack, isFalse);
+      expect(playerBloc.state.hlsUrl, isNull);
+      expect(audioService.loadedUrl, isNull);
+
+      camsBloc.seed(
+        SpacePlaybackState(
+          spaceId: 'space-2',
+          storeId: 'store-1',
+          currentQueueItemId: 'queue-2',
+          currentTrackName: 'Track Two',
+          hlsUrl: 'https://stream.example.com/space-2.m3u8',
+          startedAtUtc:
+              DateTime.now().toUtc().subtract(const Duration(seconds: 2)),
+          isPaused: false,
+          spaceQueueItems: const [
+            SpaceQueueStateItem(
+              queueItemId: 'queue-2',
+              trackId: 'track-2',
+              trackName: 'Track Two',
+              position: 1,
+              queueStatus: SpacePlaybackState.queueStatusPlaying,
+              source: 1,
+              hlsUrl: 'https://stream.example.com/space-2.m3u8',
+              isReadyToStream: true,
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await _waitUntil(
+        tester,
+        () =>
+            playerBloc.state.activeSpaceId == 'space-2' &&
+            playerBloc.state.hlsUrl ==
+                'https://stream.example.com/space-2.m3u8',
+      );
+
+      camsBloc.seed(const SpacePlaybackState(
+        spaceId: 'space-1',
+        storeId: 'store-1',
+        currentQueueItemId: 'queue-stale-again',
+        currentTrackName: 'Stale Track Again',
+        hlsUrl: 'https://stream.example.com/stale-again.m3u8',
+      ));
+      await tester.pump();
+
+      expect(playerBloc.state.activeSpaceId, 'space-2');
+      expect(
+          playerBloc.state.hlsUrl, 'https://stream.example.com/space-2.m3u8');
+      expect(audioService.loadedUrl, 'https://stream.example.com/space-2.m3u8');
+    });
   });
 }
 

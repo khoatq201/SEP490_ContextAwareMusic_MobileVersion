@@ -247,7 +247,10 @@ class HomeCubit extends Cubit<HomeState> {
     );
   }
 
-  Future<void> applyMoodOverride(String moodId) async {
+  Future<void> applyMoodOverride(
+    String moodId, {
+    required int manualOverrideTtlSeconds,
+  }) async {
     final spaceId = state.activeSpaceId;
     if (spaceId == null || state.isApplyingOverride) return;
 
@@ -259,6 +262,7 @@ class HomeCubit extends Cubit<HomeState> {
     final result = await _overrideSpace(
       spaceId: spaceId,
       moodId: moodId,
+      manualOverrideTtlSeconds: manualOverrideTtlSeconds,
     );
 
     result.fold(

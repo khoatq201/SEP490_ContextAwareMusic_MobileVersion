@@ -146,7 +146,7 @@ class QueueSheetViewData {
           trackId: item.trackId,
           title: title,
           artist: artist,
-          artUrl: matchedTrack?.albumArt,
+          artUrl: item.coverImageUrl ?? matchedTrack?.albumArt,
           section: section,
           listIndex: index,
           queuePosition: item.position,

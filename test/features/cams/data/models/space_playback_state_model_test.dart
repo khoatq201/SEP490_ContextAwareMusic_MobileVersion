@@ -17,6 +17,7 @@ void main() {
         'pendingQueueItemId': 'pending-new',
         'pendingPlaylistId': 'pending-legacy',
         'volumePercent': 65,
+        'isIotDeviceOffline': true,
         'isMuted': true,
         'queueEndBehavior': 2,
         'spaceQueueItems': [
@@ -28,6 +29,7 @@ void main() {
             'queueStatus': 1,
             'source': 1,
             'hlsUrl': 'https://example.com/t1.m3u8',
+            'coverImageUrl': 'https://example.com/cover.jpg',
             'isReadyToStream': true,
           }
         ],
@@ -38,9 +40,12 @@ void main() {
       expect(model.pendingQueueItemId, 'pending-new');
       expect(model.currentPlaylistId, 'playlist-legacy');
       expect(model.volumePercent, 65);
+      expect(model.isIotDeviceOffline, true);
       expect(model.isMuted, true);
       expect(model.queueEndBehavior, 2);
       expect(model.spaceQueueItems, hasLength(1));
+      expect(model.spaceQueueItems.single.coverImageUrl,
+          'https://example.com/cover.jpg');
       expect(model.isStreaming, true);
     });
 
@@ -57,6 +62,7 @@ void main() {
       expect(model.currentTrackName, 'Legacy Playlist');
       expect(model.pendingQueueItemId, 'playlist-pending');
       expect(model.volumePercent, 100);
+      expect(model.isIotDeviceOffline, false);
       expect(model.isMuted, false);
       expect(model.queueEndBehavior, 0);
     });

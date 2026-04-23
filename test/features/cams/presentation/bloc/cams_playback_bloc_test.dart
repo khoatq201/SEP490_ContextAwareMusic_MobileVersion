@@ -132,6 +132,59 @@ void main() {
       expect(bloc.state.isOverriding, isFalse);
     });
 
+    test('does not carry playback state across space switches', () async {
+      await _initBloc(bloc);
+
+      bloc.add(const CamsStateSyncReceived(
+        playbackState: SpacePlaybackState(
+          spaceId: 'space-1',
+          currentQueueItemId: 'queue-1',
+          currentTrackName: 'Track One',
+          hlsUrl: 'https://stream.example.com/space-1.m3u8',
+        ),
+      ));
+      await _nextTick();
+
+      expect(bloc.state.playbackState?.spaceId, 'space-1');
+      expect(
+        bloc.state.playbackState?.hlsUrl,
+        'https://stream.example.com/space-1.m3u8',
+      );
+
+      sessionCubit.changeSpace(const Space(
+        id: 'space-2',
+        name: 'Space 2',
+        storeId: 'store-1',
+        type: SpaceTypeEnum.hall,
+        status: EntityStatusEnum.active,
+      ));
+      repository.getSpaceStateResult =
+          const Right(SpacePlaybackState(spaceId: 'space-2'));
+
+      bloc.add(const CamsInitPlayback(spaceId: 'space-2'));
+      await _waitUntil(
+        () =>
+            bloc.state.spaceId == 'space-2' &&
+            bloc.state.status != CamsStatus.loading,
+      );
+
+      expect(bloc.state.playbackState?.spaceId, 'space-2');
+      expect(bloc.state.playbackState?.hlsUrl, isNull);
+
+      bloc.add(const CamsStateSyncReceived(
+        playbackState: SpacePlaybackState(
+          spaceId: 'space-1',
+          currentQueueItemId: 'queue-stale',
+          hlsUrl: 'https://stream.example.com/stale.m3u8',
+        ),
+      ));
+      await _nextTick();
+
+      expect(bloc.state.spaceId, 'space-2');
+      expect(bloc.state.playbackState?.spaceId, 'space-2');
+      expect(bloc.state.playbackState?.hlsUrl, isNull);
+    });
+
     test('keeps requested PlayNow for playlist queue actions', () async {
       await _initBloc(bloc);
 
@@ -188,6 +241,7 @@ void main() {
 
       bloc.add(const CamsOverrideMood(
         moodId: 'mood-chill',
+        manualOverrideTtlSeconds: 1800,
         reason: 'Manual vibe test',
       ));
 
@@ -198,6 +252,7 @@ void main() {
       expect(request.moodId, 'mood-chill');
       expect(request.trackIds, isNull);
       expect(request.playlistId, isNull);
+      expect(request.manualOverrideTtlSeconds, 1800);
       expect(request.reason, 'Manual vibe test');
       expect(bloc.state.isOverriding, isFalse);
     });
@@ -543,6 +598,101 @@ void main() {
         repository.lastSendCommandRequest?.targetQueueItemId,
         'queue-1',
       );
+    });
+
+    test('optimistically focuses targeted previous jump during stale sync',
+        () async {
+      const playbackState = SpacePlaybackState(
+        spaceId: 'space-1',
+        currentQueueItemId: 'queue-2',
+        currentTrackName: 'Track Two',
+        hlsUrl: 'https://stream.example.com/t2.m3u8',
+        spaceQueueItems: [
+          SpaceQueueStateItem(
+            queueItemId: 'queue-1',
+            trackId: 'track-1',
+            trackName: 'Track One',
+            position: 1,
+            queueStatus: SpacePlaybackState.queueStatusPlayed,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/t1.m3u8',
+            isReadyToStream: true,
+          ),
+          SpaceQueueStateItem(
+            queueItemId: 'queue-2',
+            trackId: 'track-2',
+            trackName: 'Track Two',
+            position: 2,
+            queueStatus: SpacePlaybackState.queueStatusPlaying,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/t2.m3u8',
+            isReadyToStream: true,
+          ),
+        ],
+      );
+      repository.getSpaceStateResult = const Right(playbackState);
+      await _initBloc(bloc);
+      await _waitUntil(
+        () => bloc.state.playbackState?.currentQueueItemId == 'queue-2',
+      );
+
+      bloc.add(const CamsPreviousTapped());
+      await _waitUntil(
+        () =>
+            repository.lastSendCommandRequest?.command ==
+            PlaybackCommandEnum.seek,
+      );
+
+      repository.lastSendCommandRequest = null;
+      bloc.add(const CamsPreviousTapped());
+      await _waitUntil(
+        () =>
+            repository.lastSendCommandRequest?.command ==
+            PlaybackCommandEnum.skipToTrack,
+      );
+      await _waitUntil(
+        () => bloc.state.playbackState?.currentQueueItemId == 'queue-1',
+      );
+
+      expect(bloc.state.commandSequence, greaterThanOrEqualTo(2));
+      expect(bloc.state.playbackState?.currentTrackName, 'Track One');
+      expect(bloc.state.playbackState?.hlsUrl,
+          'https://stream.example.com/t1.m3u8');
+
+      storeHubService.emitStateSync(
+        const SpacePlaybackStateModel(
+          spaceId: 'space-1',
+          currentQueueItemId: 'queue-2',
+          currentTrackName: 'Track Two',
+          hlsUrl: 'https://stream.example.com/t2.m3u8',
+          spaceQueueItems: [
+            SpaceQueueStateItem(
+              queueItemId: 'queue-1',
+              trackId: 'track-1',
+              trackName: 'Track One',
+              position: 1,
+              queueStatus: SpacePlaybackState.queueStatusPlayed,
+              source: 1,
+              hlsUrl: 'https://stream.example.com/t1.m3u8',
+              isReadyToStream: true,
+            ),
+            SpaceQueueStateItem(
+              queueItemId: 'queue-2',
+              trackId: 'track-2',
+              trackName: 'Track Two',
+              position: 2,
+              queueStatus: SpacePlaybackState.queueStatusPlaying,
+              source: 1,
+              hlsUrl: 'https://stream.example.com/t2.m3u8',
+              isReadyToStream: true,
+            ),
+          ],
+        ),
+      );
+      await _nextTick();
+
+      expect(bloc.state.playbackState?.currentQueueItemId, 'queue-1');
+      expect(bloc.state.playbackState?.currentTrackName, 'Track One');
     });
 
     test('relays pause command immediately before API acknowledgement',

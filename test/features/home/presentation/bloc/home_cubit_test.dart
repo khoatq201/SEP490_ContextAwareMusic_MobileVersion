@@ -88,6 +88,20 @@ void main() {
       expect(cubit.state.isManualOverride, isFalse);
       expect(cubit.state.isPendingTranscode, isFalse);
     });
+
+    test('applyMoodOverride forwards required manual override ttl seconds',
+        () async {
+      await cubit.loadSpacePlaybackState('space-1');
+
+      await cubit.applyMoodOverride(
+        'mood-1',
+        manualOverrideTtlSeconds: 1800,
+      );
+
+      expect(camsRepository.lastOverrideSpaceId, 'space-1');
+      expect(camsRepository.lastOverrideMoodId, 'mood-1');
+      expect(camsRepository.lastManualOverrideTtlSeconds, 1800);
+    });
   });
 }
 
@@ -116,6 +130,9 @@ class _FakeMoodRepository implements MoodRepository {
 class _FakeCamsRepository implements CamsRepository {
   Either<Failure, SpacePlaybackState> getSpaceStateResult =
       const Right(SpacePlaybackState(spaceId: 'space-1'));
+  String? lastOverrideSpaceId;
+  String? lastOverrideMoodId;
+  int? lastManualOverrideTtlSeconds;
 
   @override
   Future<Either<Failure, SpacePlaybackState>> getSpaceState(
@@ -137,6 +154,9 @@ class _FakeCamsRepository implements CamsRepository {
     String? reason,
     bool usePlaybackDeviceScope = false,
   }) async {
+    lastOverrideSpaceId = spaceId;
+    lastOverrideMoodId = moodId;
+    lastManualOverrideTtlSeconds = manualOverrideTtlSeconds;
     return Right(OverrideResponse(spaceId: spaceId));
   }
 

@@ -30,12 +30,17 @@ class CamsDisposePlayback extends CamsPlaybackEvent {
 /// Override space with a specific mood.
 class CamsOverrideMood extends CamsPlaybackEvent {
   final String moodId;
+  final int manualOverrideTtlSeconds;
   final String? reason;
 
-  const CamsOverrideMood({required this.moodId, this.reason});
+  const CamsOverrideMood({
+    required this.moodId,
+    required this.manualOverrideTtlSeconds,
+    this.reason,
+  });
 
   @override
-  List<Object?> get props => [moodId, reason];
+  List<Object?> get props => [moodId, manualOverrideTtlSeconds, reason];
 }
 
 /// Apply a manual override using zero or one source: tracks, playlist, or mood.

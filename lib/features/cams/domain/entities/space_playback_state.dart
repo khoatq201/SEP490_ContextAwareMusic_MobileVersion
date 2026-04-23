@@ -58,19 +58,16 @@ class SpacePlaybackExplainability extends Equatable {
 
   String? get bpmBandLabel {
     if (hasBpmBand) {
-      return '${recommendedBpmMin!}-${recommendedBpmMax!} BPM';
+      return '${recommendedBpmMin!} - ${recommendedBpmMax!} BPM';
     }
     if (recommendedBpmTarget != null) {
-      return 'Target ${recommendedBpmTarget!} BPM';
+      return '${recommendedBpmTarget!} BPM';
     }
     return null;
   }
 
   String? get bpmTargetLabel {
     if (recommendedBpmTarget == null) return null;
-    if (hasBpmBand) {
-      return 'Target ${recommendedBpmTarget!} BPM';
-    }
     return '${recommendedBpmTarget!} BPM';
   }
 
@@ -164,6 +161,7 @@ class SpacePlaybackState extends Equatable {
 
   /// Audio mix / end behavior.
   final int volumePercent;
+  final bool isIotDeviceOffline;
   final bool isMuted;
   final int queueEndBehavior;
 
@@ -202,6 +200,7 @@ class SpacePlaybackState extends Equatable {
     this.pendingPlaylistId,
     this.pendingOverrideReason,
     this.volumePercent = 100,
+    this.isIotDeviceOffline = false,
     this.isMuted = false,
     this.queueEndBehavior = 0,
     this.spaceQueueItems = const [],
@@ -447,6 +446,7 @@ class SpacePlaybackState extends Equatable {
     String? pendingPlaylistId,
     String? pendingOverrideReason,
     int? volumePercent,
+    bool? isIotDeviceOffline,
     bool? isMuted,
     int? queueEndBehavior,
     List<SpaceQueueStateItem>? spaceQueueItems,
@@ -549,6 +549,7 @@ class SpacePlaybackState extends Equatable {
           ? null
           : (pendingOverrideReason ?? this.pendingOverrideReason),
       volumePercent: volumePercent ?? this.volumePercent,
+      isIotDeviceOffline: isIotDeviceOffline ?? this.isIotDeviceOffline,
       isMuted: isMuted ?? this.isMuted,
       queueEndBehavior: queueEndBehavior ?? this.queueEndBehavior,
       spaceQueueItems: spaceQueueItems ?? this.spaceQueueItems,
@@ -589,6 +590,7 @@ class SpacePlaybackState extends Equatable {
         pendingPlaylistId,
         pendingOverrideReason,
         volumePercent,
+        isIotDeviceOffline,
         isMuted,
         queueEndBehavior,
         spaceQueueItems,

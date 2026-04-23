@@ -31,7 +31,7 @@ class SpaceGridCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
         child: Padding(
-          padding: const EdgeInsets.all(AppDimensions.spacingMd),
+          padding: const EdgeInsets.all(AppDimensions.cardPaddingSm),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -69,7 +69,7 @@ class SpaceGridCard extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppDimensions.spacingSm,
-                  vertical: AppDimensions.spacingXs,
+                  vertical: AppDimensions.spacing2,
                 ),
                 decoration: BoxDecoration(
                   color:
@@ -96,8 +96,8 @@ class SpaceGridCard extends StatelessWidget {
               if (space.isScheduling || space.isManualOverride) ...[
                 const SizedBox(height: AppDimensions.spacingXs),
                 Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
+                  spacing: 4,
+                  runSpacing: 4,
                   children: [
                     if (space.isScheduling)
                       _RuntimeBadge(
@@ -138,7 +138,7 @@ class SpaceGridCard extends StatelessWidget {
                 ],
               ),
 
-              const SizedBox(height: AppDimensions.spacingSm),
+              const SizedBox(height: AppDimensions.spacingXs),
               const Divider(height: 1),
               const SizedBox(height: AppDimensions.spacingXs),
 
@@ -224,7 +224,7 @@ class _RuntimeBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
         color: color.withValues(alpha: isDark ? 0.22 : 0.12),
         borderRadius: BorderRadius.circular(AppDimensions.radiusSm),

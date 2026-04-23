@@ -129,36 +129,4 @@ class ConfigGovernanceRepositoryImpl implements ConfigGovernanceRepository {
       return Left(ServerFailure('Failed to update governance mode: $error'));
     }
   }
-
-  @override
-  Future<Either<Failure, String>> publishConfigVersion({
-    required PublishConfigVersionRequest request,
-  }) async {
-    try {
-      final message = await remoteDataSource.publishConfigVersion(
-        request: request,
-      );
-      return Right(message);
-    } on ServerException catch (error) {
-      return Left(ServerFailure(error.message));
-    } catch (error) {
-      return Left(ServerFailure('Failed to publish config version: $error'));
-    }
-  }
-
-  @override
-  Future<Either<Failure, String>> rollbackConfigVersion({
-    required RollbackConfigVersionRequest request,
-  }) async {
-    try {
-      final message = await remoteDataSource.rollbackConfigVersion(
-        request: request,
-      );
-      return Right(message);
-    } on ServerException catch (error) {
-      return Left(ServerFailure(error.message));
-    } catch (error) {
-      return Left(ServerFailure('Failed to rollback config version: $error'));
-    }
-  }
 }

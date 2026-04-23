@@ -402,8 +402,6 @@ class _FakeConfigGovernanceRepository implements ConfigGovernanceRepository {
   ConfigValueUpsertRequest? lastStoreUpsertRequest;
   ConfigValueUpsertRequest? lastSpaceUpsertRequest;
   SetStoreGovernanceModeRequest? lastGovernanceModeRequest;
-  PublishConfigVersionRequest? lastPublishConfigVersionRequest;
-  RollbackConfigVersionRequest? lastRollbackConfigVersionRequest;
 
   ConfigQuery? get lastBrandQuery =>
       brandQueries.isEmpty ? null : brandQueries.last;
@@ -473,21 +471,5 @@ class _FakeConfigGovernanceRepository implements ConfigGovernanceRepository {
   }) async {
     lastGovernanceModeRequest = request;
     return const Right('Store governance mode updated.');
-  }
-
-  @override
-  Future<Either<Failure, String>> publishConfigVersion({
-    required PublishConfigVersionRequest request,
-  }) async {
-    lastPublishConfigVersionRequest = request;
-    return const Right('Config version published.');
-  }
-
-  @override
-  Future<Either<Failure, String>> rollbackConfigVersion({
-    required RollbackConfigVersionRequest request,
-  }) async {
-    lastRollbackConfigVersionRequest = request;
-    return const Right('Config version rolled back.');
   }
 }

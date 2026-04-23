@@ -2,8 +2,10 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cams_store_manager/core/enums/entity_status_enum.dart';
 import 'package:cams_store_manager/core/player/playlist_queue_builder.dart';
+import 'package:cams_store_manager/features/cams/domain/entities/space_queue_state_item.dart';
 import 'package:cams_store_manager/features/playlists/domain/entities/api_playlist.dart';
 import 'package:cams_store_manager/features/playlists/domain/entities/playlist_track_item.dart';
+import 'package:cams_store_manager/features/space_control/domain/entities/track.dart';
 
 void main() {
   group('buildPlaylistQueue', () {
@@ -71,6 +73,36 @@ void main() {
       expect(queue[1].duration, 125);
       expect(queue[0].seekOffsetSeconds, 0);
       expect(queue[1].seekOffsetSeconds, 90);
+    });
+  });
+
+  group('buildSpaceQueue', () {
+    test('uses queue cover image before hydrated track metadata art', () {
+      final queue = buildSpaceQueue(
+        const [
+          SpaceQueueStateItem(
+            queueItemId: 'queue-1',
+            trackId: 'track-1',
+            trackName: 'Queue Track',
+            position: 0,
+            queueStatus: 1,
+            source: 0,
+            coverImageUrl: 'https://cdn.example.com/queue-cover.jpg',
+          ),
+        ],
+        trackMetadataById: const {
+          'track-1': Track(
+            id: 'track-1',
+            title: 'Metadata Track',
+            artist: 'Artist',
+            fileUrl: '',
+            moodTags: [],
+            albumArt: 'https://cdn.example.com/metadata-cover.jpg',
+          ),
+        },
+      );
+
+      expect(queue.single.albumArt, 'https://cdn.example.com/queue-cover.jpg');
     });
   });
 }

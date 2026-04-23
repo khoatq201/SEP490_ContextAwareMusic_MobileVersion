@@ -199,6 +199,25 @@ class ApiConstants {
   static String camsUnpair(String spaceId) =>
       '/api/cams/spaces/$spaceId/unpair';
 
+  // Fuzzy music profiles
+  static const String fuzzyMusicProfilesBase = '/api/fuzzy-music-profiles';
+  static const String fuzzyMusicProfileForCurrentStore =
+      '$fuzzyMusicProfilesBase/store';
+  static const String fuzzyMusicProfilesForBrand =
+      '$fuzzyMusicProfilesBase/brand';
+  static String fuzzyMusicProfileForStore(String storeId) =>
+      '$fuzzyMusicProfilesBase/store/$storeId';
+  static String fuzzyMusicProfileForSpace(String spaceId) =>
+      '$fuzzyMusicProfilesBase/space/$spaceId';
+  static String fuzzyMusicProfileBrandAutoVolume(String profileId) =>
+      '$fuzzyMusicProfilesBase/brand/$profileId/auto-volume';
+  static const String fuzzyMusicProfileCurrentStoreAutoVolume =
+      '$fuzzyMusicProfilesBase/store/auto-volume';
+  static String fuzzyMusicProfileStoreAutoVolume(String storeId) =>
+      '$fuzzyMusicProfilesBase/store/$storeId/auto-volume';
+  static String fuzzyMusicProfileSpaceAutoVolume(String spaceId) =>
+      '$fuzzyMusicProfilesBase/space/$spaceId/auto-volume';
+
   // Config Governance
   static const String cmsConfigBase = '/api/cms/config';
   static const String cmsConfigBrand = '$cmsConfigBase/brand';
@@ -207,10 +226,6 @@ class ApiConstants {
   static const String cmsConfigStoreValue = '$cmsConfigBase/store-value';
   static const String cmsConfigStoresGovernanceMode =
       '$cmsConfigBase/stores/governance-mode';
-  static const String cmsConfigVersionPublish =
-      '$cmsConfigBase/version/publish';
-  static const String cmsConfigVersionRollback =
-      '$cmsConfigBase/version/rollback';
   static String cmsConfigStoreById(String storeId) =>
       '$cmsConfigBase/store/$storeId';
   static String cmsConfigStoreValueById(String storeId) =>
