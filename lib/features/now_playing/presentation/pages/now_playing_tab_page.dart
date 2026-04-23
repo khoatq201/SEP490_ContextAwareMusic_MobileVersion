@@ -17,6 +17,7 @@ import '../../../../core/player/player_event.dart';
 import '../../../../core/player/player_state.dart' as ps;
 import '../../../../core/player/space_info.dart';
 import '../../../../core/presentation/app_feedback.dart';
+import '../../../../core/presentation/playback_mood_label.dart';
 import '../../../../core/widgets/app_feedback_presenter.dart';
 import '../../../../features/cams/data/models/override_response_model.dart';
 import '../../../../features/cams/domain/entities/space_playback_state.dart';
@@ -27,8 +28,6 @@ import '../../../../features/moods/domain/entities/mood.dart';
 import '../models/queue_sheet_view_data.dart';
 import '../widgets/queue_management_sheets.dart';
 import '../../../../features/space_control/domain/entities/space.dart';
-import '../../../../features/space_control/presentation/bloc/music_control_bloc.dart';
-import '../../../../features/space_control/presentation/bloc/music_control_event.dart';
 import '../../../../features/space_control/presentation/bloc/space_monitoring_bloc.dart';
 import '../../../../features/space_control/presentation/bloc/space_monitoring_event.dart';
 import '../../../../features/space_control/presentation/bloc/space_monitoring_state.dart';
@@ -36,7 +35,14 @@ import '../../../../core/session/session_cubit.dart';
 
 /// Redesigned "Now Playing" tab â€” Spotify-style full-screen player.
 class NowPlayingTabPage extends StatefulWidget {
-  const NowPlayingTabPage({super.key});
+  const NowPlayingTabPage({
+    super.key,
+    this.embedInParentScaffold = false,
+    this.showTopBar = true,
+  });
+
+  final bool embedInParentScaffold;
+  final bool showTopBar;
 
   @override
   State<NowPlayingTabPage> createState() => _NowPlayingTabPageState();
@@ -294,16 +300,25 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
                 builder: (context, camsState) {
                   return Scaffold(
                     backgroundColor: palette.bg,
-                    body: SafeArea(
-                      child: _buildBody(
-                        context,
-                        playerState,
-                        spaceState,
-                        camsState,
-                        palette,
-                        isPlayback,
-                      ),
-                    ),
+                    body: widget.embedInParentScaffold
+                        ? _buildBody(
+                            context,
+                            playerState,
+                            spaceState,
+                            camsState,
+                            palette,
+                            isPlayback,
+                          )
+                        : SafeArea(
+                            child: _buildBody(
+                              context,
+                              playerState,
+                              spaceState,
+                              camsState,
+                              palette,
+                              isPlayback,
+                            ),
+                          ),
                   );
                 },
               );
@@ -323,11 +338,19 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
     bool isPlayback,
   ) {
     final track = playerState.currentTrack;
-    // Prefer CAMS mood name, then fallback to track/space
-    final mood = camsState.currentMoodName ??
-        ((track?.moodTags != null && track!.moodTags.isNotEmpty)
+    final isManualOverride = camsState.playbackState?.isManualOverride == true;
+    final fallbackTrackMood =
+        (track?.moodTags != null && track!.moodTags.isNotEmpty)
             ? track.moodTags.first
-            : spaceState.space?.currentMood);
+            : null;
+    final mood = buildPlaybackMoodLabel(
+      isManualOverride: isManualOverride,
+      primaryMoodName: camsState.currentMoodName,
+      fallbackMoodNames: [
+        fallbackTrackMood,
+        spaceState.space?.currentMood,
+      ],
+    );
     final duration = playerState.duration;
     final displayPosition = playerState.displayPosition;
     final displayPositionPrecise = playerState.displayPositionPrecise;
@@ -367,33 +390,33 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
     return Column(
       children: [
         // â”€â”€ Top bar: â†“  title  â‹® â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        _TopBar(
-          spaceName: spaceName,
-          playlistName: playbackLabel,
-          palette: palette,
-          canSwap: !isPlayback && playerState.availableSpaces.length > 1,
-          onMinimize: () {
-            // Pop back to previous screen if possible, otherwise go home
-            if (GoRouter.of(context).canPop()) {
-              context.pop();
-            } else {
-              context.go('/home');
-            }
-          },
-          onMenu: () => _showSongOptionsSheet(context, playerState, palette),
-          onTitleTap: (!isPlayback && playerState.availableSpaces.length > 1)
-              ? () => showModalBottomSheet(
-                    context: context,
-                    useRootNavigator: true,
-                    backgroundColor: Colors.transparent,
-                    isScrollControlled: true,
-                    builder: (_) => _SpaceSwapSheet(
-                      playerState: playerState,
-                      palette: palette,
-                    ),
-                  )
-              : null,
-        ),
+        if (widget.showTopBar)
+          _TopBar(
+            spaceName: spaceName,
+            playlistName: playbackLabel,
+            palette: palette,
+            canSwap: !isPlayback && playerState.availableSpaces.length > 1,
+            onMinimize: () {
+              if (GoRouter.of(context).canPop()) {
+                context.pop();
+              } else {
+                context.go('/home');
+              }
+            },
+            onMenu: () => _showSongOptionsSheet(context, playerState, palette),
+            onTitleTap: (!isPlayback && playerState.availableSpaces.length > 1)
+                ? () => showModalBottomSheet(
+                      context: context,
+                      useRootNavigator: true,
+                      backgroundColor: Colors.transparent,
+                      isScrollControlled: true,
+                      builder: (_) => _SpaceSwapSheet(
+                        playerState: playerState,
+                        palette: palette,
+                      ),
+                    )
+                : null,
+          ),
 
         // â”€â”€ Scrollable content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         Expanded(
@@ -3014,7 +3037,7 @@ class _OverrideMoodCTA extends StatelessWidget {
           if (currentMood != null) ...[
             const SizedBox(height: 10),
             Text(
-              'Current mood: ${currentMood!.toUpperCase()}',
+              'Mood state: ${currentMood!.toUpperCase()}',
               style: GoogleFonts.inter(
                 color: palette.textPrimary,
                 fontSize: 12,
@@ -3147,9 +3170,7 @@ class _SpaceSwapSheet extends StatelessWidget {
     context
         .read<SpaceMonitoringBloc>()
         .add(StartMonitoring(storeId: space.storeId, spaceId: space.id));
-    context
-        .read<MusicControlBloc>()
-        .add(StartMusicMonitoring(storeId: space.storeId, spaceId: space.id));
+    context.read<CamsPlaybackBloc>().add(CamsInitPlayback(spaceId: space.id));
     context.read<PlayerBloc>().add(PlayerContextUpdated(
           storeId: space.storeId,
           spaceId: space.id,

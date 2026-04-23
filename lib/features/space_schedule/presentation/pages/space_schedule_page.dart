@@ -50,110 +50,132 @@ class SpaceSchedulePage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: palette.background,
-      body: SafeArea(
-        child: BlocConsumer<SpaceScheduleBloc, SpaceScheduleState>(
-          listener: (context, state) {
-            if (state.errorMessage != null && state.errorMessage!.isNotEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.errorMessage!),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-              context
-                  .read<SpaceScheduleBloc>()
-                  .add(const SpaceScheduleFeedbackCleared());
-            } else if (state.feedbackMessage != null &&
-                state.feedbackMessage!.isNotEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.feedbackMessage!),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-              context
-                  .read<SpaceScheduleBloc>()
-                  .add(const SpaceScheduleFeedbackCleared());
-            }
-          },
-          builder: (context, state) {
-            if (state.status == SpaceScheduleStatus.loading &&
-                state.draftSchedule == null &&
-                state.librarySources.isEmpty &&
-                state.templateSources.isEmpty) {
-              return _ScheduleLoadingView(palette: palette);
-            }
-
-            if (state.status == SpaceScheduleStatus.error &&
-                state.draftSchedule == null &&
-                state.librarySources.isEmpty &&
-                state.templateSources.isEmpty) {
-              return _ScheduleErrorView(
-                palette: palette,
-                onRetry: () {
-                  context.read<SpaceScheduleBloc>().add(
-                        SpaceScheduleStarted(
-                          spaceId: spaceId,
-                          storeId: storeId,
-                          spaceName: spaceName,
-                        ),
-                      );
-                },
-              );
-            }
-
-            if (state.isBrandScheduleControlled &&
-                state.draftSchedule == null) {
-              return _BrandControlledOnlyView(
-                palette: palette,
-                spaceName: spaceName,
-                onClose: () => context.pop(),
-              );
-            }
-
-            switch (state.stage) {
-              case SpaceScheduleStage.welcome:
-                return _ScheduleWelcomeView(
-                  palette: palette,
-                  onClose: () => context.pop(),
-                  onCreateNew: () => context
-                      .read<SpaceScheduleBloc>()
-                      .add(const SpaceScheduleCreateNewRequested()),
-                  onLoadSchedule: () => context.read<SpaceScheduleBloc>().add(
-                        const SpaceScheduleSourcePickerRequested(
-                          initialTab: ScheduleSourceType.library,
-                        ),
-                      ),
+      body: MultiBlocListener(
+        listeners: [
+          BlocListener<SpaceScheduleBloc, SpaceScheduleState>(
+            listener: (context, state) {
+              if (state.errorMessage != null &&
+                  state.errorMessage!.isNotEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(state.errorMessage!),
+                    behavior: SnackBarBehavior.floating,
+                  ),
                 );
-              case SpaceScheduleStage.sourcePicker:
-                return _ScheduleSourcePickerView(
+                context
+                    .read<SpaceScheduleBloc>()
+                    .add(const SpaceScheduleFeedbackCleared());
+              } else if (state.feedbackMessage != null &&
+                  state.feedbackMessage!.isNotEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(state.feedbackMessage!),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+                context
+                    .read<SpaceScheduleBloc>()
+                    .add(const SpaceScheduleFeedbackCleared());
+              }
+            },
+          ),
+          if (camsBloc != null)
+            BlocListener<CamsPlaybackBloc, CamsPlaybackState>(
+              listenWhen: (previous, current) =>
+                  previous.errorMessage != current.errorMessage &&
+                  current.errorMessage != null &&
+                  current.errorMessage!.isNotEmpty,
+              listener: (context, camsState) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(camsState.errorMessage!),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
+            ),
+        ],
+        child: SafeArea(
+          child: BlocBuilder<SpaceScheduleBloc, SpaceScheduleState>(
+            builder: (context, state) {
+              if (state.status == SpaceScheduleStatus.loading &&
+                  state.draftSchedule == null &&
+                  state.librarySources.isEmpty &&
+                  state.templateSources.isEmpty) {
+                return _ScheduleLoadingView(palette: palette);
+              }
+
+              if (state.status == SpaceScheduleStatus.error &&
+                  state.draftSchedule == null &&
+                  state.librarySources.isEmpty &&
+                  state.templateSources.isEmpty) {
+                return _ScheduleErrorView(
                   palette: palette,
-                  state: state,
-                  onClose: () {
-                    if (state.draftSchedule != null) {
-                      context
-                          .read<SpaceScheduleBloc>()
-                          .add(const SpaceScheduleEditorReopened());
-                    } else {
-                      context.pop();
-                    }
+                  onRetry: () {
+                    context.read<SpaceScheduleBloc>().add(
+                          SpaceScheduleStarted(
+                            spaceId: spaceId,
+                            storeId: storeId,
+                            spaceName: spaceName,
+                          ),
+                        );
                   },
                 );
-              case SpaceScheduleStage.editor:
-                return _ScheduleEditorView(
-                  spaceId: spaceId,
+              }
+
+              if (state.isBrandScheduleControlled &&
+                  state.draftSchedule == null) {
+                return _BrandControlledOnlyView(
                   palette: palette,
-                  state: state,
+                  spaceName: spaceName,
                   onClose: () => context.pop(),
-                  onAddSlot: () => _openSlotEditor(context, state: state),
-                  onSlotTap: (slot) =>
-                      _openSlotEditor(context, state: state, slot: slot),
-                  onSlotDelete: (slot) => _confirmDeleteSlot(context, slot),
-                  onActionSelected: (action) =>
-                      _handleEditorAction(context, action, state),
                 );
-            }
-          },
+              }
+
+              switch (state.stage) {
+                case SpaceScheduleStage.welcome:
+                  return _ScheduleWelcomeView(
+                    palette: palette,
+                    onClose: () => context.pop(),
+                    onCreateNew: () => context
+                        .read<SpaceScheduleBloc>()
+                        .add(const SpaceScheduleCreateNewRequested()),
+                    onLoadSchedule: () => context.read<SpaceScheduleBloc>().add(
+                          const SpaceScheduleSourcePickerRequested(
+                            initialTab: ScheduleSourceType.library,
+                          ),
+                        ),
+                  );
+                case SpaceScheduleStage.sourcePicker:
+                  return _ScheduleSourcePickerView(
+                    palette: palette,
+                    state: state,
+                    onClose: () {
+                      if (state.draftSchedule != null) {
+                        context
+                            .read<SpaceScheduleBloc>()
+                            .add(const SpaceScheduleEditorReopened());
+                      } else {
+                        context.pop();
+                      }
+                    },
+                  );
+                case SpaceScheduleStage.editor:
+                  return _ScheduleEditorView(
+                    spaceId: spaceId,
+                    palette: palette,
+                    state: state,
+                    onClose: () => context.pop(),
+                    onAddSlot: () => _openSlotEditor(context, state: state),
+                    onSlotTap: (slot) =>
+                        _openSlotEditor(context, state: state, slot: slot),
+                    onSlotDelete: (slot) => _confirmDeleteSlot(context, slot),
+                    onActionSelected: (action) =>
+                        _handleEditorAction(context, action, state),
+                  );
+              }
+            },
+          ),
         ),
       ),
     );

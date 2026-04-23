@@ -68,6 +68,27 @@ void main() {
       expect(cubit.state.isPendingTranscode, isFalse);
     });
 
+    test('loadSpacePlaybackState falls back to explainability mood name',
+        () async {
+      const explainability = SpacePlaybackExplainability(
+        moodName: 'Focus',
+        triggeredRule: 'Crowd pressure',
+        reason: 'Steady daytime traffic',
+      );
+      camsRepository.getSpaceStateResult = const Right(
+        SpacePlaybackState(
+          spaceId: 'space-1',
+          currentTrackName: 'AI Queue Track',
+          explainability: explainability,
+        ),
+      );
+
+      await cubit.loadSpacePlaybackState('space-1');
+
+      expect(cubit.state.currentMoodName, 'Focus');
+      expect(cubit.state.explainability, explainability);
+    });
+
     test('syncForSpace(null) clears active playback labels', () async {
       camsRepository.getSpaceStateResult = const Right(
         SpacePlaybackState(
@@ -89,6 +110,146 @@ void main() {
       expect(cubit.state.isPendingTranscode, isFalse);
     });
 
+    test(
+        'selectAutoMode refreshes AI explainability again when only manual picker was open',
+        () async {
+      camsRepository.getSpaceStateResults = [
+        const Right(
+          SpacePlaybackState(
+            spaceId: 'space-1',
+            currentTrackName: 'Auto Track',
+            explainability: SpacePlaybackExplainability(
+              moodName: 'Chill',
+              triggeredRule: 'Baseline',
+            ),
+          ),
+        ),
+      ];
+      await cubit.loadSpacePlaybackState('space-1');
+      cubit.openManualSelection();
+
+      camsRepository.getSpaceStateResults = [
+        const Right(
+          SpacePlaybackState(
+            spaceId: 'space-1',
+            currentTrackName: 'Auto Track',
+            explainability: SpacePlaybackExplainability(
+              moodName: 'Focus',
+              triggeredRule: 'Traffic',
+              reason: 'Guests returned',
+            ),
+          ),
+        ),
+      ];
+
+      await cubit.selectAutoMode();
+
+      expect(camsRepository.getSpaceStateCallCount, greaterThanOrEqualTo(2));
+      expect(cubit.state.isManualSelectionOpen, isFalse);
+      expect(cubit.state.currentMoodName, 'Focus');
+      expect(cubit.state.explainability?.triggeredRule, 'Traffic');
+    });
+
+    test(
+        'syncFromRuntimePlaybackState keeps manual picker open while hydrating live explainability',
+        () async {
+      await cubit.loadSpacePlaybackState('space-1');
+      cubit.openManualSelection();
+      expect(cubit.state.isManualSelectionOpen, isTrue);
+
+      cubit.syncFromRuntimePlaybackState(
+        const SpacePlaybackState(
+          spaceId: 'space-1',
+          currentTrackName: 'Live AI Track',
+          explainability: SpacePlaybackExplainability(
+            moodName: 'Energetic',
+            triggeredRule: 'Rush hour',
+            reason: 'Traffic picked up',
+          ),
+        ),
+      );
+
+      expect(cubit.state.isManualSelectionOpen, isTrue);
+      expect(cubit.state.currentMoodName, 'Energetic');
+      expect(cubit.state.currentPlaybackName, 'Live AI Track');
+      expect(cubit.state.explainability?.triggeredRule, 'Rush hour');
+    });
+
+    test(
+        'syncFromRuntimePlaybackState preserves richer explainability when runtime snapshot only keeps mood',
+        () async {
+      await cubit.loadSpacePlaybackState('space-1');
+      cubit.syncFromRuntimePlaybackState(
+        const SpacePlaybackState(
+          spaceId: 'space-1',
+          currentTrackName: 'Seed Track',
+          explainability: SpacePlaybackExplainability(
+            moodName: 'Focus',
+            triggeredRule: 'Floor occupancy',
+            reason: 'Lunch buildup',
+            recommendedBpmMin: 85,
+            recommendedBpmMax: 105,
+            recommendedBpmTarget: 95,
+            fuzzyProfileName: 'L1 Override',
+          ),
+        ),
+      );
+
+      cubit.syncFromRuntimePlaybackState(
+        const SpacePlaybackState(
+          spaceId: 'space-1',
+          currentTrackName: 'Live Track',
+          moodName: 'Focus',
+        ),
+      );
+
+      expect(cubit.state.currentMoodName, 'Focus');
+      expect(cubit.state.currentPlaybackName, 'Live Track');
+      expect(cubit.state.explainability?.triggeredRule, 'Floor occupancy');
+      expect(cubit.state.explainability?.recommendedBpmTarget, 95);
+      expect(cubit.state.explainability?.fuzzyProfileName, 'L1 Override');
+    });
+
+    test('selectAutoMode retries space-state refresh until auto mood returns',
+        () async {
+      camsRepository.getSpaceStateResults = [
+        const Right(
+          SpacePlaybackState(
+            spaceId: 'space-1',
+            isManualOverride: true,
+          ),
+        ),
+      ];
+      await cubit.loadSpacePlaybackState('space-1');
+
+      camsRepository.getSpaceStateResults = [
+        const Right(
+          SpacePlaybackState(
+            spaceId: 'space-1',
+            isManualOverride: true,
+          ),
+        ),
+        const Right(
+          SpacePlaybackState(
+            spaceId: 'space-1',
+            currentTrackName: 'Recovered Auto Track',
+            explainability: SpacePlaybackExplainability(
+              moodName: 'Energetic',
+              triggeredRule: 'Peak hour',
+            ),
+          ),
+        ),
+      ];
+
+      await cubit.selectAutoMode();
+
+      expect(camsRepository.cancelOverrideCallCount, 1);
+      expect(camsRepository.getSpaceStateCallCount, greaterThanOrEqualTo(2));
+      expect(cubit.state.isManualOverride, isFalse);
+      expect(cubit.state.currentMoodName, 'Energetic');
+      expect(cubit.state.explainability?.triggeredRule, 'Peak hour');
+    });
+
     test('applyMoodOverride forwards required manual override ttl seconds',
         () async {
       await cubit.loadSpacePlaybackState('space-1');
@@ -96,11 +257,13 @@ void main() {
       await cubit.applyMoodOverride(
         'mood-1',
         manualOverrideTtlSeconds: 1800,
+        isCutOver: true,
       );
 
       expect(camsRepository.lastOverrideSpaceId, 'space-1');
       expect(camsRepository.lastOverrideMoodId, 'mood-1');
       expect(camsRepository.lastManualOverrideTtlSeconds, 1800);
+      expect(camsRepository.lastIsCutOver, isTrue);
     });
   });
 }
@@ -130,15 +293,23 @@ class _FakeMoodRepository implements MoodRepository {
 class _FakeCamsRepository implements CamsRepository {
   Either<Failure, SpacePlaybackState> getSpaceStateResult =
       const Right(SpacePlaybackState(spaceId: 'space-1'));
+  List<Either<Failure, SpacePlaybackState>> getSpaceStateResults = [];
+  int getSpaceStateCallCount = 0;
+  int cancelOverrideCallCount = 0;
   String? lastOverrideSpaceId;
   String? lastOverrideMoodId;
   int? lastManualOverrideTtlSeconds;
+  bool? lastIsCutOver;
 
   @override
   Future<Either<Failure, SpacePlaybackState>> getSpaceState(
     String spaceId, {
     bool usePlaybackDeviceScope = false,
   }) async {
+    getSpaceStateCallCount += 1;
+    if (getSpaceStateResults.isNotEmpty) {
+      return getSpaceStateResults.removeAt(0);
+    }
     return getSpaceStateResult;
   }
 
@@ -157,6 +328,7 @@ class _FakeCamsRepository implements CamsRepository {
     lastOverrideSpaceId = spaceId;
     lastOverrideMoodId = moodId;
     lastManualOverrideTtlSeconds = manualOverrideTtlSeconds;
+    lastIsCutOver = isCutOver;
     return Right(OverrideResponse(spaceId: spaceId));
   }
 
@@ -165,6 +337,7 @@ class _FakeCamsRepository implements CamsRepository {
     String spaceId, {
     bool usePlaybackDeviceScope = false,
   }) async {
+    cancelOverrideCallCount += 1;
     return const Right(null);
   }
 

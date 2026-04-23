@@ -9,7 +9,7 @@ abstract class PlayerEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-/// Fired by MusicControlBloc when the playing track changes.
+/// Fired when a non-CAMS playback flow updates the active track directly.
 class PlayerTrackChanged extends PlayerEvent {
   final Track? track;
   final bool isPlaying;

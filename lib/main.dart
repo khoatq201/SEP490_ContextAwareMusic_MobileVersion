@@ -21,7 +21,6 @@ import 'core/audio/audio_player_service.dart';
 import 'core/audio/playback_notification_service.dart';
 import 'features/cams/data/datasources/cams_remote_datasource.dart';
 import 'features/cams/presentation/bloc/cams_playback_bloc.dart';
-import 'features/space_control/presentation/bloc/music_control_bloc.dart';
 import 'features/space_control/presentation/bloc/space_monitoring_bloc.dart';
 import 'features/space_control/data/datasources/space_remote_datasource.dart';
 import 'features/space_control/domain/entities/space.dart';
@@ -58,10 +57,9 @@ Future<void> main() async {
         BlocProvider(
           create: (_) => PlayerBloc(audioPlayerService: audioPlayerService),
         ),
+        // CAMS playback + space monitoring stay global so Home / Now Playing /
+        // space detail screens all observe one live runtime state.
         BlocProvider(create: (_) => sl<CamsPlaybackBloc>()),
-        // MusicControlBloc & SpaceMonitoringBloc are global so NowPlayingTab
-        // can always read live space/sensor/music state from any tab.
-        BlocProvider(create: (_) => sl<MusicControlBloc>()),
         BlocProvider(create: (_) => sl<SpaceMonitoringBloc>()),
       ],
       child: const MyApp(),

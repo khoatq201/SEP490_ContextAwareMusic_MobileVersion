@@ -18,7 +18,6 @@ import 'features/store_dashboard/presentation/bloc/store_dashboard_bloc.dart';
 import 'features/store_dashboard/presentation/bloc/store_dashboard_event.dart';
 import 'features/space_control/presentation/pages/space_detail_page.dart';
 import 'features/space_control/presentation/bloc/space_monitoring_bloc.dart';
-import 'features/space_control/presentation/bloc/music_control_bloc.dart';
 import 'features/space_control/presentation/bloc/offline_library_bloc.dart';
 import 'features/settings/presentation/bloc/settings_cubit.dart';
 import 'features/settings/presentation/pages/settings_page.dart';
@@ -258,11 +257,10 @@ class AppRouter {
                       return MultiBlocProvider(
                         providers: [
                           BlocProvider.value(value: sl<AuthBloc>()),
-                          // Reuse global singletons so NowPlayingTab stays in sync
+                          // Reuse global singletons so the embedded Now Playing
+                          // view stays in sync with the selected space context.
                           BlocProvider.value(
                               value: context.read<SpaceMonitoringBloc>()),
-                          BlocProvider.value(
-                              value: context.read<MusicControlBloc>()),
                           BlocProvider(create: (_) => sl<OfflineLibraryBloc>()),
                         ],
                         child:

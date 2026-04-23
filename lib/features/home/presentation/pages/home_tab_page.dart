@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -9,11 +10,14 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/player/player_bloc.dart';
+import '../../../../core/presentation/playback_mood_label.dart';
 import '../../../../core/presentation/shell_layout_metrics.dart';
 import '../../../../core/session/session_cubit.dart';
 import '../../../../core/session/session_state.dart';
 import '../../../../injection_container.dart';
 import '../../../cams/domain/entities/space_playback_state.dart';
+import '../../../cams/presentation/bloc/cams_playback_bloc.dart';
+import '../../../cams/presentation/bloc/cams_playback_state.dart';
 import '../../domain/entities/category_entity.dart';
 import '../../domain/entities/playlist_entity.dart';
 import '../../domain/entities/sensor_entity.dart';
@@ -34,24 +38,61 @@ class HomeTabPage extends StatelessWidget {
     final storeId = sessionState.currentStore?.id;
     final spaceId = sessionState.currentSpace?.id;
     return BlocProvider(
-      create: (_) {
-        final cubit = sl<HomeCubit>()
-          ..load(
-            includeCatalog: true,
-            loadMoods: !isPlaybackDevice,
+      create: (context) {
+        final cubit = sl<HomeCubit>();
+        final camsPlaybackBloc = context.read<CamsPlaybackBloc>();
+        unawaited(
+          _bootstrapHomeCubit(
+            camsPlaybackBloc: camsPlaybackBloc,
+            cubit: cubit,
             storeId: storeId,
             spaceId: spaceId,
-          );
-        cubit.syncForSpace(
-          spaceId,
-          storeId: storeId,
-          loadMoods: !isPlaybackDevice,
-          usePlaybackDeviceScope: isPlaybackDevice,
+            isPlaybackDevice: isPlaybackDevice,
+          ),
         );
         return cubit;
       },
       child: const _HomeDashboardView(),
     );
+  }
+
+  Future<void> _bootstrapHomeCubit({
+    required CamsPlaybackBloc camsPlaybackBloc,
+    required HomeCubit cubit,
+    required String? storeId,
+    required String? spaceId,
+    required bool isPlaybackDevice,
+  }) async {
+    await cubit.load(
+      includeCatalog: true,
+      loadMoods: !isPlaybackDevice,
+      storeId: storeId,
+      spaceId: spaceId,
+    );
+    await cubit.syncForSpace(
+      spaceId,
+      storeId: storeId,
+      loadMoods: !isPlaybackDevice,
+      usePlaybackDeviceScope: isPlaybackDevice,
+    );
+    _applyCurrentRuntimeState(
+      camsPlaybackBloc: camsPlaybackBloc,
+      cubit: cubit,
+      expectedSpaceId: spaceId,
+    );
+  }
+
+  void _applyCurrentRuntimeState({
+    required CamsPlaybackBloc camsPlaybackBloc,
+    required HomeCubit cubit,
+    required String? expectedSpaceId,
+  }) {
+    if (expectedSpaceId == null || expectedSpaceId.isEmpty) return;
+    final runtimePlayback = camsPlaybackBloc.state.playbackState;
+    if (runtimePlayback == null || runtimePlayback.spaceId != expectedSpaceId) {
+      return;
+    }
+    cubit.syncFromRuntimePlaybackState(runtimePlayback);
   }
 }
 
@@ -74,18 +115,43 @@ class _HomeDashboardView extends StatelessWidget {
       extra: 24,
     );
 
-    return BlocListener<SessionCubit, SessionState>(
-      listenWhen: (previous, current) =>
-          previous.currentSpace?.id != current.currentSpace?.id,
-      listener: (context, sessionState) {
-        final isPlaybackDevice = sessionState.isPlaybackDevice;
-        context.read<HomeCubit>().syncForSpace(
-              sessionState.currentSpace?.id,
-              storeId: sessionState.currentStore?.id,
-              loadMoods: !isPlaybackDevice,
-              usePlaybackDeviceScope: isPlaybackDevice,
-            );
-      },
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<SessionCubit, SessionState>(
+          listenWhen: (previous, current) =>
+              previous.currentSpace?.id != current.currentSpace?.id,
+          listener: (context, sessionState) {
+            final isPlaybackDevice = sessionState.isPlaybackDevice;
+            final homeCubit = context.read<HomeCubit>();
+            final camsPlaybackBloc = context.read<CamsPlaybackBloc>();
+            unawaited(() async {
+              await homeCubit.syncForSpace(
+                sessionState.currentSpace?.id,
+                storeId: sessionState.currentStore?.id,
+                loadMoods: !isPlaybackDevice,
+                usePlaybackDeviceScope: isPlaybackDevice,
+              );
+              final runtimePlayback = camsPlaybackBloc.state.playbackState;
+              if (runtimePlayback == null ||
+                  runtimePlayback.spaceId != sessionState.currentSpace?.id) {
+                return;
+              }
+              homeCubit.syncFromRuntimePlaybackState(runtimePlayback);
+            }());
+          },
+        ),
+        BlocListener<CamsPlaybackBloc, CamsPlaybackState>(
+          listenWhen: (previous, current) =>
+              previous.playbackState != current.playbackState,
+          listener: (context, camsState) {
+            final runtimePlayback = camsState.playbackState;
+            if (runtimePlayback == null) return;
+            context
+                .read<HomeCubit>()
+                .syncFromRuntimePlaybackState(runtimePlayback);
+          },
+        ),
+      ],
       child: Scaffold(
         backgroundColor: palette.bg,
         body: BlocBuilder<HomeCubit, HomeState>(
@@ -120,10 +186,15 @@ class _HomeDashboardView extends StatelessWidget {
                 _HomeSliverAppBar(palette: palette),
 
                 // 2. Current Mood Chip
-                if (state.currentMoodName != null)
+                if (buildPlaybackMoodLabel(
+                  isManualOverride: state.isManualOverride,
+                  primaryMoodName: state.currentMoodName,
+                )
+                    case final moodLabel?)
                   SliverToBoxAdapter(
                     child: _CurrentMoodChip(
-                      moodName: state.currentMoodName!,
+                      moodName: moodLabel,
+                      isManualOverride: state.isManualOverride,
                       playbackLabel: state.currentPlaybackName,
                       isStreaming: state.isStreaming,
                       palette: palette,
@@ -190,10 +261,11 @@ class _HomeDashboardView extends StatelessWidget {
                         palette: palette,
                         onClose: () =>
                             context.read<HomeCubit>().closeManualSelection(),
-                        onApplyMood: (mood, ttlSeconds) {
+                        onApplyMood: (mood, ttlSeconds, isCutOver) {
                           context.read<HomeCubit>().applyMoodOverride(
                                 mood.id,
                                 manualOverrideTtlSeconds: ttlSeconds,
+                                isCutOver: isCutOver,
                               );
                         },
                       ),
@@ -530,26 +602,31 @@ class _SensorChip extends StatelessWidget {
 class _CurrentMoodChip extends StatelessWidget {
   const _CurrentMoodChip({
     required this.moodName,
+    required this.isManualOverride,
     required this.palette,
     this.playbackLabel,
     this.isStreaming = false,
   });
   final String moodName;
+  final bool isManualOverride;
   final String? playbackLabel;
   final bool isStreaming;
   final _Palette palette;
 
   @override
   Widget build(BuildContext context) {
+    final accent = isManualOverride ? palette.accentAlt : palette.accent;
+    final icon = isManualOverride ? Icons.tune_rounded : LucideIcons.sparkles;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: palette.accent.withValues(alpha: palette.isDark ? 0.12 : 0.08),
+          color: accent.withValues(alpha: palette.isDark ? 0.12 : 0.08),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: palette.accent.withValues(alpha: 0.25),
+            color: accent.withValues(alpha: 0.25),
           ),
         ),
         child: Row(
@@ -557,12 +634,12 @@ class _CurrentMoodChip extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: palette.accent.withValues(alpha: 0.18),
+                color: accent.withValues(alpha: 0.18),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
-                LucideIcons.sparkles,
-                color: palette.accent,
+                icon,
+                color: accent,
                 size: 18,
               ),
             ),
@@ -574,7 +651,7 @@ class _CurrentMoodChip extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        'Current Mood',
+                        'Mood State',
                         style: GoogleFonts.inter(
                           color: palette.textMuted,
                           fontSize: 10,
@@ -1242,7 +1319,7 @@ class _MoodPickerCard extends StatefulWidget {
   final bool isLoading;
   final _Palette palette;
   final VoidCallback onClose;
-  final void Function(Mood mood, int ttlSeconds) onApplyMood;
+  final void Function(Mood mood, int ttlSeconds, bool isCutOver) onApplyMood;
 
   @override
   State<_MoodPickerCard> createState() => _MoodPickerCardState();
@@ -1251,6 +1328,7 @@ class _MoodPickerCard extends StatefulWidget {
 class _MoodPickerCardState extends State<_MoodPickerCard> {
   late final TextEditingController _ttlController;
   String? _selectedMoodId;
+  bool _isCutOver = false;
 
   @override
   void initState() {
@@ -1423,12 +1501,42 @@ class _MoodPickerCardState extends State<_MoodPickerCard> {
                   : 'Enter a positive number of seconds.',
             ),
           ),
+          const SizedBox(height: 8),
+          SwitchListTile.adaptive(
+            value: _isCutOver,
+            onChanged: widget.isLoading
+                ? null
+                : (value) => setState(() => _isCutOver = value),
+            contentPadding: EdgeInsets.zero,
+            title: Text(
+              'Cut over immediately',
+              style: GoogleFonts.inter(
+                color: widget.palette.textPrimary,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            subtitle: Text(
+              'Ask CAMS to transition to the override source right away when supported.',
+              style: GoogleFonts.inter(
+                color: widget.palette.textMuted,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            activeThumbColor: widget.palette.accent,
+            activeTrackColor: widget.palette.accent.withValues(alpha: 0.35),
+          ),
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
               onPressed: _canApply && selectedMood != null
-                  ? () => widget.onApplyMood(selectedMood!, _ttlSeconds!)
+                  ? () => widget.onApplyMood(
+                        selectedMood!,
+                        _ttlSeconds!,
+                        _isCutOver,
+                      )
                   : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: widget.palette.accent,

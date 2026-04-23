@@ -6,6 +6,7 @@ import '../models/pair_device_info_model.dart';
 import '../../domain/entities/space_playback_state.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/constants/api_constants.dart';
+import '../../../../core/error/error_mapper.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/enums/playback_command_enum.dart';
 import '../../../../core/enums/queue_insert_mode_enum.dart';
@@ -288,9 +289,19 @@ class CamsRemoteDataSourceImpl implements CamsRemoteDataSource {
         usePlaybackDeviceScope: usePlaybackDeviceScope,
         payload: {'isScheduling': isScheduling},
       );
-    } catch (e) {
-      if (e is ServerException) rethrow;
-      throw ServerException('Failed to update scheduling state: $e');
+    } on DioException catch (error) {
+      throw ErrorMapper.fromDioException(
+        error,
+        fallbackMessage: 'Unable to update scheduling right now.',
+      );
+    } on AppException {
+      rethrow;
+    } catch (error, stackTrace) {
+      throw ErrorMapper.toException(
+        error,
+        fallbackMessage: 'Unable to update scheduling right now.',
+        stackTrace: stackTrace,
+      );
     }
   }
 

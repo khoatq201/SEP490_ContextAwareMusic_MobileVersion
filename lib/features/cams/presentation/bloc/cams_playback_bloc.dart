@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/error/error_mapper.dart';
+import '../../../../core/error/failures.dart';
 import '../../../../core/enums/playback_command_enum.dart';
 import '../../../../core/enums/queue_insert_mode_enum.dart';
 import '../../../../core/session/session_cubit.dart';
@@ -369,6 +370,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
       volumePercent: event.volumePercent,
       isMuted: event.isMuted,
       queueEndBehavior: event.queueEndBehavior,
+      usePlaybackDeviceScope: sessionCubit.state.isPlaybackDevice,
     );
 
     result.fold(
@@ -389,13 +391,16 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     emit(state.copyWith(isOverriding: true, clearError: true));
     final result = await runtime.patchSchedulingState(
       isScheduling: event.isScheduling,
+      usePlaybackDeviceScope: sessionCubit.state.isPlaybackDevice,
     );
 
     result.fold(
       (failure) => emit(state.copyWith(
         isOverriding: false,
-        errorMessage:
-            'Update scheduling failed: ${ErrorMapper.displayMessageForFailure(failure)}',
+        errorMessage: _resolveSchedulingUpdateErrorMessage(
+          failure,
+          attemptedEnable: event.isScheduling,
+        ),
       )),
       (_) => emit(state.copyWith(isOverriding: false)),
     );
@@ -578,6 +583,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
       isMuted: currentPlayback?.isMuted ?? false,
       queueEndBehavior: currentPlayback?.queueEndBehavior ?? 0,
       spaceQueueItems: currentPlayback?.spaceQueueItems ?? const [],
+      explainability: currentPlayback?.explainability,
     );
 
     _emitRuntimeState(
@@ -869,6 +875,27 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
       );
     }
     return hasScope;
+  }
+
+  String _resolveSchedulingUpdateErrorMessage(
+    Failure failure, {
+    required bool attemptedEnable,
+  }) {
+    final displayMessage = ErrorMapper.displayMessageForFailure(failure);
+    final normalizedBackendCode = failure.backendCode?.trim().toLowerCase();
+    final normalizedMessage = failure.message.trim().toLowerCase();
+    final isMissingActiveSlotViolation = attemptedEnable &&
+        failure.statusCode == 422 &&
+        (normalizedBackendCode == 'businessruleviolation' ||
+            normalizedMessage.contains(
+              'scheduling mode can only be activated when there is an active space scheduling slot',
+            ));
+
+    if (isMissingActiveSlotViolation) {
+      return 'Runtime status cannot be turned on right now because this space has no active schedule slot for the current time.';
+    }
+
+    return 'Update scheduling failed: $displayMessage';
   }
 
   @override

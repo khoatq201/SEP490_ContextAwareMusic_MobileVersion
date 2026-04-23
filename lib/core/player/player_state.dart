@@ -9,7 +9,7 @@ class PlayerState extends Equatable {
   final double currentPositionPrecise; // seconds
   final int duration; // seconds
 
-  /// The active space context (needed to dispatch commands back to MusicControlBloc).
+  /// The active space context used by shared playback UI and routing.
   final String? activeStoreId;
   final String? activeSpaceId;
 

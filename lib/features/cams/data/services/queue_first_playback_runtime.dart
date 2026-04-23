@@ -445,6 +445,7 @@ class QueueFirstPlaybackRuntime {
     int? volumePercent,
     bool? isMuted,
     int? queueEndBehavior,
+    bool? usePlaybackDeviceScope,
   }) async {
     final activeSpaceId = _activeSpaceId;
     if (activeSpaceId == null || activeSpaceId.isEmpty) {
@@ -459,7 +460,8 @@ class QueueFirstPlaybackRuntime {
         volumePercent: volumePercent,
         isMuted: isMuted,
         queueEndBehavior: queueEndBehavior,
-        usePlaybackDeviceScope: _usePlaybackDeviceScope,
+        usePlaybackDeviceScope:
+            usePlaybackDeviceScope ?? _usePlaybackDeviceScope,
       ),
     );
 
@@ -484,6 +486,7 @@ class QueueFirstPlaybackRuntime {
 
   Future<Either<Failure, void>> patchSchedulingState({
     required bool isScheduling,
+    bool? usePlaybackDeviceScope,
   }) async {
     final activeSpaceId = _activeSpaceId;
     if (activeSpaceId == null || activeSpaceId.isEmpty) {
@@ -496,7 +499,8 @@ class QueueFirstPlaybackRuntime {
       UpdateSchedulingStateParams(
         spaceId: activeSpaceId,
         isScheduling: isScheduling,
-        usePlaybackDeviceScope: _usePlaybackDeviceScope,
+        usePlaybackDeviceScope:
+            usePlaybackDeviceScope ?? _usePlaybackDeviceScope,
       ),
     );
 

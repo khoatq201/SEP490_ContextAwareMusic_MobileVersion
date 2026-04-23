@@ -6,19 +6,10 @@ import 'package:just_audio/just_audio.dart' hide PlayerState;
 import '../audio/audio_player_service.dart';
 import '../enums/playback_command_enum.dart';
 import '../../features/space_control/domain/entities/track.dart';
-import '../../features/space_control/presentation/bloc/music_control_bloc.dart';
-import '../../features/space_control/presentation/bloc/music_control_event.dart'
-    as mc;
-import '../../features/space_control/presentation/bloc/music_control_state.dart';
 import 'player_event.dart';
 import 'player_state.dart';
 
 /// Global PlayerBloc that lives above the router.
-///
-/// It mirrors/aggregates the state of whichever [MusicControlBloc] is
-/// currently active (i.e. the one for the selected space).  When
-/// SpaceDetailPage mounts, call [PlayerContextUpdated] and feed it the
-/// SpaceMonitoring stream via [PlayerTrackChanged] events.
 ///
 /// When a track has a non-empty [Track.fileUrl], the bloc delegates to
 /// [AudioPlayerService] to actually stream audio (HLS, MP3, etc.).
@@ -26,9 +17,6 @@ import 'player_state.dart';
 /// Supports playlist queue with next/previous/auto-advance.
 class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
   static const double _hlsPositionResyncToleranceSeconds = 0.8;
-
-  /// Injected at the time the space context becomes active.
-  MusicControlBloc? _activeMusicBloc;
 
   /// Audio engine for real playback.
   final AudioPlayerService _audioService;
@@ -238,7 +226,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
   void _onTrackChanged(
       PlayerTrackChanged event, Emitter<PlayerState> emit) async {
     if (state.isSyncedCamsPlayback) {
-      // Ignore legacy MusicControl sync while a CAMS/HLS stream is active.
+      // Ignore direct local track sync while a CAMS/HLS stream is active.
       return;
     }
 
@@ -270,17 +258,6 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
 
   void _onPlayPauseToggled(
       PlayerPlayPauseToggled event, Emitter<PlayerState> emit) {
-    final spaceId = state.activeSpaceId;
-
-    // Forward to backend MusicControlBloc if in space context
-    if (spaceId != null && _activeMusicBloc != null) {
-      if (state.isPlaying) {
-        _activeMusicBloc!.add(mc.PauseMusic(spaceId));
-      } else {
-        _activeMusicBloc!.add(mc.PlayMusic(spaceId));
-      }
-    }
-
     // Emit UI state FIRST, then fire-and-forget the audio engine calls.
     if (state.isPlaying) {
       _audioService.pause();
@@ -304,12 +281,6 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     if (state.queue.isNotEmpty && state.hasNext) {
       await _loadAndPlayTrack(state.currentIndex + 1, emit);
       return;
-    }
-
-    // Fallback: forward to backend MusicControlBloc if in space context
-    final spaceId = state.activeSpaceId;
-    if (spaceId != null && _activeMusicBloc != null) {
-      _activeMusicBloc!.add(mc.SkipMusic(spaceId));
     }
   }
 
@@ -419,7 +390,6 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       PlayerContextCleared event, Emitter<PlayerState> emit) {
     _audioService.stop();
     emit(const PlayerState());
-    _activeMusicBloc = null;
   }
 
   void _onPositionUpdated(
@@ -911,37 +881,6 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     final boundedVolume = event.volumePercent.clamp(0, 100) / 100.0;
     final effectiveVolume = event.isMuted ? 0.0 : boundedVolume;
     unawaited(_audioService.setVolume(effectiveVolume));
-  }
-
-  // -------------------------------------------------------------------------
-  // Called from SpaceDetailPage after it creates its MusicControlBloc so
-  // the global PlayerBloc can forward commands to it.
-  // -------------------------------------------------------------------------
-  void attachMusicBloc(MusicControlBloc bloc) {
-    _activeMusicBloc = bloc;
-  }
-
-  // -------------------------------------------------------------------------
-  // Convenience: feed a MusicControlState snapshot into PlayerBloc.
-  // Call this inside SpaceDetailPage's BlocListener.
-  // -------------------------------------------------------------------------
-  void syncFromMusicState(MusicControlState musicState) {
-    if (state.isSyncedCamsPlayback) {
-      return;
-    }
-
-    final track = musicState.playerState?.currentTrack;
-    final isPlaying = musicState.status == MusicControlStatus.playing;
-    final position = musicState.playerState?.currentPosition ?? 0;
-    final duration = track?.duration ?? 0;
-
-    add(PlayerTrackChanged(
-      track: track,
-      isPlaying: isPlaying,
-      currentPosition: position,
-      duration: duration,
-      playLocally: true,
-    ));
   }
 
   @override

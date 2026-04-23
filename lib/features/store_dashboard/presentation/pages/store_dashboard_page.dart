@@ -24,9 +24,9 @@ import '../../../config_governance/domain/entities/config_governance_enums.dart'
 import '../../../config_governance/domain/entities/config_value_upsert_request.dart';
 import '../../../config_governance/domain/usecases/config_governance_usecases.dart';
 import '../../../config_governance/presentation/widgets/config_governance_sheet.dart';
+import '../../../cams/presentation/bloc/cams_playback_bloc.dart';
+import '../../../cams/presentation/bloc/cams_playback_event.dart';
 import '../../../space_control/domain/entities/space.dart';
-import '../../../space_control/presentation/bloc/music_control_bloc.dart';
-import '../../../space_control/presentation/bloc/music_control_event.dart';
 import '../../../space_control/presentation/bloc/space_monitoring_bloc.dart';
 import '../../../space_control/presentation/bloc/space_monitoring_event.dart';
 import '../../../space_schedule/data/datasources/space_schedule_remote_datasource.dart';
@@ -1224,12 +1224,9 @@ class StoreDashboardPage extends StatelessWidget {
                                       spaceId: space.id,
                                     ),
                                   );
-                              // 2. Start global music monitoring
-                              context.read<MusicControlBloc>().add(
-                                    StartMusicMonitoring(
-                                      storeId: storeId,
-                                      spaceId: space.id,
-                                    ),
+                              // 2. Bootstrap CAMS playback for the selected space
+                              context.read<CamsPlaybackBloc>().add(
+                                    CamsInitPlayback(spaceId: space.id),
                                   );
                               // 3. Update global player context (name + space list)
                               context.read<PlayerBloc>().add(

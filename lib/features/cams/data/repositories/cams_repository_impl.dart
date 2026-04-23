@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import '../../../../core/error/error_mapper.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/enums/playback_command_enum.dart';
@@ -233,10 +234,14 @@ class CamsRepositoryImpl implements CamsRepository {
         usePlaybackDeviceScope: usePlaybackDeviceScope,
       );
       return const Right(null);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
-    } catch (e) {
-      return Left(ServerFailure('Failed to update scheduling state: $e'));
+    } catch (error, stackTrace) {
+      return Left(
+        ErrorMapper.toFailure(
+          error,
+          fallbackMessage: 'Unable to update scheduling right now.',
+          stackTrace: stackTrace,
+        ),
+      );
     }
   }
 

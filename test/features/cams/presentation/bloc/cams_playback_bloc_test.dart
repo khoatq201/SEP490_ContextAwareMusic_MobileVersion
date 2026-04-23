@@ -3,11 +3,14 @@ import 'dart:async';
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:cams_store_manager/core/enums/app_mode.dart';
 import 'package:cams_store_manager/core/enums/playback_command_enum.dart';
 import 'package:cams_store_manager/core/enums/queue_insert_mode_enum.dart';
 import 'package:cams_store_manager/core/enums/entity_status_enum.dart';
 import 'package:cams_store_manager/core/enums/space_type_enum.dart';
 import 'package:cams_store_manager/core/enums/transition_type_enum.dart';
+import 'package:cams_store_manager/core/enums/user_role.dart';
+import 'package:cams_store_manager/core/error/failure_kind.dart';
 import 'package:cams_store_manager/core/error/failures.dart';
 import 'package:cams_store_manager/core/services/local_storage_service.dart';
 import 'package:cams_store_manager/core/session/session_cubit.dart';
@@ -903,6 +906,63 @@ void main() {
       expect(bloc.state.playbackState?.queueEndBehavior, 2);
     });
 
+    test(
+        'uses the live manager scope for scheduling updates after playback bootstrap',
+        () async {
+      sessionCubit.setPlaybackMode(
+        store: const Store(
+          id: 'store-1',
+          name: 'Store 1',
+          brandId: 'brand-1',
+        ),
+        space: const Space(
+          id: 'space-1',
+          name: 'Space 1',
+          storeId: 'store-1',
+          type: SpaceTypeEnum.hall,
+          status: EntityStatusEnum.active,
+        ),
+        deviceId: 'device-1',
+      );
+
+      await _initBloc(bloc);
+
+      sessionCubit.changeAppMode(AppMode.remoteControl);
+      sessionCubit.changeRole(UserRole.storeManager);
+
+      bloc.add(const CamsUpdateSchedulingState(isScheduling: false));
+      await _waitUntil(
+        () => repository.lastUpdateSchedulingStateRequest != null,
+      );
+
+      final request = repository.lastUpdateSchedulingStateRequest!;
+      expect(request.spaceId, 'space-1');
+      expect(request.isScheduling, isFalse);
+      expect(request.usePlaybackDeviceScope, isFalse);
+    });
+
+    test(
+        'shows a friendly runtime-status message when scheduling enable hits active-slot business rule',
+        () async {
+      repository.updateSchedulingStateResult = const Left(
+        ValidationFailure(
+          'Scheduling mode can only be activated when there is an active space scheduling slot at the current UTC time.',
+          FailureKind.business,
+          'BusinessRuleViolation',
+          422,
+        ),
+      );
+      await _initBloc(bloc);
+
+      bloc.add(const CamsUpdateSchedulingState(isScheduling: true));
+      await _waitUntil(() => bloc.state.errorMessage != null);
+
+      expect(
+        bloc.state.errorMessage,
+        'Runtime status cannot be turned on right now because this space has no active schedule slot for the current time.',
+      );
+    });
+
     test('refreshes playback state after SignalR reconnect', () async {
       repository.getSpaceStateResult = const Right(
         SpacePlaybackState(
@@ -1115,6 +1175,8 @@ class _FakeCamsRepository implements CamsRepository {
   _ReorderQueueRequest? lastReorderQueueRequest;
   _RemoveQueueItemsRequest? lastRemoveQueueItemsRequest;
   _UpdateAudioStateRequest? lastUpdateAudioStateRequest;
+  _UpdateSchedulingStateRequest? lastUpdateSchedulingStateRequest;
+  Either<Failure, void> updateSchedulingStateResult = const Right(null);
   int getSpaceStateCallCount = 0;
   int getQueueCallCount = 0;
   int cancelOverrideCallCount = 0;
@@ -1300,11 +1362,16 @@ class _FakeCamsRepository implements CamsRepository {
     required bool isScheduling,
     bool usePlaybackDeviceScope = false,
   }) async {
+    lastUpdateSchedulingStateRequest = _UpdateSchedulingStateRequest(
+      spaceId: spaceId,
+      isScheduling: isScheduling,
+      usePlaybackDeviceScope: usePlaybackDeviceScope,
+    );
     getSpaceStateResult = getSpaceStateResult.fold(
       Left.new,
       (state) => Right(state.copyWith(isScheduling: isScheduling)),
     );
-    return const Right(null);
+    return updateSchedulingStateResult;
   }
 
   @override
@@ -1506,6 +1573,18 @@ class _UpdateAudioStateRequest {
     required this.queueEndBehavior,
     required this.usePlaybackDeviceScope,
   });
+}
+
+class _UpdateSchedulingStateRequest {
+  const _UpdateSchedulingStateRequest({
+    required this.spaceId,
+    required this.isScheduling,
+    required this.usePlaybackDeviceScope,
+  });
+
+  final String spaceId;
+  final bool isScheduling;
+  final bool usePlaybackDeviceScope;
 }
 
 Future<void> _nextTick() {

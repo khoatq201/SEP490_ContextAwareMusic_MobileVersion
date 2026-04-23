@@ -63,24 +63,17 @@ import 'features/settings/presentation/bloc/settings_cubit.dart';
 
 // Space Control Feature
 import 'features/space_control/data/datasources/space_remote_datasource.dart';
-import 'features/space_control/data/datasources/music_control_remote_datasource.dart';
 import 'features/space_control/data/datasources/offline_playlist_datasource.dart';
 import 'features/space_control/data/datasources/offline_playlist_mock_datasource.dart';
 import 'features/space_control/data/datasources/offline_playlist_remote_datasource_impl.dart';
 import 'features/space_control/data/repositories/space_repository_impl.dart';
-import 'features/space_control/data/repositories/music_control_repository_impl.dart';
 import 'features/space_control/data/repositories/offline_playlist_repository_impl.dart';
 import 'features/space_control/domain/repositories/space_repository.dart';
-import 'features/space_control/domain/repositories/music_control_repository.dart';
 import 'features/space_control/domain/repositories/offline_playlist_repository.dart';
 import 'features/space_control/domain/usecases/get_space_by_id.dart';
 import 'features/space_control/domain/usecases/subscribe_to_sensor_data.dart';
 import 'features/space_control/domain/usecases/subscribe_to_space_status.dart';
-import 'features/space_control/domain/usecases/control_music.dart';
-import 'features/space_control/domain/usecases/override_mood.dart';
-import 'features/space_control/domain/usecases/subscribe_music_player_state.dart';
 import 'features/space_control/presentation/bloc/space_monitoring_bloc.dart';
-import 'features/space_control/presentation/bloc/music_control_bloc.dart';
 import 'features/space_control/presentation/bloc/offline_library_bloc.dart';
 
 // Store Dashboard Feature
@@ -185,7 +178,6 @@ import 'features/home/presentation/bloc/home_cubit.dart';
 
 // Mock Data Sources
 import 'features/space_control/data/datasources/space_mock_datasource.dart';
-import 'features/space_control/data/datasources/music_control_mock_datasource.dart';
 import 'features/store_dashboard/data/datasources/store_mock_datasource.dart';
 
 final sl = GetIt.instance;
@@ -476,12 +468,6 @@ Future<void> initializeDependencies() async {
         : SpaceRemoteDataSourceImpl(dioClient: sl(), mqttService: sl()),
   );
 
-  sl.registerLazySingleton<MusicControlRemoteDataSource>(
-    () => ApiConstants.useMockData
-        ? MusicControlMockDataSource()
-        : MusicControlRemoteDataSourceImpl(dioClient: sl(), mqttService: sl()),
-  );
-
   sl.registerLazySingleton<OfflinePlaylistDataSource>(
     () => ApiConstants.useMockData
         ? OfflinePlaylistMockDatasource()
@@ -491,13 +477,6 @@ Future<void> initializeDependencies() async {
   // Repositories
   sl.registerLazySingleton<SpaceRepository>(
     () => SpaceRepositoryImpl(
-      remoteDataSource: sl(),
-      networkInfo: sl(),
-    ),
-  );
-
-  sl.registerLazySingleton<MusicControlRepository>(
-    () => MusicControlRepositoryImpl(
       remoteDataSource: sl(),
       networkInfo: sl(),
     ),
@@ -513,9 +492,6 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(() => GetSpaceById(sl()));
   sl.registerLazySingleton(() => SubscribeToSensorData(sl()));
   sl.registerLazySingleton(() => SubscribeToSpaceStatus(sl()));
-  sl.registerLazySingleton(() => ControlMusic(sl()));
-  sl.registerLazySingleton(() => OverrideMood(sl()));
-  sl.registerLazySingleton(() => SubscribeMusicPlayerState(sl()));
 
   // BLoCs
   sl.registerFactory(
@@ -523,14 +499,6 @@ Future<void> initializeDependencies() async {
       getSpaceById: sl(),
       subscribeToSpaceStatus: sl(),
       subscribeToSensorData: sl(),
-    ),
-  );
-
-  sl.registerFactory(
-    () => MusicControlBloc(
-      controlMusic: sl(),
-      overrideMood: sl(),
-      subscribeMusicPlayerState: sl(),
     ),
   );
 
