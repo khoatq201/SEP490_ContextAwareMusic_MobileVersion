@@ -8,6 +8,7 @@ import '../../../../core/network/dio_client.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/error/error_mapper.dart';
 import '../../../../core/error/exceptions.dart';
+import '../../../../core/error/failure_kind.dart';
 import '../../../../core/enums/playback_command_enum.dart';
 import '../../../../core/enums/queue_insert_mode_enum.dart';
 import 'package:dio/dio.dart';
@@ -473,10 +474,19 @@ class CamsRemoteDataSourceImpl implements CamsRemoteDataSource {
           // Fall through to common error.
         }
       }
-      throw ServerException('Failed to get queue: $e');
+      _throwMappedDioException(
+        e,
+        fallbackMessage: 'Unable to load the CAMS queue right now.',
+        primaryPath: primaryPath,
+        fallbackPath: fallbackPath,
+      );
     } catch (e) {
       if (e is ServerException) rethrow;
-      throw ServerException('Failed to get queue: $e');
+      if (e is AppException) rethrow;
+      throw ErrorMapper.toException(
+        e,
+        fallbackMessage: 'Unable to load the CAMS queue right now.',
+      );
     }
   }
 
@@ -507,10 +517,19 @@ class CamsRemoteDataSourceImpl implements CamsRemoteDataSource {
           // Fall through to the common error message below.
         }
       }
-      throw ServerException('Failed to get space state: $e');
+      _throwMappedDioException(
+        e,
+        fallbackMessage: 'Unable to load CAMS playback state right now.',
+        primaryPath: primaryPath,
+        fallbackPath: fallbackPath,
+      );
     } catch (e) {
       if (e is ServerException) rethrow;
-      throw ServerException('Failed to get space state: $e');
+      if (e is AppException) rethrow;
+      throw ErrorMapper.toException(
+        e,
+        fallbackMessage: 'Unable to load CAMS playback state right now.',
+      );
     }
   }
 
@@ -665,23 +684,102 @@ class CamsRemoteDataSourceImpl implements CamsRemoteDataSource {
     final response = await dioClient.get(path);
     final data = response.data;
     if (data is Map<String, dynamic>) {
+      if (data['isSuccess'] == false) {
+        _throwApiResponseFailure(
+          data,
+          fallbackMessage: 'Unable to load CAMS playback state right now.',
+          path: path,
+          statusCode: response.statusCode,
+        );
+      }
       final model = SpacePlaybackStateModel.fromApiResponse(data);
       if (model != null) return model;
     }
-    throw const ServerException('Invalid space state response');
+    throw ServerException(
+      'Invalid CAMS playback state response.',
+      FailureKind.unexpected,
+      null,
+      response.statusCode,
+      _requestDebugContext(path: path, payload: data),
+    );
   }
 
   Future<List<SpaceQueueStateItemModel>> _fetchQueueByPath(String path) async {
     final response = await dioClient.get(path);
     final body = response.data;
     if (body is Map<String, dynamic>) {
+      if (body['isSuccess'] == false) {
+        _throwApiResponseFailure(
+          body,
+          fallbackMessage: 'Unable to load the CAMS queue right now.',
+          path: path,
+          statusCode: response.statusCode,
+        );
+      }
       final data = body['data'];
       return SpaceQueueStateItemModel.listFromDynamic(data);
     }
     if (body is List) {
       return SpaceQueueStateItemModel.listFromDynamic(body);
     }
-    throw const ServerException('Invalid queue response');
+    throw ServerException(
+      'Invalid CAMS queue response.',
+      FailureKind.unexpected,
+      null,
+      response.statusCode,
+      _requestDebugContext(path: path, payload: body),
+    );
+  }
+
+  Never _throwMappedDioException(
+    DioException error, {
+    required String fallbackMessage,
+    required String primaryPath,
+    String? fallbackPath,
+  }) {
+    final exception = ErrorMapper.fromDioException(
+      error,
+      fallbackMessage: fallbackMessage,
+    );
+    final debugMessage = [
+      _requestDebugContext(path: primaryPath),
+      if (fallbackPath != null && fallbackPath != primaryPath)
+        'fallbackPath=$fallbackPath',
+      if (exception.debugMessage != null && exception.debugMessage!.isNotEmpty)
+        exception.debugMessage,
+    ].join(' | ');
+    throw ServerException(
+      exception.message,
+      exception.kind,
+      exception.backendCode,
+      exception.statusCode,
+      debugMessage,
+      exception.isRetryable,
+    );
+  }
+
+  Never _throwApiResponseFailure(
+    dynamic payload, {
+    required String fallbackMessage,
+    required String path,
+    int? statusCode,
+  }) {
+    throw ErrorMapper.fromApiResponsePayload(
+      payload,
+      fallbackMessage: fallbackMessage,
+      statusCode: statusCode,
+      debugMessage: _requestDebugContext(path: path, payload: payload),
+    );
+  }
+
+  String _requestDebugContext({
+    required String path,
+    dynamic payload,
+  }) {
+    return [
+      'path=$path',
+      if (payload != null) 'payload=$payload',
+    ].join(' | ');
   }
 
   Map<String, dynamic>? _extractFuzzyProfilePayload(dynamic body) {

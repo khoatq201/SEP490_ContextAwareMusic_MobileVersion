@@ -507,6 +507,101 @@ void main() {
           bloc.state.playbackState?.spaceQueueItems.first.trackId, 'track-9');
     });
 
+    test('does not rehydrate when state sync already includes full queue',
+        () async {
+      await _initBloc(bloc);
+      final queueCallsBeforeSync = repository.getQueueCallCount;
+
+      storeHubService.emitStateSync(
+        const SpacePlaybackStateModel(
+          spaceId: 'space-1',
+          currentQueueItemId: 'queue-2',
+          pendingQueueItemId: 'queue-3',
+          hlsUrl: 'https://stream.example.com/queue-2.m3u8',
+          spaceQueueItems: [
+            SpaceQueueStateItem(
+              queueItemId: 'queue-1',
+              trackId: 'track-1',
+              trackName: 'Track One',
+              position: 1,
+              queueStatus: SpacePlaybackState.queueStatusPlayed,
+              source: 1,
+            ),
+            SpaceQueueStateItem(
+              queueItemId: 'queue-2',
+              trackId: 'track-2',
+              trackName: 'Track Two',
+              position: 2,
+              queueStatus: SpacePlaybackState.queueStatusPlaying,
+              source: 1,
+            ),
+            SpaceQueueStateItem(
+              queueItemId: 'queue-3',
+              trackId: 'track-3',
+              trackName: 'Track Three',
+              position: 3,
+              queueStatus: SpacePlaybackState.queueStatusPending,
+              source: 1,
+            ),
+            SpaceQueueStateItem(
+              queueItemId: 'queue-4',
+              trackId: 'track-4',
+              trackName: 'Track Four',
+              position: 4,
+              queueStatus: SpacePlaybackState.queueStatusPending,
+              source: 1,
+            ),
+          ],
+        ),
+      );
+
+      await _waitUntil(
+        () => (bloc.state.playbackState?.spaceQueueItems.length ?? 0) == 4,
+      );
+
+      expect(repository.getQueueCallCount, queueCallsBeforeSync);
+    });
+
+    test('coalesces duplicate queue hydration for matching state syncs',
+        () async {
+      await _initBloc(bloc);
+      final queueCompleter =
+          Completer<Either<Failure, List<SpaceQueueStateItem>>>();
+      repository.getQueueCompleter = queueCompleter;
+
+      const partialState = SpacePlaybackStateModel(
+        spaceId: 'space-1',
+        currentQueueItemId: 'queue-9',
+        hlsUrl: 'https://stream.example.com/queue-9.m3u8',
+      );
+
+      storeHubService.emitStateSync(partialState);
+      storeHubService.emitStateSync(partialState);
+      await _nextTick();
+
+      expect(repository.getQueueCallCount, 1);
+
+      queueCompleter.complete(const Right([
+        SpaceQueueStateItem(
+          queueItemId: 'queue-9',
+          trackId: 'track-9',
+          trackName: 'Track Nine',
+          position: 1,
+          queueStatus: SpacePlaybackState.queueStatusPlaying,
+          source: 1,
+        ),
+      ]));
+
+      await _waitUntil(
+        () =>
+            (bloc.state.playbackState?.spaceQueueItems.length ?? 0) == 1 &&
+            bloc.state.playbackState?.spaceQueueItems.first.queueItemId ==
+                'queue-9',
+      );
+
+      expect(repository.getQueueCallCount, 1);
+    });
+
     test('does not optimistically mutate for skip command without seek',
         () async {
       await _initBloc(bloc);
@@ -1324,6 +1419,7 @@ class _FakeCamsRepository implements CamsRepository {
   Completer<Either<Failure, void>>? sendCommandCompleter;
   Either<Failure, void> cancelOverrideResult = const Right(null);
   Either<Failure, List<SpaceQueueStateItem>> getQueueResult = const Right([]);
+  Completer<Either<Failure, List<SpaceQueueStateItem>>>? getQueueCompleter;
   Either<Failure, OverrideResponse> overrideSpaceResult = const Right(
     OverrideResponse(spaceId: 'space-1'),
   );
@@ -1577,6 +1673,11 @@ class _FakeCamsRepository implements CamsRepository {
     bool usePlaybackDeviceScope = false,
   }) async {
     getQueueCallCount += 1;
+    final pendingCompleter = getQueueCompleter;
+    if (pendingCompleter != null) {
+      getQueueCompleter = null;
+      return pendingCompleter.future;
+    }
     return getQueueResult;
   }
 

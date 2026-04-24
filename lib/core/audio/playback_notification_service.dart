@@ -8,10 +8,39 @@ import '../../features/space_control/domain/entities/track.dart';
 import '../player/player_state.dart' as app_player;
 import 'audio_player_service.dart';
 
-enum PlaybackNotificationCommand {
+enum PlaybackNotificationCommandType {
   play,
   pause,
   skipNext,
+  skipPrevious,
+  seek,
+}
+
+class PlaybackNotificationCommand {
+  const PlaybackNotificationCommand._(this.type, {this.position});
+
+  static const play = PlaybackNotificationCommand._(
+    PlaybackNotificationCommandType.play,
+  );
+  static const pause = PlaybackNotificationCommand._(
+    PlaybackNotificationCommandType.pause,
+  );
+  static const skipNext = PlaybackNotificationCommand._(
+    PlaybackNotificationCommandType.skipNext,
+  );
+  static const skipPrevious = PlaybackNotificationCommand._(
+    PlaybackNotificationCommandType.skipPrevious,
+  );
+
+  static PlaybackNotificationCommand seek(Duration position) {
+    return PlaybackNotificationCommand._(
+      PlaybackNotificationCommandType.seek,
+      position: position,
+    );
+  }
+
+  final PlaybackNotificationCommandType type;
+  final Duration? position;
 }
 
 class CamsAudioHandler extends BaseAudioHandler with SeekHandler {
@@ -33,6 +62,16 @@ class CamsAudioHandler extends BaseAudioHandler with SeekHandler {
   @override
   Future<void> skipToNext() async {
     _commandController.add(PlaybackNotificationCommand.skipNext);
+  }
+
+  @override
+  Future<void> skipToPrevious() async {
+    _commandController.add(PlaybackNotificationCommand.skipPrevious);
+  }
+
+  @override
+  Future<void> seek(Duration position) async {
+    _commandController.add(PlaybackNotificationCommand.seek(position));
   }
 
   Future<void> clearSession() async {
@@ -81,7 +120,7 @@ class PlaybackNotificationService {
   Timer? _notificationDebounceTimer;
   app_player.PlayerState _latestState = const app_player.PlayerState();
   bool _isEnabled = false;
-  String? _lastMediaItemId;
+  String? _lastMediaItemSignature;
 
   static Future<PlaybackNotificationService> init({
     required AudioPlayerService audioPlayerService,
@@ -94,8 +133,9 @@ class PlaybackNotificationService {
           androidNotificationChannelId: _channelId,
           androidNotificationChannelName: _channelName,
           androidNotificationChannelDescription: _channelDescription,
-          androidNotificationOngoing: true,
+          androidNotificationOngoing: false,
           androidResumeOnClick: true,
+          androidStopForegroundOnPause: false,
           preloadArtwork: false,
         ),
       );
@@ -116,6 +156,8 @@ class PlaybackNotificationService {
   void syncPlayerState(
     app_player.PlayerState playerState, {
     required bool enabled,
+    bool forceMediaItem = false,
+    bool immediate = false,
   }) {
     _latestState = playerState;
     _isEnabled = enabled && playerState.hasTrack;
@@ -125,21 +167,24 @@ class PlaybackNotificationService {
     }
 
     // Only update mediaItem when the track identity actually changes.
-    final newMediaId = playerState.currentTrack?.id ??
-        playerState.playlistId ??
-        playerState.activeSpaceId;
-    if (newMediaId != _lastMediaItemId) {
-      _lastMediaItemId = newMediaId;
+    final newMediaSignature = _mediaItemSignature(playerState);
+    if (forceMediaItem || newMediaSignature != _lastMediaItemSignature) {
+      _lastMediaItemSignature = newMediaSignature;
       _handler.mediaItem.add(_buildMediaItem(playerState));
     }
 
-    _scheduleNotificationUpdate();
+    if (immediate) {
+      _notificationDebounceTimer?.cancel();
+      _publishPlaybackState();
+    } else {
+      _scheduleNotificationUpdate();
+    }
   }
 
   Future<void> clear() async {
     _isEnabled = false;
     _latestState = const app_player.PlayerState();
-    _lastMediaItemId = null;
+    _lastMediaItemSignature = null;
     _notificationDebounceTimer?.cancel();
     await _handler.clearSession();
   }
@@ -168,8 +213,7 @@ class PlaybackNotificationService {
     final title = _resolveTitle(state, track);
     final artist = _resolveArtist(state, track);
     final artUri = _resolveArtUri(track);
-    final durationSeconds =
-        state.duration > 0 ? state.duration : track?.duration ?? 0;
+    final durationSeconds = _resolveDurationSeconds(state);
 
     return MediaItem(
       id: track?.id ?? state.playlistId ?? state.activeSpaceId ?? 'cams-stream',
@@ -187,30 +231,48 @@ class PlaybackNotificationService {
   }
 
   PlaybackState _buildPlaybackState(app_player.PlayerState state) {
+    final canSkipPrevious = state.hasPrevious;
     final canSkipNext = state.hasNext;
     final controls = <MediaControl>[
+      if (canSkipPrevious) MediaControl.skipToPrevious,
       state.isPlaying ? MediaControl.pause : MediaControl.play,
       if (canSkipNext) MediaControl.skipToNext,
     ];
+    final compactActionIndices = <int>[];
+    if (canSkipPrevious) compactActionIndices.add(0);
+    compactActionIndices.add(canSkipPrevious ? 1 : 0);
+    if (canSkipNext && compactActionIndices.length < 3) {
+      compactActionIndices.add(controls.length - 1);
+    }
 
     return PlaybackState(
       controls: controls,
-      systemActions: const {},
-      androidCompactActionIndices: <int>[
-        0,
-        if (canSkipNext) 1,
-      ],
-      processingState: _mapProcessingState(_audioPlayerService.processingState),
+      systemActions: state.duration > 0 ? const {MediaAction.seek} : const {},
+      androidCompactActionIndices: compactActionIndices,
+      processingState: _mapProcessingState(
+        _audioPlayerService.processingState,
+        state,
+      ),
       playing: state.isPlaying,
-      updatePosition: Duration(seconds: state.currentPosition),
+      updatePosition: _notificationPosition(state),
       bufferedPosition: _audioPlayerService.bufferedPosition,
       speed: 1.0,
       queueIndex: state.currentIndex >= 0 ? state.currentIndex : 0,
     );
   }
 
-  AudioProcessingState _mapProcessingState(ja.ProcessingState state) {
-    switch (state) {
+  AudioProcessingState _mapProcessingState(
+    ja.ProcessingState engineState,
+    app_player.PlayerState appState,
+  ) {
+    if (appState.hasTrack &&
+        appState.isPlaying &&
+        (engineState == ja.ProcessingState.loading ||
+            engineState == ja.ProcessingState.buffering)) {
+      return AudioProcessingState.ready;
+    }
+
+    switch (engineState) {
       case ja.ProcessingState.idle:
         return AudioProcessingState.idle;
       case ja.ProcessingState.loading:
@@ -222,6 +284,42 @@ class PlaybackNotificationService {
       case ja.ProcessingState.completed:
         return AudioProcessingState.completed;
     }
+  }
+
+  String _mediaItemSignature(app_player.PlayerState state) {
+    final track = state.currentTrack;
+    return [
+      track?.id ?? state.playlistId ?? state.activeSpaceId ?? 'cams-stream',
+      _resolveTitle(state, track),
+      _resolveArtist(state, track),
+      state.playlistName ?? state.activeSpaceName ?? '',
+      _resolveDurationSeconds(state),
+      _resolveArtUri(track)?.toString() ?? '',
+      state.isHlsMode,
+    ].join('|');
+  }
+
+  int _resolveDurationSeconds(app_player.PlayerState state) {
+    final stateDuration = state.duration;
+    if (stateDuration > 0) return stateDuration;
+
+    final trackDuration = state.currentTrack?.duration;
+    if (trackDuration != null && trackDuration > 0) return trackDuration;
+
+    return 0;
+  }
+
+  Duration _notificationPosition(app_player.PlayerState state) {
+    final durationSeconds = _resolveDurationSeconds(state);
+    final positionSeconds = durationSeconds > 0
+        ? state.displayPositionPrecise
+            .clamp(0.0, durationSeconds.toDouble())
+            .toDouble()
+        : (state.displayPositionPrecise < 0
+            ? 0.0
+            : state.displayPositionPrecise);
+
+    return Duration(milliseconds: (positionSeconds * 1000).round());
   }
 
   String _resolveTitle(app_player.PlayerState state, Track? track) {

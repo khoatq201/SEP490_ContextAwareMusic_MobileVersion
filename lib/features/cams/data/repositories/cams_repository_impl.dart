@@ -366,10 +366,14 @@ class CamsRepositoryImpl implements CamsRepository {
         usePlaybackDeviceScope: usePlaybackDeviceScope,
       );
       return Right(queue);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
-    } catch (e) {
-      return Left(ServerFailure('Failed to get queue: $e'));
+    } catch (error, stackTrace) {
+      return Left(
+        ErrorMapper.toFailure(
+          error,
+          fallbackMessage: 'Unable to load the CAMS queue right now.',
+          stackTrace: stackTrace,
+        ),
+      );
     }
   }
 
@@ -385,10 +389,14 @@ class CamsRepositoryImpl implements CamsRepository {
       );
       final enrichedState = await _withProfileBpmGuidance(state);
       return Right(enrichedState);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
-    } catch (e) {
-      return Left(ServerFailure('Failed to get space state: $e'));
+    } catch (error, stackTrace) {
+      return Left(
+        ErrorMapper.toFailure(
+          error,
+          fallbackMessage: 'Unable to load CAMS playback state right now.',
+          stackTrace: stackTrace,
+        ),
+      );
     }
   }
 
@@ -399,10 +407,14 @@ class CamsRepositoryImpl implements CamsRepository {
       final state = await remoteDataSource.getSpaceStateForPlaybackDevice();
       final enrichedState = await _withProfileBpmGuidance(state);
       return Right(enrichedState);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
-    } catch (e) {
-      return Left(ServerFailure('Failed to get playback device state: $e'));
+    } catch (error, stackTrace) {
+      return Left(
+        ErrorMapper.toFailure(
+          error,
+          fallbackMessage: 'Unable to load CAMS playback state right now.',
+          stackTrace: stackTrace,
+        ),
+      );
     }
   }
 

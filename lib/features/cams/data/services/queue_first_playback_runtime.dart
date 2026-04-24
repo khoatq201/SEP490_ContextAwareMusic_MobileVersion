@@ -27,6 +27,8 @@ import 'store_hub_service.dart';
 class QueueFirstPlaybackRuntime {
   static const Duration _pendingTrackJumpHoldDuration = Duration(seconds: 5);
   static const Duration _pendingCommandEchoHoldDuration = Duration(seconds: 5);
+  static const Duration _queueHydrationReuseWindow =
+      Duration(milliseconds: 750);
 
   QueueFirstPlaybackRuntime({
     required this.getSpaceState,
@@ -81,6 +83,12 @@ class QueueFirstPlaybackRuntime {
   final Map<String, int> _pendingCommandEchoCounts = <String, int>{};
   final Map<String, DateTime> _pendingCommandEchoIssuedAtUtc =
       <String, DateTime>{};
+  String? _queueHydrationInFlightKey;
+  Future<Either<Failure, List<SpaceQueueStateItem>>>? _queueHydrationInFlight;
+  String? _lastQueueHydrationKey;
+  DateTime? _lastQueueHydrationAtUtc;
+  List<SpaceQueueStateItem>? _lastQueueHydrationItems;
+  int _queueHydrationCacheEpoch = 0;
 
   Stream<SpacePlaybackState> get playbackStateStream =>
       _playbackStateController.stream;
@@ -129,6 +137,7 @@ class QueueFirstPlaybackRuntime {
       _clearPendingTraceCommand();
       _clearPendingTrackJump();
       _clearPendingCommandEchoes();
+      _clearQueueHydrationCache();
     }
 
     _activeSpaceId = spaceId;
@@ -160,6 +169,7 @@ class QueueFirstPlaybackRuntime {
     _lastFingerprint = null;
     _clearPendingTrackJump();
     _clearPendingCommandEchoes();
+    _clearQueueHydrationCache();
 
     if (activeSpaceId != null) {
       try {
@@ -194,7 +204,7 @@ class QueueFirstPlaybackRuntime {
 
     return await result.fold(
       (failure) async {
-        _debugLog('refreshState failed: ${failure.message}');
+        _debugLog('refreshState failed: ${_describeFailure(failure)}');
         return Left(failure);
       },
       (playbackState) async {
@@ -231,6 +241,7 @@ class QueueFirstPlaybackRuntime {
       'reason="${reason ?? '-'}"',
     );
     final baselineFingerprint = _lastFingerprint;
+    _clearQueueHydrationCache();
     final result = await queueTracks(
       QueueTracksParams(
         spaceId: activeSpaceId,
@@ -271,6 +282,7 @@ class QueueFirstPlaybackRuntime {
       'reason="${reason ?? '-'}"',
     );
     final baselineFingerprint = _lastFingerprint;
+    _clearQueueHydrationCache();
     final result = await queuePlaylist(
       QueuePlaylistParams(
         spaceId: activeSpaceId,
@@ -303,6 +315,7 @@ class QueueFirstPlaybackRuntime {
     }
 
     final baselineFingerprint = _lastFingerprint;
+    _clearQueueHydrationCache();
     final result = await reorderQueue(
       ReorderQueueParams(
         spaceId: activeSpaceId,
@@ -331,6 +344,7 @@ class QueueFirstPlaybackRuntime {
     }
 
     final baselineFingerprint = _lastFingerprint;
+    _clearQueueHydrationCache();
     final result = await removeQueueItems(
       RemoveQueueItemsParams(
         spaceId: activeSpaceId,
@@ -357,6 +371,7 @@ class QueueFirstPlaybackRuntime {
     }
 
     final baselineFingerprint = _lastFingerprint;
+    _clearQueueHydrationCache();
     final result = await clearQueue(
       QueueScopeParams(
         spaceId: activeSpaceId,
@@ -689,14 +704,14 @@ class QueueFirstPlaybackRuntime {
     );
 
     if (_shouldHydrateQueueSnapshot(normalizedState)) {
-      final queueResult = await getSpaceQueue(
-        QueueScopeParams(
-          spaceId: normalizedState.spaceId,
-          usePlaybackDeviceScope: _usePlaybackDeviceScope,
-        ),
-      );
+      final queueResult = await _hydrateQueueSnapshot(normalizedState);
       normalizedState = queueResult.fold(
-        (_) => normalizedState,
+        (failure) {
+          _debugLog(
+            'hydrate queue snapshot failed: ${_describeFailure(failure)}',
+          );
+          return normalizedState;
+        },
         (queueItems) => queueItems.isEmpty
             ? normalizedState
             : _copyWithQueue(
@@ -873,9 +888,102 @@ class QueueFirstPlaybackRuntime {
     final hasQueueIdentity =
         (playbackState.currentQueueItemId?.isNotEmpty ?? false) ||
             (playbackState.pendingQueueItemId?.isNotEmpty ?? false);
-    return playbackState.spaceQueueItems.isNotEmpty ||
-        hasQueueIdentity ||
-        playbackState.hasPlayableHls;
+    final queueItems = playbackState.spaceQueueItems;
+    if (queueItems.isEmpty) {
+      return hasQueueIdentity || playbackState.hasPlayableHls;
+    }
+
+    final currentQueueItemId = playbackState.currentQueueItemId;
+    if (currentQueueItemId != null &&
+        currentQueueItemId.isNotEmpty &&
+        !queueItems.any((item) => item.queueItemId == currentQueueItemId)) {
+      return true;
+    }
+
+    final pendingQueueItemId = playbackState.pendingQueueItemId;
+    if (pendingQueueItemId != null &&
+        pendingQueueItemId.isNotEmpty &&
+        !queueItems.any((item) => item.queueItemId == pendingQueueItemId)) {
+      return true;
+    }
+
+    final sortedItems = _sortQueueItems(queueItems);
+    final firstPosition = sortedItems.first.position;
+    final hasPositionGap = firstPosition > 1;
+    final looksLikeSmallWindow = sortedItems.length <= 3 &&
+        (hasQueueIdentity || playbackState.hasPlayableHls);
+    return hasPositionGap || looksLikeSmallWindow;
+  }
+
+  Future<Either<Failure, List<SpaceQueueStateItem>>> _hydrateQueueSnapshot(
+    SpacePlaybackState playbackState,
+  ) {
+    final key = _queueHydrationKey(playbackState);
+    final nowUtc = DateTime.now().toUtc();
+
+    final cachedAt = _lastQueueHydrationAtUtc;
+    final cachedItems = _lastQueueHydrationItems;
+    if (_lastQueueHydrationKey == key &&
+        cachedAt != null &&
+        cachedItems != null &&
+        nowUtc.difference(cachedAt) <= _queueHydrationReuseWindow) {
+      _debugLog('reuse hydrated queue snapshot key=$key');
+      return Future.value(Right(cachedItems));
+    }
+
+    final inFlight = _queueHydrationInFlight;
+    if (_queueHydrationInFlightKey == key && inFlight != null) {
+      _debugLog('join in-flight queue hydration key=$key');
+      return inFlight;
+    }
+
+    final cacheEpoch = _queueHydrationCacheEpoch;
+    late final Future<Either<Failure, List<SpaceQueueStateItem>>> future;
+    future = getSpaceQueue(
+      QueueScopeParams(
+        spaceId: playbackState.spaceId,
+        usePlaybackDeviceScope: _usePlaybackDeviceScope,
+      ),
+    ).then((result) {
+      result.fold(
+        (_) {},
+        (queueItems) {
+          if (cacheEpoch != _queueHydrationCacheEpoch) return;
+          _lastQueueHydrationKey = key;
+          _lastQueueHydrationAtUtc = DateTime.now().toUtc();
+          _lastQueueHydrationItems = _sortQueueItems(queueItems);
+        },
+      );
+      return result;
+    }).whenComplete(() {
+      if (_queueHydrationInFlight == future) {
+        _queueHydrationInFlight = null;
+        _queueHydrationInFlightKey = null;
+      }
+    });
+
+    _queueHydrationInFlightKey = key;
+    _queueHydrationInFlight = future;
+    return future;
+  }
+
+  String _queueHydrationKey(SpacePlaybackState playbackState) {
+    return [
+      playbackState.spaceId.toLowerCase(),
+      _usePlaybackDeviceScope ? 'device' : 'manager',
+      playbackState.currentQueueItemId ?? '',
+      playbackState.pendingQueueItemId ?? '',
+      playbackState.hlsUrl ?? '',
+    ].join('|');
+  }
+
+  void _clearQueueHydrationCache() {
+    _queueHydrationInFlight = null;
+    _queueHydrationInFlightKey = null;
+    _lastQueueHydrationKey = null;
+    _lastQueueHydrationAtUtc = null;
+    _lastQueueHydrationItems = null;
+    _queueHydrationCacheEpoch += 1;
   }
 
   List<SpaceQueueStateItem> _sortQueueItems(
@@ -1169,6 +1277,18 @@ class QueueFirstPlaybackRuntime {
 
   void _traceLog(String message) {
     debugPrint('[PlaybackTrace] $message');
+  }
+
+  String _describeFailure(Failure failure) {
+    return [
+      'kind=${failure.kind.name}',
+      'status=${failure.statusCode?.toString() ?? '-'}',
+      'backendCode=${failure.backendCode ?? '-'}',
+      'retryable=${failure.isRetryable}',
+      'message="${failure.message}"',
+      if (failure.debugMessage != null && failure.debugMessage!.isNotEmpty)
+        'debug="${failure.debugMessage}"',
+    ].join(' ');
   }
 
   void _rememberPendingTraceCommand({

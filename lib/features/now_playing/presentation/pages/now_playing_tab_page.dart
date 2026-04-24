@@ -89,6 +89,11 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
     context.read<CamsPlaybackBloc>().add(const CamsPreviousTapped());
   }
 
+  bool _isCamsPlaybackLoading(CamsPlaybackState camsState) {
+    return camsState.status == CamsStatus.initial ||
+        camsState.status == CamsStatus.loading;
+  }
+
   bool _hasRemoteNext(
     CamsPlaybackState camsState,
     ps.PlayerState playerState,
@@ -355,12 +360,17 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
     final displayPosition = playerState.displayPosition;
     final displayPositionPrecise = playerState.displayPositionPrecise;
     final isPlaying = playerState.isPlaying;
-    _syncDiscRotation(isPlaying && track != null);
     final useRemoteControls =
         playerState.isSyncedCamsPlayback || camsState.isStreaming;
+    final hasPlayableTrack = track != null;
+    final isWaitingForRemoteState =
+        useRemoteControls && _isCamsPlaybackLoading(camsState);
+    final playbackActionsEnabled = hasPlayableTrack && !isWaitingForRemoteState;
+    _syncDiscRotation(isPlaying && playbackActionsEnabled);
     final hasNextForControls = useRemoteControls
-        ? (_hasRemoteNext(camsState, playerState) || playerState.hasNext)
-        : playerState.hasNext;
+        ? playbackActionsEnabled &&
+            (_hasRemoteNext(camsState, playerState) || playerState.hasNext)
+        : playbackActionsEnabled && playerState.hasNext;
     final syncedVolumePercent =
         camsState.playbackState?.volumePercent.clamp(0, 100).toInt();
     final syncedIsMuted = camsState.playbackState?.isMuted;
@@ -502,6 +512,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
                   seekBaseOffsetSeconds: playerState.currentTrackStartOffset,
                   useAbsoluteSeek: playerState.isSyncedCamsPlayback,
                   useRemoteControls: useRemoteControls,
+                  enabled: playbackActionsEnabled,
                   palette: palette,
                 ),
 
@@ -513,11 +524,13 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
                   isShuffleOn: _isShuffleOn,
                   volume: effectiveVolume,
                   palette: palette,
+                  actionsEnabled: playbackActionsEnabled,
                   hasNext: hasNextForControls,
-                  hasPrevious: useRemoteControls
-                      ? playerState.hasTrack ||
-                          (camsState.playbackState?.hasPlayableHls ?? false)
-                      : playerState.hasPrevious || displayPosition > 3,
+                  hasPrevious: playbackActionsEnabled &&
+                      (useRemoteControls
+                          ? playerState.hasTrack ||
+                              (camsState.playbackState?.hasPlayableHls ?? false)
+                          : playerState.hasPrevious || displayPosition > 3),
                   onShuffle: () => setState(() => _isShuffleOn = !_isShuffleOn),
                   onPlayPause: () {
                     if (useRemoteControls) {
@@ -1939,6 +1952,7 @@ class _ProgressBar extends StatefulWidget {
       required this.seekBaseOffsetSeconds,
       required this.useAbsoluteSeek,
       required this.useRemoteControls,
+      required this.enabled,
       required this.palette});
   final int duration;
   final double currentPosition;
@@ -1946,6 +1960,7 @@ class _ProgressBar extends StatefulWidget {
   final int seekBaseOffsetSeconds;
   final bool useAbsoluteSeek;
   final bool useRemoteControls;
+  final bool enabled;
   final _NPPalette palette;
 
   @override
@@ -1997,6 +2012,7 @@ class _ProgressBarState extends State<_ProgressBar> {
   }
 
   void _dispatchSeekCommit(double sliderPositionSeconds) {
+    if (!widget.enabled) return;
     final localTargetSeconds =
         _resolveAbsoluteTargetSeconds(sliderPositionSeconds);
     final remoteTargetSeconds = sliderPositionSeconds.round();
@@ -2031,6 +2047,7 @@ class _ProgressBarState extends State<_ProgressBar> {
             .clamp(0, widget.duration)
             .toInt()
         : 0;
+    final canSeek = widget.enabled && widget.duration > 0;
 
     return Column(
       children: [
@@ -2049,26 +2066,32 @@ class _ProgressBarState extends State<_ProgressBar> {
             value: widget.duration > 0 ? clampedPosition : 0,
             min: 0,
             max: widget.duration > 0 ? widget.duration.toDouble() : 1,
-            onChangeStart: (value) {
-              _remoteSeekTimer?.cancel();
-              setState(() {
-                _isDragging = true;
-                _dragPositionSeconds = _clampSliderPosition(value);
-              });
-            },
-            onChanged: (value) {
-              setState(() {
-                _dragPositionSeconds = _clampSliderPosition(value);
-              });
-            },
-            onChangeEnd: (value) {
-              final clampedValue = _clampSliderPosition(value);
-              setState(() {
-                _isDragging = false;
-                _dragPositionSeconds = clampedValue;
-              });
-              _dispatchSeekCommit(clampedValue);
-            },
+            onChangeStart: canSeek
+                ? (value) {
+                    _remoteSeekTimer?.cancel();
+                    setState(() {
+                      _isDragging = true;
+                      _dragPositionSeconds = _clampSliderPosition(value);
+                    });
+                  }
+                : null,
+            onChanged: canSeek
+                ? (value) {
+                    setState(() {
+                      _dragPositionSeconds = _clampSliderPosition(value);
+                    });
+                  }
+                : null,
+            onChangeEnd: canSeek
+                ? (value) {
+                    final clampedValue = _clampSliderPosition(value);
+                    setState(() {
+                      _isDragging = false;
+                      _dragPositionSeconds = clampedValue;
+                    });
+                    _dispatchSeekCommit(clampedValue);
+                  }
+                : null,
           ),
         ),
         Padding(
@@ -2100,6 +2123,7 @@ class _ControlsRow extends StatelessWidget {
     required this.isShuffleOn,
     required this.volume,
     required this.palette,
+    required this.actionsEnabled,
     required this.hasNext,
     required this.hasPrevious,
     required this.onShuffle,
@@ -2109,6 +2133,7 @@ class _ControlsRow extends StatelessWidget {
     required this.onVolumeChanged,
   });
   final bool isPlaying, isShuffleOn;
+  final bool actionsEnabled;
   final bool hasNext, hasPrevious;
   final double volume;
   final _NPPalette palette;
@@ -2124,9 +2149,11 @@ class _ControlsRow extends StatelessWidget {
         // Shuffle
         _ControlButton(
           icon: LucideIcons.shuffle,
-          color: isShuffleOn ? palette.accent : palette.textMuted,
+          color: actionsEnabled
+              ? (isShuffleOn ? palette.accent : palette.textMuted)
+              : palette.textMuted.withValues(alpha: 0.4),
           size: 22,
-          onTap: onShuffle,
+          onTap: actionsEnabled ? onShuffle : null,
         ),
         const SizedBox(width: 20),
         // Skip Previous
@@ -2136,18 +2163,20 @@ class _ControlsRow extends StatelessWidget {
               ? palette.textPrimary
               : palette.textMuted.withValues(alpha: 0.4),
           size: 26,
-          onTap: onSkipBack,
+          onTap: hasPrevious ? onSkipBack : null,
         ),
         const SizedBox(width: 16),
         // Play/Pause (large center button)
         GestureDetector(
-          onTap: onPlayPause,
+          onTap: actionsEnabled ? onPlayPause : null,
           child: Container(
             width: 64,
             height: 64,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: palette.textPrimary,
+              color: actionsEnabled
+                  ? palette.textPrimary
+                  : palette.textMuted.withValues(alpha: 0.35),
             ),
             child: Icon(
               isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
@@ -2164,15 +2193,19 @@ class _ControlsRow extends StatelessWidget {
               ? palette.textPrimary
               : palette.textMuted.withValues(alpha: 0.4),
           size: 26,
-          onTap: onSkip,
+          onTap: hasNext ? onSkip : null,
         ),
         const SizedBox(width: 20),
         // Volume
         _ControlButton(
           icon: volume > 0 ? LucideIcons.volume2 : LucideIcons.volumeX,
-          color: palette.textMuted,
+          color: actionsEnabled
+              ? palette.textMuted
+              : palette.textMuted.withValues(alpha: 0.4),
           size: 22,
-          onTap: () => onVolumeChanged(volume > 0 ? 0 : 0.6),
+          onTap: actionsEnabled
+              ? () => onVolumeChanged(volume > 0 ? 0 : 0.6)
+              : null,
         ),
       ],
     );
@@ -2190,7 +2223,7 @@ class _ControlButton extends StatelessWidget {
   final IconData icon;
   final Color color;
   final double size;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {

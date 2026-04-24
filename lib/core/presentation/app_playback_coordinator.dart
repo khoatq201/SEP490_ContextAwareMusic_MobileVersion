@@ -46,9 +46,11 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
   Timer? _expectedEndTimer;
   Timer? _playbackHealthTicker;
   String? _expectedEndSignature;
+  String? _lastExpectedEndRefreshSignature;
   String? _managerWarmupSignature;
   String? _playbackHealthSignature;
   DateTime? _managerWarmupUntilUtc;
+  DateTime? _lastExpectedEndRefreshAtUtc;
   DateTime? _lastHealthyHlsAtUtc;
   DateTime? _hlsStallGraceUntilUtc;
   DateTime? _lastHlsRecoveryAttemptAtUtc;
@@ -75,6 +77,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
   static const Duration _managerProgressTickInterval =
       Duration(milliseconds: 250);
   static const Duration _playbackHealthTickInterval = Duration(seconds: 2);
+  static const Duration _expectedEndRefreshCooldown = Duration(seconds: 5);
   static const Duration _hlsStallThreshold = Duration(seconds: 8);
   static const Duration _hlsReloadThreshold = Duration(seconds: 16);
   static const Duration _hlsRecoveryCooldown = Duration(seconds: 10);
@@ -118,6 +121,17 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       unawaited(_handleAppResumed());
+      return;
+    }
+
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
+      _syncNotification(
+        session: context.read<SessionCubit>().state,
+        playerState: context.read<PlayerBloc>().state,
+        forceMediaItem: true,
+        immediate: true,
+      );
     }
   }
 
@@ -138,6 +152,12 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
     _lastAppliedRemotePlaybackSignature = null;
     _forceRemotePlaybackResyncOnNextCamsState = session.isPlaybackDevice;
 
+    _syncNotification(
+      session: session,
+      playerState: context.read<PlayerBloc>().state,
+      forceMediaItem: true,
+      immediate: true,
+    );
     _syncCamsState(context.read<CamsPlaybackBloc>().state);
     _addCamsEvent(CamsInitPlayback(spaceId: space.id));
   }
@@ -234,6 +254,8 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
   void _syncNotification({
     required SessionState session,
     required PlayerState playerState,
+    bool forceMediaItem = false,
+    bool immediate = false,
   }) {
     final shouldEnable = _shouldPlayRemoteAudioLocally(session) &&
         session.currentStore != null &&
@@ -242,6 +264,8 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
     context.read<PlaybackNotificationService>().syncPlayerState(
           playerState,
           enabled: shouldEnable,
+          forceMediaItem: forceMediaItem,
+          immediate: immediate,
         );
   }
 
@@ -1094,12 +1118,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
     }
 
     final expectedEndUtc = playbackState.expectedEndAtUtc!.toUtc();
-    final signature = [
-      playbackState.spaceId.toLowerCase(),
-      playbackState.currentIdentityId ?? '',
-      playbackState.effectiveHlsUrl ?? '',
-      expectedEndUtc.toIso8601String(),
-    ].join('|');
+    final signature = _expectedEndSignatureFor(playbackState, expectedEndUtc);
 
     if (_expectedEndSignature == signature && _expectedEndTimer != null) {
       return;
@@ -1170,14 +1189,47 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
 
     // Do not force-stop local player from the timer alone because backend
     // ExpectedEndAtUtc can drift around pause/resume. Reconcile from server state.
-    _addCamsEvent(const CamsRefreshState(silent: true));
-    _stopExpectedEndWatcher();
+    _requestExpectedEndRefresh(
+      signature: _expectedEndSignatureFor(activePlayback, expectedEndUtc),
+    );
+    _stopExpectedEndWatcher(clearRefreshThrottle: false);
   }
 
-  void _stopExpectedEndWatcher() {
+  String _expectedEndSignatureFor(
+    SpacePlaybackState playbackState,
+    DateTime expectedEndUtc,
+  ) {
+    return [
+      playbackState.spaceId.toLowerCase(),
+      playbackState.currentIdentityId ?? '',
+      playbackState.effectiveHlsUrl ?? '',
+      expectedEndUtc.toIso8601String(),
+    ].join('|');
+  }
+
+  void _requestExpectedEndRefresh({required String signature}) {
+    final nowUtc = DateTime.now().toUtc();
+    final lastRefreshAtUtc = _lastExpectedEndRefreshAtUtc;
+    if (_lastExpectedEndRefreshSignature == signature &&
+        lastRefreshAtUtc != null &&
+        nowUtc.difference(lastRefreshAtUtc) < _expectedEndRefreshCooldown) {
+      return;
+    }
+
+    _lastExpectedEndRefreshSignature = signature;
+    _lastExpectedEndRefreshAtUtc = nowUtc;
+    _debugLog('expected end reached -> refresh state signature=$signature');
+    _addCamsEvent(const CamsRefreshState(silent: true));
+  }
+
+  void _stopExpectedEndWatcher({bool clearRefreshThrottle = true}) {
     _expectedEndTimer?.cancel();
     _expectedEndTimer = null;
     _expectedEndSignature = null;
+    if (clearRefreshThrottle) {
+      _lastExpectedEndRefreshSignature = null;
+      _lastExpectedEndRefreshAtUtc = null;
+    }
   }
 
   bool _hasTrackEndedGuard() {
@@ -1373,8 +1425,8 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
         playerState.isHlsMode && session.currentSpace != null;
 
     if (canRouteToCams) {
-      switch (command) {
-        case PlaybackNotificationCommand.play:
+      switch (command.type) {
+        case PlaybackNotificationCommandType.play:
           if (!playerState.isPlaying) {
             _addPlayerEvent(const PlayerRemoteCommandApplied(
               command: PlaybackCommandEnum.resume,
@@ -1385,7 +1437,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
             ));
           }
           return;
-        case PlaybackNotificationCommand.pause:
+        case PlaybackNotificationCommandType.pause:
           if (playerState.isPlaying) {
             _addPlayerEvent(const PlayerRemoteCommandApplied(
               command: PlaybackCommandEnum.pause,
@@ -1396,27 +1448,51 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
             ));
           }
           return;
-        case PlaybackNotificationCommand.skipNext:
+        case PlaybackNotificationCommandType.skipNext:
           _addCamsEvent(const CamsSendCommand(
             command: PlaybackCommandEnum.skipNext,
+          ));
+          return;
+        case PlaybackNotificationCommandType.skipPrevious:
+          _addCamsEvent(const CamsPreviousTapped());
+          return;
+        case PlaybackNotificationCommandType.seek:
+          final positionSeconds =
+              (command.position ?? Duration.zero).inMilliseconds / 1000.0;
+          final absolutePositionSeconds =
+              playerState.currentTrackStartOffset + positionSeconds;
+          _addPlayerEvent(PlayerSeekRequested(
+            positionSeconds: absolutePositionSeconds.round(),
+          ));
+          _addCamsEvent(CamsSendCommand(
+            command: PlaybackCommandEnum.seek,
+            seekPositionSeconds: positionSeconds,
           ));
           return;
       }
     }
 
-    switch (command) {
-      case PlaybackNotificationCommand.play:
+    switch (command.type) {
+      case PlaybackNotificationCommandType.play:
         if (!playerState.isPlaying) {
           _addPlayerEvent(const PlayerPlayPauseToggled());
         }
         return;
-      case PlaybackNotificationCommand.pause:
+      case PlaybackNotificationCommandType.pause:
         if (playerState.isPlaying) {
           _addPlayerEvent(const PlayerPlayPauseToggled());
         }
         return;
-      case PlaybackNotificationCommand.skipNext:
+      case PlaybackNotificationCommandType.skipNext:
         _addPlayerEvent(const PlayerSkipRequested());
+        return;
+      case PlaybackNotificationCommandType.skipPrevious:
+        _addPlayerEvent(const PlayerSkipBackRequested());
+        return;
+      case PlaybackNotificationCommandType.seek:
+        _addPlayerEvent(PlayerSeekRequested(
+          positionSeconds: (command.position ?? Duration.zero).inSeconds,
+        ));
         return;
     }
   }

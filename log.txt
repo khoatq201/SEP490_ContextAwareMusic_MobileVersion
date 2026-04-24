@@ -1,144 +1,845 @@
-D/ReflectedParamUpdater( 8450): extent() != 1 for single value type: output.buffers.pool-ids.values
-D/ReflectedParamUpdater( 8450): extent() != 1 for single value type: algo.buffers.pool-ids.values
-I/CCodecConfig( 8450): query failed after returning 21 values (BAD_INDEX)
-D/CCodecConfig( 8450): c2 config diff is Dict {
-D/CCodecConfig( 8450):   c2::u32 coded.aac-packaging.value = 0
-D/CCodecConfig( 8450):   c2::u32 coded.bitrate.value = 64000
-D/CCodecConfig( 8450):   c2::u32 coded.pl.level = 0
-D/CCodecConfig( 8450):   c2::u32 coded.pl.profile = 8192
-D/CCodecConfig( 8450):   c2::i32 coding.drc.album-mode.value = 0
-D/CCodecConfig( 8450):   c2::float coding.drc.attenuation-factor.value = 1
-D/CCodecConfig( 8450):   c2::float coding.drc.boost-factor.value = 1
-D/CCodecConfig( 8450):   c2::i32 coding.drc.compression-mode.value = 3
-D/CCodecConfig( 8450):   c2::i32 coding.drc.effect-type.value = 3
-D/CCodecConfig( 8450):   c2::float coding.drc.encoded-level.value = 0.25
-D/CCodecConfig( 8450):   c2::float coding.drc.reference-level.value = -16
-D/CCodecConfig( 8450):   c2::u32 input.buffers.max-size.value = 8192
-D/CCodecConfig( 8450):   c2::u32 input.delay.value = 0
-D/CCodecConfig( 8450):   string input.media-type.value = "audio/mp4a-latm"
-D/CCodecConfig( 8450):   c2::u32 output.delay.value = 2
-D/CCodecConfig( 8450):   c2::float output.drc.output-loudness.value = 0.25
-D/CCodecConfig( 8450):   c2::u32 output.large-frame.max-size = 0
-D/CCodecConfig( 8450):   c2::u32 output.large-frame.threshold-size = 0
-D/CCodecConfig( 8450):   string output.media-type.value = "audio/raw"
-D/CCodecConfig( 8450):   c2::u32 raw.channel-count.value = 1
-D/CCodecConfig( 8450):   c2::u32 raw.channel-mask.value = 0
-D/CCodecConfig( 8450):   c2::u32 raw.max-channel-count.value = 8
-D/CCodecConfig( 8450):   c2::u32 raw.sample-rate.value = 44100
-D/CCodecConfig( 8450): }
-I/MediaCodec( 8450): MediaCodec will operate in async mode
-I/MediaCodec( 8450): media_quality service unavailable, skipping updatePictureProfile
-D/CCodec  ( 8450): [c2.android.aac.decoder] buffers are bound to CCodec for this session
-D/CCodecConfig( 8450): no c2 equivalents for log-session-id
-D/CCodecConfig( 8450): no c2 equivalents for importance
-D/CCodecConfig( 8450): no c2 equivalents for flags
-D/CCodecConfig( 8450): c2 config diff is   c2::u32 raw.channel-count.value = 2
-W/Codec2Client( 8450): query -- param skipped: index = 1107298332.
-D/CCodec  ( 8450): encoding statistics level = 0
-D/CCodec  ( 8450): setup formats input: AMessage(what = 0x00000000) = {
-D/CCodec  ( 8450):   int32_t aac-drc-album-mode = 0
-D/CCodec  ( 8450):   int32_t aac-drc-boost-level = 127
-D/CCodec  ( 8450):   int32_t aac-drc-cut-level = 127
-D/CCodec  ( 8450):   int32_t aac-drc-effect-type = 3
-D/CCodec  ( 8450):   int32_t aac-encoded-target-level = -1
-D/CCodec  ( 8450):   int32_t aac-max-output-channel_count = 8
-D/CCodec  ( 8450):   int32_t aac-target-ref-level = 64
-D/CCodec  ( 8450):   int32_t bitrate = 64000
-D/CCodec  ( 8450):   int32_t channel-count = 2
-D/CCodec  ( 8450):   int32_t channel-mask = 0
-D/CCodec  ( 8450):   int32_t level = 0
-D/CCodec  ( 8450):   int32_t max-input-size = 8192
-D/CCodec  ( 8450):   int32_t max-output-channel-count = 8
-D/CCodec  ( 8450):   string mime = "audio/mp4a-latm"
-D/CCodec  ( 8450):   int32_t profile = 2
-D/CCodec  ( 8450):   int32_t sample-rate = 44100
-D/CCodec  ( 8450): }
-D/CCodec  ( 8450): setup formats output: AMessage(what = 0x00000000) = {
-D/CCodec  ( 8450):   int32_t aac-drc-album-mode = 0
-D/CCodec  ( 8450):   int32_t aac-drc-boost-level = 127
-D/CCodec  ( 8450):   int32_t aac-drc-cut-level = 127
-D/CCodec  ( 8450):   int32_t aac-drc-effect-type = 3
-D/CCodec  ( 8450):   int32_t aac-drc-output-loudness = -1
-D/CCodec  ( 8450):   int32_t aac-encoded-target-level = -1
-D/CCodec  ( 8450):   int32_t aac-max-output-channel_count = 8
-D/CCodec  ( 8450):   int32_t aac-target-ref-level = 64
-D/CCodec  ( 8450):   int32_t buffer-batch-max-output-size = 0
-D/CCodec  ( 8450):   int32_t buffer-batch-threshold-output-size = 0
-D/CCodec  ( 8450):   int32_t channel-count = 2
-D/CCodec  ( 8450):   int32_t channel-mask = 0
-D/CCodec  ( 8450):   int32_t max-output-channel-count = 8
-D/CCodec  ( 8450):   string mime = "audio/raw"
-D/CCodec  ( 8450):   int32_t sample-rate = 44100
-D/CCodec  ( 8450):   int32_t android._config-pcm-encoding = 2
-D/CCodec  ( 8450): }
-I/CCodecConfig( 8450): query failed after returning 21 values (BAD_INDEX)
-E/s_store_manager( 8450): Failed to query component interface for required system resources: 6
-D/MediaCodec( 8450): keep callback message for reclaim
-W/Codec2Client( 8450): query -- param skipped: index = 1342179345.
-W/Codec2Client( 8450): query -- param skipped: index = 2415921170.
-W/Codec2Client( 8450): query -- param skipped: index = 1610614798.
-D/CCodecBufferChannel( 8450): [c2.android.aac.decoder#597] Created input block pool with allocatorID 16 => poolID 36 - OK (0)
-I/CCodecBufferChannel( 8450): [c2.android.aac.decoder#597] Created output block pool with allocatorID 16 => poolID 186 - OK
-D/CCodecBufferChannel( 8450): [c2.android.aac.decoder#597] Configured output block pool ids 186 => OK
-D/CCodecConfig( 8450): c2 config diff is   c2::u32 raw.channel-mask.value = 12
-D/CCodecBuffers( 8450): [c2.android.aac.decoder#597:Output[N]] popFromStashAndRegister: at 1000000000000us, output format changed to AMessage(what = 0x00000000) = {
-D/CCodecBuffers( 8450):   int32_t aac-drc-album-mode = 0
-D/CCodecBuffers( 8450):   int32_t aac-drc-boost-level = 127
-D/CCodecBuffers( 8450):   int32_t aac-drc-cut-level = 127
-D/CCodecBuffers( 8450):   int32_t aac-drc-effect-type = 3
-D/CCodecBuffers( 8450):   int32_t aac-drc-output-loudness = -1
-D/CCodecBuffers( 8450):   int32_t aac-encoded-target-level = -1
-D/CCodecBuffers( 8450):   int32_t aac-max-output-channel_count = 8
-D/CCodecBuffers( 8450):   int32_t aac-target-ref-level = 64
-D/CCodecBuffers( 8450):   int32_t buffer-batch-max-output-size = 0
-D/CCodecBuffers( 8450):   int32_t buffer-batch-threshold-output-size = 0
-D/CCodecBuffers( 8450):   int32_t channel-count = 2
-D/CCodecBuffers( 8450):   int32_t channel-mask = 12
-D/CCodecBuffers( 8450):   int32_t max-output-channel-count = 8
-D/CCodecBuffers( 8450):   string mime = "audio/raw"
-D/CCodecBuffers( 8450):   int32_t sample-rate = 44100
-D/CCodecBuffers( 8450):   int32_t android._config-pcm-encoding = 2
-D/CCodecBuffers( 8450): }
-D/MediaCodec( 8450): keep callback message for reclaim
-I/CCodecConfig( 8450): query failed after returning 21 values (BAD_INDEX)
-W/Codec2Client( 8450): query -- param skipped: index = 1342179345.
-W/Codec2Client( 8450): query -- param skipped: index = 2415921170.
-W/Codec2Client( 8450): query -- param skipped: index = 1610614798.
-I/flutter ( 8450): [AppPlaybackCoordinatorV2] active HLS snapshot -> start player queueItemId=a46e9372-7e69-4fec-97ff-16f3216cfad0 trackId=40bb593d-6832-4e45-a04a-d2abe3eae833 trackName=artmylife-powerful-dramatic-trailer hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40bb593d-6832-4e45-a04a-d2abe3eae833/v1/artmylife-powerful-dramatic-trailer-514242-9358d7cec9bf4ea98bd70c97fef34a71.m3u8
-I/flutter ( 8450): [PlayerBlocV2] queueSeeded force=true queueCount=56 playlistName=artmylife-powerful-dramatic-trailer currentTrack=Nhac Khong Loi Chill currentQueueItemId=1c23beee-25b3-47a8-be6c-f36a66a10252
-I/flutter ( 8450): [PlayerBlocV2] hlsStarted hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40bb593d-6832-4e45-a04a-d2abe3eae833/v1/artmylife-powerful-dramatic-trailer-514242-9358d7cec9bf4ea98bd70c97fef34a71.m3u8 trackId=40bb593d-6832-4e45-a04a-d2abe3eae833 trackTitle=artmylife-powerful-dramatic-trailer queueItemId=a46e9372-7e69-4fec-97ff-16f3216cfad0 seek=0.00 playLocally=true
-I/flutter ( 8450): [PlaybackTrace] API_COMMAND_HTTP_OK spaceId=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 command=skipNext
-I/flutter ( 8450): [QueueFirstV2] emitState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=8481f299-cdb4-4321-83bb-e2006aa79fab pending=- track=Untitled hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/a967dd2c-9005-4b02-979e-d5320e2ef8b1/v1/a2f2b491428a49c0b2c192e242620373.m3u8 manual=false scheduling=false paused=false queueCount=56 queue=[1:Nhac Khong Loi Chill:2 | 2:artmylife-powerful-dramatic-trailer:2 | 3:Untitled:1 | 4:Untitled:0]
-I/flutter ( 8450): [QueueFirstV2] reconcile after mutation started
-I/flutter ( 8450): [PlaybackTrace] API_COMMAND_ACK spaceId=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 command=skipNext
-I/flutter ( 8450): [CamsPlaybackBlocV2] runtimeState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 currentQueueItemId=8481f299-cdb4-4321-83bb-e2006aa79fab pendingQueueItemId=- currentTrack=Untitled hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/a967dd2c-9005-4b02-979e-d5320e2ef8b1/v1/a2f2b491428a49c0b2c192e242620373.m3u8 manual=false scheduling=false queueCount=56 queue=[1:Nhac Khong Loi Chill:2 | 2:artmylife-powerful-dramatic-trailer:2 | 3:Untitled:1]
-I/flutter ( 8450): [AppPlaybackCoordinatorV2] syncCamsState status=active playback=space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=8481f299-cdb4-4321-83bb-e2006aa79fab pending=- track=Untitled hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/a967dd2c-9005-4b02-979e-d5320e2ef8b1/v1/a2f2b491428a49c0b2c192e242620373.m3u8 queueCount=56 queue=[1:Nhac Khong Loi Chill:2 | 2:artmylife-powerful-dramatic-trailer:2 | 3:Untitled:1 | 4:Untitled:0] playerTrack=artmylife-powerful-dramatic-trailer playerHls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40bb593d-6832-4e45-a04a-d2abe3eae833/v1/artmylife-powerful-dramatic-trailer-514242-9358d7cec9bf4ea98bd70c97fef34a71.m3u8
-I/flutter ( 8450): [AppPlaybackCoordinatorV2] hydrateQueueForPlayback queueCount=56 signature=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908|8481f299-cdb4-4321-83bb-e2006aa79fab|1c23beee-25b3-47a8-be6c-f36a66a10252:b8602df5-fac3-482e-9f89-c214bbf8003a:1:2:https://ddbdgg08nzlz.cloudfront.net/audio/tracks/b8602df5-fac3-482e-9f89-c214bbf8003a/v1/c328417455344e63935f7916d3206214.m3u8::1|a46e9372-7e69-4fec-97ff-16f3216cfad0:40bb593d-6832-4e45-a04a-d2abe3eae833:2:2:https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40bb593d-6832-4e45-a04a-d2abe3eae833/v1/artmylife-powerful-dramatic-trailer-514242-9358d7cec9bf4ea98bd70c97fef34a71.m3u8::1|8481f299-cdb4-4321-83bb-e2006aa79fab:a967dd2c-9005-4b02-979e-d5320e2ef8b1:3:1:https://ddbdgg08nzlz.cloudfront.net/audio/tracks/a967dd2c-9005-4b02-979e-d5320e2ef8b1/v1/a2f2b491428a49c0b2c192e242620373.m3u8::1|aa1eef51-b4a2-4b8a-848f-f1f69e594473:de7c9862-1a1b-46e4-b8e0-a8908064a900:4:0:https://ddbdgg08nzlz.cloudfront.net/audio/tracks/de7c9862-1a1b-46e4-b8e0-a8908064a900/v1/b9d505e072b7452cbae8afed1ab17869.m3u8::1
-D/AudioTrack( 8450): getTimestamp_l(211): device stall time corrected using current time 2244429589669
-I/flutter ( 8450): [AppPlaybackCoordinatorV2] active HLS snapshot -> start player queueItemId=8481f299-cdb4-4321-83bb-e2006aa79fab trackId=a967dd2c-9005-4b02-979e-d5320e2ef8b1 trackName=Untitled hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/a967dd2c-9005-4b02-979e-d5320e2ef8b1/v1/a2f2b491428a49c0b2c192e242620373.m3u8
-I/flutter ( 8450): [PlayerBlocV2] queueSeeded force=true queueCount=56 playlistName=Untitled currentTrack=artmylife-powerful-dramatic-trailer currentQueueItemId=a46e9372-7e69-4fec-97ff-16f3216cfad0
-I/flutter ( 8450): [PlayerBlocV2] hlsStarted hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/a967dd2c-9005-4b02-979e-d5320e2ef8b1/v1/a2f2b491428a49c0b2c192e242620373.m3u8 trackId=a967dd2c-9005-4b02-979e-d5320e2ef8b1 trackTitle=Untitled queueItemId=8481f299-cdb4-4321-83bb-e2006aa79fab seek=0.00 playLocally=true
-I/flutter ( 8450): [DioClient] Preparing auth header for "/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/state": playbackScoped=true selectedToken=eyJhbGciOiJI...
-I/flutter ( 8450): [DioClient] [request-auth] path=/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/state activeMode=manager hasManagerToken=true managerExpiry=2026-04-24T09:48:58.043859Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
-I/flutter ( 8450): [QueueFirstV2] hub SpaceStateSync raw -> space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=a46e9372-7e69-4fec-97ff-16f3216cfad0 pending=- track=artmylife-powerful-dramatic-trailer hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40bb593d-6832-4e45-a04a-d2abe3eae833/v1/artmylife-powerful-dramatic-trailer-514242-9358d7cec9bf4ea98bd70c97fef34a71.m3u8 manual=false scheduling=false paused=false queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:1 | 3:Untitled:0 | 4:Untitled:0]
-I/flutter ( 8450): [QueueFirstV2] hub SpaceStateSync raw -> space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=a46e9372-7e69-4fec-97ff-16f3216cfad0 pending=- track=artmylife-powerful-dramatic-trailer hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40bb593d-6832-4e45-a04a-d2abe3eae833/v1/artmylife-powerful-dramatic-trailer-514242-9358d7cec9bf4ea98bd70c97fef34a71.m3u8 manual=false scheduling=false paused=false queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:1 | 3:Untitled:0 | 4:Untitled:0]
-I/flutter ( 8450): [DioClient] Preparing auth header for "/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue": playbackScoped=true selectedToken=eyJhbGciOiJI...
-I/flutter ( 8450): [DioClient] [request-auth] path=/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue activeMode=manager hasManagerToken=true managerExpiry=2026-04-24T09:48:58.043859Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
-I/flutter ( 8450): [DioClient] Preparing auth header for "/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue": playbackScoped=true selectedToken=eyJhbGciOiJI...
-I/flutter ( 8450): [DioClient] [request-auth] path=/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue activeMode=manager hasManagerToken=true managerExpiry=2026-04-24T09:48:58.043859Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
-I/flutter ( 8450): [QueueFirstV2] hold stale state while track jump is pending target=8481f299-cdb4-4321-83bb-e2006aa79fab incoming=a46e9372-7e69-4fec-97ff-16f3216cfad0
-I/flutter ( 8450): [QueueFirstV2] emitState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=8481f299-cdb4-4321-83bb-e2006aa79fab pending=- track=Untitled hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/a967dd2c-9005-4b02-979e-d5320e2ef8b1/v1/a2f2b491428a49c0b2c192e242620373.m3u8 manual=false scheduling=false paused=false queueCount=56 queue=[1:Nhac Khong Loi Chill:2 | 2:artmylife-powerful-dramatic-trailer:2 | 3:Untitled:1 | 4:Untitled:0]
-I/flutter ( 8450): [CamsPlaybackBlocV2] runtimeState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 currentQueueItemId=8481f299-cdb4-4321-83bb-e2006aa79fab pendingQueueItemId=- currentTrack=Untitled hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/a967dd2c-9005-4b02-979e-d5320e2ef8b1/v1/a2f2b491428a49c0b2c192e242620373.m3u8 manual=false scheduling=false queueCount=56 queue=[1:Nhac Khong Loi Chill:2 | 2:artmylife-powerful-dramatic-trailer:2 | 3:Untitled:1]
-I/flutter ( 8450): [AppPlaybackCoordinatorV2] syncCamsState status=active playback=space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=8481f299-cdb4-4321-83bb-e2006aa79fab pending=- track=Untitled hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/a967dd2c-9005-4b02-979e-d5320e2ef8b1/v1/a2f2b491428a49c0b2c192e242620373.m3u8 queueCount=56 queue=[1:Nhac Khong Loi Chill:2 | 2:artmylife-powerful-dramatic-trailer:2 | 3:Untitled:1 | 4:Untitled:0] playerTrack=Untitled playerHls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/a967dd2c-9005-4b02-979e-d5320e2ef8b1/v1/a2f2b491428a49c0b2c192e242620373.m3u8
-I/flutter ( 8450): [QueueFirstV2] hold stale state while track jump is pending target=8481f299-cdb4-4321-83bb-e2006aa79fab incoming=a46e9372-7e69-4fec-97ff-16f3216cfad0
-I/flutter ( 8450): [DioClient] Preparing auth header for "/api/fuzzy-music-profiles/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908": playbackScoped=false selectedToken=eyJhbGciOiJI...
-I/flutter ( 8450): [DioClient] [request-auth] path=/api/fuzzy-music-profiles/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 activeMode=manager hasManagerToken=true managerExpiry=2026-04-24T09:48:58.043859Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
-I/flutter ( 8450): [DioClient] Preparing auth header for "/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue": playbackScoped=true selectedToken=eyJhbGciOiJI...
-I/flutter ( 8450): [DioClient] [request-auth] path=/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue activeMode=manager hasManagerToken=true managerExpiry=2026-04-24T09:48:58.043859Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
-I/flutter ( 8450): [QueueFirstV2] hold stale state while track jump is pending target=8481f299-cdb4-4321-83bb-e2006aa79fab incoming=a46e9372-7e69-4fec-97ff-16f3216cfad0
-I/flutter ( 8450): [QueueFirstV2] emitState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=8481f299-cdb4-4321-83bb-e2006aa79fab pending=- track=Untitled hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/a967dd2c-9005-4b02-979e-d5320e2ef8b1/v1/a2f2b491428a49c0b2c192e242620373.m3u8 manual=false scheduling=false paused=false queueCount=56 queue=[1:Nhac Khong Loi Chill:2 | 2:artmylife-powerful-dramatic-trailer:2 | 3:Untitled:1 | 4:Untitled:0]
-I/flutter ( 8450): [QueueFirstV2] reconcile detected immediate state change
-I/flutter ( 8450): [CamsPlaybackBlocV2] runtimeState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 currentQueueItemId=8481f299-cdb4-4321-83bb-e2006aa79fab pendingQueueItemId=- currentTrack=Untitled hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/a967dd2c-9005-4b02-979e-d5320e2ef8b1/v1/a2f2b491428a49c0b2c192e242620373.m3u8 manual=false scheduling=false queueCount=56 queue=[1:Nhac Khong Loi Chill:2 | 2:artmylife-powerful-dramatic-trailer:2 | 3:Untitled:1]
-I/flutter ( 8450): [AppPlaybackCoordinatorV2] syncCamsState status=active playback=space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=8481f299-cdb4-4321-83bb-e2006aa79fab pending=- track=Untitled hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/a967dd2c-9005-4b02-979e-d5320e2ef8b1/v1/a2f2b491428a49c0b2c192e242620373.m3u8 queueCount=56 queue=[1:Nhac Khong Loi Chill:2 | 2:artmylife-powerful-dramatic-trailer:2 | 3:Untitled:1 | 4:Untitled:0] playerTrack=Untitled playerHls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/a967dd2c-9005-4b02-979e-d5320e2ef8b1/v1/a2f2b491428a49c0b2c192e242620373.m3u8
-I/flutter ( 8450): [AppPlaybackCoordinatorV2] same remote HLS snapshot -> keep current player queueItemId=8481f299-cdb4-4321-83bb-e2006aa79fab drift=0.58
-D/BufferPoolAccessor2.0( 8450): evictor expired: 1, evicted: 0
+t(FLUSHING)
+Khi next:
+I/CCodec  ( 8087): [c2.android.aac.decoder] state->set(FLUSHED)
+D/MediaCodec( 8087): keep callback message for reclaim
+I/CCodec  ( 8087): [c2.android.aac.decoder] state->set(RESUMING)
+I/CCodecConfig( 8087): query failed after returning 21 values (BAD_INDEX)
+I/CCodecBufferChannel( 8087): [c2.android.aac.decoder#537] 4 initial input buffers available
+I/CCodec  ( 8087): [c2.android.aac.decoder] state->set(RUNNING)
+I/CCodec  ( 8087): [c2.android.aac.decoder] state->set(RELEASING)
+D/CCodecBufferChannel( 8087): [c2.android.aac.decoder#537] MediaCodec discarded an unknown buffer
+D/CCodecBufferChannel( 8087): [c2.android.aac.decoder#537] MediaCodec discarded an unknown buffer
+I/CCodec  ( 8087): [release][3405] component -> surface
+D/CCodecBufferChannel( 8087): [c2.android.aac.decoder#537] MediaCodec discarded an unknown buffer
+D/CCodecBufferChannel( 8087): [c2.android.aac.decoder#537] MediaCodec discarded an unknown buffer
+I/CCodec  ( 8087): [c2.android.aac.decoder] state->set(RELEASED)
+I/Codec2Client( 8087): Component destructing
+I/MediaCodec( 8087): Codec shutdown complete
+I/CCodecBufferChannel( 8087): CCodecBufferChannel destructing c2.android.aac.decoder#537
+I/flutter ( 8087): *** Response ***
+I/flutter ( 8087): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue
+I/flutter ( 8087): statusCode: 200
+I/flutter ( 8087): statusMessage: OK
+I/flutter ( 8087): headers:
+I/flutter ( 8087):  connection: keep-alive
+I/flutter ( 8087):  alt-svc: h3=":443"; ma=86400
+I/flutter ( 8087):  date: Fri, 24 Apr 2026 12:42:53 GMT
+I/flutter ( 8087):  transfer-encoding: chunked
+I/flutter ( 8087):  content-encoding: gzip
+I/flutter ( 8087):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+I/flutter ( 8087):  cf-ray: 9f1530c47b390991-HKG
+I/flutter ( 8087):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=4%2BxWWfYZfm7osMZ72Mx%2BbkdZVQ3l4rZkPzxPD7vB%2FDjVpwEmpc3Fej1uTHcatrMzIaN2syHs0iGcGKML9vEj5B6hsaYPt5ALH23gI9hPzp2orWQbv5SerHV8i03dTLSB"}]}
+I/flutter ( 8087):  cf-cache-status: DYNAMIC
+I/flutter ( 8087):  content-type: application/json; charset=utf-8
+I/flutter ( 8087):  server: cloudflare
+I/flutter ( 8087): Response Text:
+I/flutter ( 8087): {"isSuccess":true,"message":"Success","data":[{"queueItemId":"1c23beee-25b3-47a8-be6c-f36a66a10252","trackId":"b8602df5-fac3-482e-9f89-c214bbf8003a","trackName":"Nhac Khong Loi Chill","position":1,"queueStatus":3,"source":1,"hlsUrl":"https://ddbdgg08nzlz.cloudfront.net/audio/tracks/b8602df5-fac3-482e-9f89-c214bbf8003a/v1/c328417455344e63935f7916d3206214.m3u8","coverImageUrl":null,"isReadyToStream":true},{"queueItemId":"a46e9372-7e69-4fec-97ff-16f3216cfad0","trackId":"40bb593d-6832-4e45-a04a-d2abe3eae833","trackName":"artmylife-powerful-dramatic-trailer","position":2,"queueStatus":3,"source":1,"hlsUrl":"https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40bb593d-6832-4e45-a04a-d2abe3eae833/v1/artmylife-powerful-dramatic-trailer-514242-9358d7cec9bf4ea98bd70c97fef34a71.m3u8","coverImageUrl":null,"isReadyToStream":true},{"queueItemId":"8481f299-cdb4-4321-83bb-e2006aa79fab","trackId":"a967dd2c-9005-4b02-979e-d5320e2ef8b1","trackName":"Untitled","position":3,"queueStatus":2,"source":1,"hlsUrl":"https://ddbdgg08nzlz.
+I/flutter ( 8087): 
+I/flutter ( 8087): *** Response ***
+I/flutter ( 8087): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/state
+I/flutter ( 8087): statusCode: 200
+I/flutter ( 8087): statusMessage: OK
+I/flutter ( 8087): headers:
+I/flutter ( 8087):  connection: keep-alive
+I/flutter ( 8087):  alt-svc: h3=":443"; ma=86400
+I/flutter ( 8087):  date: Fri, 24 Apr 2026 12:42:53 GMT
+I/flutter ( 8087):  transfer-encoding: chunked
+I/flutter ( 8087):  content-encoding: gzip
+I/flutter ( 8087):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+I/flutter ( 8087):  cf-ray: 9f1530c3dfc08502-HKG
+I/flutter ( 8087):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=51QZPp0s0f%2B7hUdg4lkt8frUG28ygjsRIN1AvDBMbeTv%2B%2FZaW7x7pfhnRXAd7YmD2GSBazol2Q0b433TQonbVrBM4FwziG8t%2BmqAlqQdH4uJ98vveUTZk3r2KUdKYeP5"}]}
+I/flutter ( 8087):  cf-cache-status: DYNAMIC
+I/flutter ( 8087):  content-type: application/json; charset=utf-8
+I/flutter ( 8087):  server: cloudflare
+I/flutter ( 8087): Response Text:
+I/flutter ( 8087): {"isSuccess":true,"message":"Success","data":{"spaceId":"9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908","storeId":"d34ffedc-f11a-41f6-b485-efb6cf6181a5","brandId":"ff587081-083f-42ec-b43b-b3a6b2f4756d","currentQueueItemId":"85bb488b-07c9-47f8-aac2-a401f1ad269e","currentTrackName":"New music","hlsUrl":"https://ddbdgg08nzlz.cloudfront.net/audio/tracks/6df628bf-779f-41d1-b03f-a690055cef6e/v1/sekuora-relaxed-day-futuristic-chill-250712-32cd38b3b5e04f5b8664440a42d24e71.m3u8","moodName":"Focus","isManualOverride":false,"overrideMode":null,"overrideReason":null,"manualOverrideActivatedAtUtc":null,"manualOverrideExpiresAtUtc":null,"manualOverrideTtlSeconds":null,"manualOverrideRemainingSeconds":null,"isScheduling":false,"schedulingSlotId":null,"schedulingSlotOrigin":null,"schedulingEndsAtUtc":null,"schedulingRemainingSeconds":null,"startedAtUtc":"2026-04-24T12:42:52.76748Z","expectedEndAtUtc":"2026-04-24T12:44:46.76748Z","seekOffsetSeconds":0.7120083,"isPaused":false,"pausePositionSeconds":null,"pendingQueueItemId":null,"pen
+I/flutter ( 8087): 
+I/NotificationManager( 8087): com.example.cams_store_manager: notify(1124, null, Notification(channel=com.example.cams_store_manager.playback_controls shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONGOING_EVENT color=0x00000000 category=transport actions=3 vis=PUBLIC semFlags=0x0 semPriority=0 semMissedCount=0)) as user
+I/flutter ( 8087): *** Request ***
+I/flutter ( 8087): uri: https://logcams.cloud/api/fuzzy-music-profiles/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908
+I/flutter ( 8087): method: GET
+I/flutter ( 8087): responseType: ResponseType.json
+I/flutter ( 8087): followRedirects: true
+I/flutter ( 8087): persistentConnection: true
+I/flutter ( 8087): connectTimeout: 0:00:30.000000
+I/flutter ( 8087): sendTimeout: 0:00:30.000000
+I/flutter ( 8087): receiveTimeout: 0:00:30.000000
+I/flutter ( 8087): receiveDataWhenStatusError: true
+I/flutter ( 8087): extra: {}
+I/flutter ( 8087): headers:
+I/flutter ( 8087):  Content-Type: application/json
+I/flutter ( 8087):  Accept: application/json
+I/flutter ( 8087): data:
+I/flutter ( 8087): null
+I/flutter ( 8087): 
+I/flutter ( 8087): *** Response ***
+I/flutter ( 8087): uri: https://logcams.cloud/api/fuzzy-music-profiles/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908
+I/flutter ( 8087): statusCode: 200
+I/flutter ( 8087): statusMessage: OK
+I/flutter ( 8087): headers:
+I/flutter ( 8087):  connection: keep-alive
+I/flutter ( 8087):  alt-svc: h3=":443"; ma=86400
+I/flutter ( 8087):  date: Fri, 24 Apr 2026 12:42:53 GMT
+I/flutter ( 8087):  transfer-encoding: chunked
+I/flutter ( 8087):  content-encoding: gzip
+I/flutter ( 8087):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+I/flutter ( 8087):  cf-ray: 9f1530c58826fd23-SIN
+I/flutter ( 8087):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=cw5HRQniXggTS%2BWM09SY9%2FIVqpORwCBNe%2FacVkvCHJRBwVC2bfZIJraewbx9qxiYQlcSMqmh2uqox97w24hiogryKy%2BJReqdmb5sEmNxF28oex55MdpX5pGUhmAqJewY73dT55qmkDSPrWNB"}]}
+I/flutter ( 8087):  cf-cache-status: DYNAMIC
+I/flutter ( 8087):  content-type: application/json; charset=utf-8
+I/flutter ( 8087):  server: cloudflare
+I/flutter ( 8087): Response Text:
+I/flutter ( 8087): {"isSuccess":true,"message":"Success","data":{"id":"e9a03651-4546-47bc-8e4c-572f2db4c021","brandId":"ff587081-083f-42ec-b43b-b3a6b2f4756d","storeId":"d34ffedc-f11a-41f6-b485-efb6cf6181a5","name":"Lầu 1 - Space Fuzzy Override","templateKey":"SpaceOverride","chillBpmMin":60,"chillBpmMax":80,"focusBpmMin":85,"focusBpmMax":105,"energeticBpmMin":120,"energeticBpmMax":140,"noiseQuietMaxDb":50,"noiseLoudMinDb":75,"defaultDecibelWhenNull":60,"autoVolumeEnabled":true,"autoVolumeQuietPercent":45,"autoVolumeModeratePercent":60,"autoVolumeLoudPercent":75,"autoVolumeMinPercent":30,"autoVolumeMaxPercent":90,"autoVolumeDeadbandPercent":5,"chillMoodCandidates":null,"focusMoodCandidates":null,"energeticMoodCandidates":null}}
+I/flutter ( 8087): 
+I/flutter ( 8087): *** Request ***
+I/flutter ( 8087): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue
+I/flutter ( 8087): method: GET
+I/flutter ( 8087): responseType: ResponseType.json
+I/flutter ( 8087): followRedirects: true
+I/flutter ( 8087): persistentConnection: true
+I/flutter ( 8087): connectTimeout: 0:00:30.000000
+I/flutter ( 8087): sendTimeout: 0:00:30.000000
+I/flutter ( 8087): receiveTimeout: 0:00:30.000000
+I/flutter ( 8087): receiveDataWhenStatusError: true
+I/flutter ( 8087): extra: {}
+I/flutter ( 8087): headers:
+I/flutter ( 8087):  Content-Type: application/json
+I/flutter ( 8087):  Accept: application/json
+I/flutter ( 8087): data:
+I/flutter ( 8087): null
+I/flutter ( 8087): 
+I/flutter ( 8087): *** Response ***
+I/flutter ( 8087): uri: https://logcams.cloud/api/fuzzy-music-profiles/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908
+I/flutter ( 8087): statusCode: 200
+I/flutter ( 8087): statusMessage: OK
+I/flutter ( 8087): headers:
+I/flutter ( 8087):  connection: keep-alive
+I/flutter ( 8087):  alt-svc: h3=":443"; ma=86400
+I/flutter ( 8087):  date: Fri, 24 Apr 2026 12:42:53 GMT
+I/flutter ( 8087):  transfer-encoding: chunked
+I/flutter ( 8087):  content-encoding: gzip
+I/flutter ( 8087):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+I/flutter ( 8087):  cf-ray: 9f1530c5ea8c5de2-HKG
+I/flutter ( 8087):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=d6M7q60wFqQn8KqMNrXzFG05Y87XK9QcQtiR5linPwSrMlutkqBlxLRdByL%2FYONi12jREyyRB2opTjncQezmI2aBidRfyloJUVAMVEKP76c%2F86smwZgagRD55bAedAvX"}]}
+I/flutter ( 8087):  cf-cache-status: DYNAMIC
+I/flutter ( 8087):  content-type: application/json; charset=utf-8
+I/flutter ( 8087):  server: cloudflare
+I/flutter ( 8087): Response Text:
+I/flutter ( 8087): {"isSuccess":true,"message":"Success","data":{"id":"e9a03651-4546-47bc-8e4c-572f2db4c021","brandId":"ff587081-083f-42ec-b43b-b3a6b2f4756d","storeId":"d34ffedc-f11a-41f6-b485-efb6cf6181a5","name":"Lầu 1 - Space Fuzzy Override","templateKey":"SpaceOverride","chillBpmMin":60,"chillBpmMax":80,"focusBpmMin":85,"focusBpmMax":105,"energeticBpmMin":120,"energeticBpmMax":140,"noiseQuietMaxDb":50,"noiseLoudMinDb":75,"defaultDecibelWhenNull":60,"autoVolumeEnabled":true,"autoVolumeQuietPercent":45,"autoVolumeModeratePercent":60,"autoVolumeLoudPercent":75,"autoVolumeMinPercent":30,"autoVolumeMaxPercent":90,"autoVolumeDeadbandPercent":5,"chillMoodCandidates":null,"focusMoodCandidates":null,"energeticMoodCandidates":null}}
+I/flutter ( 8087): 
+I/flutter ( 8087): *** Request ***
+I/flutter ( 8087): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue
+I/flutter ( 8087): method: GET
+I/flutter ( 8087): responseType: ResponseType.json
+I/flutter ( 8087): followRedirects: true
+I/flutter ( 8087): persistentConnection: true
+I/flutter ( 8087): connectTimeout: 0:00:30.000000
+I/flutter ( 8087): sendTimeout: 0:00:30.000000
+I/flutter ( 8087): receiveTimeout: 0:00:30.000000
+I/flutter ( 8087): receiveDataWhenStatusError: true
+I/flutter ( 8087): extra: {}
+I/flutter ( 8087): headers:
+I/flutter ( 8087):  Content-Type: application/json
+I/flutter ( 8087):  Accept: application/json
+I/flutter ( 8087): data:
+I/flutter ( 8087): null
+I/flutter ( 8087): 
+I/flutter ( 8087): *** Response ***
+I/flutter ( 8087): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue
+I/flutter ( 8087): statusCode: 200
+I/flutter ( 8087): statusMessage: OK
+I/flutter ( 8087): headers:
+I/flutter ( 8087):  connection: keep-alive
+I/flutter ( 8087):  alt-svc: h3=":443"; ma=86400
+I/flutter ( 8087):  date: Fri, 24 Apr 2026 12:42:53 GMT
+I/flutter ( 8087):  transfer-encoding: chunked
+I/flutter ( 8087):  content-encoding: gzip
+I/flutter ( 8087):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+I/flutter ( 8087):  cf-ray: 9f1530c61cd70991-HKG
+I/flutter ( 8087):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=khdhJBo%2BdCch2Yh43P%2FuTlhJT2eaq4UnjzFgzJhq2nDffGQU6uX3Bm3fbtA%2BerbFjbR7J66sh4I86CMYAe4ZLo8c3OhoKQcZKlCTmTJXiscdXxsc2st%2F%2FXFrgM7A7Tpa"}]}
+I/flutter ( 8087):  cf-cache-status: DYNAMIC
+I/flutter ( 8087):  content-type: application/json; charset=utf-8
+I/flutter ( 8087):  server: cloudflare
+I/flutter ( 8087): Response Text:
+I/flutter ( 8087): {"isSuccess":true,"message":"Success","data":[{"queueItemId":"1c23beee-25b3-47a8-be6c-f36a66a10252","trackId":"b8602df5-fac3-482e-9f89-c214bbf8003a","trackName":"Nhac Khong Loi Chill","position":1,"queueStatus":3,"source":1,"hlsUrl":"https://ddbdgg08nzlz.cloudfront.net/audio/tracks/b8602df5-fac3-482e-9f89-c214bbf8003a/v1/c328417455344e63935f7916d3206214.m3u8","coverImageUrl":null,"isReadyToStream":true},{"queueItemId":"a46e9372-7e69-4fec-97ff-16f3216cfad0","trackId":"40bb593d-6832-4e45-a04a-d2abe3eae833","trackName":"artmylife-powerful-dramatic-trailer","position":2,"queueStatus":3,"source":1,"hlsUrl":"https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40bb593d-6832-4e45-a04a-d2abe3eae833/v1/artmylife-powerful-dramatic-trailer-514242-9358d7cec9bf4ea98bd70c97fef34a71.m3u8","coverImageUrl":null,"isReadyToStream":true},{"queueItemId":"8481f299-cdb4-4321-83bb-e2006aa79fab","trackId":"a967dd2c-9005-4b02-979e-d5320e2ef8b1","trackName":"Untitled","position":3,"queueStatus":2,"source":1,"hlsUrl":"https://ddbdgg08nzlz.
+I/flutter ( 8087): 
+I/flutter ( 8087): *** Response ***
+I/flutter ( 8087): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue
+I/flutter ( 8087): statusCode: 200
+I/flutter ( 8087): statusMessage: OK
+I/flutter ( 8087): headers:
+I/flutter ( 8087):  connection: keep-alive
+I/flutter ( 8087):  alt-svc: h3=":443"; ma=86400
+I/flutter ( 8087):  date: Fri, 24 Apr 2026 12:42:53 GMT
+I/flutter ( 8087):  transfer-encoding: chunked
+I/flutter ( 8087):  content-encoding: gzip
+I/flutter ( 8087):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+I/flutter ( 8087):  cf-ray: 9f1530c6bb2c5de2-HKG
+I/flutter ( 8087):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=l%2FNvg%2FW0HsMWWWiQYi9zpra6nd5cgchs59jnR9mXZdlu3d6pfZhJo6IC1JmwQGlQ2mBWQEGgi4uPz%2F%2BRmPAZ%2FE86%2BSjF%2BHxJWatM%2B5ocyU4UhEKJLjxJETS4HLiZ6i0a"}]}
+I/flutter ( 8087):  cf-cache-status: DYNAMIC
+I/flutter ( 8087):  content-type: application/json; charset=utf-8
+I/flutter ( 8087):  server: cloudflare
+I/flutter ( 8087): Response Text:
+I/flutter ( 8087): {"isSuccess":true,"message":"Success","data":[{"queueItemId":"1c23beee-25b3-47a8-be6c-f36a66a10252","trackId":"b8602df5-fac3-482e-9f89-c214bbf8003a","trackName":"Nhac Khong Loi Chill","position":1,"queueStatus":3,"source":1,"hlsUrl":"https://ddbdgg08nzlz.cloudfront.net/audio/tracks/b8602df5-fac3-482e-9f89-c214bbf8003a/v1/c328417455344e63935f7916d3206214.m3u8","coverImageUrl":null,"isReadyToStream":true},{"queueItemId":"a46e9372-7e69-4fec-97ff-16f3216cfad0","trackId":"40bb593d-6832-4e45-a04a-d2abe3eae833","trackName":"artmylife-powerful-dramatic-trailer","position":2,"queueStatus":3,"source":1,"hlsUrl":"https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40bb593d-6832-4e45-a04a-d2abe3eae833/v1/artmylife-powerful-dramatic-trailer-514242-9358d7cec9bf4ea98bd70c97fef34a71.m3u8","coverImageUrl":null,"isReadyToStream":true},{"queueItemId":"8481f299-cdb4-4321-83bb-e2006aa79fab","trackId":"a967dd2c-9005-4b02-979e-d5320e2ef8b1","trackName":"Untitled","position":3,"queueStatus":2,"source":1,"hlsUrl":"https://ddbdgg08nzlz.
+I/flutter ( 8087): 
+I/DMCodecAdapterFactory( 8087): Creating an asynchronous MediaCodec adapter for track type audio
+I/CCodec  ( 8087): state->set(ALLOCATING)
+I/CCodec  ( 8087): allocate(c2.android.aac.decoder)
+D/CCodec  ( 8087): allocate(c2.android.aac.decoder)
+I/CCodec  ( 8087): setting up 'default' as default (vendor) store
+W/s_store_manager( 8087): AIBinder_linkToDeath is being called with a non-null cookie and no onUnlink callback set. This might not be intended. AIBinder_DeathRecipient_setOnUnlinked should be called first.
+I/CCodec  ( 8087): Created component [c2.android.aac.decoder] for [c2.android.aac.decoder]
+I/CCodec  ( 8087): [c2.android.aac.decoder] state->set(ALLOCATED)
+D/CCodecConfig( 8087): read media type: audio/mp4a-latm
+D/ReflectedParamUpdater( 8087): extent() != 1 for single value type: algo.buffers.max-count.values
+D/ReflectedParamUpdater( 8087): extent() != 1 for single value type: output.subscribed-indices.values
+D/ReflectedParamUpdater( 8087): extent() != 1 for single value type: input.buffers.allocator-ids.values
+D/ReflectedParamUpdater( 8087): extent() != 1 for single value type: output.buffers.allocator-ids.values
+D/ReflectedParamUpdater( 8087): extent() != 1 for single value type: algo.buffers.allocator-ids.values
+D/ReflectedParamUpdater( 8087): extent() != 1 for single value type: output.buffers.pool-ids.values
+D/ReflectedParamUpdater( 8087): extent() != 1 for single value type: algo.buffers.pool-ids.values
+I/CCodec  ( 8087): [c2.android.aac.decoder] config->initialize() : 0
+I/CCodecConfig( 8087): query failed after returning 21 values (BAD_INDEX)
+D/CCodecConfig( 8087): c2 config diff is Dict {
+D/CCodecConfig( 8087):   c2::u32 coded.aac-packaging.value = 0
+D/CCodecConfig( 8087):   c2::u32 coded.bitrate.value = 64000
+D/CCodecConfig( 8087):   c2::u32 coded.pl.level = 0
+D/CCodecConfig( 8087):   c2::u32 coded.pl.profile = 8192
+D/CCodecConfig( 8087):   c2::i32 coding.drc.album-mode.value = 0
+D/CCodecConfig( 8087):   c2::float coding.drc.attenuation-factor.value = 1
+D/CCodecConfig( 8087):   c2::float coding.drc.boost-factor.value = 1
+D/CCodecConfig( 8087):   c2::i32 coding.drc.compression-mode.value = 3
+D/CCodecConfig( 8087):   c2::i32 coding.drc.effect-type.value = 3
+D/CCodecConfig( 8087):   c2::float coding.drc.encoded-level.value = 0.25
+D/CCodecConfig( 8087):   c2::float coding.drc.reference-level.value = -16
+D/CCodecConfig( 8087):   c2::u32 input.buffers.max-size.value = 8192
+D/CCodecConfig( 8087):   c2::u32 input.delay.value = 0
+D/CCodecConfig( 8087):   string input.media-type.value = "audio/mp4a-latm"
+D/CCodecConfig( 8087):   c2::u32 output.delay.value = 2
+D/CCodecConfig( 8087):   c2::float output.drc.output-loudness.value = 0.25
+D/CCodecConfig( 8087):   c2::u32 output.large-frame.max-size = 0
+D/CCodecConfig( 8087):   c2::u32 output.large-frame.threshold-size = 0
+D/CCodecConfig( 8087):   string output.media-type.value = "audio/raw"
+D/CCodecConfig( 8087):   c2::u32 raw.channel-count.value = 1
+D/CCodecConfig( 8087):   c2::u32 raw.channel-mask.value = 0
+D/CCodecConfig( 8087):   c2::u32 raw.max-channel-count.value = 8
+D/CCodecConfig( 8087):   c2::u32 raw.sample-rate.value = 44100
+D/CCodecConfig( 8087): }
+I/CCodec  ( 8087): [c2.android.aac.decoder] config->queryConfiguration()
+I/CCodec  ( 8087): [c2.android.aac.decoder] mCallback->onComponentAllocated() IN
+I/CCodec  ( 8087): [c2.android.aac.decoder] mCallback->onComponentAllocated() OUT
+I/MediaCodec( 8087): MediaCodec will operate in async mode
+E/MediaCodec( 8087): Media Quality Service not found.
+D/CCodec  ( 8087): [c2.android.aac.decoder] buffers are bound to CCodec for this session
+I/CCodec  ( 8087): appPid(8087) width(0) height(0)
+D/CCodecConfig( 8087): no c2 equivalents for log-session-id
+D/CCodecConfig( 8087): no c2 equivalents for importance
+D/CCodecConfig( 8087): no c2 equivalents for flags
+D/CCodecConfig( 8087): c2 config diff is   c2::u32 raw.channel-count.value = 2
+D/CCodec  ( 8087): encoding statistics level = 0
+D/CCodec  ( 8087): setup formats input: AMessage(what = 0x00000000) = {
+D/CCodec  ( 8087):   int32_t aac-drc-album-mode = 0
+D/CCodec  ( 8087):   int32_t aac-drc-boost-level = 127
+D/CCodec  ( 8087):   int32_t aac-drc-cut-level = 127
+D/CCodec  ( 8087):   int32_t aac-drc-effect-type = 3
+D/CCodec  ( 8087):   int32_t aac-encoded-target-level = -1
+D/CCodec  ( 8087):   int32_t aac-max-output-channel_count = 8
+D/CCodec  ( 8087):   int32_t aac-target-ref-level = 64
+D/CCodec  ( 8087):   int32_t bitrate = 64000
+D/CCodec  ( 8087):   int32_t channel-count = 2
+D/CCodec  ( 8087):   int32_t channel-mask = 0
+D/CCodec  ( 8087):   int32_t level = 0
+D/CCodec  ( 8087):   int32_t max-input-size = 8192
+D/CCodec  ( 8087):   int32_t max-output-channel-count = 8
+D/CCodec  ( 8087):   string mime = "audio/mp4a-latm"
+D/CCodec  ( 8087):   int32_t profile = 2
+D/CCodec  ( 8087):   int32_t sample-rate = 44100
+D/CCodec  ( 8087): }
+D/CCodec  ( 8087): setup formats output: AMessage(what = 0x00000000) = {
+D/CCodec  ( 8087):   int32_t aac-drc-album-mode = 0
+D/CCodec  ( 8087):   int32_t aac-drc-boost-level = 127
+D/CCodec  ( 8087):   int32_t aac-drc-cut-level = 127
+D/CCodec  ( 8087):   int32_t aac-drc-effect-type = 3
+D/CCodec  ( 8087):   int32_t aac-drc-output-loudness = -1
+D/CCodec  ( 8087):   int32_t aac-encoded-target-level = -1
+D/CCodec  ( 8087):   int32_t aac-max-output-channel_count = 8
+D/CCodec  ( 8087):   int32_t aac-target-ref-level = 64
+D/CCodec  ( 8087):   int32_t buffer-batch-max-output-size = 0
+D/CCodec  ( 8087):   int32_t buffer-batch-threshold-output-size = 0
+D/CCodec  ( 8087):   int32_t channel-count = 2
+D/CCodec  ( 8087):   int32_t channel-mask = 0
+D/CCodec  ( 8087):   int32_t max-output-channel-count = 8
+D/CCodec  ( 8087):   string mime = "audio/raw"
+D/CCodec  ( 8087):   int32_t sample-rate = 44100
+D/CCodec  ( 8087):   int32_t android._config-pcm-encoding = 2
+D/CCodec  ( 8087): }
+I/CCodecConfig( 8087): query failed after returning 21 values (BAD_INDEX)
+E/s_store_manager( 8087): Failed to query component interface for required system resources: 6
+D/MediaCodec( 8087): keep callback message for reclaim
+I/CCodec  ( 8087): [c2.android.aac.decoder] state->set(STARTING)
+D/CCodecBufferChannel( 8087): [c2.android.aac.decoder#583] Created input block pool with allocatorID 16 => poolID 22 - OK (0)
+I/CCodecBufferChannel( 8087): [c2.android.aac.decoder#583] Created output block pool with allocatorID 16 => poolID 37098 - OK
+D/CCodecBufferChannel( 8087): [c2.android.aac.decoder#583] Configured output block pool ids 37098 => OK
+I/CCodec  ( 8087): [c2.android.aac.decoder] state->set(RUNNING)
+I/CCodecBufferChannel( 8087): [c2.android.aac.decoder#583] 4 initial input buffers available
+W/s_store_manager( 8087): AIBinder_linkToDeath is being called with a non-null cookie and no onUnlink callback set. This might not be intended. AIBinder_DeathRecipient_setOnUnlinked should be called first.
+I/CCodec  ( 8087): [c2.android.aac.decoder] state->set(FLUSHING)
+I/CCodec  ( 8087): [c2.android.aac.decoder] state->set(FLUSHED)
+D/MediaCodec( 8087): keep callback message for reclaim
+I/CCodec  ( 8087): [c2.android.aac.decoder] state->set(RESUMING)
+I/CCodecConfig( 8087): query failed after returning 21 values (BAD_INDEX)
+I/CCodecBufferChannel( 8087): [c2.android.aac.decoder#583] 4 initial input buffers available
+I/CCodec  ( 8087): [c2.android.aac.decoder] state->set(RUNNING)
+D/CCodecConfig( 8087): c2 config diff is   c2::u32 raw.channel-mask.value = 12
+D/CCodecBuffers( 8087): [c2.android.aac.decoder#583:Output[N]] popFromStashAndRegister: at 1000000812665us, output format changed to AMessage(what = 0x00000000) = {
+D/CCodecBuffers( 8087):   int32_t aac-drc-album-mode = 0
+D/CCodecBuffers( 8087):   int32_t aac-drc-boost-level = 127
+D/CCodecBuffers( 8087):   int32_t aac-drc-cut-level = 127
+D/CCodecBuffers( 8087):   int32_t aac-drc-effect-type = 3
+D/CCodecBuffers( 8087):   int32_t aac-drc-output-loudness = -1
+D/CCodecBuffers( 8087):   int32_t aac-encoded-target-level = -1
+D/CCodecBuffers( 8087):   int32_t aac-max-output-channel_count = 8
+D/CCodecBuffers( 8087):   int32_t aac-target-ref-level = 64
+D/CCodecBuffers( 8087):   int32_t buffer-batch-max-output-size = 0
+D/CCodecBuffers( 8087):   int32_t buffer-batch-threshold-output-size = 0
+D/CCodecBuffers( 8087):   int32_t channel-count = 2
+D/CCodecBuffers( 8087):   int32_t channel-mask = 12
+D/CCodecBuffers( 8087):   int32_t max-output-channel-count = 8
+D/CCodecBuffers( 8087):   string mime = "audio/raw"
+D/CCodecBuffers( 8087):   int32_t sample-rate = 44100
+D/CCodecBuffers( 8087):   int32_t android._config-pcm-encoding = 2
+D/CCodecBuffers( 8087): }
+D/AudioTrack( 8087): setVolume(0.750000, 0.750000) pid : 8087
+I/flutter ( 8087): [AppPlaybackCoordinatorV2] active HLS snapshot -> start player queueItemId=85bb488b-07c9-47f8-aac2-a401f1ad269e trackId=6df628bf-779f-41d1-b03f-a690055cef6e trackName=New music hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/6df628bf-779f-41d1-b03f-a690055cef6e/v1/sekuora-relaxed-day-futuristic-chill-250712-32cd38b3b5e04f5b8664440a42d24e71.m3u8
+I/flutter ( 8087): [PlayerBlocV2] queueSeeded force=true queueCount=56 playlistName=New music currentTrack=d currentQueueItemId=cfa0df60-d102-4a42-890d-1a159b5ad93d
+I/flutter ( 8087): [PlayerBlocV2] hlsStarted hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/6df628bf-779f-41d1-b03f-a690055cef6e/v1/sekuora-relaxed-day-futuristic-chill-250712-32cd38b3b5e04f5b8664440a42d24e71.m3u8 trackId=6df628bf-779f-41d1-b03f-a690055cef6e trackTitle=New music queueItemId=85bb488b-07c9-47f8-aac2-a401f1ad269e seek=0.32 playLocally=true
+I/flutter ( 8087): [QueueFirstV2] emitState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=85bb488b-07c9-47f8-aac2-a401f1ad269e pending=- track=New music hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/6df628bf-779f-41d1-b03f-a690055cef6e/v1/sekuora-relaxed-day-futuristic-chill-250712-32cd38b3b5e04f5b8664440a42d24e71.m3u8 manual=false scheduling=false paused=false queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2 | 4:Untitled:2]
+I/flutter ( 8087): [CamsPlaybackBlocV2] runtimeState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 currentQueueItemId=85bb488b-07c9-47f8-aac2-a401f1ad269e pendingQueueItemId=- currentTrack=New music hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/6df628bf-779f-41d1-b03f-a690055cef6e/v1/sekuora-relaxed-day-futuristic-chill-250712-32cd38b3b5e04f5b8664440a42d24e71.m3u8 manual=false scheduling=false queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2]
+I/flutter ( 8087): [AppPlaybackCoordinatorV2] syncCamsState status=active playback=space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=85bb488b-07c9-47f8-aac2-a401f1ad269e pending=- track=New music hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/6df628bf-779f-41d1-b03f-a690055cef6e/v1/sekuora-relaxed-day-futuristic-chill-250712-32cd38b3b5e04f5b8664440a42d24e71.m3u8 queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2 | 4:Untitled:2] playerTrack=New music playerHls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/6df628bf-779f-41d1-b03f-a690055cef6e/v1/sekuora-relaxed-day-futuristic-chill-250712-32cd38b3b5e04f5b8664440a42d24e71.m3u8
+I/flutter ( 8087): [DioClient] Preparing auth header for "/api/fuzzy-music-profiles/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908": playbackScoped=false selectedToken=eyJhbGciOiJI...
+I/flutter ( 8087): [DioClient] [request-auth] path=/api/fuzzy-music-profiles/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 activeMode=manager hasManagerToken=true managerExpiry=2026-04-24T13:32:30.264684Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
+I/flutter ( 8087): [DioClient] Preparing auth header for "/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue": playbackScoped=true selectedToken=eyJhbGciOiJI...
+I/flutter ( 8087): [DioClient] [request-auth] path=/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue activeMode=manager hasManagerToken=true managerExpiry=2026-04-24T13:32:30.264684Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
+I/flutter ( 8087): [DioClient] Preparing auth header for "/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue": playbackScoped=true selectedToken=eyJhbGciOiJI...
+I/flutter ( 8087): [DioClient] [request-auth] path=/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue activeMode=manager hasManagerToken=true managerExpiry=2026-04-24T13:32:30.264684Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
+I/flutter ( 8087): [QueueFirstV2] emitState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=85bb488b-07c9-47f8-aac2-a401f1ad269e pending=- track=New music hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/6df628bf-779f-41d1-b03f-a690055cef6e/v1/sekuora-relaxed-day-futuristic-chill-250712-32cd38b3b5e04f5b8664440a42d24e71.m3u8 manual=false scheduling=false paused=false queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2 | 4:Untitled:2]
+I/flutter ( 8087): [CamsPlaybackBlocV2] runtimeState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 currentQueueItemId=85bb488b-07c9-47f8-aac2-a401f1ad269e pendingQueueItemId=- currentTrack=New music hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/6df628bf-779f-41d1-b03f-a690055cef6e/v1/sekuora-relaxed-day-futuristic-chill-250712-32cd38b3b5e04f5b8664440a42d24e71.m3u8 manual=false scheduling=false queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2]
+I/flutter ( 8087): [AppPlaybackCoordinatorV2] syncCamsState status=active playback=space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=85bb488b-07c9-47f8-aac2-a401f1ad269e pending=- track=New music hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/6df628bf-779f-41d1-b03f-a690055cef6e/v1/sekuora-relaxed-day-futuristic-chill-250712-32cd38b3b5e04f5b8664440a42d24e71.m3u8 queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2 | 4:Untitled:2] playerTrack=New music playerHls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/6df628bf-779f-41d1-b03f-a690055cef6e/v1/sekuora-relaxed-day-futuristic-chill-250712-32cd38b3b5e04f5b8664440a42d24e71.m3u8
+I/flutter ( 8087): [AppPlaybackCoordinatorV2] same remote HLS snapshot -> keep current player queueItemId=85bb488b-07c9-47f8-aac2-a401f1ad269e drift=0.67
+I/flutter ( 8087): [QueueFirstV2] emitState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=85bb488b-07c9-47f8-aac2-a401f1ad269e pending=- track=New music hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/6df628bf-779f-41d1-b03f-a690055cef6e/v1/sekuora-relaxed-day-futuristic-chill-250712-32cd38b3b5e04f5b8664440a42d24e71.m3u8 manual=false scheduling=false paused=false queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2 | 4:Untitled:2]
+I/flutter ( 8087): [QueueFirstV2] reconcile detected immediate state change
+I/flutter ( 8087): [CamsPlaybackBlocV2] runtimeState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 currentQueueItemId=85bb488b-07c9-47f8-aac2-a401f1ad269e pendingQueueItemId=- currentTrack=New music hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/6df628bf-779f-41d1-b03f-a690055cef6e/v1/sekuora-relaxed-day-futuristic-chill-250712-32cd38b3b5e04f5b8664440a42d24e71.m3u8 manual=false scheduling=false queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2]
+I/flutter ( 8087): [AppPlaybackCoordinatorV2] syncCamsState status=active playback=space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=85bb488b-07c9-47f8-aac2-a401f1ad269e pending=- track=New music hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/6df628bf-779f-41d1-b03f-a690055cef6e/v1/sekuora-relaxed-day-futuristic-chill-250712-32cd38b3b5e04f5b8664440a42d24e71.m3u8 queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2 | 4:Untitled:2] playerTrack=New music playerHls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/6df628bf-779f-41d1-b03f-a690055cef6e/v1/sekuora-relaxed-day-futuristic-chill-250712-32cd38b3b5e04f5b8664440a42d24e71.m3u8
+D/AidlBufferPool( 8087): bufferpool2 0xb4000076313a6038 : 0(0 size) total buffers 
+-khi pause:
+I/flutter (13499): followRedirects: true
+I/flutter (13499): persistentConnection: true
+I/flutter (13499): connectTimeout: 0:00:30.000000
+I/flutter (13499): sendTimeout: 0:00:30.000000
+I/flutter (13499): receiveTimeout: 0:00:30.000000
+I/flutter (13499): receiveDataWhenStatusError: true
+I/flutter (13499): extra: {}
+I/flutter (13499): headers:
+I/flutter (13499):  Content-Type: application/json
+I/flutter (13499):  Accept: application/json
+I/flutter (13499): data:
+I/flutter (13499): {command: 2}
+I/flutter (13499): 
+I/flutter (13499): [DioClient] Preparing auth header for "/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/playback": playbackScoped=true selectedToken=eyJhbGciOiJI...
+I/flutter (13499): [DioClient] [request-auth] path=/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/playback activeMode=manager hasManagerToken=true managerExpiry=2026-04-24T13:32:30.264684Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
+D/AidlBufferPool(13499): bufferpool2 0xb40000763140c328 : 1(8192 size) total buffers - 1(8192 size) used buffers - 27/33 (recycle/alloc) - 7/27 (fetch/transfer)
+W/s_store_manager(13499): AIBinder_linkToDeath is being called with a non-null cookie and no onUnlink callback set. This might not be intended. AIBinder_DeathRecipient_setOnUnlinked should be called first.
+I/flutter (13499): [PlaybackTrace] SIGNALR_PLAYBACK_COMMAND spaceId=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 command=resume seek=- targetQueueItemId=- targetTrackId=-
+I/flutter (13499): [QueueFirstV2] hub PlaybackCommand spaceId=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 command=resume seek=- targetQueueItemId=- targetTrackId=-
+I/flutter (13499): [QueueFirstV2] emitState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=9a0b850f-01ad-4034-a436-1a558107896f pending=- track=sekuora-relaxed-day-futuristic-chill-ncr hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8 manual=false scheduling=false paused=false queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2 | 4:Untitled:2]
+I/flutter (13499): [CamsPlaybackBlocV2] runtimeState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 currentQueueItemId=9a0b850f-01ad-4034-a436-1a558107896f pendingQueueItemId=- currentTrack=sekuora-relaxed-day-futuristic-chill-ncr hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8 manual=false scheduling=false queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2]
+I/flutter (13499): [AppPlaybackCoordinatorV2] syncCamsState status=active playback=space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=9a0b850f-01ad-4034-a436-1a558107896f pending=- track=sekuora-relaxed-day-futuristic-chill-ncr hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8 queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2 | 4:Untitled:2] playerTrack=sekuora-relaxed-day-futuristic-chill-ncr playerHls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8
+I/flutter (13499): [AppPlaybackCoordinatorV2] same remote HLS snapshot -> keep current player queueItemId=9a0b850f-01ad-4034-a436-1a558107896f drift=0.38
+I/flutter (13499): *** Response ***
+I/flutter (13499): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/playback
+I/flutter (13499): statusCode: 200
+I/flutter (13499): statusMessage: OK
+I/flutter (13499): headers:
+I/flutter (13499):  connection: keep-alive
+I/flutter (13499):  alt-svc: h3=":443"; ma=86400
+I/flutter (13499):  date: Fri, 24 Apr 2026 13:27:39 GMT
+I/flutter (13499):  transfer-encoding: chunked
+I/flutter (13499):  content-encoding: gzip
+I/flutter (13499):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+I/flutter (13499):  cf-ray: 9f157256cb64aec4-HKG
+I/flutter (13499):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=COOn%2FNkY%2FLSvLshizGfX0QyirI8EIOeiV10b7fe0I1RMHce%2B1YCXeGrGxveahJ4c%2F2XPxniiPrBIvtjnHh%2BR1MpquvjCFuInocL5WzdH2vXfx9C5yw%2F2cNbHFwNxJqEO"}]}
+I/flutter (13499):  cf-cache-status: DYNAMIC
+I/flutter (13499):  content-type: application/json; charset=utf-8
+I/flutter (13499):  server: cloudflare
+I/flutter (13499): Response Text:
+I/flutter (13499): {"isSuccess":true,"message":"Playback command 'Resume' relayed to Space."}
+I/flutter (13499): 
+I/flutter (13499): [PlaybackTrace] API_COMMAND_HTTP_OK spaceId=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 command=resume
+I/flutter (13499): [QueueFirstV2] emitState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=9a0b850f-01ad-4034-a436-1a558107896f pending=- track=sekuora-relaxed-day-futuristic-chill-ncr hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8 manual=false scheduling=false paused=false queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2 | 4:Untitled:2]
+I/flutter (13499): [QueueFirstV2] reconcile after mutation started
+I/flutter (13499): [PlaybackTrace] API_COMMAND_ACK spaceId=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 command=resume
+I/flutter (13499): [CamsPlaybackBlocV2] runtimeState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 currentQueueItemId=9a0b850f-01ad-4034-a436-1a558107896f pendingQueueItemId=- currentTrack=sekuora-relaxed-day-futuristic-chill-ncr hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8 manual=false scheduling=false queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2]
+I/flutter (13499): [AppPlaybackCoordinatorV2] syncCamsState status=active playback=space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=9a0b850f-01ad-4034-a436-1a558107896f pending=- track=sekuora-relaxed-day-futuristic-chill-ncr hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8 queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2 | 4:Untitled:2] playerTrack=sekuora-relaxed-day-futuristic-chill-ncr playerHls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8
+I/flutter (13499): *** Request ***
+I/flutter (13499): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/state
+I/flutter (13499): method: GET
+I/flutter (13499): responseType: ResponseType.json
+I/flutter (13499): followRedirects: true
+I/flutter (13499): persistentConnection: true
+I/flutter (13499): connectTimeout: 0:00:30.000000
+I/flutter (13499): sendTimeout: 0:00:30.000000
+I/flutter (13499): receiveTimeout: 0:00:30.000000
+I/flutter (13499): receiveDataWhenStatusError: true
+I/flutter (13499): extra: {}
+I/flutter (13499): headers:
+I/flutter (13499):  Content-Type: application/json
+I/flutter (13499):  Accept: application/json
+I/flutter (13499): data:
+I/flutter (13499): null
+I/flutter (13499): 
+I/flutter (13499): [DioClient] Preparing auth header for "/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/state": playbackScoped=true selectedToken=eyJhbGciOiJI...
+I/flutter (13499): [DioClient] [request-auth] path=/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/state activeMode=manager hasManagerToken=true managerExpiry=2026-04-24T13:32:30.264684Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
+I/flutter (13499): [QueueFirstV2] hub SpaceStateSync raw -> space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=9a0b850f-01ad-4034-a436-1a558107896f pending=- track=sekuora-relaxed-day-futuristic-chill-ncr hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8 manual=false scheduling=false paused=false queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2 | 4:Untitled:2]
+I/flutter (13499): [QueueFirstV2] hub SpaceStateSync raw -> space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=9a0b850f-01ad-4034-a436-1a558107896f pending=- track=sekuora-relaxed-day-futuristic-chill-ncr hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8 manual=false scheduling=false paused=false queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2 | 4:Untitled:2]
+I/flutter (13499): *** Request ***
+I/flutter (13499): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue
+I/flutter (13499): method: GET
+I/flutter (13499): responseType: ResponseType.json
+I/flutter (13499): followRedirects: true
+I/flutter (13499): persistentConnection: true
+I/flutter (13499): connectTimeout: 0:00:30.000000
+I/flutter (13499): sendTimeout: 0:00:30.000000
+I/flutter (13499): receiveTimeout: 0:00:30.000000
+I/flutter (13499): receiveDataWhenStatusError: true
+I/flutter (13499): extra: {}
+I/flutter (13499): headers:
+I/flutter (13499):  Content-Type: application/json
+I/flutter (13499):  Accept: application/json
+I/flutter (13499): data:
+I/flutter (13499): null
+I/flutter (13499): 
+I/flutter (13499): *** Request ***
+I/flutter (13499): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue
+I/flutter (13499): method: GET
+I/flutter (13499): responseType: ResponseType.json
+I/flutter (13499): followRedirects: true
+I/flutter (13499): persistentConnection: true
+I/flutter (13499): connectTimeout: 0:00:30.000000
+I/flutter (13499): sendTimeout: 0:00:30.000000
+I/flutter (13499): receiveTimeout: 0:00:30.000000
+I/flutter (13499): receiveDataWhenStatusError: true
+I/flutter (13499): extra: {}
+I/flutter (13499): headers:
+I/flutter (13499):  Content-Type: application/json
+I/flutter (13499):  Accept: application/json
+I/flutter (13499): data:
+I/flutter (13499): null
+I/flutter (13499): 
+I/flutter (13499): [DioClient] Preparing auth header for "/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue": playbackScoped=true selectedToken=eyJhbGciOiJI...
+I/flutter (13499): [DioClient] [request-auth] path=/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue activeMode=manager hasManagerToken=true managerExpiry=2026-04-24T13:32:30.264684Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
+I/flutter (13499): [DioClient] Preparing auth header for "/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue": playbackScoped=true selectedToken=eyJhbGciOiJI...
+I/flutter (13499): [DioClient] [request-auth] path=/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue activeMode=manager hasManagerToken=true managerExpiry=2026-04-24T13:32:30.264684Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
+I/flutter (13499): *** Response ***
+I/flutter (13499): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/state
+I/flutter (13499): statusCode: 200
+I/flutter (13499): statusMessage: OK
+I/flutter (13499): headers:
+I/flutter (13499):  connection: keep-alive
+I/flutter (13499):  alt-svc: h3=":443"; ma=86400
+I/flutter (13499):  date: Fri, 24 Apr 2026 13:27:39 GMT
+I/flutter (13499):  transfer-encoding: chunked
+I/flutter (13499):  content-encoding: gzip
+I/flutter (13499):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+I/flutter (13499):  cf-ray: 9f1572589994aec4-HKG
+I/flutter (13499):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=DUQ04EFMkzLRgLPkmcwndM5gYDMmCmWwG9PNjBfx%2BqH7I8PSl620jd8IIdkHv%2BaMHoJha25SNj1TkutcwwxnMJr21fb4I0kjTi44UEwwbM62Lwx8tMXctB2gDk%2F0mUSn"}]}
+I/flutter (13499):  cf-cache-status: DYNAMIC
+I/flutter (13499):  content-type: application/json; charset=utf-8
+I/flutter (13499):  server: cloudflare
+I/flutter (13499): Response Text:
+I/flutter (13499): {"isSuccess":true,"message":"Success","data":{"spaceId":"9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908","storeId":"d34ffedc-f11a-41f6-b485-efb6cf6181a5","brandId":"ff587081-083f-42ec-b43b-b3a6b2f4756d","currentQueueItemId":"9a0b850f-01ad-4034-a436-1a558107896f","currentTrackName":"sekuora-relaxed-day-futuristic-chill-ncr","hlsUrl":"https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8","moodName":"Focus","isManualOverride":false,"overrideMode":null,"overrideReason":null,"manualOverrideActivatedAtUtc":null,"manualOverrideExpiresAtUtc":null,"manualOverrideTtlSeconds":null,"manualOverrideRemainingSeconds":null,"isScheduling":false,"schedulingSlotId":null,"schedulingSlotOrigin":null,"schedulingEndsAtUtc":null,"schedulingRemainingSeconds":null,"startedAtUtc":"2026-04-24T13:26:20.380392Z","expectedEndAtUtc":"2026-04-24T13:28:14.380393Z","seekOffsetSeconds":79.2840724,"isPaused":false,"pausePositionSeconds":n
+I/flutter (13499): 
+I/flutter (13499): *** Request ***
+I/flutter (13499): uri: https://logcams.cloud/api/fuzzy-music-profiles/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908
+I/flutter (13499): method: GET
+I/flutter (13499): responseType: ResponseType.json
+I/flutter (13499): followRedirects: true
+I/flutter (13499): persistentConnection: true
+I/flutter (13499): connectTimeout: 0:00:30.000000
+I/flutter (13499): sendTimeout: 0:00:30.000000
+I/flutter (13499): receiveTimeout: 0:00:30.000000
+I/flutter (13499): receiveDataWhenStatusError: true
+I/flutter (13499): extra: {}
+I/flutter (13499): headers:
+I/flutter (13499):  Content-Type: application/json
+I/flutter (13499):  Accept: application/json
+I/flutter (13499): data:
+I/flutter (13499): null
+I/flutter (13499): 
+I/flutter (13499): [DioClient] Preparing auth header for "/api/fuzzy-music-profiles/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908": playbackScoped=false selectedToken=eyJhbGciOiJI...
+I/flutter (13499): [DioClient] [request-auth] path=/api/fuzzy-music-profiles/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 activeMode=manager hasManagerToken=true managerExpiry=2026-04-24T13:32:30.264684Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
+I/flutter (13499): *** Response ***
+I/flutter (13499): uri: https://logcams.cloud/api/fuzzy-music-profiles/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908
+I/flutter (13499): statusCode: 200
+I/flutter (13499): statusMessage: OK
+I/flutter (13499): headers:
+I/flutter (13499):  connection: keep-alive
+I/flutter (13499):  alt-svc: h3=":443"; ma=86400
+I/flutter (13499):  date: Fri, 24 Apr 2026 13:27:39 GMT
+I/flutter (13499):  transfer-encoding: chunked
+I/flutter (13499):  content-encoding: gzip
+I/flutter (13499):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+I/flutter (13499):  cf-ray: 9f15725a8fadaec4-HKG
+I/flutter (13499):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=zH2R2OTqc0INA3aDH1vyicG0pH%2BnQeLWvpS%2FSRAGBvUKFyJacJdBafJvBV%2BZqzMi8ZDzVNDBHOcZhwAb8cwrNeQZ%2Fv6IjbyQVOYbJy9gM1lOJx7iryOjjnftditSRkLv"}]}
+I/flutter (13499):  cf-cache-status: DYNAMIC
+I/flutter (13499):  content-type: application/json; charset=utf-8
+I/flutter (13499):  server: cloudflare
+I/flutter (13499): Response Text:
+I/flutter (13499): {"isSuccess":true,"message":"Success","data":{"id":"e9a03651-4546-47bc-8e4c-572f2db4c021","brandId":"ff587081-083f-42ec-b43b-b3a6b2f4756d","storeId":"d34ffedc-f11a-41f6-b485-efb6cf6181a5","name":"Lầu 1 - Space Fuzzy Override","templateKey":"SpaceOverride","chillBpmMin":60,"chillBpmMax":80,"focusBpmMin":85,"focusBpmMax":105,"energeticBpmMin":120,"energeticBpmMax":140,"noiseQuietMaxDb":50,"noiseLoudMinDb":75,"defaultDecibelWhenNull":60,"autoVolumeEnabled":true,"autoVolumeQuietPercent":45,"autoVolumeModeratePercent":60,"autoVolumeLoudPercent":75,"autoVolumeMinPercent":30,"autoVolumeMaxPercent":90,"autoVolumeDeadbandPercent":5,"chillMoodCandidates":null,"focusMoodCandidates":null,"energeticMoodCandidates":null}}
+I/flutter (13499): 
+I/flutter (13499): *** Request ***
+I/flutter (13499): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue
+I/flutter (13499): method: GET
+I/flutter (13499): responseType: ResponseType.json
+I/flutter (13499): followRedirects: true
+I/flutter (13499): persistentConnection: true
+I/flutter (13499): connectTimeout: 0:00:30.000000
+I/flutter (13499): sendTimeout: 0:00:30.000000
+I/flutter (13499): receiveTimeout: 0:00:30.000000
+I/flutter (13499): receiveDataWhenStatusError: true
+I/flutter (13499): extra: {}
+I/flutter (13499): headers:
+I/flutter (13499):  Content-Type: application/json
+I/flutter (13499):  Accept: application/json
+I/flutter (13499): data:
+I/flutter (13499): null
+I/flutter (13499): 
+I/flutter (13499): [DioClient] Preparing auth header for "/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue": playbackScoped=true selectedToken=eyJhbGciOiJI...
+I/flutter (13499): [DioClient] [request-auth] path=/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue activeMode=manager hasManagerToken=true managerExpiry=2026-04-24T13:32:30.264684Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
+I/flutter (13499): *** Response ***
+I/flutter (13499): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue
+I/flutter (13499): statusCode: 200
+I/flutter (13499): statusMessage: OK
+I/flutter (13499): headers:
+I/flutter (13499):  connection: keep-alive
+I/flutter (13499):  alt-svc: h3=":443"; ma=86400
+I/flutter (13499):  date: Fri, 24 Apr 2026 13:27:40 GMT
+I/flutter (13499):  transfer-encoding: chunked
+I/flutter (13499):  content-encoding: gzip
+I/flutter (13499):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+I/flutter (13499):  cf-ray: 9f15725bbb02220f-HKG
+I/flutter (13499):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=dSy4M6W4J2z%2FawqCBdV0zW%2B6xmCR7BzeS%2BdtaVReSg8unS867%2FrpDZjw1OFQIJltZHS%2FkFAym%2Fpkk1kp0kwuQrxqdBjcLfpOlqVls6KHmKaqbjrB5Nl8QvKGwQygcnaZ"}]}
+I/flutter (13499):  cf-cache-status: DYNAMIC
+I/flutter (13499):  content-type: application/json; charset=utf-8
+I/flutter (13499):  server: cloudflare
+I/flutter (13499): Response Text:
+I/flutter (13499): {"isSuccess":true,"message":"Success","data":[{"queueItemId":"1c23beee-25b3-47a8-be6c-f36a66a10252","trackId":"b8602df5-fac3-482e-9f89-c214bbf8003a","trackName":"Nhac Khong Loi Chill","position":1,"queueStatus":3,"source":1,"hlsUrl":"https://ddbdgg08nzlz.cloudfront.net/audio/tracks/b8602df5-fac3-482e-9f89-c214bbf8003a/v1/c328417455344e63935f7916d3206214.m3u8","coverImageUrl":null,"isReadyToStream":true},{"queueItemId":"a46e9372-7e69-4fec-97ff-16f3216cfad0","trackId":"40bb593d-6832-4e45-a04a-d2abe3eae833","trackName":"artmylife-powerful-dramatic-trailer","position":2,"queueStatus":3,"source":1,"hlsUrl":"https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40bb593d-6832-4e45-a04a-d2abe3eae833/v1/artmylife-powerful-dramatic-trailer-514242-9358d7cec9bf4ea98bd70c97fef34a71.m3u8","coverImageUrl":null,"isReadyToStream":true},{"queueItemId":"8481f299-cdb4-4321-83bb-e2006aa79fab","trackId":"a967dd2c-9005-4b02-979e-d5320e2ef8b1","trackName":"Untitled","position":3,"queueStatus":2,"source":1,"hlsUrl":"https://ddbdgg08nzlz.
+I/flutter (13499): 
+I/flutter (13499): *** Response ***
+I/flutter (13499): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue
+I/flutter (13499): statusCode: 200
+I/flutter (13499): statusMessage: OK
+I/flutter (13499): headers:
+I/flutter (13499):  connection: keep-alive
+I/flutter (13499):  alt-svc: h3=":443"; ma=86400
+I/flutter (13499):  date: Fri, 24 Apr 2026 13:27:40 GMT
+I/flutter (13499):  transfer-encoding: chunked
+I/flutter (13499):  content-encoding: gzip
+I/flutter (13499):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+I/flutter (13499):  cf-ray: 9f15725bcc4daec4-HKG
+I/flutter (13499):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=8PJ4JOnIPwKwLkx622LP6xdv%2BcRf0S5hcgkpxz%2Ffie5Fc%2F2TsAI68qHSTm6XEmC6f1RKIAQTvR5Qn5MGa5cNvgVwiGlBrMdsjNDUDi9dhYyXv0EPmx%2Fqtl1SVcbwx0ay"}]}
+I/flutter (13499):  cf-cache-status: DYNAMIC
+I/flutter (13499):  content-type: application/json; charset=utf-8
+I/flutter (13499):  server: cloudflare
+I/flutter (13499): Response Text:
+I/flutter (13499): {"isSuccess":true,"message":"Success","data":[{"queueItemId":"1c23beee-25b3-47a8-be6c-f36a66a10252","trackId":"b8602df5-fac3-482e-9f89-c214bbf8003a","trackName":"Nhac Khong Loi Chill","position":1,"queueStatus":3,"source":1,"hlsUrl":"https://ddbdgg08nzlz.cloudfront.net/audio/tracks/b8602df5-fac3-482e-9f89-c214bbf8003a/v1/c328417455344e63935f7916d3206214.m3u8","coverImageUrl":null,"isReadyToStream":true},{"queueItemId":"a46e9372-7e69-4fec-97ff-16f3216cfad0","trackId":"40bb593d-6832-4e45-a04a-d2abe3eae833","trackName":"artmylife-powerful-dramatic-trailer","position":2,"queueStatus":3,"source":1,"hlsUrl":"https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40bb593d-6832-4e45-a04a-d2abe3eae833/v1/artmylife-powerful-dramatic-trailer-514242-9358d7cec9bf4ea98bd70c97fef34a71.m3u8","coverImageUrl":null,"isReadyToStream":true},{"queueItemId":"8481f299-cdb4-4321-83bb-e2006aa79fab","trackId":"a967dd2c-9005-4b02-979e-d5320e2ef8b1","trackName":"Untitled","position":3,"queueStatus":2,"source":1,"hlsUrl":"https://ddbdgg08nzlz.
+I/flutter (13499): 
+I/flutter (13499): [QueueFirstV2] emitState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=9a0b850f-01ad-4034-a436-1a558107896f pending=- track=sekuora-relaxed-day-futuristic-chill-ncr hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8 manual=false scheduling=false paused=false queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2 | 4:Untitled:2]
+I/flutter (13499): [CamsPlaybackBlocV2] runtimeState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 currentQueueItemId=9a0b850f-01ad-4034-a436-1a558107896f pendingQueueItemId=- currentTrack=sekuora-relaxed-day-futuristic-chill-ncr hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8 manual=false scheduling=false queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2]
+I/flutter (13499): [AppPlaybackCoordinatorV2] syncCamsState status=active playback=space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=9a0b850f-01ad-4034-a436-1a558107896f pending=- track=sekuora-relaxed-day-futuristic-chill-ncr hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8 queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2 | 4:Untitled:2] playerTrack=sekuora-relaxed-day-futuristic-chill-ncr playerHls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8
+I/flutter (13499): [AppPlaybackCoordinatorV2] hydrateQueueForPlayback queueCount=56 signature=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908|9a0b850f-01ad-4034-a436-1a558107896f|1c23beee-25b3-47a8-be6c-f36a66a10252:b8602df5-fac3-482e-9f89-c214bbf8003a:1:3:https://ddbdgg08nzlz.cloudfront.net/audio/tracks/b8602df5-fac3-482e-9f89-c214bbf8003a/v1/c328417455344e63935f7916d3206214.m3u8::1|a46e9372-7e69-4fec-97ff-16f3216cfad0:40bb593d-6832-4e45-a04a-d2abe3eae833:2:3:https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40bb593d-6832-4e45-a04a-d2abe3eae833/v1/artmylife-powerful-dramatic-trailer-514242-9358d7cec9bf4ea98bd70c97fef34a71.m3u8::1|8481f299-cdb4-4321-83bb-e2006aa79fab:a967dd2c-9005-4b02-979e-d5320e2ef8b1:3:2:https://ddbdgg08nzlz.cloudfront.net/audio/tracks/a967dd2c-9005-4b02-979e-d5320e2ef8b1/v1/a2f2b491428a49c0b2c192e242620373.m3u8::1|aa1eef51-b4a2-4b8a-848f-f1f69e594473:de7c9862-1a1b-46e4-b8e0-a8908064a900:4:2:https://ddbdgg08nzlz.cloudfront.net/audio/tracks/de7c9862-1a1b-46e4-b8e0-a8908064a900/v1/b9d505e072b7452cbae8afed1ab17869.m3u8::1
+I/flutter (13499): *** Response ***
+I/flutter (13499): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue
+I/flutter (13499): statusCode: 200
+I/flutter (13499): statusMessage: OK
+I/flutter (13499): headers:
+I/flutter (13499):  connection: keep-alive
+I/flutter (13499):  alt-svc: h3=":443"; ma=86400
+I/flutter (13499):  date: Fri, 24 Apr 2026 13:27:40 GMT
+I/flutter (13499):  transfer-encoding: chunked
+I/flutter (13499):  content-encoding: gzip
+I/flutter (13499):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+I/flutter (13499):  cf-ray: 9f15725bbeae5dda-HKG
+I/flutter (13499):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=uFFBQgBE64ybPIogyD%2B001tdO4S8Q7kXuefZcJE0f09d4ls9M1vJ7CuE61XV9zH1FKcHgqvAXGkCVgvG0bmWv6Fym6HAQAaN9GGZbFMEgeZOEdDHxnZY9CeTdjxTcIaU"}]}
+I/flutter (13499):  cf-cache-status: DYNAMIC
+I/flutter (13499):  content-type: application/json; charset=utf-8
+I/flutter (13499):  server: cloudflare
+I/flutter (13499): Response Text:
+I/flutter (13499): {"isSuccess":true,"message":"Success","data":[{"queueItemId":"1c23beee-25b3-47a8-be6c-f36a66a10252","trackId":"b8602df5-fac3-482e-9f89-c214bbf8003a","trackName":"Nhac Khong Loi Chill","position":1,"queueStatus":3,"source":1,"hlsUrl":"https://ddbdgg08nzlz.cloudfront.net/audio/tracks/b8602df5-fac3-482e-9f89-c214bbf8003a/v1/c328417455344e63935f7916d3206214.m3u8","coverImageUrl":null,"isReadyToStream":true},{"queueItemId":"a46e9372-7e69-4fec-97ff-16f3216cfad0","trackId":"40bb593d-6832-4e45-a04a-d2abe3eae833","trackName":"artmylife-powerful-dramatic-trailer","position":2,"queueStatus":3,"source":1,"hlsUrl":"https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40bb593d-6832-4e45-a04a-d2abe3eae833/v1/artmylife-powerful-dramatic-trailer-514242-9358d7cec9bf4ea98bd70c97fef34a71.m3u8","coverImageUrl":null,"isReadyToStream":true},{"queueItemId":"8481f299-cdb4-4321-83bb-e2006aa79fab","trackId":"a967dd2c-9005-4b02-979e-d5320e2ef8b1","trackName":"Untitled","position":3,"queueStatus":2,"source":1,"hlsUrl":"https://ddbdgg08nzlz.
+I/flutter (13499): 
+I/flutter (13499): *** Request ***
+I/flutter (13499): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/playback
+I/flutter (13499): method: POST
+I/flutter (13499): responseType: ResponseType.json
+I/flutter (13499): followRedirects: true
+I/flutter (13499): persistentConnection: true
+I/flutter (13499): connectTimeout: 0:00:30.000000
+I/flutter (13499): sendTimeout: 0:00:30.000000
+I/flutter (13499): receiveTimeout: 0:00:30.000000
+I/flutter (13499): receiveDataWhenStatusError: true
+I/flutter (13499): extra: {}
+I/flutter (13499): headers:
+I/flutter (13499):  Content-Type: application/json
+I/flutter (13499):  Accept: application/json
+I/flutter (13499): data:
+I/flutter (13499): {command: 1}
+I/flutter (13499): 
+I/flutter (13499): *** Response ***
+I/flutter (13499): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/playback
+I/flutter (13499): statusCode: 200
+I/flutter (13499): statusMessage: OK
+I/flutter (13499): headers:
+I/flutter (13499):  connection: keep-alive
+I/flutter (13499):  alt-svc: h3=":443"; ma=86400
+I/flutter (13499):  date: Fri, 24 Apr 2026 13:27:40 GMT
+I/flutter (13499):  transfer-encoding: chunked
+I/flutter (13499):  content-encoding: gzip
+I/flutter (13499):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+I/flutter (13499):  cf-ray: 9f1572606ab2220f-HKG
+I/flutter (13499):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=P0%2Bv9rjbZpZCrR%2FMhsH4Tk1%2BcQItIYlJBkxYGj3YZeB495VBrjiK8tzIN1lQK76Cm6rdrdPIYU3TuLICQMv0b5IwsutXMksqTHbXAooRsyQ%2BgWw88FrMyq%2B7mW6KIS8a"}]}
+I/flutter (13499):  cf-cache-status: DYNAMIC
+I/flutter (13499):  content-type: application/json; charset=utf-8
+I/flutter (13499):  server: cloudflare
+I/flutter (13499): Response Text:
+I/flutter (13499): {"isSuccess":true,"message":"Playback command 'Pause' relayed to Space."}
+I/flutter (13499): 
+I/flutter (13499): *** Request ***
+I/flutter (13499): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/state
+I/flutter (13499): method: GET
+I/flutter (13499): responseType: ResponseType.json
+I/flutter (13499): followRedirects: true
+I/flutter (13499): persistentConnection: true
+I/flutter (13499): connectTimeout: 0:00:30.000000
+I/flutter (13499): sendTimeout: 0:00:30.000000
+I/flutter (13499): receiveTimeout: 0:00:30.000000
+I/flutter (13499): receiveDataWhenStatusError: true
+I/flutter (13499): extra: {}
+I/flutter (13499): headers:
+I/flutter (13499):  Content-Type: application/json
+I/flutter (13499):  Accept: application/json
+I/flutter (13499): data:
+I/flutter (13499): null
+I/flutter (13499): 
+I/flutter (13499): *** Request ***
+I/flutter (13499): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue
+I/flutter (13499): method: GET
+I/flutter (13499): responseType: ResponseType.json
+I/flutter (13499): followRedirects: true
+I/flutter (13499): persistentConnection: true
+I/flutter (13499): connectTimeout: 0:00:30.000000
+I/flutter (13499): sendTimeout: 0:00:30.000000
+I/flutter (13499): receiveTimeout: 0:00:30.000000
+I/flutter (13499): receiveDataWhenStatusError: true
+I/flutter (13499): extra: {}
+I/flutter (13499): headers:
+I/flutter (13499):  Content-Type: application/json
+I/flutter (13499):  Accept: application/json
+I/flutter (13499): data:
+I/flutter (13499): null
+I/flutter (13499): 
+I/flutter (13499): *** Request ***
+I/flutter (13499): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue
+I/flutter (13499): method: GET
+I/flutter (13499): responseType: ResponseType.json
+I/flutter (13499): followRedirects: true
+I/flutter (13499): persistentConnection: true
+I/flutter (13499): connectTimeout: 0:00:30.000000
+I/flutter (13499): sendTimeout: 0:00:30.000000
+I/flutter (13499): receiveTimeout: 0:00:30.000000
+I/flutter (13499): receiveDataWhenStatusError: true
+I/flutter (13499): extra: {}
+I/flutter (13499): headers:
+I/flutter (13499):  Content-Type: application/json
+I/flutter (13499):  Accept: application/json
+I/flutter (13499): data:
+I/flutter (13499): null
+I/flutter (13499): 
+I/flutter (13499): *** Response ***
+I/flutter (13499): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/state
+I/flutter (13499): statusCode: 200
+I/flutter (13499): statusMessage: OK
+I/flutter (13499): headers:
+I/flutter (13499):  connection: keep-alive
+I/flutter (13499):  alt-svc: h3=":443"; ma=86400
+I/flutter (13499):  date: Fri, 24 Apr 2026 13:27:41 GMT
+I/flutter (13499):  transfer-encoding: chunked
+I/flutter (13499):  content-encoding: gzip
+I/flutter (13499):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+I/flutter (13499):  cf-ray: 9f1572617e23220f-HKG
+I/flutter (13499):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=1POR%2FJBeQPmF1TczjphBeJcj2%2BtafGDIsyRBPasNVAUVcCh8FNdOWquTWxBHx8i8ZSapcnyy0AcE4XfQIDymrQpLRLBAXfR7tv6QYLDHMEsYsy9qvxkM6%2B4%2BUByNAQ3X"}]}
+I/flutter (13499):  cf-cache-status: DYNAMIC
+I/flutter (13499):  content-type: application/json; charset=utf-8
+I/flutter (13499):  server: cloudflare
+I/flutter (13499): Response Text:
+I/flutter (13499): {"isSuccess":true,"message":"Success","data":{"spaceId":"9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908","storeId":"d34ffedc-f11a-41f6-b485-efb6cf6181a5","brandId":"ff587081-083f-42ec-b43b-b3a6b2f4756d","currentQueueItemId":"9a0b850f-01ad-4034-a436-1a558107896f","currentTrackName":"sekuora-relaxed-day-futuristic-chill-ncr","hlsUrl":"https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8","moodName":"Focus","isManualOverride":false,"overrideMode":null,"overrideReason":null,"manualOverrideActivatedAtUtc":null,"manualOverrideExpiresAtUtc":null,"manualOverrideTtlSeconds":null,"manualOverrideRemainingSeconds":null,"isScheduling":false,"schedulingSlotId":null,"schedulingSlotOrigin":null,"schedulingEndsAtUtc":null,"schedulingRemainingSeconds":null,"startedAtUtc":"2026-04-24T13:26:20.380392Z","expectedEndAtUtc":null,"seekOffsetSeconds":80.7040886,"isPaused":true,"pausePositionSeconds":81,"pendingQueueItemId":nul
+I/flutter (13499): 
+I/flutter (13499): *** Request ***
+I/flutter (13499): uri: https://logcams.cloud/api/fuzzy-music-profiles/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908
+I/flutter (13499): method: GET
+I/flutter (13499): responseType: ResponseType.json
+I/flutter (13499): followRedirects: true
+I/flutter (13499): persistentConnection: true
+I/flutter (13499): connectTimeout: 0:00:30.000000
+I/flutter (13499): sendTimeout: 0:00:30.000000
+I/flutter (13499): receiveTimeout: 0:00:30.000000
+I/flutter (13499): receiveDataWhenStatusError: true
+I/flutter (13499): extra: {}
+I/flutter (13499): headers:
+I/flutter (13499):  Content-Type: application/json
+I/flutter (13499):  Accept: application/json
+I/flutter (13499): data:
+I/flutter (13499): null
+I/flutter (13499): 
+I/flutter (13499): [AppPlaybackCoordinatorV2] same remote HLS snapshot -> keep current player queueItemId=9a0b850f-01ad-4034-a436-1a558107896f drift=0.61
+I/flutter (13499): [PlayerBlocV2] queueSeeded force=true queueCount=56 playlistName=sekuora-relaxed-day-futuristic-chill-ncr currentTrack=sekuora-relaxed-day-futuristic-chill-ncr currentQueueItemId=9a0b850f-01ad-4034-a436-1a558107896f
+I/flutter (13499): [QueueFirstV2] emitState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=9a0b850f-01ad-4034-a436-1a558107896f pending=- track=sekuora-relaxed-day-futuristic-chill-ncr hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8 manual=false scheduling=false paused=false queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2 | 4:Untitled:2]
+I/flutter (13499): [QueueFirstV2] reconcile detected immediate state change
+I/flutter (13499): [CamsPlaybackBlocV2] runtimeState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 currentQueueItemId=9a0b850f-01ad-4034-a436-1a558107896f pendingQueueItemId=- currentTrack=sekuora-relaxed-day-futuristic-chill-ncr hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8 manual=false scheduling=false queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2]
+I/flutter (13499): [AppPlaybackCoordinatorV2] syncCamsState status=active playback=space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=9a0b850f-01ad-4034-a436-1a558107896f pending=- track=sekuora-relaxed-day-futuristic-chill-ncr hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8 queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2 | 4:Untitled:2] playerTrack=sekuora-relaxed-day-futuristic-chill-ncr playerHls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8
+I/flutter (13499): [QueueFirstV2] emitState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=9a0b850f-01ad-4034-a436-1a558107896f pending=- track=sekuora-relaxed-day-futuristic-chill-ncr hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8 manual=false scheduling=false paused=false queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2 | 4:Untitled:2]
+I/flutter (13499): [CamsPlaybackBlocV2] runtimeState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 currentQueueItemId=9a0b850f-01ad-4034-a436-1a558107896f pendingQueueItemId=- currentTrack=sekuora-relaxed-day-futuristic-chill-ncr hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8 manual=false scheduling=false queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2]
+I/flutter (13499): [AppPlaybackCoordinatorV2] syncCamsState status=active playback=space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=9a0b850f-01ad-4034-a436-1a558107896f pending=- track=sekuora-relaxed-day-futuristic-chill-ncr hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8 queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2 | 4:Untitled:2] playerTrack=sekuora-relaxed-day-futuristic-chill-ncr playerHls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8
+I/flutter (13499): [PlaybackTrace] API_COMMAND_SENT spaceId=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 command=pause seek=- targetQueueItemId=- targetTrackId=-
+I/flutter (13499): [PlaybackTrace] API_COMMAND_PIPELINE spaceId=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 scope=manager command=pause seek=- targetQueueItemId=- targetTrackId=-
+I/flutter (13499): [DioClient] Preparing auth header for "/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/playback": playbackScoped=true selectedToken=eyJhbGciOiJI...
+I/flutter (13499): [DioClient] [request-auth] path=/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/playback activeMode=manager hasManagerToken=true managerExpiry=2026-04-24T13:32:30.264684Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
+I/flutter (13499): [PlaybackTrace] SIGNALR_PLAYBACK_COMMAND spaceId=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 command=pause seek=- targetQueueItemId=- targetTrackId=-
+I/flutter (13499): [QueueFirstV2] hub PlaybackCommand spaceId=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 command=pause seek=- targetQueueItemId=- targetTrackId=-
+I/flutter (13499): [QueueFirstV2] emitState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=9a0b850f-01ad-4034-a436-1a558107896f pending=- track=sekuora-relaxed-day-futuristic-chill-ncr hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8 manual=false scheduling=false paused=true queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2 | 4:Untitled:2]
+I/flutter (13499): [CamsPlaybackBlocV2] runtimeState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 currentQueueItemId=9a0b850f-01ad-4034-a436-1a558107896f pendingQueueItemId=- currentTrack=sekuora-relaxed-day-futuristic-chill-ncr hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8 manual=false scheduling=false queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2]
+I/flutter (13499): [AppPlaybackCoordinatorV2] syncCamsState status=active playback=space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=9a0b850f-01ad-4034-a436-1a558107896f pending=- track=sekuora-relaxed-day-futuristic-chill-ncr hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8 queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2 | 4:Untitled:2] playerTrack=sekuora-relaxed-day-futuristic-chill-ncr playerHls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8
+I/flutter (13499): [AppPlaybackCoordinatorV2] same remote HLS snapshot -> keep current player queueItemId=9a0b850f-01ad-4034-a436-1a558107896f drift=0.77
+I/flutter (13499): [PlaybackTrace] API_COMMAND_HTTP_OK spaceId=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 command=pause
+I/flutter (13499): [QueueFirstV2] emitState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=9a0b850f-01ad-4034-a436-1a558107896f pending=- track=sekuora-relaxed-day-futuristic-chill-ncr hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8 manual=false scheduling=false paused=true queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2 | 4:Untitled:2]
+I/flutter (13499): [QueueFirstV2] reconcile after mutation started
+I/flutter (13499): [PlaybackTrace] API_COMMAND_ACK spaceId=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 command=pause
+I/flutter (13499): [CamsPlaybackBlocV2] runtimeState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 currentQueueItemId=9a0b850f-01ad-4034-a436-1a558107896f pendingQueueItemId=- currentTrack=sekuora-relaxed-day-futuristic-chill-ncr hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8 manual=false scheduling=false queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2]
+I/flutter (13499): [AppPlaybackCoordinatorV2] syncCamsState status=active playback=space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=9a0b850f-01ad-4034-a436-1a558107896f pending=- track=sekuora-relaxed-day-futuristic-chill-ncr hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8 queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2 | 4:Untitled:2] playerTrack=sekuora-relaxed-day-futuristic-chill-ncr playerHls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8
+I/flutter (13499): [DioClient] Preparing auth header for "/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/state": playbackScoped=true selectedToken=eyJhbGciOiJI...
+I/flutter (13499): [DioClient] [request-auth] path=/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/state activeMode=manager hasManagerToken=true managerExpiry=2026-04-24T13:32:30.264684Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
+I/flutter (13499): [QueueFirstV2] hub SpaceStateSync raw -> space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=9a0b850f-01ad-4034-a436-1a558107896f pending=- track=sekuora-relaxed-day-futuristic-chill-ncr hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8 manual=false scheduling=false paused=true queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2 | 4:Untitled:2]
+I/flutter (13499): [QueueFirstV2] hub SpaceStateSync raw -> space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=9a0b850f-01ad-4034-a436-1a558107896f pending=- track=sekuora-relaxed-day-futuristic-chill-ncr hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8 manual=false scheduling=false paused=true queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2 | 4:Untitled:2]
+I/flutter (13499): [DioClient] Preparing auth header for "/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue": playbackScoped=true selectedToken=eyJhbGciOiJI...
+I/flutter (13499): [DioClient] [request-auth] path=/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue activeMode=manager hasManagerToken=true managerExpiry=2026-04-24T13:32:30.264684Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
+I/flutter (13499): [DioClient] Preparing auth header for "/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue": playbackScoped=true selectedToken=eyJhbGciOiJI...
+I/flutter (13499): [DioClient] [request-auth] path=/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue activeMode=manager hasManagerToken=true managerExpiry=2026-04-24T13:32:30.264684Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
+I/flutter (13499): [DioClient] Preparing auth header for "/api/fuzzy-music-profiles/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908": playbackScoped=false selectedToken=eyJhbGciOiJI...
+I/flutter (13499): [DioClient] [request-auth] path=/api/fuzzy-music-profiles/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 activeMode=manager hasManagerToken=true managerExpiry=2026-04-24T13:32:30.264684Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
+I/flutter (13499): *** Response ***
+I/flutter (13499): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue
+I/flutter (13499): statusCode: 200
+I/flutter (13499): statusMessage: OK
+I/flutter (13499): headers:
+I/flutter (13499):  connection: keep-alive
+I/flutter (13499):  alt-svc: h3=":443"; ma=86400
+I/flutter (13499):  date: Fri, 24 Apr 2026 13:27:41 GMT
+I/flutter (13499):  transfer-encoding: chunked
+I/flutter (13499):  content-encoding: gzip
+I/flutter (13499):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+I/flutter (13499):  cf-ray: 9f1572628ef15dda-HKG
+I/flutter (13499):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=QXtDxAdbbRiykwhqer2dzVHNXgTf6ZDXHQyBQNru9yQjKKPTLw0Ivi02pNgzjD1fVR0Q0Y4IMU36cDPfcxFoGYS6stpPZp81k%2BC3PljRP%2BgJaXiLOkQmxFgKUw5dHQHY"}]}
+I/flutter (13499):  cf-cache-status: DYNAMIC
+I/flutter (13499):  content-type: application/json; charset=utf-8
+I/flutter (13499):  server: cloudflare
+I/flutter (13499): Response Text:
+I/flutter (13499): {"isSuccess":true,"message":"Success","data":[{"queueItemId":"1c23beee-25b3-47a8-be6c-f36a66a10252","trackId":"b8602df5-fac3-482e-9f89-c214bbf8003a","trackName":"Nhac Khong Loi Chill","position":1,"queueStatus":3,"source":1,"hlsUrl":"https://ddbdgg08nzlz.cloudfront.net/audio/tracks/b8602df5-fac3-482e-9f89-c214bbf8003a/v1/c328417455344e63935f7916d3206214.m3u8","coverImageUrl":null,"isReadyToStream":true},{"queueItemId":"a46e9372-7e69-4fec-97ff-16f3216cfad0","trackId":"40bb593d-6832-4e45-a04a-d2abe3eae833","trackName":"artmylife-powerful-dramatic-trailer","position":2,"queueStatus":3,"source":1,"hlsUrl":"https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40bb593d-6832-4e45-a04a-d2abe3eae833/v1/artmylife-powerful-dramatic-trailer-514242-9358d7cec9bf4ea98bd70c97fef34a71.m3u8","coverImageUrl":null,"isReadyToStream":true},{"queueItemId":"8481f299-cdb4-4321-83bb-e2006aa79fab","trackId":"a967dd2c-9005-4b02-979e-d5320e2ef8b1","trackName":"Untitled","position":3,"queueStatus":2,"source":1,"hlsUrl":"https://ddbdgg08nzlz.
+I/flutter (13499): 
+I/flutter (13499): *** Response ***
+I/flutter (13499): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue
+I/flutter (13499): statusCode: 200
+I/flutter (13499): statusMessage: OK
+I/flutter (13499): headers:
+I/flutter (13499):  connection: keep-alive
+I/flutter (13499):  alt-svc: h3=":443"; ma=86400
+I/flutter (13499):  date: Fri, 24 Apr 2026 13:27:41 GMT
+I/flutter (13499):  transfer-encoding: chunked
+I/flutter (13499):  content-encoding: gzip
+I/flutter (13499):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+I/flutter (13499):  cf-ray: 9f1572629bb0aec4-HKG
+I/flutter (13499):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=Skj6nLGvJCW2nNkYlUNES0AkOsUGO5PTTJCclfinrK0lkEE%2BsvO3CIqsfPulJmJqq4bmybHc59PB3lpJG1I2wRxowl4eXxvACeKFWOir4eH3NUV%2BC7SdNNCS2gJHfI1N"}]}
+I/flutter (13499):  cf-cache-status: DYNAMIC
+I/flutter (13499):  content-type: application/json; charset=utf-8
+I/flutter (13499):  server: cloudflare
+I/flutter (13499): Response Text:
+I/flutter (13499): {"isSuccess":true,"message":"Success","data":[{"queueItemId":"1c23beee-25b3-47a8-be6c-f36a66a10252","trackId":"b8602df5-fac3-482e-9f89-c214bbf8003a","trackName":"Nhac Khong Loi Chill","position":1,"queueStatus":3,"source":1,"hlsUrl":"https://ddbdgg08nzlz.cloudfront.net/audio/tracks/b8602df5-fac3-482e-9f89-c214bbf8003a/v1/c328417455344e63935f7916d3206214.m3u8","coverImageUrl":null,"isReadyToStream":true},{"queueItemId":"a46e9372-7e69-4fec-97ff-16f3216cfad0","trackId":"40bb593d-6832-4e45-a04a-d2abe3eae833","trackName":"artmylife-powerful-dramatic-trailer","position":2,"queueStatus":3,"source":1,"hlsUrl":"https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40bb593d-6832-4e45-a04a-d2abe3eae833/v1/artmylife-powerful-dramatic-trailer-514242-9358d7cec9bf4ea98bd70c97fef34a71.m3u8","coverImageUrl":null,"isReadyToStream":true},{"queueItemId":"8481f299-cdb4-4321-83bb-e2006aa79fab","trackId":"a967dd2c-9005-4b02-979e-d5320e2ef8b1","trackName":"Untitled","position":3,"queueStatus":2,"source":1,"hlsUrl":"https://ddbdgg08nzlz.
+I/flutter (13499): 
+I/flutter (13499): [QueueFirstV2] emitState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=9a0b850f-01ad-4034-a436-1a558107896f pending=- track=sekuora-relaxed-day-futuristic-chill-ncr hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8 manual=false scheduling=false paused=true queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2 | 4:Untitled:2]
+I/flutter (13499): [CamsPlaybackBlocV2] runtimeState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 currentQueueItemId=9a0b850f-01ad-4034-a436-1a558107896f pendingQueueItemId=- currentTrack=sekuora-relaxed-day-futuristic-chill-ncr hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8 manual=false scheduling=false queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2]
+I/flutter (13499): *** Response ***
+I/flutter (13499): uri: https://logcams.cloud/api/fuzzy-music-profiles/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908
+I/flutter (13499): statusCode: 200
+I/flutter (13499): statusMessage: OK
+I/flutter (13499): headers:
+I/flutter (13499):  connection: keep-alive
+I/flutter (13499):  alt-svc: h3=":443"; ma=86400
+I/flutter (13499):  date: Fri, 24 Apr 2026 13:27:41 GMT
+I/flutter (13499):  transfer-encoding: chunked
+I/flutter (13499):  content-encoding: gzip
+I/flutter (13499):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+I/flutter (13499):  cf-ray: 9f1572633b74220f-HKG
+I/flutter (13499):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=vmeyLQTq%2Bg0PoaKLlLm989d0sCBdgMZLm4r8p5OOV%2FxEMIhBpTXz41ooLrr9YI6v3nMHeTmlAer3r%2BYmm0AK8Ey2P9oClzlulug4L9OLLBxNPKw1Ip33%2FjxLERQ95N3G"}]}
+I/flutter (13499):  cf-cache-status: DYNAMIC
+I/flutter (13499):  content-type: application/json; charset=utf-8
+I/flutter (13499):  server: cloudflare
+I/flutter (13499): Response Text:
+I/flutter (13499): {"isSuccess":true,"message":"Success","data":{"id":"e9a03651-4546-47bc-8e4c-572f2db4c021","brandId":"ff587081-083f-42ec-b43b-b3a6b2f4756d","storeId":"d34ffedc-f11a-41f6-b485-efb6cf6181a5","name":"Lầu 1 - Space Fuzzy Override","templateKey":"SpaceOverride","chillBpmMin":60,"chillBpmMax":80,"focusBpmMin":85,"focusBpmMax":105,"energeticBpmMin":120,"energeticBpmMax":140,"noiseQuietMaxDb":50,"noiseLoudMinDb":75,"defaultDecibelWhenNull":60,"autoVolumeEnabled":true,"autoVolumeQuietPercent":45,"autoVolumeModeratePercent":60,"autoVolumeLoudPercent":75,"autoVolumeMinPercent":30,"autoVolumeMaxPercent":90,"autoVolumeDeadbandPercent":5,"chillMoodCandidates":null,"focusMoodCandidates":null,"energeticMoodCandidates":null}}
+I/flutter (13499): 
+I/flutter (13499): *** Request ***
+I/flutter (13499): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue
+I/flutter (13499): method: GET
+I/flutter (13499): responseType: ResponseType.json
+I/flutter (13499): followRedirects: true
+I/flutter (13499): persistentConnection: true
+I/flutter (13499): connectTimeout: 0:00:30.000000
+I/flutter (13499): sendTimeout: 0:00:30.000000
+I/flutter (13499): receiveTimeout: 0:00:30.000000
+I/flutter (13499): receiveDataWhenStatusError: true
+I/flutter (13499): extra: {}
+I/flutter (13499): headers:
+I/flutter (13499):  Content-Type: application/json
+I/flutter (13499):  Accept: application/json
+I/flutter (13499): data:
+I/flutter (13499): null
+I/flutter (13499): 
+I/flutter (13499): *** Response ***
+I/flutter (13499): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue
+I/flutter (13499): statusCode: 200
+I/flutter (13499): statusMessage: OK
+I/flutter (13499): headers:
+I/flutter (13499):  connection: keep-alive
+I/flutter (13499):  alt-svc: h3=":443"; ma=86400
+I/flutter (13499):  date: Fri, 24 Apr 2026 13:27:41 GMT
+I/flutter (13499):  transfer-encoding: chunked
+I/flutter (13499):  content-encoding: gzip
+I/flutter (13499):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+I/flutter (13499):  cf-ray: 9f157263ed92220f-HKG
+I/flutter (13499):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=Ft2pVpzlwld0HHpYoU3Akow3fcdCuHaVnqPE2%2BN%2BNjHv8OR8XemGF9%2BanzU6bAca40T5kbyQ0vSR0WzbJ1IFnk1PBezFLTt%2BQPfwQaIDcly1NHf20vOZRnKekDH8NEqz"}]}
+I/flutter (13499):  cf-cache-status: DYNAMIC
+I/flutter (13499):  content-type: application/json; charset=utf-8
+I/flutter (13499):  server: cloudflare
+I/flutter (13499): Response Text:
+I/flutter (13499): {"isSuccess":true,"message":"Success","data":[{"queueItemId":"1c23beee-25b3-47a8-be6c-f36a66a10252","trackId":"b8602df5-fac3-482e-9f89-c214bbf8003a","trackName":"Nhac Khong Loi Chill","position":1,"queueStatus":3,"source":1,"hlsUrl":"https://ddbdgg08nzlz.cloudfront.net/audio/tracks/b8602df5-fac3-482e-9f89-c214bbf8003a/v1/c328417455344e63935f7916d3206214.m3u8","coverImageUrl":null,"isReadyToStream":true},{"queueItemId":"a46e9372-7e69-4fec-97ff-16f3216cfad0","trackId":"40bb593d-6832-4e45-a04a-d2abe3eae833","trackName":"artmylife-powerful-dramatic-trailer","position":2,"queueStatus":3,"source":1,"hlsUrl":"https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40bb593d-6832-4e45-a04a-d2abe3eae833/v1/artmylife-powerful-dramatic-trailer-514242-9358d7cec9bf4ea98bd70c97fef34a71.m3u8","coverImageUrl":null,"isReadyToStream":true},{"queueItemId":"8481f299-cdb4-4321-83bb-e2006aa79fab","trackId":"a967dd2c-9005-4b02-979e-d5320e2ef8b1","trackName":"Untitled","position":3,"queueStatus":2,"source":1,"hlsUrl":"https://ddbdgg08nzlz.
+I/flutter (13499): 
+I/flutter (13499): [AppPlaybackCoordinatorV2] syncCamsState status=active playback=space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=9a0b850f-01ad-4034-a436-1a558107896f pending=- track=sekuora-relaxed-day-futuristic-chill-ncr hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8 queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2 | 4:Untitled:2] playerTrack=sekuora-relaxed-day-futuristic-chill-ncr playerHls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8
+I/flutter (13499): [AppPlaybackCoordinatorV2] hydrateQueueForPlayback queueCount=56 signature=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908|9a0b850f-01ad-4034-a436-1a558107896f|1c23beee-25b3-47a8-be6c-f36a66a10252:b8602df5-fac3-482e-9f89-c214bbf8003a:1:3:https://ddbdgg08nzlz.cloudfront.net/audio/tracks/b8602df5-fac3-482e-9f89-c214bbf8003a/v1/c328417455344e63935f7916d3206214.m3u8::1|a46e9372-7e69-4fec-97ff-16f3216cfad0:40bb593d-6832-4e45-a04a-d2abe3eae833:2:3:https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40bb593d-6832-4e45-a04a-d2abe3eae833/v1/artmylife-powerful-dramatic-trailer-514242-9358d7cec9bf4ea98bd70c97fef34a71.m3u8::1|8481f299-cdb4-4321-83bb-e2006aa79fab:a967dd2c-9005-4b02-979e-d5320e2ef8b1:3:2:https://ddbdgg08nzlz.cloudfront.net/audio/tracks/a967dd2c-9005-4b02-979e-d5320e2ef8b1/v1/a2f2b491428a49c0b2c192e242620373.m3u8::1|aa1eef51-b4a2-4b8a-848f-f1f69e594473:de7c9862-1a1b-46e4-b8e0-a8908064a900:4:2:https://ddbdgg08nzlz.cloudfront.net/audio/tracks/de7c9862-1a1b-46e4-b8e0-a8908064a900/v1/b9d505e072b7452cbae8afed1ab17869.m3u8::1
+I/flutter (13499): [AppPlaybackCoordinatorV2] same remote HLS snapshot -> keep current player queueItemId=9a0b850f-01ad-4034-a436-1a558107896f drift=0.23
+I/flutter (13499): [PlayerBlocV2] queueSeeded force=true queueCount=56 playlistName=sekuora-relaxed-day-futuristic-chill-ncr currentTrack=sekuora-relaxed-day-futuristic-chill-ncr currentQueueItemId=9a0b850f-01ad-4034-a436-1a558107896f
+I/flutter (13499): [DioClient] Preparing auth header for "/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue": playbackScoped=true selectedToken=eyJhbGciOiJI...
+I/flutter (13499): [DioClient] [request-auth] path=/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue activeMode=manager hasManagerToken=true managerExpiry=2026-04-24T13:32:30.264684Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
+I/flutter (13499): [QueueFirstV2] emitState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=9a0b850f-01ad-4034-a436-1a558107896f pending=- track=sekuora-relaxed-day-futuristic-chill-ncr hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8 manual=false scheduling=false paused=true queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2 | 4:Untitled:2]
+I/flutter (13499): [QueueFirstV2] reconcile detected immediate state change
+I/flutter (13499): [CamsPlaybackBlocV2] runtimeState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 currentQueueItemId=9a0b850f-01ad-4034-a436-1a558107896f pendingQueueItemId=- currentTrack=sekuora-relaxed-day-futuristic-chill-ncr hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8 manual=false scheduling=false queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2]
+I/flutter (13499): [AppPlaybackCoordinatorV2] syncCamsState status=active playback=space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=9a0b850f-01ad-4034-a436-1a558107896f pending=- track=sekuora-relaxed-day-futuristic-chill-ncr hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8 queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:3 | 3:Untitled:2 | 4:Untitled:2] playerTrack=sekuora-relaxed-day-futuristic-chill-ncr playerHls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/9557fb59-a94c-4cdc-b101-a42af6af4c75/v1/sekuora-relaxed-day-futuristic-chill-250712-e4c163c906b24cd1abc2e20d759186a7.m3u8
+I/VRI[MainActivity]@3d02ab0(13499): call setFrameRateCategory for touch hint category=no preference, reason=boost timeout, vri=VRI[MainActivity]@3d02ab0
+D/AidlBufferPool(13499): bufferpool2 0xb40000763140c328 : 5(40960 size) total buffers - 0(0 size) used buffers - 90/100 (recycle/alloc) - 12/95 (fetch/transfer)
+D/AidlBufferPoolAcc(13499): evictor expired: 1, evicted: 1
+

@@ -435,18 +435,40 @@ void main() {
         deviceId: 'device-1',
       );
 
+      final nowUtc = DateTime.now().toUtc();
       final activePlaybackState = SpacePlaybackState(
         spaceId: 'space-1',
         storeId: 'store-1',
         currentQueueItemId: 'queue-1',
         currentTrackName: 'Track One',
         hlsUrl: 'https://stream.example.com/t1.m3u8',
-        startedAtUtc:
-            DateTime.now().toUtc().subtract(const Duration(seconds: 5)),
-        expectedEndAtUtc:
-            DateTime.now().toUtc().add(const Duration(seconds: 30)),
+        startedAtUtc: nowUtc.subtract(const Duration(seconds: 5)),
+        expectedEndAtUtc: nowUtc.add(const Duration(seconds: 30)),
         isPaused: false,
         volumePercent: 80,
+        spaceQueueItems: const [
+          SpaceQueueStateItem(
+            queueItemId: 'queue-1',
+            trackId: 'track-1',
+            trackName: 'Track One',
+            position: 1,
+            queueStatus: 1,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/t1.m3u8',
+            isReadyToStream: true,
+          ),
+        ],
+      );
+      final expiredPlaybackState = SpacePlaybackState(
+        spaceId: 'space-1',
+        storeId: 'store-1',
+        currentQueueItemId: 'queue-1',
+        currentTrackName: 'Track One',
+        hlsUrl: 'https://stream.example.com/t1.m3u8',
+        startedAtUtc: nowUtc.subtract(const Duration(seconds: 40)),
+        expectedEndAtUtc: nowUtc.subtract(const Duration(seconds: 1)),
+        isPaused: false,
+        volumePercent: 70,
         spaceQueueItems: const [
           SpaceQueueStateItem(
             queueItemId: 'queue-1',
@@ -479,38 +501,17 @@ void main() {
       camsBloc.seed(activePlaybackState);
       await tester.pump();
 
-      camsBloc.seed(
-        SpacePlaybackState(
-          spaceId: 'space-1',
-          storeId: 'store-1',
-          currentQueueItemId: 'queue-1',
-          currentTrackName: 'Track One',
-          hlsUrl: 'https://stream.example.com/t1.m3u8',
-          startedAtUtc:
-              DateTime.now().toUtc().subtract(const Duration(seconds: 40)),
-          expectedEndAtUtc:
-              DateTime.now().toUtc().subtract(const Duration(seconds: 1)),
-          isPaused: false,
-          volumePercent: 70,
-          spaceQueueItems: const [
-            SpaceQueueStateItem(
-              queueItemId: 'queue-1',
-              trackId: 'track-1',
-              trackName: 'Track One',
-              position: 1,
-              queueStatus: 1,
-              source: 1,
-              hlsUrl: 'https://stream.example.com/t1.m3u8',
-              isReadyToStream: true,
-            ),
-          ],
-        ),
-      );
+      camsBloc.seed(expiredPlaybackState);
       await tester.pump();
       await _waitUntil(tester, () => playerBloc.state.isPlaying == false);
 
       expect(playerBloc.state.hlsUrl, 'https://stream.example.com/t1.m3u8');
       expect(audioService.pauseCallCount, 1);
+      expect(camsBloc.refreshStateEvents, hasLength(1));
+
+      camsBloc.seed(expiredPlaybackState.copyWith(seekOffsetSeconds: 2));
+      await tester.pump();
+      expect(camsBloc.refreshStateEvents, hasLength(1));
     });
 
     testWidgets(
@@ -570,6 +571,52 @@ void main() {
       expect(
         playerBloc.state.currentTrack?.albumArt,
         'https://img.example.com/track-1.jpg',
+      );
+    });
+
+    testWidgets('routes notification previous through CAMS previous tap',
+        (tester) async {
+      addTearDown(() async {
+        await _disposeHarness(tester);
+      });
+      sessionCubit.setPlaybackMode(
+        store: const Store(
+          id: 'store-1',
+          name: 'Store 1',
+          brandId: 'brand-1',
+        ),
+        space: const Space(
+          id: 'space-1',
+          name: 'Space 1',
+          storeId: 'store-1',
+          type: SpaceTypeEnum.hall,
+          status: EntityStatusEnum.active,
+        ),
+        deviceId: 'device-1',
+      );
+
+      await _pumpCoordinator(
+          tester, notificationService, sessionCubit, playerBloc, camsBloc);
+      playerBloc.add(const PlayerHlsStarted(
+        hlsUrl: 'https://stream.example.com/t2.m3u8',
+        queueItemId: 'queue-2',
+        trackId: 'track-2',
+        trackName: 'Track Two',
+        playLocally: false,
+      ));
+      await tester.pump();
+      await _waitUntil(tester, () => playerBloc.state.isSyncedCamsPlayback);
+
+      final previousTapCount =
+          camsBloc.addedEvents.whereType<CamsPreviousTapped>().length;
+      notificationService.emitCommand(
+        PlaybackNotificationCommand.skipPrevious,
+      );
+      await tester.pump();
+
+      expect(
+        camsBloc.addedEvents.whereType<CamsPreviousTapped>(),
+        hasLength(previousTapCount + 1),
       );
     });
 
@@ -1113,10 +1160,16 @@ class _FakePlaybackNotificationService implements PlaybackNotificationService {
   Stream<PlaybackNotificationCommand> get commands =>
       _commandsController.stream;
 
+  void emitCommand(PlaybackNotificationCommand command) {
+    _commandsController.add(command);
+  }
+
   @override
   void syncPlayerState(
     ps.PlayerState playerState, {
     required bool enabled,
+    bool forceMediaItem = false,
+    bool immediate = false,
   }) {
     lastState = playerState;
     lastEnabled = enabled;
@@ -1469,6 +1522,11 @@ class _ManualCamsPlaybackBloc extends CamsPlaybackBloc {
     required super.runtime,
   });
 
+  final List<CamsPlaybackEvent> addedEvents = <CamsPlaybackEvent>[];
+
+  List<CamsRefreshState> get refreshStateEvents =>
+      addedEvents.whereType<CamsRefreshState>().toList(growable: false);
+
   void seed(SpacePlaybackState playbackState) {
     emit(
       state.copyWith(
@@ -1480,6 +1538,7 @@ class _ManualCamsPlaybackBloc extends CamsPlaybackBloc {
 
   @override
   void add(CamsPlaybackEvent event) {
+    addedEvents.add(event);
     // Ignore coordinator-triggered events in this harness.
   }
 }

@@ -7,6 +7,7 @@ import '../../constants/app_dimensions.dart';
 import '../../enums/playback_command_enum.dart';
 import '../../../features/cams/presentation/bloc/cams_playback_bloc.dart';
 import '../../../features/cams/presentation/bloc/cams_playback_event.dart';
+import '../../../features/cams/presentation/bloc/cams_playback_state.dart';
 import '../player_bloc.dart';
 import '../player_event.dart';
 import '../player_state.dart' as ps;
@@ -28,9 +29,13 @@ class MiniPlayerWidget extends StatelessWidget {
         final colorScheme = Theme.of(context).colorScheme;
         final useRemoteControls =
             state.isHlsMode && (state.activeSpaceId?.isNotEmpty ?? false);
+        final isWaitingForRemoteState = useRemoteControls &&
+            (camsState.status == CamsStatus.initial ||
+                camsState.status == CamsStatus.loading);
+        final canControlPlayback = state.hasTrack && !isWaitingForRemoteState;
         final canEndStream =
             state.isSyncedCamsPlayback && camsState.hasActiveOverride;
-        final canSkipNext = state.hasNext;
+        final canSkipNext = canControlPlayback && state.hasNext;
 
         return GestureDetector(
           onTap: () => context.push('/now-playing-full'),
@@ -124,23 +129,29 @@ class MiniPlayerWidget extends StatelessWidget {
                                 ? Icons.pause_rounded
                                 : Icons.play_arrow_rounded,
                             size: 32,
-                            color: colorScheme.primary,
+                            color: canControlPlayback
+                                ? colorScheme.primary
+                                : (isDark
+                                    ? AppColors.textDarkSecondary
+                                    : AppColors.textSecondary),
                           ),
-                          onPressed: () {
-                            if (useRemoteControls) {
-                              context.read<CamsPlaybackBloc>().add(
-                                    CamsSendCommand(
-                                      command: state.isPlaying
-                                          ? PlaybackCommandEnum.pause
-                                          : PlaybackCommandEnum.resume,
-                                    ),
-                                  );
-                              return;
-                            }
-                            context
-                                .read<PlayerBloc>()
-                                .add(const PlayerPlayPauseToggled());
-                          },
+                          onPressed: canControlPlayback
+                              ? () {
+                                  if (useRemoteControls) {
+                                    context.read<CamsPlaybackBloc>().add(
+                                          CamsSendCommand(
+                                            command: state.isPlaying
+                                                ? PlaybackCommandEnum.pause
+                                                : PlaybackCommandEnum.resume,
+                                          ),
+                                        );
+                                    return;
+                                  }
+                                  context
+                                      .read<PlayerBloc>()
+                                      .add(const PlayerPlayPauseToggled());
+                                }
+                              : null,
                         ),
 
                         // Skip button

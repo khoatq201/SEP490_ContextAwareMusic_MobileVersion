@@ -111,7 +111,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     bootstrapResult.fold(
       (failure) {
         final displayMessage = ErrorMapper.displayMessageForFailure(failure);
-        _debugLog('bootstrap failed: ${failure.message}');
+        _debugLog('bootstrap failed: ${_describeFailure(failure)}');
         emit(state.copyWith(
           status: CamsStatus.error,
           errorMessage: displayMessage,
@@ -475,7 +475,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
           'API_COMMAND_FAIL '
           'spaceId=${state.spaceId ?? '-'} '
           'command=${event.command.name} '
-          'message=${failure.message}',
+          '${_describeFailure(failure)}',
         );
         emit(state.copyWith(
           errorMessage:
@@ -901,6 +901,18 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
 
   void _traceLog(String message) {
     debugPrint('[PlaybackTrace] $message');
+  }
+
+  String _describeFailure(Failure failure) {
+    return [
+      'kind=${failure.kind.name}',
+      'status=${failure.statusCode?.toString() ?? '-'}',
+      'backendCode=${failure.backendCode ?? '-'}',
+      'retryable=${failure.isRetryable}',
+      'message="${failure.message}"',
+      if (failure.debugMessage != null && failure.debugMessage!.isNotEmpty)
+        'debug="${failure.debugMessage}"',
+    ].join(' ');
   }
 
   String _describePlaybackState(SpacePlaybackState playbackState) {
