@@ -1,812 +1,144 @@
-I/flutter (29569): In order to resolve this exception you typically have either to verify and fix your request code or you have to fix the server code.
-I/flutter (29569): *** Response ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): statusCode: 400
-I/flutter (29569): statusMessage: Bad Request
-I/flutter (29569): headers:
-I/flutter (29569):  content-type: application/json
-I/flutter (29569):  transfer-encoding: chunked
-I/flutter (29569):  date: Tue, 24 Mar 2026 04:06:42 GMT
-I/flutter (29569):  server: Kestrel
-I/flutter (29569): Response Text:
-I/flutter (29569): {"isSuccess":false,"message":"Invalid operation","errorCode":"InvalidOperation"}
-I/flutter (29569):
-I/flutter (29569):
-I/flutter (29569): *** Request ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): method: POST
-I/flutter (29569): responseType: ResponseType.json
-I/flutter (29569): followRedirects: true
-I/flutter (29569): persistentConnection: true
-I/flutter (29569): connectTimeout: 0:00:30.000000
-I/flutter (29569): sendTimeout: 0:00:30.000000
-I/flutter (29569): receiveTimeout: 0:00:30.000000
-I/flutter (29569): receiveDataWhenStatusError: true
-I/flutter (29569): extra: {}
-I/flutter (29569): headers:
-I/flutter (29569):  Content-Type: application/json
-I/flutter (29569):  Accept: application/json
-I/flutter (29569): data:
-I/flutter (29569): {playlistId: 2cd96f69-7476-45a5-9910-d01efd90b6e7, mode: 1, isClearExistingQueue: false, reason: Manual playlist selection}
-I/flutter (29569):
-I/flutter (29569): *** DioException ***:
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): DioException [bad response]: This exception was thrown because the response has a status code of 400 and RequestOptions.validateStatus was configured to throw for this status code.
-I/flutter (29569): The status code of 400 has the following meaning: "Client error - the request contains bad syntax or cannot be fulfilled"
-I/flutter (29569): Read more about status codes at https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
-I/flutter (29569): In order to resolve this exception you typically have either to verify and fix your request code or you have to fix the server code.
-I/flutter (29569): *** Response ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): statusCode: 400
-I/flutter (29569): statusMessage: Bad Request
-I/flutter (29569): headers:
-I/flutter (29569):  content-type: application/json
-I/flutter (29569):  transfer-encoding: chunked
-I/flutter (29569):  date: Tue, 24 Mar 2026 04:06:43 GMT
-I/flutter (29569):  server: Kestrel
-I/flutter (29569): Response Text:
-I/flutter (29569): {"isSuccess":false,"message":"Invalid operation","errorCode":"InvalidOperation"}
-I/flutter (29569):
-I/flutter (29569):
-I/flutter (29569): *** Request ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): method: POST
-I/flutter (29569): responseType: ResponseType.json
-I/flutter (29569): followRedirects: true
-I/flutter (29569): persistentConnection: true
-I/flutter (29569): connectTimeout: 0:00:30.000000
-I/flutter (29569): sendTimeout: 0:00:30.000000
-I/flutter (29569): receiveTimeout: 0:00:30.000000
-I/flutter (29569): receiveDataWhenStatusError: true
-I/flutter (29569): extra: {}
-I/flutter (29569): headers:
-I/flutter (29569):  Content-Type: application/json
-I/flutter (29569):  Accept: application/json
-I/flutter (29569): data:
-I/flutter (29569): {playlistId: 2cd96f69-7476-45a5-9910-d01efd90b6e7, mode: 1, isClearExistingQueue: false, reason: Manual playlist selection}
-I/flutter (29569):
-I/flutter (29569): *** DioException ***:
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): DioException [bad response]: This exception was thrown because the response has a status code of 400 and RequestOptions.validateStatus was configured to throw for this status code.
-I/flutter (29569): The status code of 400 has the following meaning: "Client error - the request contains bad syntax or cannot be fulfilled"
-I/flutter (29569): Read more about status codes at https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
-I/flutter (29569): In order to resolve this exception you typically have either to verify and fix your request code or you have to fix the server code.
-I/flutter (29569): *** Response ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): statusCode: 400
-I/flutter (29569): statusMessage: Bad Request
-I/flutter (29569): headers:
-I/flutter (29569):  content-type: application/json
-I/flutter (29569):  transfer-encoding: chunked
-I/flutter (29569):  date: Tue, 24 Mar 2026 04:06:43 GMT
-I/flutter (29569):  server: Kestrel
-I/flutter (29569): Response Text:
-I/flutter (29569): {"isSuccess":false,"message":"Invalid operation","errorCode":"InvalidOperation"}
-I/flutter (29569):
-I/flutter (29569):
-I/flutter (29569): *** Request ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): method: POST
-I/flutter (29569): responseType: ResponseType.json
-I/flutter (29569): followRedirects: true
-I/flutter (29569): persistentConnection: true
-I/flutter (29569): connectTimeout: 0:00:30.000000
-I/flutter (29569): sendTimeout: 0:00:30.000000
-I/flutter (29569): receiveTimeout: 0:00:30.000000
-I/flutter (29569): receiveDataWhenStatusError: true
-I/flutter (29569): extra: {}
-I/flutter (29569): headers:
-I/flutter (29569):  Content-Type: application/json
-I/flutter (29569):  Accept: application/json
-I/flutter (29569): data:
-I/flutter (29569): {playlistId: 2cd96f69-7476-45a5-9910-d01efd90b6e7, mode: 1, isClearExistingQueue: false, reason: Manual playlist selection}
-I/flutter (29569):
-I/flutter (29569): *** DioException ***:
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): DioException [bad response]: This exception was thrown because the response has a status code of 400 and RequestOptions.validateStatus was configured to throw for this status code.
-I/flutter (29569): The status code of 400 has the following meaning: "Client error - the request contains bad syntax or cannot be fulfilled"
-I/flutter (29569): Read more about status codes at https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
-I/flutter (29569): In order to resolve this exception you typically have either to verify and fix your request code or you have to fix the server code.
-I/flutter (29569): *** Response ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): statusCode: 400
-I/flutter (29569): statusMessage: Bad Request
-I/flutter (29569): headers:
-I/flutter (29569):  content-type: application/json
-I/flutter (29569):  transfer-encoding: chunked
-I/flutter (29569):  date: Tue, 24 Mar 2026 04:06:43 GMT
-I/flutter (29569):  server: Kestrel
-I/flutter (29569): Response Text:
-I/flutter (29569): {"isSuccess":false,"message":"Invalid operation","errorCode":"InvalidOperation"}
-I/flutter (29569):
-I/flutter (29569):
-D/AidlBufferPool(29569): bufferpool2 0xb4000072d0604108 : 0(0 size) total buffers - 0(0 size) used buffers - 35/40 (recycle/alloc) - 5/35 (fetch/transfer)
-D/AidlBufferPoolAcc(29569): evictor expired: 1, evicted: 1
-I/flutter (29569): *** Request ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): method: POST
-I/flutter (29569): responseType: ResponseType.json
-I/flutter (29569): followRedirects: true
-I/flutter (29569): persistentConnection: true
-I/flutter (29569): connectTimeout: 0:00:30.000000
-I/flutter (29569): sendTimeout: 0:00:30.000000
-I/flutter (29569): receiveTimeout: 0:00:30.000000
-I/flutter (29569): receiveDataWhenStatusError: true
-I/flutter (29569): extra: {}
-I/flutter (29569): headers:
-I/flutter (29569):  Content-Type: application/json
-I/flutter (29569):  Accept: application/json
-I/flutter (29569): data:
-I/flutter (29569): {playlistId: 2cd96f69-7476-45a5-9910-d01efd90b6e7, mode: 1, isClearExistingQueue: false, reason: Manual playlist selection}
-I/flutter (29569):
-I/flutter (29569): *** DioException ***:
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): DioException [bad response]: This exception was thrown because the response has a status code of 400 and RequestOptions.validateStatus was configured to throw for this status code.
-I/flutter (29569): The status code of 400 has the following meaning: "Client error - the request contains bad syntax or cannot be fulfilled"
-I/flutter (29569): Read more about status codes at https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
-I/flutter (29569): In order to resolve this exception you typically have either to verify and fix your request code or you have to fix the server code.
-I/flutter (29569): *** Response ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): statusCode: 400
-I/flutter (29569): statusMessage: Bad Request
-I/flutter (29569): headers:
-I/flutter (29569):  content-type: application/json
-I/flutter (29569):  transfer-encoding: chunked
-I/flutter (29569):  date: Tue, 24 Mar 2026 04:06:44 GMT
-I/flutter (29569):  server: Kestrel
-I/flutter (29569): Response Text:
-I/flutter (29569): {"isSuccess":false,"message":"Invalid operation","errorCode":"InvalidOperation"}
-I/flutter (29569):
-I/flutter (29569):
-I/flutter (29569): *** Request ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): method: POST
-I/flutter (29569): responseType: ResponseType.json
-I/flutter (29569): followRedirects: true
-I/flutter (29569): persistentConnection: true
-I/flutter (29569): connectTimeout: 0:00:30.000000
-I/flutter (29569): sendTimeout: 0:00:30.000000
-I/flutter (29569): receiveTimeout: 0:00:30.000000
-I/flutter (29569): receiveDataWhenStatusError: true
-I/flutter (29569): extra: {}
-I/flutter (29569): headers:
-I/flutter (29569):  Content-Type: application/json
-I/flutter (29569):  Accept: application/json
-I/flutter (29569): data:
-I/flutter (29569): {playlistId: 2cd96f69-7476-45a5-9910-d01efd90b6e7, mode: 1, isClearExistingQueue: false, reason: Manual playlist selection}
-I/flutter (29569):
-I/flutter (29569): *** DioException ***:
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): DioException [bad response]: This exception was thrown because the response has a status code of 400 and RequestOptions.validateStatus was configured to throw for this status code.
-I/flutter (29569): The status code of 400 has the following meaning: "Client error - the request contains bad syntax or cannot be fulfilled"
-I/flutter (29569): Read more about status codes at https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
-I/flutter (29569): In order to resolve this exception you typically have either to verify and fix your request code or you have to fix the server code.
-I/flutter (29569): *** Response ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): statusCode: 400
-I/flutter (29569): statusMessage: Bad Request
-I/flutter (29569): headers:
-I/flutter (29569):  content-type: application/json
-I/flutter (29569):  transfer-encoding: chunked
-I/flutter (29569):  date: Tue, 24 Mar 2026 04:06:45 GMT
-I/flutter (29569):  server: Kestrel
-I/flutter (29569): Response Text:
-I/flutter (29569): {"isSuccess":false,"message":"Invalid operation","errorCode":"InvalidOperation"}
-I/flutter (29569):
-I/flutter (29569):
-I/flutter (29569): *** Request ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): method: POST
-I/flutter (29569): responseType: ResponseType.json
-I/flutter (29569): followRedirects: true
-I/flutter (29569): persistentConnection: true
-I/flutter (29569): connectTimeout: 0:00:30.000000
-I/flutter (29569): sendTimeout: 0:00:30.000000
-I/flutter (29569): receiveTimeout: 0:00:30.000000
-I/flutter (29569): receiveDataWhenStatusError: true
-I/flutter (29569): extra: {}
-I/flutter (29569): headers:
-I/flutter (29569):  Content-Type: application/json
-I/flutter (29569):  Accept: application/json
-I/flutter (29569): data:
-I/flutter (29569): {playlistId: 2cd96f69-7476-45a5-9910-d01efd90b6e7, mode: 1, isClearExistingQueue: false, reason: Manual playlist selection}
-I/flutter (29569):
-I/flutter (29569): *** DioException ***:
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): DioException [bad response]: This exception was thrown because the response has a status code of 400 and RequestOptions.validateStatus was configured to throw for this status code.
-I/flutter (29569): The status code of 400 has the following meaning: "Client error - the request contains bad syntax or cannot be fulfilled"
-I/flutter (29569): Read more about status codes at https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
-I/flutter (29569): In order to resolve this exception you typically have either to verify and fix your request code or you have to fix the server code.
-I/flutter (29569): *** Response ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): statusCode: 400
-I/flutter (29569): statusMessage: Bad Request
-I/flutter (29569): headers:
-I/flutter (29569):  content-type: application/json
-I/flutter (29569):  transfer-encoding: chunked
-I/flutter (29569):  date: Tue, 24 Mar 2026 04:06:45 GMT
-I/flutter (29569):  server: Kestrel
-I/flutter (29569): Response Text:
-I/flutter (29569): {"isSuccess":false,"message":"Invalid operation","errorCode":"InvalidOperation"}
-I/flutter (29569):
-I/flutter (29569):
-I/flutter (29569): *** Request ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): method: POST
-I/flutter (29569): responseType: ResponseType.json
-I/flutter (29569): followRedirects: true
-I/flutter (29569): persistentConnection: true
-I/flutter (29569): connectTimeout: 0:00:30.000000
-I/flutter (29569): sendTimeout: 0:00:30.000000
-I/flutter (29569): receiveTimeout: 0:00:30.000000
-I/flutter (29569): receiveDataWhenStatusError: true
-I/flutter (29569): extra: {}
-I/flutter (29569): headers:
-I/flutter (29569):  Content-Type: application/json
-I/flutter (29569):  Accept: application/json
-I/flutter (29569): data:
-I/flutter (29569): {playlistId: 2cd96f69-7476-45a5-9910-d01efd90b6e7, mode: 1, isClearExistingQueue: false, reason: Manual playlist selection}
-I/flutter (29569):
-I/flutter (29569): *** DioException ***:
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): DioException [bad response]: This exception was thrown because the response has a status code of 400 and RequestOptions.validateStatus was configured to throw for this status code.
-I/flutter (29569): The status code of 400 has the following meaning: "Client error - the request contains bad syntax or cannot be fulfilled"
-I/flutter (29569): Read more about status codes at https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
-I/flutter (29569): In order to resolve this exception you typically have either to verify and fix your request code or you have to fix the server code.
-I/flutter (29569): *** Response ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): statusCode: 400
-I/flutter (29569): statusMessage: Bad Request
-I/flutter (29569): headers:
-I/flutter (29569):  content-type: application/json
-I/flutter (29569):  transfer-encoding: chunked
-I/flutter (29569):  date: Tue, 24 Mar 2026 04:06:45 GMT
-I/flutter (29569):  server: Kestrel
-I/flutter (29569): Response Text:
-I/flutter (29569): {"isSuccess":false,"message":"Invalid operation","errorCode":"InvalidOperation"}
-I/flutter (29569):
-I/flutter (29569):
-I/flutter (29569): *** Request ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): method: POST
-I/flutter (29569): responseType: ResponseType.json
-I/flutter (29569): followRedirects: true
-I/flutter (29569): persistentConnection: true
-I/flutter (29569): connectTimeout: 0:00:30.000000
-I/flutter (29569): sendTimeout: 0:00:30.000000
-I/flutter (29569): receiveTimeout: 0:00:30.000000
-I/flutter (29569): receiveDataWhenStatusError: true
-I/flutter (29569): extra: {}
-I/flutter (29569): headers:
-I/flutter (29569):  Content-Type: application/json
-I/flutter (29569):  Accept: application/json
-I/flutter (29569): data:
-I/flutter (29569): {playlistId: 2cd96f69-7476-45a5-9910-d01efd90b6e7, mode: 1, isClearExistingQueue: false, reason: Manual playlist selection}
-I/flutter (29569):
-I/flutter (29569): *** DioException ***:
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): DioException [bad response]: This exception was thrown because the response has a status code of 400 and RequestOptions.validateStatus was configured to throw for this status code.
-I/flutter (29569): The status code of 400 has the following meaning: "Client error - the request contains bad syntax or cannot be fulfilled"
-I/flutter (29569): Read more about status codes at https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
-I/flutter (29569): In order to resolve this exception you typically have either to verify and fix your request code or you have to fix the server code.
-I/flutter (29569): *** Response ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): statusCode: 400
-I/flutter (29569): statusMessage: Bad Request
-I/flutter (29569): headers:
-I/flutter (29569):  content-type: application/json
-I/flutter (29569):  transfer-encoding: chunked
-I/flutter (29569):  date: Tue, 24 Mar 2026 04:06:45 GMT
-I/flutter (29569):  server: Kestrel
-I/flutter (29569): Response Text:
-I/flutter (29569): {"isSuccess":false,"message":"Invalid operation","errorCode":"InvalidOperation"}
-I/flutter (29569):
-I/flutter (29569):
-I/flutter (29569): *** Request ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): method: POST
-I/flutter (29569): responseType: ResponseType.json
-I/flutter (29569): followRedirects: true
-I/flutter (29569): persistentConnection: true
-I/flutter (29569): connectTimeout: 0:00:30.000000
-I/flutter (29569): sendTimeout: 0:00:30.000000
-I/flutter (29569): receiveTimeout: 0:00:30.000000
-I/flutter (29569): receiveDataWhenStatusError: true
-I/flutter (29569): extra: {}
-I/flutter (29569): headers:
-I/flutter (29569):  Content-Type: application/json
-I/flutter (29569):  Accept: application/json
-I/flutter (29569): data:
-I/flutter (29569): {playlistId: 2cd96f69-7476-45a5-9910-d01efd90b6e7, mode: 1, isClearExistingQueue: false, reason: Manual playlist selection}
-I/flutter (29569):
-I/flutter (29569): *** DioException ***:
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): DioException [bad response]: This exception was thrown because the response has a status code of 400 and RequestOptions.validateStatus was configured to throw for this status code.
-I/flutter (29569): The status code of 400 has the following meaning: "Client error - the request contains bad syntax or cannot be fulfilled"
-I/flutter (29569): Read more about status codes at https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
-I/flutter (29569): In order to resolve this exception you typically have either to verify and fix your request code or you have to fix the server code.
-I/flutter (29569): *** Response ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): statusCode: 400
-I/flutter (29569): statusMessage: Bad Request
-I/flutter (29569): headers:
-I/flutter (29569):  content-type: application/json
-I/flutter (29569):  transfer-encoding: chunked
-I/flutter (29569):  date: Tue, 24 Mar 2026 04:06:46 GMT
-I/flutter (29569):  server: Kestrel
-I/flutter (29569): Response Text:
-I/flutter (29569): {"isSuccess":false,"message":"Invalid operation","errorCode":"InvalidOperation"}
-I/flutter (29569):
-I/flutter (29569):
-I/flutter (29569): *** Request ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): method: POST
-I/flutter (29569): responseType: ResponseType.json
-I/flutter (29569): followRedirects: true
-I/flutter (29569): persistentConnection: true
-I/flutter (29569): connectTimeout: 0:00:30.000000
-I/flutter (29569): sendTimeout: 0:00:30.000000
-I/flutter (29569): receiveTimeout: 0:00:30.000000
-I/flutter (29569): receiveDataWhenStatusError: true
-I/flutter (29569): extra: {}
-I/flutter (29569): headers:
-I/flutter (29569):  Content-Type: application/json
-I/flutter (29569):  Accept: application/json
-I/flutter (29569): data:
-I/flutter (29569): {playlistId: 2cd96f69-7476-45a5-9910-d01efd90b6e7, mode: 1, isClearExistingQueue: false, reason: Manual playlist selection}
-I/flutter (29569):
-I/flutter (29569): *** DioException ***:
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): DioException [bad response]: This exception was thrown because the response has a status code of 400 and RequestOptions.validateStatus was configured to throw for this status code.
-I/flutter (29569): The status code of 400 has the following meaning: "Client error - the request contains bad syntax or cannot be fulfilled"
-I/flutter (29569): Read more about status codes at https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
-I/flutter (29569): In order to resolve this exception you typically have either to verify and fix your request code or you have to fix the server code.
-I/flutter (29569): *** Response ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): statusCode: 400
-I/flutter (29569): statusMessage: Bad Request
-I/flutter (29569): headers:
-I/flutter (29569):  content-type: application/json
-I/flutter (29569):  transfer-encoding: chunked
-I/flutter (29569):  date: Tue, 24 Mar 2026 04:06:46 GMT
-I/flutter (29569):  server: Kestrel
-I/flutter (29569): Response Text:
-I/flutter (29569): {"isSuccess":false,"message":"Invalid operation","errorCode":"InvalidOperation"}
-I/flutter (29569):
-I/flutter (29569):
-I/flutter (29569): *** Request ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): method: POST
-I/flutter (29569): responseType: ResponseType.json
-I/flutter (29569): followRedirects: true
-I/flutter (29569): persistentConnection: true
-I/flutter (29569): connectTimeout: 0:00:30.000000
-I/flutter (29569): sendTimeout: 0:00:30.000000
-I/flutter (29569): receiveTimeout: 0:00:30.000000
-I/flutter (29569): receiveDataWhenStatusError: true
-I/flutter (29569): extra: {}
-I/flutter (29569): headers:
-I/flutter (29569):  Content-Type: application/json
-I/flutter (29569):  Accept: application/json
-I/flutter (29569): data:
-I/flutter (29569): {playlistId: 2cd96f69-7476-45a5-9910-d01efd90b6e7, mode: 1, isClearExistingQueue: false, reason: Manual playlist selection}
-I/flutter (29569):
-I/flutter (29569): *** DioException ***:
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): DioException [bad response]: This exception was thrown because the response has a status code of 400 and RequestOptions.validateStatus was configured to throw for this status code.
-I/flutter (29569): The status code of 400 has the following meaning: "Client error - the request contains bad syntax or cannot be fulfilled"
-I/flutter (29569): Read more about status codes at https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
-I/flutter (29569): In order to resolve this exception you typically have either to verify and fix your request code or you have to fix the server code.
-I/flutter (29569): *** Response ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): statusCode: 400
-I/flutter (29569): statusMessage: Bad Request
-I/flutter (29569): headers:
-I/flutter (29569):  content-type: application/json
-I/flutter (29569):  transfer-encoding: chunked
-I/flutter (29569):  date: Tue, 24 Mar 2026 04:06:46 GMT
-I/flutter (29569):  server: Kestrel
-I/flutter (29569): Response Text:
-I/flutter (29569): {"isSuccess":false,"message":"Invalid operation","errorCode":"InvalidOperation"}
-I/flutter (29569):
-I/flutter (29569):
-I/flutter (29569): *** Request ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): method: POST
-I/flutter (29569): responseType: ResponseType.json
-I/flutter (29569): followRedirects: true
-I/flutter (29569): persistentConnection: true
-I/flutter (29569): connectTimeout: 0:00:30.000000
-I/flutter (29569): sendTimeout: 0:00:30.000000
-I/flutter (29569): receiveTimeout: 0:00:30.000000
-I/flutter (29569): receiveDataWhenStatusError: true
-I/flutter (29569): extra: {}
-I/flutter (29569): headers:
-I/flutter (29569):  Content-Type: application/json
-I/flutter (29569):  Accept: application/json
-I/flutter (29569): data:
-I/flutter (29569): {playlistId: 2cd96f69-7476-45a5-9910-d01efd90b6e7, mode: 1, isClearExistingQueue: false, reason: Manual playlist selection}
-I/flutter (29569):
-I/flutter (29569): *** DioException ***:
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): DioException [bad response]: This exception was thrown because the response has a status code of 400 and RequestOptions.validateStatus was configured to throw for this status code.
-I/flutter (29569): The status code of 400 has the following meaning: "Client error - the request contains bad syntax or cannot be fulfilled"
-I/flutter (29569): Read more about status codes at https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
-I/flutter (29569): In order to resolve this exception you typically have either to verify and fix your request code or you have to fix the server code.
-I/flutter (29569): *** Response ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): statusCode: 400
-I/flutter (29569): statusMessage: Bad Request
-I/flutter (29569): headers:
-I/flutter (29569):  content-type: application/json
-I/flutter (29569):  transfer-encoding: chunked
-I/flutter (29569):  date: Tue, 24 Mar 2026 04:06:46 GMT
-I/flutter (29569):  server: Kestrel
-I/flutter (29569): Response Text:
-I/flutter (29569): {"isSuccess":false,"message":"Invalid operation","errorCode":"InvalidOperation"}
-I/flutter (29569):
-I/flutter (29569):
-I/flutter (29569): *** Request ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): method: POST
-I/flutter (29569): responseType: ResponseType.json
-I/flutter (29569): followRedirects: true
-I/flutter (29569): persistentConnection: true
-I/flutter (29569): connectTimeout: 0:00:30.000000
-I/flutter (29569): sendTimeout: 0:00:30.000000
-I/flutter (29569): receiveTimeout: 0:00:30.000000
-I/flutter (29569): receiveDataWhenStatusError: true
-I/flutter (29569): extra: {}
-I/flutter (29569): headers:
-I/flutter (29569):  Content-Type: application/json
-I/flutter (29569):  Accept: application/json
-I/flutter (29569): data:
-I/flutter (29569): {playlistId: 2cd96f69-7476-45a5-9910-d01efd90b6e7, mode: 1, isClearExistingQueue: false, reason: Manual playlist selection}
-I/flutter (29569):
-I/flutter (29569): *** DioException ***:
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): DioException [bad response]: This exception was thrown because the response has a status code of 400 and RequestOptions.validateStatus was configured to throw for this status code.
-I/flutter (29569): The status code of 400 has the following meaning: "Client error - the request contains bad syntax or cannot be fulfilled"
-I/flutter (29569): Read more about status codes at https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
-I/flutter (29569): In order to resolve this exception you typically have either to verify and fix your request code or you have to fix the server code.
-I/flutter (29569): *** Response ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/queue/playlist
-I/flutter (29569): statusCode: 400
-I/flutter (29569): statusMessage: Bad Request
-I/flutter (29569): headers:
-I/flutter (29569):  content-type: application/json
-I/flutter (29569):  transfer-encoding: chunked
-I/flutter (29569):  date: Tue, 24 Mar 2026 04:06:46 GMT
-I/flutter (29569):  server: Kestrel
-I/flutter (29569): Response Text:
-I/flutter (29569): {"isSuccess":false,"message":"Invalid operation","errorCode":"InvalidOperation"}
-I/flutter (29569):
-I/flutter (29569):
-I/flutter (29569): *** Request ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/moods
-I/flutter (29569): method: GET
-I/flutter (29569): responseType: ResponseType.json
-I/flutter (29569): followRedirects: true
-I/flutter (29569): persistentConnection: true
-I/flutter (29569): connectTimeout: 0:00:30.000000
-I/flutter (29569): sendTimeout: 0:00:30.000000
-I/flutter (29569): receiveTimeout: 0:00:30.000000
-I/flutter (29569): receiveDataWhenStatusError: true
-I/flutter (29569): extra: {}
-I/flutter (29569): headers:
-I/flutter (29569):  Content-Type: application/json
-I/flutter (29569):  Accept: application/json
-I/flutter (29569): data:
-I/flutter (29569): null
-I/flutter (29569):
-W/WindowOnBackDispatcher(29569): sendCancelIfRunning: isInProgress=false callback=io.flutter.embedding.android.FlutterActivity$1@662f2b3
-W/WindowOnBackDispatcher(29569): sendCancelIfRunning: isInProgress=false callback=io.flutter.embedding.android.FlutterActivity$1@662f2b3
-W/WindowOnBackDispatcher(29569): sendCancelIfRunning: isInProgress=false callback=io.flutter.embedding.android.FlutterActivity$1@662f2b3
-I/flutter (29569): *** Response ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/moods
-I/flutter (29569): statusCode: 200
-I/flutter (29569): statusMessage: OK
-I/flutter (29569): headers:
-I/flutter (29569):  content-type: application/json; charset=utf-8
-I/flutter (29569):  transfer-encoding: chunked
-I/flutter (29569):  date: Tue, 24 Mar 2026 04:06:47 GMT
-I/flutter (29569):  server: Kestrel
-I/flutter (29569): Response Text:
-I/flutter (29569): {"isSuccess":true,"message":"Mood retrieved successfully","data":[{"moodType":1,"name":"Calm","minBpm":60,"maxBpm":80,"genre":"Lo-Fi, Ambient, Nature Sounds","energyLevel":0.2,"priority":1,"id":"591c2cb4-7138-4b10-845c-60c942d857eb","createdAt":"2026-03-09T17:41:36.939525Z","updatedAt":null,"createdBy":null,"updatedBy":null,"status":1},{"moodType":3,"name":"Focus","minBpm":85,"maxBpm":105,"genre":"Acoustic, Jazz, Instrumental","energyLevel":0.4,"priority":2,"id":"1e796372-071d-4dbf-9ea5-194e1445c48e","createdAt":"2026-03-09T17:41:36.939542Z","updatedAt":null,"createdBy":null,"updatedBy":null,"status":1},{"moodType":2,"name":"Energetic","minBpm":120,"maxBpm":140,"genre":"Upbeat, Electronic, Dance","energyLevel":0.9,"priority":3,"id":"d2558f6d-90f2-49b0-8a7f-edf9e0355aba","createdAt":"2026-03-09T17:41:36.939543Z","updatedAt":null,"createdBy":null,"updatedBy":null,"status":1},{"moodType":4,"name":"Social","minBpm":100,"maxBpm":120,"genre":"Jazz, Soft Pop, Bossa Nova, Indie","energyLevel":0.6,"priority":4,"id":"
-I/flutter (29569):
-I/flutter (29569): *** Request ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/playlists?page=1&pageSize=50
-I/flutter (29569): method: GET
-I/flutter (29569): responseType: ResponseType.json
-I/flutter (29569): followRedirects: true
-I/flutter (29569): persistentConnection: true
-I/flutter (29569): connectTimeout: 0:00:30.000000
-I/flutter (29569): sendTimeout: 0:00:30.000000
-I/flutter (29569): receiveTimeout: 0:00:30.000000
-I/flutter (29569): receiveDataWhenStatusError: true
-I/flutter (29569): extra: {}
-I/flutter (29569): headers:
-I/flutter (29569):  Content-Type: application/json
-I/flutter (29569):  Accept: application/json
-I/flutter (29569): data:
-I/flutter (29569): null
-I/flutter (29569):
-W/WindowOnBackDispatcher(29569): sendCancelIfRunning: isInProgress=false callback=io.flutter.embedding.android.FlutterActivity$1@662f2b3
-I/flutter (29569): *** Response ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/playlists?page=1&pageSize=50
-I/flutter (29569): statusCode: 200
-I/flutter (29569): statusMessage: OK
-I/flutter (29569): headers:
-I/flutter (29569):  content-type: application/json; charset=utf-8
-I/flutter (29569):  transfer-encoding: chunked
-I/flutter (29569):  date: Tue, 24 Mar 2026 04:06:48 GMT
-I/flutter (29569):  server: Kestrel
-I/flutter (29569): Response Text:
-I/flutter (29569): {"currentPage":1,"pageSize":50,"totalItems":5,"totalPages":1,"hasPrevious":false,"hasNext":false,"items":[{"brandId":"8b0c39a4-5bb5-45c2-a6f2-5d6df753bbd4","storeId":"5949df8b-4be3-46e4-b0ba-969c15f6616c","storeName":"DeerCoffee - Pham Ngu Lao","moodId":"9345e832-27ac-4795-9769-3baec6dd9cc0","moodName":"Social","name":"Social playlist","description":null,"isDefault":false,"trackCount":2,"id":"2cd96f69-7476-45a5-9910-d01efd90b6e7","createdAt":"2026-03-23T20:12:43.308229Z","updatedAt":"2026-03-23T20:12:43.30823Z","createdBy":"8b532442-80b7-4883-8df8-2980b038a0d0","updatedBy":"8b532442-80b7-4883-8df8-2980b038a0d0","status":1},{"brandId":"8b0c39a4-5bb5-45c2-a6f2-5d6df753bbd4","storeId":"5949df8b-4be3-46e4-b0ba-969c15f6616c","storeName":"DeerCoffee - Pham Ngu Lao","moodId":"52f85148-3195-4d5f-abee-2b1d5477ff32","moodName":"Romantic","name":"Romantic playlist","description":null,"isDefault":false,"trackCount":2,"id":"8427a989-f66e-4880-a2b0-a158997259e3","createdAt":"2026-03-23T19:59:33.846382Z","updatedAt":"2026-
-I/flutter (29569):
-I/flutter (29569): *** Request ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/moods
-I/flutter (29569): method: GET
-I/flutter (29569): responseType: ResponseType.json
-I/flutter (29569): followRedirects: true
-I/flutter (29569): persistentConnection: true
-I/flutter (29569): connectTimeout: 0:00:30.000000
-I/flutter (29569): sendTimeout: 0:00:30.000000
-I/flutter (29569): receiveTimeout: 0:00:30.000000
-I/flutter (29569): receiveDataWhenStatusError: true
-I/flutter (29569): extra: {}
-I/flutter (29569): headers:
-I/flutter (29569):  Content-Type: application/json
-I/flutter (29569):  Accept: application/json
-I/flutter (29569): data:
-I/flutter (29569): null
-I/flutter (29569):
-I/flutter (29569): *** Request ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/moods
-I/flutter (29569): method: GET
-I/flutter (29569): responseType: ResponseType.json
-I/flutter (29569): followRedirects: true
-I/flutter (29569): persistentConnection: true
-I/flutter (29569): connectTimeout: 0:00:30.000000
-I/flutter (29569): sendTimeout: 0:00:30.000000
-I/flutter (29569): receiveTimeout: 0:00:30.000000
-I/flutter (29569): receiveDataWhenStatusError: true
-I/flutter (29569): extra: {}
-I/flutter (29569): headers:
-I/flutter (29569):  Content-Type: application/json
-I/flutter (29569):  Accept: application/json
-I/flutter (29569): data:
-I/flutter (29569): null
-I/flutter (29569):
-W/WindowOnBackDispatcher(29569): sendCancelIfRunning: isInProgress=false callback=io.flutter.embedding.android.FlutterActivity$1@662f2b3
-I/flutter (29569): *** Response ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/moods
-I/flutter (29569): statusCode: 200
-I/flutter (29569): statusMessage: OK
-I/flutter (29569): headers:
-I/flutter (29569):  content-type: application/json; charset=utf-8
-I/flutter (29569):  transfer-encoding: chunked
-I/flutter (29569):  date: Tue, 24 Mar 2026 04:06:48 GMT
-I/flutter (29569):  server: Kestrel
-I/flutter (29569): Response Text:
-I/flutter (29569): {"isSuccess":true,"message":"Mood retrieved successfully","data":[{"moodType":1,"name":"Calm","minBpm":60,"maxBpm":80,"genre":"Lo-Fi, Ambient, Nature Sounds","energyLevel":0.2,"priority":1,"id":"591c2cb4-7138-4b10-845c-60c942d857eb","createdAt":"2026-03-09T17:41:36.939525Z","updatedAt":null,"createdBy":null,"updatedBy":null,"status":1},{"moodType":3,"name":"Focus","minBpm":85,"maxBpm":105,"genre":"Acoustic, Jazz, Instrumental","energyLevel":0.4,"priority":2,"id":"1e796372-071d-4dbf-9ea5-194e1445c48e","createdAt":"2026-03-09T17:41:36.939542Z","updatedAt":null,"createdBy":null,"updatedBy":null,"status":1},{"moodType":2,"name":"Energetic","minBpm":120,"maxBpm":140,"genre":"Upbeat, Electronic, Dance","energyLevel":0.9,"priority":3,"id":"d2558f6d-90f2-49b0-8a7f-edf9e0355aba","createdAt":"2026-03-09T17:41:36.939543Z","updatedAt":null,"createdBy":null,"updatedBy":null,"status":1},{"moodType":4,"name":"Social","minBpm":100,"maxBpm":120,"genre":"Jazz, Soft Pop, Bossa Nova, Indie","energyLevel":0.6,"priority":4,"id":"
-I/flutter (29569):
-I/flutter (29569): *** Request ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/playlists?page=1&pageSize=50
-I/flutter (29569): method: GET
-I/flutter (29569): responseType: ResponseType.json
-I/flutter (29569): followRedirects: true
-I/flutter (29569): persistentConnection: true
-I/flutter (29569): connectTimeout: 0:00:30.000000
-I/flutter (29569): sendTimeout: 0:00:30.000000
-I/flutter (29569): receiveTimeout: 0:00:30.000000
-I/flutter (29569): receiveDataWhenStatusError: true
-I/flutter (29569): extra: {}
-I/flutter (29569): headers:
-I/flutter (29569):  Content-Type: application/json
-I/flutter (29569):  Accept: application/json
-I/flutter (29569): data:
-I/flutter (29569): null
-I/flutter (29569):
-I/flutter (29569): *** Response ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/playlists?page=1&pageSize=50
-I/flutter (29569): statusCode: 200
-I/flutter (29569): statusMessage: OK
-I/flutter (29569): headers:
-I/flutter (29569):  content-type: application/json; charset=utf-8
-I/flutter (29569):  transfer-encoding: chunked
-I/flutter (29569):  date: Tue, 24 Mar 2026 04:06:48 GMT
-I/flutter (29569):  server: Kestrel
-I/flutter (29569): Response Text:
-I/flutter (29569): {"currentPage":1,"pageSize":50,"totalItems":5,"totalPages":1,"hasPrevious":false,"hasNext":false,"items":[{"brandId":"8b0c39a4-5bb5-45c2-a6f2-5d6df753bbd4","storeId":"5949df8b-4be3-46e4-b0ba-969c15f6616c","storeName":"DeerCoffee - Pham Ngu Lao","moodId":"9345e832-27ac-4795-9769-3baec6dd9cc0","moodName":"Social","name":"Social playlist","description":null,"isDefault":false,"trackCount":2,"id":"2cd96f69-7476-45a5-9910-d01efd90b6e7","createdAt":"2026-03-23T20:12:43.308229Z","updatedAt":"2026-03-23T20:12:43.30823Z","createdBy":"8b532442-80b7-4883-8df8-2980b038a0d0","updatedBy":"8b532442-80b7-4883-8df8-2980b038a0d0","status":1},{"brandId":"8b0c39a4-5bb5-45c2-a6f2-5d6df753bbd4","storeId":"5949df8b-4be3-46e4-b0ba-969c15f6616c","storeName":"DeerCoffee - Pham Ngu Lao","moodId":"52f85148-3195-4d5f-abee-2b1d5477ff32","moodName":"Romantic","name":"Romantic playlist","description":null,"isDefault":false,"trackCount":2,"id":"8427a989-f66e-4880-a2b0-a158997259e3","createdAt":"2026-03-23T19:59:33.846382Z","updatedAt":"2026-
-I/flutter (29569):
-I/flutter (29569): *** Request ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/moods
-I/flutter (29569): method: GET
-I/flutter (29569): responseType: ResponseType.json
-I/flutter (29569): followRedirects: true
-I/flutter (29569): persistentConnection: true
-I/flutter (29569): connectTimeout: 0:00:30.000000
-I/flutter (29569): sendTimeout: 0:00:30.000000
-I/flutter (29569): receiveTimeout: 0:00:30.000000
-I/flutter (29569): receiveDataWhenStatusError: true
-I/flutter (29569): extra: {}
-I/flutter (29569): headers:
-I/flutter (29569):  Content-Type: application/json
-I/flutter (29569):  Accept: application/json
-I/flutter (29569): data:
-I/flutter (29569): null
-I/flutter (29569):
-I/flutter (29569): *** Response ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/moods
-I/flutter (29569): statusCode: 200
-I/flutter (29569): statusMessage: OK
-I/flutter (29569): headers:
-I/flutter (29569):  content-type: application/json; charset=utf-8
-I/flutter (29569):  transfer-encoding: chunked
-I/flutter (29569):  date: Tue, 24 Mar 2026 04:06:48 GMT
-I/flutter (29569):  server: Kestrel
-I/flutter (29569): Response Text:
-I/flutter (29569): {"isSuccess":true,"message":"Mood retrieved successfully","data":[{"moodType":1,"name":"Calm","minBpm":60,"maxBpm":80,"genre":"Lo-Fi, Ambient, Nature Sounds","energyLevel":0.2,"priority":1,"id":"591c2cb4-7138-4b10-845c-60c942d857eb","createdAt":"2026-03-09T17:41:36.939525Z","updatedAt":null,"createdBy":null,"updatedBy":null,"status":1},{"moodType":3,"name":"Focus","minBpm":85,"maxBpm":105,"genre":"Acoustic, Jazz, Instrumental","energyLevel":0.4,"priority":2,"id":"1e796372-071d-4dbf-9ea5-194e1445c48e","createdAt":"2026-03-09T17:41:36.939542Z","updatedAt":null,"createdBy":null,"updatedBy":null,"status":1},{"moodType":2,"name":"Energetic","minBpm":120,"maxBpm":140,"genre":"Upbeat, Electronic, Dance","energyLevel":0.9,"priority":3,"id":"d2558f6d-90f2-49b0-8a7f-edf9e0355aba","createdAt":"2026-03-09T17:41:36.939543Z","updatedAt":null,"createdBy":null,"updatedBy":null,"status":1},{"moodType":4,"name":"Social","minBpm":100,"maxBpm":120,"genre":"Jazz, Soft Pop, Bossa Nova, Indie","energyLevel":0.6,"priority":4,"id":"
-I/flutter (29569):
-I/flutter (29569): *** Response ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/moods
-I/flutter (29569): statusCode: 200
-I/flutter (29569): statusMessage: OK
-I/flutter (29569): headers:
-I/flutter (29569):  content-type: application/json; charset=utf-8
-I/flutter (29569):  transfer-encoding: chunked
-I/flutter (29569):  date: Tue, 24 Mar 2026 04:06:49 GMT
-I/flutter (29569):  server: Kestrel
-I/flutter (29569): Response Text:
-I/flutter (29569): {"isSuccess":true,"message":"Mood retrieved successfully","data":[{"moodType":1,"name":"Calm","minBpm":60,"maxBpm":80,"genre":"Lo-Fi, Ambient, Nature Sounds","energyLevel":0.2,"priority":1,"id":"591c2cb4-7138-4b10-845c-60c942d857eb","createdAt":"2026-03-09T17:41:36.939525Z","updatedAt":null,"createdBy":null,"updatedBy":null,"status":1},{"moodType":3,"name":"Focus","minBpm":85,"maxBpm":105,"genre":"Acoustic, Jazz, Instrumental","energyLevel":0.4,"priority":2,"id":"1e796372-071d-4dbf-9ea5-194e1445c48e","createdAt":"2026-03-09T17:41:36.939542Z","updatedAt":null,"createdBy":null,"updatedBy":null,"status":1},{"moodType":2,"name":"Energetic","minBpm":120,"maxBpm":140,"genre":"Upbeat, Electronic, Dance","energyLevel":0.9,"priority":3,"id":"d2558f6d-90f2-49b0-8a7f-edf9e0355aba","createdAt":"2026-03-09T17:41:36.939543Z","updatedAt":null,"createdBy":null,"updatedBy":null,"status":1},{"moodType":4,"name":"Social","minBpm":100,"maxBpm":120,"genre":"Jazz, Soft Pop, Bossa Nova, Indie","energyLevel":0.6,"priority":4,"id":"
-I/flutter (29569):
-I/flutter (29569): *** Request ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/8cd2783d-fd6d-4694-85f1-e6f7fe78d275/state
-I/flutter (29569): method: GET
-I/flutter (29569): responseType: ResponseType.json
-I/flutter (29569): followRedirects: true
-I/flutter (29569): persistentConnection: true
-I/flutter (29569): connectTimeout: 0:00:30.000000
-I/flutter (29569): sendTimeout: 0:00:30.000000
-I/flutter (29569): receiveTimeout: 0:00:30.000000
-I/flutter (29569): receiveDataWhenStatusError: true
-I/flutter (29569): extra: {}
-I/flutter (29569): headers:
-I/flutter (29569):  Content-Type: application/json
-I/flutter (29569):  Accept: application/json
-I/flutter (29569): data:
-I/flutter (29569): null
-I/flutter (29569):
-I/flutter (29569): *** Response ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/8cd2783d-fd6d-4694-85f1-e6f7fe78d275/state
-I/flutter (29569): statusCode: 200
-I/flutter (29569): statusMessage: OK
-I/flutter (29569): headers:
-I/flutter (29569):  content-type: application/json; charset=utf-8
-I/flutter (29569):  transfer-encoding: chunked
-I/flutter (29569):  date: Tue, 24 Mar 2026 04:06:49 GMT
-I/flutter (29569):  server: Kestrel
-I/flutter (29569): Response Text:
-I/flutter (29569): {"isSuccess":true,"message":"Success","data":{"spaceId":"8cd2783d-fd6d-4694-85f1-e6f7fe78d275","storeId":"5949df8b-4be3-46e4-b0ba-969c15f6616c","brandId":"8b0c39a4-5bb5-45c2-a6f2-5d6df753bbd4","currentQueueItemId":null,"currentTrackName":null,"hlsUrl":null,"moodName":"Focus","isManualOverride":true,"overrideMode":1,"startedAtUtc":null,"expectedEndAtUtc":null,"seekOffsetSeconds":null,"isPaused":false,"pausePositionSeconds":null,"pendingQueueItemId":null,"pendingOverrideReason":null,"volumePercent":100,"isMuted":false,"queueEndBehavior":0,"spaceQueueItems":[{"queueItemId":"47e5716c-38d8-4b4d-a204-c71d7d7de53b","trackId":"5373355f-03fc-49c9-9ee0-394ae97bb54a","trackName":"music_for_video-please-calm-my-mind-125566","position":119,"queueStatus":2,"source":1,"hlsUrl":"https://ddbdgg08nzlz.cloudfront.net/audio/tracks/5373355f-03fc-49c9-9ee0-394ae97bb54a/v1/music_for_video-please-calm-my-mind-125566-9113135cd3de43d1ba33c6e0cea97170.m3u8","isReadyToStream":true},{"queueItemId":"fa1995a8-05b0-412d-bc16-a7f0bc6a435f",
-I/flutter (29569):
-I/flutter (29569): [LocationBloc] isBrandScopedUser=false, isPlaybackDevice=true
-W/WindowOnBackDispatcher(29569): sendCancelIfRunning: isInProgress=false callback=io.flutter.embedding.android.FlutterActivity$1@662f2b3
-I/flutter (29569): *** Request ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/spaces/8cd2783d-fd6d-4694-85f1-e6f7fe78d275   
-I/flutter (29569): method: GET
-I/flutter (29569): responseType: ResponseType.json
-I/flutter (29569): followRedirects: true
-I/flutter (29569): persistentConnection: true
-I/flutter (29569): connectTimeout: 0:00:30.000000
-I/flutter (29569): sendTimeout: 0:00:30.000000
-I/flutter (29569): receiveTimeout: 0:00:30.000000
-I/flutter (29569): receiveDataWhenStatusError: true
-I/flutter (29569): extra: {}
-I/flutter (29569): headers:
-I/flutter (29569):  Content-Type: application/json
-I/flutter (29569):  Accept: application/json
-I/flutter (29569): data:
-I/flutter (29569): null
-I/flutter (29569):
-I/flutter (29569): *** Response ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/spaces/8cd2783d-fd6d-4694-85f1-e6f7fe78d275
-I/flutter (29569): statusCode: 200
-I/flutter (29569): statusMessage: OK
-I/flutter (29569): headers:
-I/flutter (29569):  content-type: application/json; charset=utf-8
-I/flutter (29569):  transfer-encoding: chunked
-I/flutter (29569):  date: Tue, 24 Mar 2026 04:06:51 GMT
-I/flutter (29569):  server: Kestrel
-I/flutter (29569): Response Text:
-I/flutter (29569): {"isSuccess":true,"message":"Space retrieved successfully","data":{"cameraId":null,"roiCoordinates":null,"maxOccupancy":15,"criticalQueueThreshold":null,"wiFiSensorId":null,"storeId":"5949df8b-4be3-46e4-b0ba-969c15f6616c","name":"Entrance Lounge","type":3,"description":"Entry/waiting area with ambient music","id":"8cd2783d-fd6d-4694-85f1-e6f7fe78d275","createdAt":"2026-03-10T04:00:32.1885Z","updatedAt":null,"createdBy":null,"updatedBy":null,"status":1}}
-I/flutter (29569):
-I/flutter (29569): *** Request ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/state
-I/flutter (29569): method: GET
-I/flutter (29569): responseType: ResponseType.json
-I/flutter (29569): followRedirects: true
-I/flutter (29569): persistentConnection: true
-I/flutter (29569): connectTimeout: 0:00:30.000000
-I/flutter (29569): sendTimeout: 0:00:30.000000
-I/flutter (29569): receiveTimeout: 0:00:30.000000
-I/flutter (29569): receiveDataWhenStatusError: true
-I/flutter (29569): extra: {}
-I/flutter (29569): headers:
-I/flutter (29569):  Content-Type: application/json
-I/flutter (29569):  Accept: application/json
-I/flutter (29569): data:
-I/flutter (29569): null
-I/flutter (29569):
-I/flutter (29569): *** Response ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/state
-I/flutter (29569): statusCode: 200
-I/flutter (29569): statusMessage: OK
-I/flutter (29569): headers:
-I/flutter (29569):  content-type: application/json; charset=utf-8
-I/flutter (29569):  transfer-encoding: chunked
-I/flutter (29569):  date: Tue, 24 Mar 2026 04:06:51 GMT
-I/flutter (29569):  server: Kestrel
-I/flutter (29569): Response Text:
-I/flutter (29569): {"isSuccess":true,"message":"Success","data":{"spaceId":"8cd2783d-fd6d-4694-85f1-e6f7fe78d275","storeId":"5949df8b-4be3-46e4-b0ba-969c15f6616c","brandId":"8b0c39a4-5bb5-45c2-a6f2-5d6df753bbd4","currentQueueItemId":null,"currentTrackName":null,"hlsUrl":null,"moodName":"Focus","isManualOverride":true,"overrideMode":1,"startedAtUtc":null,"expectedEndAtUtc":null,"seekOffsetSeconds":null,"isPaused":false,"pausePositionSeconds":null,"pendingQueueItemId":null,"pendingOverrideReason":null,"volumePercent":100,"isMuted":false,"queueEndBehavior":0,"spaceQueueItems":[{"queueItemId":"47e5716c-38d8-4b4d-a204-c71d7d7de53b","trackId":"5373355f-03fc-49c9-9ee0-394ae97bb54a","trackName":"music_for_video-please-calm-my-mind-125566","position":119,"queueStatus":2,"source":1,"hlsUrl":"https://ddbdgg08nzlz.cloudfront.net/audio/tracks/5373355f-03fc-49c9-9ee0-394ae97bb54a/v1/music_for_video-please-calm-my-mind-125566-9113135cd3de43d1ba33c6e0cea97170.m3u8","isReadyToStream":true},{"queueItemId":"fa1995a8-05b0-412d-bc16-a7f0bc6a435f",
-I/flutter (29569):
-I/flutter (29569): *** Request ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/pair-device
-I/flutter (29569): method: GET
-I/flutter (29569): responseType: ResponseType.json
-I/flutter (29569): followRedirects: true
-I/flutter (29569): persistentConnection: true
-I/flutter (29569): connectTimeout: 0:00:30.000000
-I/flutter (29569): sendTimeout: 0:00:30.000000
-I/flutter (29569): receiveTimeout: 0:00:30.000000
-I/flutter (29569): receiveDataWhenStatusError: true
-I/flutter (29569): extra: {}
-I/flutter (29569): headers:
-I/flutter (29569):  Content-Type: application/json
-I/flutter (29569):  Accept: application/json
-I/flutter (29569): data:
-I/flutter (29569): null
-I/flutter (29569):
-I/flutter (29569): *** Response ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/cams/spaces/pair-device
-I/flutter (29569): statusCode: 200
-I/flutter (29569): statusMessage: OK
-I/flutter (29569): headers:
-I/flutter (29569):  content-type: application/json; charset=utf-8
-I/flutter (29569):  transfer-encoding: chunked
-I/flutter (29569):  date: Tue, 24 Mar 2026 04:06:51 GMT
-I/flutter (29569):  server: Kestrel
-I/flutter (29569): Response Text:
-I/flutter (29569): {"isSuccess":true,"message":"Paired Device retrieved successfully","data":{"spaceId":"8cd2783d-fd6d-4694-85f1-e6f7fe78d275","storeId":"5949df8b-4be3-46e4-b0ba-969c15f6616c","brandId":"8b0c39a4-5bb5-45c2-a6f2-5d6df753bbd4","deviceSessionId":"e4cfb0e8-6b73-4e8c-be47-b109409ddcb1","isPlaybackDeviceCaller":true,"manufacturer":"samsung","model":"SM-A566B","osVersion":"Android 16","appVersion":"1.0.0","deviceId":"BP2A.250605.031.A3","pairedAtUtc":"2026-03-24T03:56:32.065587Z","lastActiveAtUtc":null}}
-I/flutter (29569):
-I/flutter (29569): *** Request ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/playlists?page=1&pageSize=50
-I/flutter (29569): method: GET
-I/flutter (29569): responseType: ResponseType.json
-I/flutter (29569): followRedirects: true
-I/flutter (29569): persistentConnection: true
-I/flutter (29569): connectTimeout: 0:00:30.000000
-I/flutter (29569): sendTimeout: 0:00:30.000000
-I/flutter (29569): receiveTimeout: 0:00:30.000000
-I/flutter (29569): receiveDataWhenStatusError: true
-I/flutter (29569): extra: {}
-I/flutter (29569): headers:
-I/flutter (29569):  Content-Type: application/json
-I/flutter (29569):  Accept: application/json
-I/flutter (29569): data:
-I/flutter (29569): null
-I/flutter (29569):
-W/WindowOnBackDispatcher(29569): sendCancelIfRunning: isInProgress=false callback=io.flutter.embedding.android.FlutterActivity$1@662f2b3
-I/flutter (29569): *** Response ***
-I/flutter (29569): uri: http://192.168.1.4:7001/api/playlists?page=1&pageSize=50
-I/flutter (29569): statusCode: 200
-I/flutter (29569): statusMessage: OK
-I/flutter (29569): headers:
-I/flutter (29569):  content-type: application/json; charset=utf-8
-I/flutter (29569):  transfer-encoding: chunked
-I/flutter (29569):  date: Tue, 24 Mar 2026 04:06:52 GMT
-I/flutter (29569):  server: Kestrel
-I/flutter (29569): Response Text:
-I/flutter (29569): {"currentPage":1,"pageSize":50,"totalItems":5,"totalPages":1,"hasPrevious":false,"hasNext":false,"items":[{"brandId":"8b0c39a4-5bb5-45c2-a6f2-5d6df753bbd4","storeId":"5949df8b-4be3-46e4-b0ba-969c15f6616c","storeName":"DeerCoffee - Pham Ngu Lao","moodId":"9345e832-27ac-4795-9769-3baec6dd9cc0","moodName":"Social","name":"Social playlist","description":null,"isDefault":false,"trackCount":2,"id":"2cd96f69-7476-45a5-9910-d01efd90b6e7","createdAt":"2026-03-23T20:12:43.308229Z","updatedAt":"2026-03-23T20:12:43.30823Z","createdBy":"8b532442-80b7-4883-8df8-2980b038a0d0","updatedBy":"8b532442-80b7-4883-8df8-2980b038a0d0","status":1},{"brandId":"8b0c39a4-5bb5-45c2-a6f2-5d6df753bbd4","storeId":"5949df8b-4be3-46e4-b0ba-969c15f6616c","storeName":"DeerCoffee - Pham Ngu Lao","moodId":"52f85148-3195-4d5f-abee-2b1d5477ff32","moodName":"Romantic","name":"Romantic playlist","description":null,"isDefault":false,"trackCount":2,"id":"8427a989-f66e-4880-a2b0-a158997259e3","createdAt":"2026-03-23T19:59:33.846382Z","updatedAt":"2026-
-I/flutter (29569):
-I/VRI[MainActivity]@58bb726(29569): call setFrameRateCategory for touch hint category=no preference, reason=boost timeout, vri=VRI[MainActivity]@58bb726
+D/ReflectedParamUpdater( 8450): extent() != 1 for single value type: output.buffers.pool-ids.values
+D/ReflectedParamUpdater( 8450): extent() != 1 for single value type: algo.buffers.pool-ids.values
+I/CCodecConfig( 8450): query failed after returning 21 values (BAD_INDEX)
+D/CCodecConfig( 8450): c2 config diff is Dict {
+D/CCodecConfig( 8450):   c2::u32 coded.aac-packaging.value = 0
+D/CCodecConfig( 8450):   c2::u32 coded.bitrate.value = 64000
+D/CCodecConfig( 8450):   c2::u32 coded.pl.level = 0
+D/CCodecConfig( 8450):   c2::u32 coded.pl.profile = 8192
+D/CCodecConfig( 8450):   c2::i32 coding.drc.album-mode.value = 0
+D/CCodecConfig( 8450):   c2::float coding.drc.attenuation-factor.value = 1
+D/CCodecConfig( 8450):   c2::float coding.drc.boost-factor.value = 1
+D/CCodecConfig( 8450):   c2::i32 coding.drc.compression-mode.value = 3
+D/CCodecConfig( 8450):   c2::i32 coding.drc.effect-type.value = 3
+D/CCodecConfig( 8450):   c2::float coding.drc.encoded-level.value = 0.25
+D/CCodecConfig( 8450):   c2::float coding.drc.reference-level.value = -16
+D/CCodecConfig( 8450):   c2::u32 input.buffers.max-size.value = 8192
+D/CCodecConfig( 8450):   c2::u32 input.delay.value = 0
+D/CCodecConfig( 8450):   string input.media-type.value = "audio/mp4a-latm"
+D/CCodecConfig( 8450):   c2::u32 output.delay.value = 2
+D/CCodecConfig( 8450):   c2::float output.drc.output-loudness.value = 0.25
+D/CCodecConfig( 8450):   c2::u32 output.large-frame.max-size = 0
+D/CCodecConfig( 8450):   c2::u32 output.large-frame.threshold-size = 0
+D/CCodecConfig( 8450):   string output.media-type.value = "audio/raw"
+D/CCodecConfig( 8450):   c2::u32 raw.channel-count.value = 1
+D/CCodecConfig( 8450):   c2::u32 raw.channel-mask.value = 0
+D/CCodecConfig( 8450):   c2::u32 raw.max-channel-count.value = 8
+D/CCodecConfig( 8450):   c2::u32 raw.sample-rate.value = 44100
+D/CCodecConfig( 8450): }
+I/MediaCodec( 8450): MediaCodec will operate in async mode
+I/MediaCodec( 8450): media_quality service unavailable, skipping updatePictureProfile
+D/CCodec  ( 8450): [c2.android.aac.decoder] buffers are bound to CCodec for this session
+D/CCodecConfig( 8450): no c2 equivalents for log-session-id
+D/CCodecConfig( 8450): no c2 equivalents for importance
+D/CCodecConfig( 8450): no c2 equivalents for flags
+D/CCodecConfig( 8450): c2 config diff is   c2::u32 raw.channel-count.value = 2
+W/Codec2Client( 8450): query -- param skipped: index = 1107298332.
+D/CCodec  ( 8450): encoding statistics level = 0
+D/CCodec  ( 8450): setup formats input: AMessage(what = 0x00000000) = {
+D/CCodec  ( 8450):   int32_t aac-drc-album-mode = 0
+D/CCodec  ( 8450):   int32_t aac-drc-boost-level = 127
+D/CCodec  ( 8450):   int32_t aac-drc-cut-level = 127
+D/CCodec  ( 8450):   int32_t aac-drc-effect-type = 3
+D/CCodec  ( 8450):   int32_t aac-encoded-target-level = -1
+D/CCodec  ( 8450):   int32_t aac-max-output-channel_count = 8
+D/CCodec  ( 8450):   int32_t aac-target-ref-level = 64
+D/CCodec  ( 8450):   int32_t bitrate = 64000
+D/CCodec  ( 8450):   int32_t channel-count = 2
+D/CCodec  ( 8450):   int32_t channel-mask = 0
+D/CCodec  ( 8450):   int32_t level = 0
+D/CCodec  ( 8450):   int32_t max-input-size = 8192
+D/CCodec  ( 8450):   int32_t max-output-channel-count = 8
+D/CCodec  ( 8450):   string mime = "audio/mp4a-latm"
+D/CCodec  ( 8450):   int32_t profile = 2
+D/CCodec  ( 8450):   int32_t sample-rate = 44100
+D/CCodec  ( 8450): }
+D/CCodec  ( 8450): setup formats output: AMessage(what = 0x00000000) = {
+D/CCodec  ( 8450):   int32_t aac-drc-album-mode = 0
+D/CCodec  ( 8450):   int32_t aac-drc-boost-level = 127
+D/CCodec  ( 8450):   int32_t aac-drc-cut-level = 127
+D/CCodec  ( 8450):   int32_t aac-drc-effect-type = 3
+D/CCodec  ( 8450):   int32_t aac-drc-output-loudness = -1
+D/CCodec  ( 8450):   int32_t aac-encoded-target-level = -1
+D/CCodec  ( 8450):   int32_t aac-max-output-channel_count = 8
+D/CCodec  ( 8450):   int32_t aac-target-ref-level = 64
+D/CCodec  ( 8450):   int32_t buffer-batch-max-output-size = 0
+D/CCodec  ( 8450):   int32_t buffer-batch-threshold-output-size = 0
+D/CCodec  ( 8450):   int32_t channel-count = 2
+D/CCodec  ( 8450):   int32_t channel-mask = 0
+D/CCodec  ( 8450):   int32_t max-output-channel-count = 8
+D/CCodec  ( 8450):   string mime = "audio/raw"
+D/CCodec  ( 8450):   int32_t sample-rate = 44100
+D/CCodec  ( 8450):   int32_t android._config-pcm-encoding = 2
+D/CCodec  ( 8450): }
+I/CCodecConfig( 8450): query failed after returning 21 values (BAD_INDEX)
+E/s_store_manager( 8450): Failed to query component interface for required system resources: 6
+D/MediaCodec( 8450): keep callback message for reclaim
+W/Codec2Client( 8450): query -- param skipped: index = 1342179345.
+W/Codec2Client( 8450): query -- param skipped: index = 2415921170.
+W/Codec2Client( 8450): query -- param skipped: index = 1610614798.
+D/CCodecBufferChannel( 8450): [c2.android.aac.decoder#597] Created input block pool with allocatorID 16 => poolID 36 - OK (0)
+I/CCodecBufferChannel( 8450): [c2.android.aac.decoder#597] Created output block pool with allocatorID 16 => poolID 186 - OK
+D/CCodecBufferChannel( 8450): [c2.android.aac.decoder#597] Configured output block pool ids 186 => OK
+D/CCodecConfig( 8450): c2 config diff is   c2::u32 raw.channel-mask.value = 12
+D/CCodecBuffers( 8450): [c2.android.aac.decoder#597:Output[N]] popFromStashAndRegister: at 1000000000000us, output format changed to AMessage(what = 0x00000000) = {
+D/CCodecBuffers( 8450):   int32_t aac-drc-album-mode = 0
+D/CCodecBuffers( 8450):   int32_t aac-drc-boost-level = 127
+D/CCodecBuffers( 8450):   int32_t aac-drc-cut-level = 127
+D/CCodecBuffers( 8450):   int32_t aac-drc-effect-type = 3
+D/CCodecBuffers( 8450):   int32_t aac-drc-output-loudness = -1
+D/CCodecBuffers( 8450):   int32_t aac-encoded-target-level = -1
+D/CCodecBuffers( 8450):   int32_t aac-max-output-channel_count = 8
+D/CCodecBuffers( 8450):   int32_t aac-target-ref-level = 64
+D/CCodecBuffers( 8450):   int32_t buffer-batch-max-output-size = 0
+D/CCodecBuffers( 8450):   int32_t buffer-batch-threshold-output-size = 0
+D/CCodecBuffers( 8450):   int32_t channel-count = 2
+D/CCodecBuffers( 8450):   int32_t channel-mask = 12
+D/CCodecBuffers( 8450):   int32_t max-output-channel-count = 8
+D/CCodecBuffers( 8450):   string mime = "audio/raw"
+D/CCodecBuffers( 8450):   int32_t sample-rate = 44100
+D/CCodecBuffers( 8450):   int32_t android._config-pcm-encoding = 2
+D/CCodecBuffers( 8450): }
+D/MediaCodec( 8450): keep callback message for reclaim
+I/CCodecConfig( 8450): query failed after returning 21 values (BAD_INDEX)
+W/Codec2Client( 8450): query -- param skipped: index = 1342179345.
+W/Codec2Client( 8450): query -- param skipped: index = 2415921170.
+W/Codec2Client( 8450): query -- param skipped: index = 1610614798.
+I/flutter ( 8450): [AppPlaybackCoordinatorV2] active HLS snapshot -> start player queueItemId=a46e9372-7e69-4fec-97ff-16f3216cfad0 trackId=40bb593d-6832-4e45-a04a-d2abe3eae833 trackName=artmylife-powerful-dramatic-trailer hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40bb593d-6832-4e45-a04a-d2abe3eae833/v1/artmylife-powerful-dramatic-trailer-514242-9358d7cec9bf4ea98bd70c97fef34a71.m3u8
+I/flutter ( 8450): [PlayerBlocV2] queueSeeded force=true queueCount=56 playlistName=artmylife-powerful-dramatic-trailer currentTrack=Nhac Khong Loi Chill currentQueueItemId=1c23beee-25b3-47a8-be6c-f36a66a10252
+I/flutter ( 8450): [PlayerBlocV2] hlsStarted hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40bb593d-6832-4e45-a04a-d2abe3eae833/v1/artmylife-powerful-dramatic-trailer-514242-9358d7cec9bf4ea98bd70c97fef34a71.m3u8 trackId=40bb593d-6832-4e45-a04a-d2abe3eae833 trackTitle=artmylife-powerful-dramatic-trailer queueItemId=a46e9372-7e69-4fec-97ff-16f3216cfad0 seek=0.00 playLocally=true
+I/flutter ( 8450): [PlaybackTrace] API_COMMAND_HTTP_OK spaceId=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 command=skipNext
+I/flutter ( 8450): [QueueFirstV2] emitState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=8481f299-cdb4-4321-83bb-e2006aa79fab pending=- track=Untitled hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/a967dd2c-9005-4b02-979e-d5320e2ef8b1/v1/a2f2b491428a49c0b2c192e242620373.m3u8 manual=false scheduling=false paused=false queueCount=56 queue=[1:Nhac Khong Loi Chill:2 | 2:artmylife-powerful-dramatic-trailer:2 | 3:Untitled:1 | 4:Untitled:0]
+I/flutter ( 8450): [QueueFirstV2] reconcile after mutation started
+I/flutter ( 8450): [PlaybackTrace] API_COMMAND_ACK spaceId=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 command=skipNext
+I/flutter ( 8450): [CamsPlaybackBlocV2] runtimeState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 currentQueueItemId=8481f299-cdb4-4321-83bb-e2006aa79fab pendingQueueItemId=- currentTrack=Untitled hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/a967dd2c-9005-4b02-979e-d5320e2ef8b1/v1/a2f2b491428a49c0b2c192e242620373.m3u8 manual=false scheduling=false queueCount=56 queue=[1:Nhac Khong Loi Chill:2 | 2:artmylife-powerful-dramatic-trailer:2 | 3:Untitled:1]
+I/flutter ( 8450): [AppPlaybackCoordinatorV2] syncCamsState status=active playback=space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=8481f299-cdb4-4321-83bb-e2006aa79fab pending=- track=Untitled hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/a967dd2c-9005-4b02-979e-d5320e2ef8b1/v1/a2f2b491428a49c0b2c192e242620373.m3u8 queueCount=56 queue=[1:Nhac Khong Loi Chill:2 | 2:artmylife-powerful-dramatic-trailer:2 | 3:Untitled:1 | 4:Untitled:0] playerTrack=artmylife-powerful-dramatic-trailer playerHls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40bb593d-6832-4e45-a04a-d2abe3eae833/v1/artmylife-powerful-dramatic-trailer-514242-9358d7cec9bf4ea98bd70c97fef34a71.m3u8
+I/flutter ( 8450): [AppPlaybackCoordinatorV2] hydrateQueueForPlayback queueCount=56 signature=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908|8481f299-cdb4-4321-83bb-e2006aa79fab|1c23beee-25b3-47a8-be6c-f36a66a10252:b8602df5-fac3-482e-9f89-c214bbf8003a:1:2:https://ddbdgg08nzlz.cloudfront.net/audio/tracks/b8602df5-fac3-482e-9f89-c214bbf8003a/v1/c328417455344e63935f7916d3206214.m3u8::1|a46e9372-7e69-4fec-97ff-16f3216cfad0:40bb593d-6832-4e45-a04a-d2abe3eae833:2:2:https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40bb593d-6832-4e45-a04a-d2abe3eae833/v1/artmylife-powerful-dramatic-trailer-514242-9358d7cec9bf4ea98bd70c97fef34a71.m3u8::1|8481f299-cdb4-4321-83bb-e2006aa79fab:a967dd2c-9005-4b02-979e-d5320e2ef8b1:3:1:https://ddbdgg08nzlz.cloudfront.net/audio/tracks/a967dd2c-9005-4b02-979e-d5320e2ef8b1/v1/a2f2b491428a49c0b2c192e242620373.m3u8::1|aa1eef51-b4a2-4b8a-848f-f1f69e594473:de7c9862-1a1b-46e4-b8e0-a8908064a900:4:0:https://ddbdgg08nzlz.cloudfront.net/audio/tracks/de7c9862-1a1b-46e4-b8e0-a8908064a900/v1/b9d505e072b7452cbae8afed1ab17869.m3u8::1
+D/AudioTrack( 8450): getTimestamp_l(211): device stall time corrected using current time 2244429589669
+I/flutter ( 8450): [AppPlaybackCoordinatorV2] active HLS snapshot -> start player queueItemId=8481f299-cdb4-4321-83bb-e2006aa79fab trackId=a967dd2c-9005-4b02-979e-d5320e2ef8b1 trackName=Untitled hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/a967dd2c-9005-4b02-979e-d5320e2ef8b1/v1/a2f2b491428a49c0b2c192e242620373.m3u8
+I/flutter ( 8450): [PlayerBlocV2] queueSeeded force=true queueCount=56 playlistName=Untitled currentTrack=artmylife-powerful-dramatic-trailer currentQueueItemId=a46e9372-7e69-4fec-97ff-16f3216cfad0
+I/flutter ( 8450): [PlayerBlocV2] hlsStarted hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/a967dd2c-9005-4b02-979e-d5320e2ef8b1/v1/a2f2b491428a49c0b2c192e242620373.m3u8 trackId=a967dd2c-9005-4b02-979e-d5320e2ef8b1 trackTitle=Untitled queueItemId=8481f299-cdb4-4321-83bb-e2006aa79fab seek=0.00 playLocally=true
+I/flutter ( 8450): [DioClient] Preparing auth header for "/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/state": playbackScoped=true selectedToken=eyJhbGciOiJI...
+I/flutter ( 8450): [DioClient] [request-auth] path=/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/state activeMode=manager hasManagerToken=true managerExpiry=2026-04-24T09:48:58.043859Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
+I/flutter ( 8450): [QueueFirstV2] hub SpaceStateSync raw -> space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=a46e9372-7e69-4fec-97ff-16f3216cfad0 pending=- track=artmylife-powerful-dramatic-trailer hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40bb593d-6832-4e45-a04a-d2abe3eae833/v1/artmylife-powerful-dramatic-trailer-514242-9358d7cec9bf4ea98bd70c97fef34a71.m3u8 manual=false scheduling=false paused=false queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:1 | 3:Untitled:0 | 4:Untitled:0]
+I/flutter ( 8450): [QueueFirstV2] hub SpaceStateSync raw -> space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=a46e9372-7e69-4fec-97ff-16f3216cfad0 pending=- track=artmylife-powerful-dramatic-trailer hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40bb593d-6832-4e45-a04a-d2abe3eae833/v1/artmylife-powerful-dramatic-trailer-514242-9358d7cec9bf4ea98bd70c97fef34a71.m3u8 manual=false scheduling=false paused=false queueCount=56 queue=[1:Nhac Khong Loi Chill:3 | 2:artmylife-powerful-dramatic-trailer:1 | 3:Untitled:0 | 4:Untitled:0]
+I/flutter ( 8450): [DioClient] Preparing auth header for "/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue": playbackScoped=true selectedToken=eyJhbGciOiJI...
+I/flutter ( 8450): [DioClient] [request-auth] path=/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue activeMode=manager hasManagerToken=true managerExpiry=2026-04-24T09:48:58.043859Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
+I/flutter ( 8450): [DioClient] Preparing auth header for "/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue": playbackScoped=true selectedToken=eyJhbGciOiJI...
+I/flutter ( 8450): [DioClient] [request-auth] path=/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue activeMode=manager hasManagerToken=true managerExpiry=2026-04-24T09:48:58.043859Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
+I/flutter ( 8450): [QueueFirstV2] hold stale state while track jump is pending target=8481f299-cdb4-4321-83bb-e2006aa79fab incoming=a46e9372-7e69-4fec-97ff-16f3216cfad0
+I/flutter ( 8450): [QueueFirstV2] emitState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=8481f299-cdb4-4321-83bb-e2006aa79fab pending=- track=Untitled hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/a967dd2c-9005-4b02-979e-d5320e2ef8b1/v1/a2f2b491428a49c0b2c192e242620373.m3u8 manual=false scheduling=false paused=false queueCount=56 queue=[1:Nhac Khong Loi Chill:2 | 2:artmylife-powerful-dramatic-trailer:2 | 3:Untitled:1 | 4:Untitled:0]
+I/flutter ( 8450): [CamsPlaybackBlocV2] runtimeState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 currentQueueItemId=8481f299-cdb4-4321-83bb-e2006aa79fab pendingQueueItemId=- currentTrack=Untitled hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/a967dd2c-9005-4b02-979e-d5320e2ef8b1/v1/a2f2b491428a49c0b2c192e242620373.m3u8 manual=false scheduling=false queueCount=56 queue=[1:Nhac Khong Loi Chill:2 | 2:artmylife-powerful-dramatic-trailer:2 | 3:Untitled:1]
+I/flutter ( 8450): [AppPlaybackCoordinatorV2] syncCamsState status=active playback=space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=8481f299-cdb4-4321-83bb-e2006aa79fab pending=- track=Untitled hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/a967dd2c-9005-4b02-979e-d5320e2ef8b1/v1/a2f2b491428a49c0b2c192e242620373.m3u8 queueCount=56 queue=[1:Nhac Khong Loi Chill:2 | 2:artmylife-powerful-dramatic-trailer:2 | 3:Untitled:1 | 4:Untitled:0] playerTrack=Untitled playerHls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/a967dd2c-9005-4b02-979e-d5320e2ef8b1/v1/a2f2b491428a49c0b2c192e242620373.m3u8
+I/flutter ( 8450): [QueueFirstV2] hold stale state while track jump is pending target=8481f299-cdb4-4321-83bb-e2006aa79fab incoming=a46e9372-7e69-4fec-97ff-16f3216cfad0
+I/flutter ( 8450): [DioClient] Preparing auth header for "/api/fuzzy-music-profiles/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908": playbackScoped=false selectedToken=eyJhbGciOiJI...
+I/flutter ( 8450): [DioClient] [request-auth] path=/api/fuzzy-music-profiles/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 activeMode=manager hasManagerToken=true managerExpiry=2026-04-24T09:48:58.043859Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
+I/flutter ( 8450): [DioClient] Preparing auth header for "/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue": playbackScoped=true selectedToken=eyJhbGciOiJI...
+I/flutter ( 8450): [DioClient] [request-auth] path=/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue activeMode=manager hasManagerToken=true managerExpiry=2026-04-24T09:48:58.043859Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
+I/flutter ( 8450): [QueueFirstV2] hold stale state while track jump is pending target=8481f299-cdb4-4321-83bb-e2006aa79fab incoming=a46e9372-7e69-4fec-97ff-16f3216cfad0
+I/flutter ( 8450): [QueueFirstV2] emitState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=8481f299-cdb4-4321-83bb-e2006aa79fab pending=- track=Untitled hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/a967dd2c-9005-4b02-979e-d5320e2ef8b1/v1/a2f2b491428a49c0b2c192e242620373.m3u8 manual=false scheduling=false paused=false queueCount=56 queue=[1:Nhac Khong Loi Chill:2 | 2:artmylife-powerful-dramatic-trailer:2 | 3:Untitled:1 | 4:Untitled:0]
+I/flutter ( 8450): [QueueFirstV2] reconcile detected immediate state change
+I/flutter ( 8450): [CamsPlaybackBlocV2] runtimeState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 currentQueueItemId=8481f299-cdb4-4321-83bb-e2006aa79fab pendingQueueItemId=- currentTrack=Untitled hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/a967dd2c-9005-4b02-979e-d5320e2ef8b1/v1/a2f2b491428a49c0b2c192e242620373.m3u8 manual=false scheduling=false queueCount=56 queue=[1:Nhac Khong Loi Chill:2 | 2:artmylife-powerful-dramatic-trailer:2 | 3:Untitled:1]
+I/flutter ( 8450): [AppPlaybackCoordinatorV2] syncCamsState status=active playback=space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=8481f299-cdb4-4321-83bb-e2006aa79fab pending=- track=Untitled hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/a967dd2c-9005-4b02-979e-d5320e2ef8b1/v1/a2f2b491428a49c0b2c192e242620373.m3u8 queueCount=56 queue=[1:Nhac Khong Loi Chill:2 | 2:artmylife-powerful-dramatic-trailer:2 | 3:Untitled:1 | 4:Untitled:0] playerTrack=Untitled playerHls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/a967dd2c-9005-4b02-979e-d5320e2ef8b1/v1/a2f2b491428a49c0b2c192e242620373.m3u8
+I/flutter ( 8450): [AppPlaybackCoordinatorV2] same remote HLS snapshot -> keep current player queueItemId=8481f299-cdb4-4321-83bb-e2006aa79fab drift=0.58
+D/BufferPoolAccessor2.0( 8450): evictor expired: 1, evicted: 0

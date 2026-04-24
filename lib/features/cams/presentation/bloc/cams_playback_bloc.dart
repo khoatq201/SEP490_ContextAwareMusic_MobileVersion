@@ -445,7 +445,6 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     if (!_hasActiveSessionScope('sendCommand:${event.command.name}')) return;
     if (_shouldRelayCommandOptimistically(
       command: event.command,
-      targetQueueItemId: event.targetQueueItemId,
     )) {
       _emitPlaybackCommandRelay(
         emit,
@@ -606,7 +605,6 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
 
     if (!_shouldRelayCommandOptimistically(
       command: event.command,
-      targetQueueItemId: event.targetQueueItemId,
     )) {
       return;
     }
@@ -804,16 +802,8 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
 
   bool _shouldRelayCommandOptimistically({
     required PlaybackCommandEnum command,
-    String? targetQueueItemId,
   }) {
-    if (_isLegacyOptimisticCommand(command)) return true;
-    final hasTargetQueueItem =
-        targetQueueItemId != null && targetQueueItemId.isNotEmpty;
-    return hasTargetQueueItem &&
-        (command == PlaybackCommandEnum.skipNext ||
-            command == PlaybackCommandEnum.skipPrevious ||
-            command == PlaybackCommandEnum.skipToTrack ||
-            command == PlaybackCommandEnum.trackEnded);
+    return _isLegacyOptimisticCommand(command);
   }
 
   String _previousTapIdentity(SpacePlaybackState playbackState) {

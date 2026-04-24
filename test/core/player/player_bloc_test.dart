@@ -270,6 +270,78 @@ void main() {
       expect(bloc.state.progress, closeTo(9 / 220, 0.001));
     });
 
+    test(
+        'clears stale stream duration when switching to a track whose duration is not known yet',
+        () async {
+      final queue = [
+        const Track(
+          id: 'track-1',
+          queueItemId: 'queue-1',
+          title: 'Long Track',
+          artist: 'Artist',
+          fileUrl: '',
+          moodTags: [],
+          duration: 360,
+          seekOffsetSeconds: 0,
+        ),
+        const Track(
+          id: 'track-2',
+          queueItemId: 'queue-2',
+          title: 'Short Track',
+          artist: 'Artist',
+          fileUrl: '',
+          moodTags: [],
+          duration: null,
+          seekOffsetSeconds: 360,
+        ),
+      ];
+
+      bloc.add(PlayerQueueSeeded(
+        tracks: queue,
+        playlistId: 'playlist-1',
+        force: true,
+      ));
+      await _tick();
+
+      bloc.add(const PlayerHlsStarted(
+        hlsUrl: 'https://stream.example.com/long.m3u8',
+        playlistId: 'playlist-1',
+        queueItemId: 'queue-1',
+        trackId: 'track-1',
+        trackName: 'Long Track',
+        seekOffsetSeconds: 120,
+        playLocally: true,
+      ));
+      await _tick();
+
+      expect(bloc.state.currentTrackId, 'track-1');
+      expect(bloc.state.duration, 360);
+      expect(bloc.state.progress, closeTo(120 / 360, 0.001));
+
+      bloc.add(const PlayerHlsStarted(
+        hlsUrl: 'https://stream.example.com/short.m3u8',
+        playlistId: 'playlist-1',
+        queueItemId: 'queue-2',
+        trackId: 'track-2',
+        trackName: 'Short Track',
+        seekOffsetSeconds: 6,
+        playLocally: true,
+      ));
+      await _tick();
+
+      expect(bloc.state.currentTrackId, 'track-2');
+      expect(bloc.state.currentQueueItemId, 'queue-2');
+      expect(bloc.state.displayPositionPrecise, closeTo(6, 0.001));
+      expect(bloc.state.duration, 0);
+      expect(bloc.state.progress, 0);
+
+      audioService.emitDuration(const Duration(seconds: 45));
+      await _tick();
+
+      expect(bloc.state.duration, 45);
+      expect(bloc.state.progress, closeTo(6 / 45, 0.001));
+    });
+
     test('maps skipToTrack without offset by targetQueueItemId', () async {
       final queue = [
         const Track(
@@ -804,6 +876,10 @@ class _FakeAudioPlayerService extends AudioPlayerService {
   Future<void> seek(Duration position) async {
     seekCalls.add(position);
     _position = position;
+  }
+
+  void emitDuration(Duration? duration) {
+    _durationController.add(duration);
   }
 
   @override

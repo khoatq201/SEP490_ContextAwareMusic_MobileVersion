@@ -539,6 +539,122 @@ void main() {
       expect(bloc.state.playbackState?.currentTrackName, 'Track A');
     });
 
+    test('waits for SpaceStateSync after skipNext and ignores command echo',
+        () async {
+      const playbackState = SpacePlaybackState(
+        spaceId: 'space-1',
+        currentQueueItemId: 'queue-1',
+        currentTrackName: 'Track One',
+        hlsUrl: 'https://stream.example.com/t1.m3u8',
+        spaceQueueItems: [
+          SpaceQueueStateItem(
+            queueItemId: 'queue-1',
+            trackId: 'track-1',
+            trackName: 'Track One',
+            position: 1,
+            queueStatus: SpacePlaybackState.queueStatusPlaying,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/t1.m3u8',
+            isReadyToStream: true,
+          ),
+          SpaceQueueStateItem(
+            queueItemId: 'queue-2',
+            trackId: 'track-2',
+            trackName: 'Track Two',
+            position: 2,
+            queueStatus: SpacePlaybackState.queueStatusPending,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/t2.m3u8',
+            isReadyToStream: true,
+          ),
+          SpaceQueueStateItem(
+            queueItemId: 'queue-3',
+            trackId: 'track-3',
+            trackName: 'Track Three',
+            position: 3,
+            queueStatus: SpacePlaybackState.queueStatusPending,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/t3.m3u8',
+            isReadyToStream: true,
+          ),
+        ],
+      );
+      repository.getSpaceStateResult = const Right(playbackState);
+      await _initBloc(bloc);
+      await _waitUntil(
+        () => bloc.state.playbackState?.currentQueueItemId == 'queue-1',
+      );
+
+      bloc.add(const CamsSendCommand(
+        command: PlaybackCommandEnum.skipNext,
+      ));
+      await _waitUntil(
+        () =>
+            repository.lastSendCommandRequest?.command ==
+            PlaybackCommandEnum.skipNext,
+      );
+      await _nextTick();
+
+      expect(bloc.state.playbackState?.currentQueueItemId, 'queue-1');
+      expect(bloc.state.playbackState?.currentTrackName, 'Track One');
+
+      storeHubService.emitPlaybackCommand(const PlaybackCommandEvent(
+        spaceId: 'space-1',
+        command: PlaybackCommandEnum.skipNext,
+      ));
+      await _nextTick();
+
+      expect(bloc.state.playbackState?.currentQueueItemId, 'queue-1');
+      expect(bloc.state.playbackState?.currentTrackName, 'Track One');
+
+      storeHubService.emitStateSync(
+        const SpacePlaybackStateModel(
+          spaceId: 'space-1',
+          currentQueueItemId: 'queue-2',
+          currentTrackName: 'Track Two',
+          hlsUrl: 'https://stream.example.com/t2.m3u8',
+          spaceQueueItems: [
+            SpaceQueueStateItem(
+              queueItemId: 'queue-1',
+              trackId: 'track-1',
+              trackName: 'Track One',
+              position: 1,
+              queueStatus: SpacePlaybackState.queueStatusPlayed,
+              source: 1,
+              hlsUrl: 'https://stream.example.com/t1.m3u8',
+              isReadyToStream: true,
+            ),
+            SpaceQueueStateItem(
+              queueItemId: 'queue-2',
+              trackId: 'track-2',
+              trackName: 'Track Two',
+              position: 2,
+              queueStatus: SpacePlaybackState.queueStatusPlaying,
+              source: 1,
+              hlsUrl: 'https://stream.example.com/t2.m3u8',
+              isReadyToStream: true,
+            ),
+            SpaceQueueStateItem(
+              queueItemId: 'queue-3',
+              trackId: 'track-3',
+              trackName: 'Track Three',
+              position: 3,
+              queueStatus: SpacePlaybackState.queueStatusPending,
+              source: 1,
+              hlsUrl: 'https://stream.example.com/t3.m3u8',
+              isReadyToStream: true,
+            ),
+          ],
+        ),
+      );
+      await _waitUntil(
+        () => bloc.state.playbackState?.currentQueueItemId == 'queue-2',
+      );
+
+      expect(bloc.state.playbackState?.currentQueueItemId, 'queue-2');
+      expect(bloc.state.playbackState?.currentTrackName, 'Track Two');
+    });
+
     test(
         'single previous tap restarts current stream and quick double tap jumps back',
         () async {
@@ -603,8 +719,7 @@ void main() {
       );
     });
 
-    test('optimistically focuses targeted previous jump during stale sync',
-        () async {
+    test('waits for authoritative sync for targeted previous jump', () async {
       const playbackState = SpacePlaybackState(
         spaceId: 'space-1',
         currentQueueItemId: 'queue-2',
@@ -645,6 +760,8 @@ void main() {
             repository.lastSendCommandRequest?.command ==
             PlaybackCommandEnum.seek,
       );
+      final relaySequenceAfterRestart = bloc.state.commandSequence;
+      expect(relaySequenceAfterRestart, greaterThan(0));
 
       repository.lastSendCommandRequest = null;
       bloc.add(const CamsPreviousTapped());
@@ -653,14 +770,16 @@ void main() {
             repository.lastSendCommandRequest?.command ==
             PlaybackCommandEnum.skipToTrack,
       );
-      await _waitUntil(
-        () => bloc.state.playbackState?.currentQueueItemId == 'queue-1',
-      );
 
-      expect(bloc.state.commandSequence, greaterThanOrEqualTo(2));
-      expect(bloc.state.playbackState?.currentTrackName, 'Track One');
-      expect(bloc.state.playbackState?.hlsUrl,
-          'https://stream.example.com/t1.m3u8');
+      expect(
+        repository.lastSendCommandRequest?.targetQueueItemId,
+        'queue-1',
+      );
+      await _nextTick();
+
+      expect(bloc.state.commandSequence, relaySequenceAfterRestart);
+      expect(bloc.state.playbackState?.currentQueueItemId, 'queue-2');
+      expect(bloc.state.playbackState?.currentTrackName, 'Track Two');
 
       storeHubService.emitStateSync(
         const SpacePlaybackStateModel(
@@ -693,6 +812,43 @@ void main() {
         ),
       );
       await _nextTick();
+
+      expect(bloc.state.playbackState?.currentQueueItemId, 'queue-2');
+      expect(bloc.state.playbackState?.currentTrackName, 'Track Two');
+
+      storeHubService.emitStateSync(
+        const SpacePlaybackStateModel(
+          spaceId: 'space-1',
+          currentQueueItemId: 'queue-1',
+          currentTrackName: 'Track One',
+          hlsUrl: 'https://stream.example.com/t1.m3u8',
+          spaceQueueItems: [
+            SpaceQueueStateItem(
+              queueItemId: 'queue-1',
+              trackId: 'track-1',
+              trackName: 'Track One',
+              position: 1,
+              queueStatus: SpacePlaybackState.queueStatusPlaying,
+              source: 1,
+              hlsUrl: 'https://stream.example.com/t1.m3u8',
+              isReadyToStream: true,
+            ),
+            SpaceQueueStateItem(
+              queueItemId: 'queue-2',
+              trackId: 'track-2',
+              trackName: 'Track Two',
+              position: 2,
+              queueStatus: SpacePlaybackState.queueStatusPending,
+              source: 1,
+              hlsUrl: 'https://stream.example.com/t2.m3u8',
+              isReadyToStream: true,
+            ),
+          ],
+        ),
+      );
+      await _waitUntil(
+        () => bloc.state.playbackState?.currentQueueItemId == 'queue-1',
+      );
 
       expect(bloc.state.playbackState?.currentQueueItemId, 'queue-1');
       expect(bloc.state.playbackState?.currentTrackName, 'Track One');
@@ -1136,6 +1292,10 @@ class _FakeStoreHubService extends StoreHubService {
 
   void emitPlayStream(PlayStreamEvent event) {
     _playStreamController.add(event);
+  }
+
+  void emitPlaybackCommand(PlaybackCommandEvent event) {
+    _playbackCommandController.add(event);
   }
 
   @override

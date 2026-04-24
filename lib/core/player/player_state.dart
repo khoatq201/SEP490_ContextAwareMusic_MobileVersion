@@ -108,6 +108,13 @@ class PlayerState extends Equatable {
       return currentPositionPrecise < 0 ? 0 : currentPositionPrecise;
     }
 
+    // If the active item starts at or beyond the known queue duration, the
+    // current track duration is still unknown. Avoid wrapping into the start of
+    // the playlist, otherwise the per-track progress becomes negative.
+    if (currentIndex >= 0 && queueDuration <= currentTrackStartOffset) {
+      return currentPositionPrecise < 0 ? 0 : currentPositionPrecise;
+    }
+
     final normalizedPosition = currentPositionPrecise % queueDuration;
     return normalizedPosition < 0
         ? normalizedPosition + queueDuration

@@ -26,6 +26,7 @@ import 'store_hub_service.dart';
 /// local optimistic queue mutations.
 class QueueFirstPlaybackRuntime {
   static const Duration _pendingTrackJumpHoldDuration = Duration(seconds: 5);
+  static const Duration _pendingCommandEchoHoldDuration = Duration(seconds: 5);
 
   QueueFirstPlaybackRuntime({
     required this.getSpaceState,
@@ -77,6 +78,9 @@ class QueueFirstPlaybackRuntime {
   DateTime? _pendingTraceIssuedAtUtc;
   String? _pendingTrackJumpQueueItemId;
   DateTime? _pendingTrackJumpIssuedAtUtc;
+  final Map<String, int> _pendingCommandEchoCounts = <String, int>{};
+  final Map<String, DateTime> _pendingCommandEchoIssuedAtUtc =
+      <String, DateTime>{};
 
   Stream<SpacePlaybackState> get playbackStateStream =>
       _playbackStateController.stream;
@@ -124,6 +128,7 @@ class QueueFirstPlaybackRuntime {
       _lastFingerprint = null;
       _clearPendingTraceCommand();
       _clearPendingTrackJump();
+      _clearPendingCommandEchoes();
     }
 
     _activeSpaceId = spaceId;
@@ -154,6 +159,7 @@ class QueueFirstPlaybackRuntime {
     _currentState = null;
     _lastFingerprint = null;
     _clearPendingTrackJump();
+    _clearPendingCommandEchoes();
 
     if (activeSpaceId != null) {
       try {
@@ -391,6 +397,14 @@ class QueueFirstPlaybackRuntime {
       'targetQueueItemId=${targetQueueItemId ?? '-'} '
       'targetTrackId=${targetTrackId ?? '-'}',
     );
+    if (_isTrackJumpCommand(command)) {
+      _rememberPendingCommandEcho(
+        command: command,
+        seekPositionSeconds: seekPositionSeconds,
+        targetQueueItemId: targetQueueItemId,
+        targetTrackId: targetTrackId,
+      );
+    }
     final result = await sendPlaybackCommand(
       spaceId: activeSpaceId,
       command: command,
@@ -402,6 +416,14 @@ class QueueFirstPlaybackRuntime {
 
     return result.fold(
       (failure) {
+        if (_isTrackJumpCommand(command)) {
+          _forgetPendingCommandEcho(
+            command: command,
+            seekPositionSeconds: seekPositionSeconds,
+            targetQueueItemId: targetQueueItemId,
+            targetTrackId: targetTrackId,
+          );
+        }
         _traceLog(
           'API_COMMAND_HTTP_FAIL '
           'spaceId=$activeSpaceId '
@@ -422,7 +444,8 @@ class QueueFirstPlaybackRuntime {
           targetQueueItemId: targetQueueItemId,
           targetTrackId: targetTrackId,
         );
-        if (_isLocallyPatchableCommand(command)) {
+        if (_isLocallyPatchableCommand(command) &&
+            !_isTrackJumpCommand(command)) {
           final patchedState = _applyPlaybackCommandPatch(
             current: _currentState,
             command: command,
@@ -431,6 +454,12 @@ class QueueFirstPlaybackRuntime {
             targetTrackId: targetTrackId,
           );
           if (patchedState != null) {
+            _rememberPendingCommandEcho(
+              command: command,
+              seekPositionSeconds: seekPositionSeconds,
+              targetQueueItemId: targetQueueItemId,
+              targetTrackId: targetTrackId,
+            );
             _emitState(patchedState);
           }
         }
@@ -565,6 +594,25 @@ class QueueFirstPlaybackRuntime {
         'targetQueueItemId=${event.targetQueueItemId ?? '-'} '
         'targetTrackId=${event.targetTrackId ?? '-'}',
       );
+
+      if (_consumePendingCommandEcho(
+        command: event.command,
+        seekPositionSeconds: event.seekPositionSeconds,
+        targetQueueItemId: event.targetQueueItemId,
+        targetTrackId: event.targetTrackId,
+      )) {
+        _debugLog(
+          'ignore local command echo command=${event.command.name} '
+          'targetQueueItemId=${event.targetQueueItemId ?? '-'} '
+          'targetTrackId=${event.targetTrackId ?? '-'}',
+        );
+        return;
+      }
+
+      if (_isTrackJumpCommand(event.command)) {
+        unawaited(refreshState(silent: true));
+        return;
+      }
 
       if (_isLocallyPatchableCommand(event.command)) {
         final patchedState = _applyPlaybackCommandPatch(
@@ -852,6 +900,13 @@ class QueueFirstPlaybackRuntime {
         command == PlaybackCommandEnum.seekForward ||
         command == PlaybackCommandEnum.seekBackward ||
         command == PlaybackCommandEnum.skipNext ||
+        command == PlaybackCommandEnum.skipPrevious ||
+        command == PlaybackCommandEnum.skipToTrack ||
+        command == PlaybackCommandEnum.trackEnded;
+  }
+
+  bool _isTrackJumpCommand(PlaybackCommandEnum command) {
+    return command == PlaybackCommandEnum.skipNext ||
         command == PlaybackCommandEnum.skipPrevious ||
         command == PlaybackCommandEnum.skipToTrack ||
         command == PlaybackCommandEnum.trackEnded;
@@ -1197,6 +1252,109 @@ class QueueFirstPlaybackRuntime {
   void _clearPendingTrackJump() {
     _pendingTrackJumpQueueItemId = null;
     _pendingTrackJumpIssuedAtUtc = null;
+  }
+
+  String _commandEchoSignature({
+    required PlaybackCommandEnum command,
+    double? seekPositionSeconds,
+    String? targetQueueItemId,
+    String? targetTrackId,
+  }) {
+    final seekMillis = seekPositionSeconds == null
+        ? ''
+        : (seekPositionSeconds * 1000).round().toString();
+    return [
+      command.name,
+      seekMillis,
+      targetQueueItemId?.trim().toLowerCase() ?? '',
+      targetTrackId?.trim().toLowerCase() ?? '',
+    ].join('|');
+  }
+
+  void _rememberPendingCommandEcho({
+    required PlaybackCommandEnum command,
+    double? seekPositionSeconds,
+    String? targetQueueItemId,
+    String? targetTrackId,
+  }) {
+    _prunePendingCommandEchoes();
+    final signature = _commandEchoSignature(
+      command: command,
+      seekPositionSeconds: seekPositionSeconds,
+      targetQueueItemId: targetQueueItemId,
+      targetTrackId: targetTrackId,
+    );
+    _pendingCommandEchoCounts[signature] =
+        (_pendingCommandEchoCounts[signature] ?? 0) + 1;
+    _pendingCommandEchoIssuedAtUtc[signature] = DateTime.now().toUtc();
+  }
+
+  bool _consumePendingCommandEcho({
+    required PlaybackCommandEnum command,
+    double? seekPositionSeconds,
+    String? targetQueueItemId,
+    String? targetTrackId,
+  }) {
+    _prunePendingCommandEchoes();
+    final signature = _commandEchoSignature(
+      command: command,
+      seekPositionSeconds: seekPositionSeconds,
+      targetQueueItemId: targetQueueItemId,
+      targetTrackId: targetTrackId,
+    );
+    final count = _pendingCommandEchoCounts[signature] ?? 0;
+    if (count <= 0) return false;
+
+    if (count == 1) {
+      _pendingCommandEchoCounts.remove(signature);
+      _pendingCommandEchoIssuedAtUtc.remove(signature);
+    } else {
+      _pendingCommandEchoCounts[signature] = count - 1;
+    }
+    return true;
+  }
+
+  void _forgetPendingCommandEcho({
+    required PlaybackCommandEnum command,
+    double? seekPositionSeconds,
+    String? targetQueueItemId,
+    String? targetTrackId,
+  }) {
+    _prunePendingCommandEchoes();
+    final signature = _commandEchoSignature(
+      command: command,
+      seekPositionSeconds: seekPositionSeconds,
+      targetQueueItemId: targetQueueItemId,
+      targetTrackId: targetTrackId,
+    );
+    final count = _pendingCommandEchoCounts[signature] ?? 0;
+    if (count <= 1) {
+      _pendingCommandEchoCounts.remove(signature);
+      _pendingCommandEchoIssuedAtUtc.remove(signature);
+      return;
+    }
+    _pendingCommandEchoCounts[signature] = count - 1;
+  }
+
+  void _prunePendingCommandEchoes() {
+    if (_pendingCommandEchoIssuedAtUtc.isEmpty) return;
+
+    final nowUtc = DateTime.now().toUtc();
+    final expiredSignatures = _pendingCommandEchoIssuedAtUtc.entries
+        .where((entry) =>
+            nowUtc.difference(entry.value) > _pendingCommandEchoHoldDuration)
+        .map((entry) => entry.key)
+        .toList(growable: false);
+
+    for (final signature in expiredSignatures) {
+      _pendingCommandEchoIssuedAtUtc.remove(signature);
+      _pendingCommandEchoCounts.remove(signature);
+    }
+  }
+
+  void _clearPendingCommandEchoes() {
+    _pendingCommandEchoCounts.clear();
+    _pendingCommandEchoIssuedAtUtc.clear();
   }
 
   String _describePlaybackState(SpacePlaybackState playbackState) {

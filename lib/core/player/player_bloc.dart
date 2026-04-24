@@ -64,9 +64,14 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     });
 
     _durationSub = _audioService.durationStream.listen((dur) {
-      if (!isClosed && dur != null) {
-        add(PlayerDurationUpdated(durationSeconds: dur.inSeconds));
-      }
+      if (isClosed) return;
+
+      final metadataDuration = state.currentTrack?.duration;
+      final durationSeconds = dur?.inSeconds ??
+          ((metadataDuration != null && metadataDuration > 0)
+              ? metadataDuration
+              : 0);
+      add(PlayerDurationUpdated(durationSeconds: durationSeconds));
     });
 
     // Listen for track completion to auto-advance to next track.
@@ -176,7 +181,12 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
           currentIndex: resolvedIndex,
           currentTrack: resolvedTrack,
           currentTrackId: resolvedTrack.id,
-          duration: resolvedTrack.duration ?? nextState.duration,
+          duration: _durationForPlaybackIdentity(
+            track: resolvedTrack,
+            queueItemId: nextState.currentQueueItemId,
+            trackId: nextState.currentTrackId,
+            hlsUrl: nextState.hlsUrl,
+          ),
         );
       }
     }
@@ -211,6 +221,11 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       currentTrack: resolvedTrack,
       currentQueueItemId: event.queueItemId ?? resolvedTrack.queueItemId,
       currentTrackId: event.trackId ?? resolvedTrack.id,
+      duration: _durationForPlaybackIdentity(
+        track: resolvedTrack,
+        queueItemId: event.queueItemId ?? resolvedTrack.queueItemId,
+        trackId: event.trackId ?? resolvedTrack.id,
+      ),
       isPlaying: event.isPlaying,
     ));
     _debugLog(
@@ -521,6 +536,61 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     return false;
   }
 
+  bool _hasText(String? value) => value != null && value.isNotEmpty;
+
+  bool _matchesCurrentPlaybackIdentity({
+    Track? track,
+    String? queueItemId,
+    String? trackId,
+    String? hlsUrl,
+  }) {
+    final incomingQueueItemId = _hasText(queueItemId)
+        ? queueItemId
+        : (_hasText(track?.queueItemId) ? track!.queueItemId : null);
+    final currentQueueItemId = state.currentQueueItemId;
+    if (_hasText(incomingQueueItemId) && _hasText(currentQueueItemId)) {
+      return incomingQueueItemId == currentQueueItemId;
+    }
+
+    final incomingTrackId =
+        _hasText(trackId) ? trackId : (_hasText(track?.id) ? track!.id : null);
+    final currentTrackId = _hasText(state.currentTrackId)
+        ? state.currentTrackId
+        : (_hasText(state.currentTrack?.id) ? state.currentTrack!.id : null);
+    if (_hasText(incomingTrackId) && _hasText(currentTrackId)) {
+      return incomingTrackId == currentTrackId;
+    }
+
+    if (_hasText(hlsUrl) && _hasText(state.hlsUrl)) {
+      return hlsUrl == state.hlsUrl;
+    }
+
+    return false;
+  }
+
+  int _durationForPlaybackIdentity({
+    Track? track,
+    String? queueItemId,
+    String? trackId,
+    String? hlsUrl,
+  }) {
+    final trackDuration = track?.duration;
+    if (trackDuration != null) {
+      return trackDuration > 0 ? trackDuration : 0;
+    }
+
+    if (_matchesCurrentPlaybackIdentity(
+      track: track,
+      queueItemId: queueItemId,
+      trackId: trackId,
+      hlsUrl: hlsUrl,
+    )) {
+      return state.duration > 0 ? state.duration : 0;
+    }
+
+    return 0;
+  }
+
   double _absoluteQueuePositionForTrack(
     double trackPositionSeconds, {
     int? indexOverride,
@@ -556,6 +626,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     String? trackId,
     String? trackName,
     String? queueItemId,
+    int? duration,
   }) {
     return Track(
       id: trackId ?? queueItemId ?? state.activeSpaceId ?? 'cams-stream',
@@ -564,7 +635,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       artist: state.activeSpaceName ?? 'CAMS',
       fileUrl: '',
       moodTags: const [],
-      duration: state.duration > 0 ? state.duration : null,
+      duration: duration != null && duration > 0 ? duration : null,
     );
   }
 
@@ -604,15 +675,27 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       resolvedIndex = _resolveIndexForOffset(event.seekOffsetSeconds);
     }
 
+    final canReuseCurrentTrack = _matchesCurrentPlaybackIdentity(
+      queueItemId: event.queueItemId,
+      trackId: event.trackId,
+      hlsUrl: event.hlsUrl,
+    );
     final resolvedTrack = resolvedIndex >= 0
         ? state.queue[resolvedIndex]
-        : (state.currentTrack ??
+        : (canReuseCurrentTrack ? state.currentTrack : null) ??
             _buildSyntheticStreamTrack(
               playlistName: event.playlistName,
               trackId: event.trackId,
               trackName: event.trackName,
               queueItemId: event.queueItemId,
-            ));
+              duration: canReuseCurrentTrack ? state.duration : null,
+            );
+    final resolvedDuration = _durationForPlaybackIdentity(
+      track: resolvedTrack,
+      queueItemId: event.queueItemId ?? resolvedTrack.queueItemId,
+      trackId: event.trackId ?? resolvedTrack.id,
+      hlsUrl: event.hlsUrl,
+    );
     final absoluteQueuePosition = _absoluteQueuePositionForTrack(
       event.seekOffsetSeconds,
       indexOverride: resolvedIndex >= 0 ? resolvedIndex : null,
@@ -631,7 +714,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       currentPositionPrecise: absoluteQueuePosition,
       currentTrack: resolvedTrack,
       currentIndex: resolvedIndex >= 0 ? resolvedIndex : state.currentIndex,
-      duration: resolvedTrack.duration ?? state.duration,
+      duration: resolvedDuration,
       clearPlaylistName:
           event.playlistName == null || event.playlistName!.isEmpty,
       clearPlaylistId: event.playlistId == null || event.playlistId!.isEmpty,
@@ -867,7 +950,11 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
           currentTrack: resolvedTrack,
           currentQueueItemId: resolvedQueueItemId,
           currentTrackId: resolvedTrackId,
-          duration: resolvedTrack?.duration ?? state.duration,
+          duration: _durationForPlaybackIdentity(
+            track: resolvedTrack,
+            queueItemId: resolvedQueueItemId,
+            trackId: resolvedTrackId,
+          ),
           isPlaying: nextIsPlaying,
         ));
         return;
