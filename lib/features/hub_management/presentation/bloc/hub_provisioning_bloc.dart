@@ -437,14 +437,36 @@ class HubProvisioningBloc
         return;
       }
 
+      final selectedChannel = _choosePrimaryCameraChannel(channels);
+      if (selectedChannel == null) {
+        emit(
+          state.copyWith(
+            phase: HubProvisioningPhase.enterNvrConfig,
+            nvrChannels: channels,
+            nvrPreviewBaseUrl: previewBaseUrl,
+            message:
+                'ESP32 connected, but the preview response did not include a usable camera channel.',
+          ),
+        );
+        return;
+      }
+
       emit(
         state.copyWith(
-          phase: HubProvisioningPhase.selectNvrChannel,
+          phase: HubProvisioningPhase.sendingNvrChannelSelection,
           nvrChannels: channels,
           nvrPreviewBaseUrl: previewBaseUrl,
           message:
-              'Choose the camera view for people counting. The ESP32 will only analyze the selected channel.',
+              'ESP32 found the camera feed and is finalizing the single bound view.',
         ),
+      );
+
+      await _saveSelectedCameraChannel(
+        emit,
+        selectedChannel: selectedChannel,
+        identity: identity,
+        candidate: candidate,
+        wifiSsid: wifiSsid,
       );
     } on BleProvisioningException catch (error) {
       emit(
@@ -559,35 +581,13 @@ class HubProvisioningBloc
       ),
     );
 
-    final payload = <String, Object?>{
-      'selected_channel': event.selectedChannel,
-    };
-
     try {
-      final responseBytes = await bleProvisioningService.sendCustomData(
-        identity,
-        endpoint: 'nvr-select',
-        payload: Uint8List.fromList(utf8.encode(jsonEncode(payload))),
-      );
-      final response = utf8.decode(responseBytes, allowMalformed: true);
-      if (!response.contains('"ok"') && !response.contains('ok')) {
-        emit(
-          state.copyWith(
-            phase: HubProvisioningPhase.selectNvrChannel,
-            message: 'ESP32 rejected the selected camera channel: $response',
-          ),
-        );
-        return;
-      }
-
-      final iotDeviceId = await _loadEspIotDeviceId(identity) ??
-          identity.deviceId;
-
-      await _persistBindingAfterWifiProvisioning(
+      await _saveSelectedCameraChannel(
         emit,
+        selectedChannel: event.selectedChannel,
+        identity: identity,
         candidate: candidate,
         wifiSsid: wifiSsid,
-        iotDeviceId: iotDeviceId,
       );
     } on BleProvisioningException catch (error) {
       emit(
@@ -598,6 +598,78 @@ class HubProvisioningBloc
         ),
       );
     }
+  }
+
+  int? _choosePrimaryCameraChannel(List<NvrChannelPreview> channels) {
+    for (final channel in channels) {
+      if (channel.online && channel.channel > 0) {
+        return channel.channel;
+      }
+    }
+    for (final channel in channels) {
+      if (channel.channel > 0) {
+        return channel.channel;
+      }
+    }
+    return null;
+  }
+
+  Future<void> _saveSelectedCameraChannel(
+    Emitter<HubProvisioningState> emit, {
+    required int selectedChannel,
+    required EspProvisioningIdentity identity,
+    required BleCandidate candidate,
+    required String wifiSsid,
+  }) async {
+    final payload = <String, Object?>{
+      'selected_channel': selectedChannel,
+    };
+
+    final responseBytes = await bleProvisioningService.sendCustomData(
+      identity,
+      endpoint: 'nvr-select',
+      payload: Uint8List.fromList(utf8.encode(jsonEncode(payload))),
+    );
+    final response = utf8.decode(responseBytes, allowMalformed: true);
+    if (!response.contains('"ok"') && !response.contains('ok')) {
+      emit(
+        state.copyWith(
+          phase: HubProvisioningPhase.selectNvrChannel,
+          message: 'ESP32 rejected the selected camera channel: $response',
+        ),
+      );
+      return;
+    }
+
+    String? iotDeviceId;
+    try {
+      final decoded = jsonDecode(response);
+      if (decoded is Map<String, dynamic>) {
+        iotDeviceId =
+            (decoded['device_id'] ?? decoded['deviceId'])?.toString().trim();
+      }
+    } catch (_) {
+      // Fall back to the status endpoint for older firmware payloads.
+    }
+
+    iotDeviceId ??= await _loadEspIotDeviceId(identity);
+    if (iotDeviceId == null) {
+      emit(
+        state.copyWith(
+          phase: HubProvisioningPhase.selectNvrChannel,
+          message:
+              'ESP32 did not return a valid IoT device ID yet. Please keep the device connected and try again.',
+        ),
+      );
+      return;
+    }
+
+    await _persistBindingAfterWifiProvisioning(
+      emit,
+      candidate: candidate,
+      wifiSsid: wifiSsid,
+      iotDeviceId: iotDeviceId,
+    );
   }
 
   Future<String> _waitForNvrPreviewBaseUrl(
@@ -643,21 +715,35 @@ class HubProvisioningBloc
   Future<String?> _loadEspIotDeviceId(
     EspProvisioningIdentity identity,
   ) async {
-    try {
-      final responseBytes = await bleProvisioningService.sendCustomData(
-        identity,
-        endpoint: 'nvr-status',
-        payload: Uint8List.fromList(utf8.encode('{}')),
-      );
-      final response = utf8.decode(responseBytes, allowMalformed: true);
-      final status = jsonDecode(response) as Map<String, dynamic>;
-      final deviceId = (status['device_id'] ?? status['deviceId'])
-          ?.toString()
-          .trim();
-      return deviceId == null || deviceId.isEmpty ? null : deviceId;
-    } catch (_) {
-      return null;
+    for (var attempt = 0; attempt < 8; attempt++) {
+      try {
+        final responseBytes = await bleProvisioningService.sendCustomData(
+          identity,
+          endpoint: 'nvr-status',
+          payload: Uint8List.fromList(utf8.encode('{}')),
+        );
+        final response = utf8.decode(responseBytes, allowMalformed: true);
+        final status = jsonDecode(response) as Map<String, dynamic>;
+        final deviceId =
+            (status['device_id'] ?? status['deviceId'])?.toString().trim();
+        if (deviceId != null &&
+            deviceId.isNotEmpty &&
+            _isValidEspIotDeviceId(deviceId)) {
+          return deviceId;
+        }
+      } catch (_) {
+        // Retry a few times because BLE custom endpoint reads can race
+        // immediately after provisioning/channel selection.
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 750));
     }
+    return null;
+  }
+
+  bool _isValidEspIotDeviceId(String raw) {
+    final normalized = raw.trim();
+    if (normalized.isEmpty) return false;
+    return normalized.startsWith('cams_');
   }
 
   Future<List<NvrChannelPreview>> _waitForNvrChannels(
@@ -827,8 +913,8 @@ class HubProvisioningBloc
     required String iotDeviceId,
   }) async {
     final bindingToSave = _buildBindingToSave(
-      candidate: candidate,
       wifiSsid: wifiSsid,
+      iotDeviceId: iotDeviceId,
     );
     emit(
       state.copyWith(
@@ -884,13 +970,13 @@ class HubProvisioningBloc
   }
 
   SpaceHubBinding _buildBindingToSave({
-    required BleCandidate candidate,
     required String wifiSsid,
+    required String iotDeviceId,
   }) {
     final existingBinding = state.binding;
     if (existingBinding != null) {
       return existingBinding.copyWith(
-        bleDeviceName: candidate.bleDeviceName,
+        bleDeviceName: iotDeviceId,
         wifiSsid: wifiSsid.trim(),
         provisionedAtUtc: DateTime.now().toUtc(),
         status: SpaceHubBindingStatus.bound,
@@ -908,7 +994,7 @@ class HubProvisioningBloc
 
     return SpaceHubBinding(
       spaceId: state.spaceId,
-      bleDeviceName: candidate.bleDeviceName,
+      bleDeviceName: iotDeviceId,
       wifiSsid: wifiSsid.trim(),
       provisioningMethod: HubProvisioningMethod.blePrefixScan,
       provisionedAtUtc: DateTime.now().toUtc(),

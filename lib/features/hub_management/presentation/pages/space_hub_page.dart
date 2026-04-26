@@ -1,3 +1,6 @@
+import 'dart:typed_data';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -7,6 +10,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/presentation/app_error_presentation.dart';
 import '../../../../core/widgets/app_status_banner.dart';
+import '../../data/services/esp_develop_mode_client.dart';
 import '../../domain/entities/ble_candidate.dart';
 import '../../domain/entities/space_hub_binding.dart';
 import '../../domain/entities/wifi_candidate.dart';
@@ -74,8 +78,6 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
   bool _obscureSecretCode = true;
   bool _obscurePassword = true;
   bool _obscureNvrPassword = true;
-  bool _useDirectNvr = false;
-
   @override
   void initState() {
     super.initState();
@@ -279,19 +281,12 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
             _BindingActions(
               palette: palette,
               binding: state.binding,
-              onRescan: () => _startBleScan(
-                context,
-                state,
-                flowMode: HubProvisioningFlowMode.fullProvisioning,
-              ),
               onRetrySync: state.binding!.isSyncPending
                   ? () => context
                       .read<HubProvisioningBloc>()
                       .add(const HubProvisioningRetrySyncRequested())
                   : null,
-              onRestart: () => context
-                  .read<HubProvisioningBloc>()
-                  .add(const HubProvisioningRestartRequested()),
+              onDevelopMode: () => _showDevelopModeSheet(context, state),
               onDelete: () => _confirmDeleteBinding(context),
             ),
         ];
@@ -361,7 +356,6 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
           _NvrConfigCard(
             palette: palette,
             deviceId: state.resolvedIdentity?.deviceId,
-            useDirectNvr: _useDirectNvr,
             usernameFieldKey: _nvrUsernameFieldKey,
             usernameController: _nvrUsernameController,
             usernameFocusNode: _nvrUsernameFocusNode,
@@ -375,9 +369,6 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
             portController: _nvrPortController,
             portFocusNode: _nvrPortFocusNode,
             obscurePassword: _obscureNvrPassword,
-            onToggleDirectMode: (value) {
-              setState(() => _useDirectNvr = value);
-            },
             onTogglePassword: () {
               setState(() => _obscureNvrPassword = !_obscureNvrPassword);
             },
@@ -388,18 +379,18 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
         return [
           _ProgressCard(
             palette: palette,
-            title: 'Sending NVR and Wi-Fi configuration',
+            title: 'Sending camera and Wi-Fi configuration',
             subtitle:
-                'The ESP32 is storing the NVR source and Wi-Fi credentials, then joining the selected network.',
+                'The ESP32 is storing the camera source and Wi-Fi credentials, then joining the selected network.',
           ),
         ];
       case HubProvisioningPhase.discoveringNvrChannels:
         return [
           _ProgressCard(
             palette: palette,
-            title: 'Discovering camera views',
+            title: 'Connecting the camera feed',
             subtitle:
-                'The ESP32 is connecting to Wi-Fi, finding the NVR, and preparing preview snapshots for each channel.',
+                'The ESP32 is connecting to Wi-Fi and preparing the single camera snapshot feed.',
           ),
         ];
       case HubProvisioningPhase.selectNvrChannel:
@@ -463,19 +454,12 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
             _BindingActions(
               palette: palette,
               binding: state.binding,
-              onRescan: () => _startBleScan(
-                context,
-                state,
-                flowMode: HubProvisioningFlowMode.fullProvisioning,
-              ),
               onRetrySync: state.binding!.isSyncPending
                   ? () => context
                       .read<HubProvisioningBloc>()
                       .add(const HubProvisioningRetrySyncRequested())
                   : null,
-              onRestart: () => context
-                  .read<HubProvisioningBloc>()
-                  .add(const HubProvisioningRestartRequested()),
+              onDevelopMode: () => _showDevelopModeSheet(context, state),
               onDelete: () => _confirmDeleteBinding(context),
             ),
         ];
@@ -498,19 +482,12 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
             _BindingActions(
               palette: palette,
               binding: state.binding,
-              onRescan: () => _startBleScan(
-                context,
-                state,
-                flowMode: HubProvisioningFlowMode.fullProvisioning,
-              ),
               onRetrySync: state.binding!.isSyncPending
                   ? () => context
                       .read<HubProvisioningBloc>()
                       .add(const HubProvisioningRetrySyncRequested())
                   : null,
-              onRestart: () => context
-                  .read<HubProvisioningBloc>()
-                  .add(const HubProvisioningRestartRequested()),
+              onDevelopMode: () => _showDevelopModeSheet(context, state),
               onDelete: () => _confirmDeleteBinding(context),
             ),
         ];
@@ -551,7 +528,6 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
       _obscureSecretCode = true;
       _obscurePassword = true;
       _obscureNvrPassword = true;
-      _useDirectNvr = false;
     });
     context.read<HubProvisioningBloc>().add(
           HubProvisioningBleScanRequested(
@@ -573,7 +549,6 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
       _obscureSecretCode = true;
       _obscurePassword = true;
       _obscureNvrPassword = true;
-      _useDirectNvr = false;
     });
     context
         .read<HubProvisioningBloc>()
@@ -657,16 +632,16 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
     if (username.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Enter the NVR username and password.'),
+          content: Text('Enter the camera username and password.'),
         ),
       );
       return;
     }
 
-    if (_useDirectNvr && host.isEmpty) {
+    if (host.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Enter the direct NVR host or forwarded router IP.'),
+          content: Text('Enter the camera IP, domain, or forwarded public IP.'),
         ),
       );
       return;
@@ -674,13 +649,30 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
 
     context.read<HubProvisioningBloc>().add(
           HubProvisioningNvrConfigSubmitted(
-            mode: _useDirectNvr ? 'direct' : 'auto',
+            mode: 'direct',
             username: username,
             password: password,
             host: host,
             port: port,
           ),
         );
+  }
+
+  Future<void> _showDevelopModeSheet(
+    BuildContext context,
+    HubProvisioningState state,
+  ) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => _DevelopModePresetSheet(
+        palette: _HubPalette.of(context),
+        initialBaseUrl: state.nvrPreviewBaseUrl,
+        binding: state.binding,
+      ),
+    );
   }
 }
 
@@ -809,7 +801,7 @@ class _BindingCard extends StatelessWidget {
           _InfoRow(
             palette: palette,
             icon: LucideIcons.badgeInfo,
-            label: 'ESP32 device',
+            label: 'IoT device ID',
             value: binding.bleDeviceName,
           ),
           _InfoRow(
@@ -1318,7 +1310,6 @@ class _NvrConfigCard extends StatelessWidget {
   const _NvrConfigCard({
     required this.palette,
     required this.deviceId,
-    required this.useDirectNvr,
     required this.usernameFieldKey,
     required this.usernameController,
     required this.usernameFocusNode,
@@ -1332,14 +1323,12 @@ class _NvrConfigCard extends StatelessWidget {
     required this.portController,
     required this.portFocusNode,
     required this.obscurePassword,
-    required this.onToggleDirectMode,
     required this.onTogglePassword,
     required this.onSubmit,
   });
 
   final _HubPalette palette;
   final String? deviceId;
-  final bool useDirectNvr;
   final GlobalKey usernameFieldKey;
   final TextEditingController usernameController;
   final FocusNode usernameFocusNode;
@@ -1353,7 +1342,6 @@ class _NvrConfigCard extends StatelessWidget {
   final TextEditingController portController;
   final FocusNode portFocusNode;
   final bool obscurePassword;
-  final ValueChanged<bool> onToggleDirectMode;
   final VoidCallback onTogglePassword;
   final VoidCallback onSubmit;
 
@@ -1383,67 +1371,13 @@ class _NvrConfigCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            useDirectNvr
-                ? 'Direct mode uses the host and port you enter, then shows channel previews from that NVR.'
-                : 'Auto mode tries to discover an IMOU/Dahua NVR on the LAN, then shows channel previews when discovery succeeds.',
+            'Enter the camera host and port. The ESP32 will connect to that single feed directly.',
             style: GoogleFonts.inter(
               color: palette.textMuted,
               fontSize: 13,
               height: 1.5,
             ),
           ),
-          const SizedBox(height: 12),
-          SwitchListTile.adaptive(
-            contentPadding: EdgeInsets.zero,
-            value: useDirectNvr,
-            title: Text(
-              'Direct NVR mode',
-              style: GoogleFonts.inter(
-                color: palette.textPrimary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            subtitle: Text(
-              'Recommended for demo. Enter the NVR host directly, then choose the camera view from previews.',
-              style: GoogleFonts.inter(color: palette.textMuted, fontSize: 12),
-            ),
-            onChanged: onToggleDirectMode,
-          ),
-          if (!useDirectNvr) ...[
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.warning.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: AppColors.warning.withValues(alpha: 0.35),
-                ),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(
-                    LucideIcons.wrench,
-                    color: AppColors.warning,
-                    size: 18,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'Auto discovery is in maintenance mode. It can still scan the LAN, but direct mode is more stable for capstone demo setup.',
-                      style: GoogleFonts.inter(
-                        color: palette.textMuted,
-                        fontSize: 12,
-                        height: 1.45,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
           const SizedBox(height: 12),
           Container(
             key: usernameFieldKey,
@@ -1453,7 +1387,7 @@ class _NvrConfigCard extends StatelessWidget {
               textInputAction: TextInputAction.next,
               scrollPadding: const EdgeInsets.only(bottom: 180),
               decoration: const InputDecoration(
-                labelText: 'NVR username',
+                labelText: 'Camera username',
                 hintText: 'admin or least-privilege user',
               ),
             ),
@@ -1465,14 +1399,10 @@ class _NvrConfigCard extends StatelessWidget {
               controller: passwordController,
               focusNode: passwordFocusNode,
               obscureText: obscurePassword,
-              textInputAction:
-                  useDirectNvr ? TextInputAction.next : TextInputAction.done,
+              textInputAction: TextInputAction.next,
               scrollPadding: const EdgeInsets.only(bottom: 180),
-              onSubmitted: (_) {
-                if (!useDirectNvr) onSubmit();
-              },
               decoration: InputDecoration(
-                labelText: 'NVR password',
+                labelText: 'Camera password',
                 suffixIcon: IconButton(
                   onPressed: onTogglePassword,
                   icon: Icon(
@@ -1485,50 +1415,48 @@ class _NvrConfigCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            'After the ESP32 joins Wi-Fi, it will show live channel previews so you can choose the right view instead of guessing a channel number.',
+            'Local IP and public IP are both supported here, so you can point the ESP32 straight at the camera endpoint you want to use.',
             style: GoogleFonts.inter(
               color: palette.textMuted,
               fontSize: 13,
               height: 1.5,
             ),
           ),
-          if (useDirectNvr) ...[
-            const SizedBox(height: 12),
-            Container(
-              key: hostFieldKey,
-              child: TextField(
-                controller: hostController,
-                focusNode: hostFocusNode,
-                textInputAction: TextInputAction.next,
-                scrollPadding: const EdgeInsets.only(bottom: 180),
-                decoration: const InputDecoration(
-                  labelText: 'Direct NVR host',
-                  hintText: '192.168.2.23 or 192.168.1.237',
-                ),
+          const SizedBox(height: 12),
+          Container(
+            key: hostFieldKey,
+            child: TextField(
+              controller: hostController,
+              focusNode: hostFocusNode,
+              textInputAction: TextInputAction.next,
+              scrollPadding: const EdgeInsets.only(bottom: 180),
+              decoration: const InputDecoration(
+                labelText: 'Camera host',
+                hintText: '192.168.2.23, 203.0.113.25, or cam.example.com',
               ),
             ),
-            const SizedBox(height: 12),
-            Container(
-              key: portFieldKey,
-              child: TextField(
-                controller: portController,
-                focusNode: portFocusNode,
-                keyboardType: TextInputType.number,
-                textInputAction: TextInputAction.done,
-                scrollPadding: const EdgeInsets.only(bottom: 180),
-                onSubmitted: (_) => onSubmit(),
-                decoration: const InputDecoration(
-                  labelText: 'Direct NVR port',
-                  hintText: '80 or forwarded port such as 18080',
-                ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            key: portFieldKey,
+            child: TextField(
+              controller: portController,
+              focusNode: portFocusNode,
+              keyboardType: TextInputType.number,
+              textInputAction: TextInputAction.done,
+              scrollPadding: const EdgeInsets.only(bottom: 180),
+              onSubmitted: (_) => onSubmit(),
+              decoration: const InputDecoration(
+                labelText: 'Camera port',
+                hintText: '80 or forwarded port such as 18080',
               ),
             ),
-          ],
+          ),
           const SizedBox(height: 16),
           FilledButton.icon(
             onPressed: onSubmit,
             icon: const Icon(LucideIcons.serverCog, size: 18),
-            label: const Text('Save NVR config to ESP32'),
+            label: const Text('Save camera config to ESP32'),
           ),
         ],
       ),
@@ -1732,17 +1660,15 @@ class _BindingActions extends StatelessWidget {
   const _BindingActions({
     required this.palette,
     required this.binding,
-    required this.onRescan,
     required this.onRetrySync,
-    required this.onRestart,
+    required this.onDevelopMode,
     required this.onDelete,
   });
 
   final _HubPalette palette;
   final SpaceHubBinding? binding;
-  final VoidCallback onRescan;
   final VoidCallback? onRetrySync;
-  final VoidCallback onRestart;
+  final VoidCallback onDevelopMode;
   final VoidCallback onDelete;
 
   @override
@@ -1765,12 +1691,6 @@ class _BindingActions extends StatelessWidget {
             spacing: 10,
             runSpacing: 10,
             children: [
-              OutlinedButton.icon(
-                onPressed: onRescan,
-                icon: const Icon(Icons.bluetooth_searching_rounded, size: 18),
-                label:
-                    Text(binding == null ? 'Start scan' : 'Reconfigure Wi-Fi'),
-              ),
               if (onRetrySync != null)
                 OutlinedButton.icon(
                   onPressed: onRetrySync,
@@ -1778,9 +1698,9 @@ class _BindingActions extends StatelessWidget {
                   label: const Text('Retry sync'),
                 ),
               OutlinedButton.icon(
-                onPressed: onRestart,
-                icon: const Icon(LucideIcons.refreshCw, size: 18),
-                label: const Text('Restart hub'),
+                onPressed: onDevelopMode,
+                icon: const Icon(LucideIcons.flaskConical, size: 18),
+                label: const Text('develop-mode'),
               ),
               OutlinedButton.icon(
                 onPressed: onDelete,
@@ -1796,6 +1716,795 @@ class _BindingActions extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _DevelopModeSheet extends StatefulWidget {
+  const _DevelopModeSheet({
+    required this.palette,
+    required this.initialBaseUrl,
+    required this.binding,
+  });
+
+  final _HubPalette palette;
+  final String? initialBaseUrl;
+  final SpaceHubBinding? binding;
+
+  @override
+  State<_DevelopModeSheet> createState() => _DevelopModeSheetState();
+}
+
+class _DevelopModeSheetState extends State<_DevelopModeSheet> {
+  final _client = EspDevelopModeClient();
+  late final TextEditingController _baseUrlController;
+  final _peopleCountController = TextEditingController();
+  final _decibelController = TextEditingController();
+
+  bool _loadingStatus = false;
+  bool _submitting = false;
+  EspDevelopModeStatus? _status;
+  Uint8List? _selectedImageBytes;
+  String? _selectedImageName;
+  String? _lastResult;
+  bool _lastResultIsError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _baseUrlController = TextEditingController(
+      text: widget.initialBaseUrl?.trim() ?? '',
+    );
+    if (_baseUrlController.text.trim().isNotEmpty) {
+      _refreshStatus();
+    }
+  }
+
+  @override
+  void dispose() {
+    _baseUrlController.dispose();
+    _peopleCountController.dispose();
+    _decibelController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = widget.palette;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: palette.card,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          16,
+          16,
+          16,
+          MediaQuery.of(context).viewInsets.bottom + 20,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: palette.textMuted.withValues(alpha: 0.28),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'develop-mode',
+                style: GoogleFonts.poppins(
+                  color: palette.textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Override live camera counting for demos. The ESP32 will pause the normal loop until you turn this mode off.',
+                style: GoogleFonts.inter(
+                  color: palette.textMuted,
+                  fontSize: 13,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _baseUrlController,
+                decoration: const InputDecoration(
+                  labelText: 'ESP32 preview server',
+                  hintText: 'http://192.168.1.50:8080 or 192.168.1.50',
+                ),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: _loadingStatus ? null : _refreshStatus,
+                    icon: const Icon(LucideIcons.badgeInfo, size: 18),
+                    label:
+                        Text(_loadingStatus ? 'Checking...' : 'Check status'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: _submitting ? null : () => _setEnabled(true),
+                    icon: const Icon(LucideIcons.toggleRight, size: 18),
+                    label: const Text('Turn on'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: _submitting ? null : () => _setEnabled(false),
+                    icon: const Icon(LucideIcons.toggleLeft, size: 18),
+                    label: const Text('Turn off'),
+                  ),
+                  if (_status?.enabled == true)
+                    FilledButton.icon(
+                      onPressed: _submitting ? null : _applyPreset,
+                      icon: const Icon(LucideIcons.refreshCw, size: 18),
+                      label: const Text('Switch mode'),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              if (_status != null)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: (_status!.enabled
+                            ? AppColors.success
+                            : palette.textMuted)
+                        .withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: (_status!.enabled
+                              ? AppColors.success
+                              : palette.textMuted)
+                          .withValues(alpha: 0.24),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _status!.enabled
+                            ? 'Develop mode is on'
+                            : 'Develop mode is off',
+                        style: GoogleFonts.inter(
+                          color: palette.textPrimary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Uploaded image: ${_status!.hasUploadedImage ? 'ready' : 'none'}'
+                        '${_status!.manualPeopleCount != null ? ' · manual people: ${_status!.manualPeopleCount}' : ''}'
+                        '${_status!.manualDecibel != null ? ' · manual dB: ${_status!.manualDecibel}' : ''}',
+                        style: GoogleFonts.inter(
+                          color: palette.textMuted,
+                          fontSize: 12,
+                          height: 1.45,
+                        ),
+                      ),
+                      if (_status!.lastPeopleCount != null ||
+                          _status!.lastPublishIsoUtc != null) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          'Last publish: ${_status!.lastPeopleCount ?? '-'} people'
+                          '${_status!.lastConfidence != null ? ' · conf ${_status!.lastConfidence!.toStringAsFixed(2)}' : ''}'
+                          '${_status!.lastPublishIsoUtc != null ? ' · ${_status!.lastPublishIsoUtc}' : ''}',
+                          style: GoogleFonts.inter(
+                            color: palette.textMuted,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _peopleCountController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Manual people count',
+                  hintText: 'Leave empty to use YOLO from the uploaded image',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _decibelController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Decibel',
+                  hintText: 'Example: 63.5',
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: palette.bg,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: palette.textMuted.withValues(alpha: 0.16),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _selectedImageName == null
+                          ? 'No demo image selected yet'
+                          : 'Selected image: $_selectedImageName',
+                      style: GoogleFonts.inter(
+                        color: palette.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Images are resized before upload so the ESP32 can forward them safely.',
+                      style: GoogleFonts.inter(
+                        color: palette.textMuted,
+                        fontSize: 12,
+                        height: 1.45,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: _submitting ? null : _pickImage,
+                          icon: const Icon(LucideIcons.imagePlus, size: 18),
+                          label: const Text('Choose image'),
+                        ),
+                        FilledButton.icon(
+                          onPressed: _submitting || _selectedImageBytes == null
+                              ? null
+                              : _uploadImage,
+                          icon: const Icon(LucideIcons.upload, size: 18),
+                          label: const Text('Upload to ESP32'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              if (_lastResult != null) ...[
+                const SizedBox(height: 14),
+                Text(
+                  _lastResult!,
+                  style: GoogleFonts.inter(
+                    color: _lastResultIsError
+                        ? AppColors.error
+                        : AppColors.success,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    height: 1.45,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: _submitting ? null : _publish,
+                  icon: const Icon(LucideIcons.send, size: 18),
+                  label: Text(_submitting ? 'Sending...' : 'Send demo payload'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _refreshStatus() async {
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() {
+      _loadingStatus = true;
+      _lastResult = null;
+    });
+    try {
+      final status = await _client.fetchStatus(_baseUrlController.text);
+      if (!mounted) return;
+      setState(() {
+        _status = status;
+        _loadingStatus = false;
+      });
+    } on Object catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _loadingStatus = false;
+        _lastResultIsError = true;
+        _lastResult = error.toString();
+      });
+      messenger.showSnackBar(SnackBar(content: Text(error.toString())));
+    }
+  }
+
+  Future<void> _setEnabled(bool enabled) async {
+    final manualPeopleCount = _tryParseInt(_peopleCountController.text);
+    final manualDecibel = _tryParseDouble(_decibelController.text);
+    await _runBusyTask(() async {
+      final status = await _client.setEnabled(
+        _baseUrlController.text,
+        enabled: enabled,
+        manualPeopleCount: manualPeopleCount,
+        manualDecibel: manualDecibel,
+      );
+      if (!mounted) return;
+      setState(() {
+        _status = status;
+        _lastResultIsError = false;
+        _lastResult = enabled
+            ? 'Develop mode enabled on the ESP32.'
+            : 'Develop mode disabled. Normal live data can run again.';
+      });
+    });
+  }
+
+  Future<void> _applyPreset() async {
+    await _runBusyTask(() async {
+      final status = await _client.configure(
+        _baseUrlController.text,
+        enabled: true,
+        preset: EspDevelopModePreset.lowPeopleLowDecibel,
+      );
+      if (!mounted) return;
+      setState(() {
+        _status = status;
+        _lastResultIsError = false;
+        _lastResult =
+            'Scenario switched. ESP32 is now publishing the ${status.preset.label.toLowerCase()} scenario.';
+      });
+    });
+  }
+
+  Future<void> _pickImage() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      withData: true,
+    );
+    final file =
+        result != null && result.files.isNotEmpty ? result.files.first : null;
+    if (file == null || file.bytes == null) return;
+    setState(() {
+      _selectedImageBytes = file.bytes;
+      _selectedImageName = file.name;
+      _lastResult = null;
+    });
+  }
+
+  Future<void> _uploadImage() async {
+    final bytes = _selectedImageBytes;
+    if (bytes == null) return;
+    await _runBusyTask(() async {
+      await _client.uploadImage(_baseUrlController.text, bytes);
+      if (!mounted) return;
+      setState(() {
+        _lastResultIsError = false;
+        _lastResult = 'Demo image uploaded to the ESP32.';
+      });
+      await _refreshStatus();
+    });
+  }
+
+  Future<void> _publish() async {
+    final manualPeopleCount = _tryParseInt(_peopleCountController.text);
+    final manualDecibel = _tryParseDouble(_decibelController.text);
+    await _runBusyTask(() async {
+      final result = await _client.publish(
+        _baseUrlController.text,
+        manualPeopleCount: manualPeopleCount,
+        manualDecibel: manualDecibel,
+      );
+      if (!mounted) return;
+      setState(() {
+        _lastResultIsError = false;
+        _lastResult =
+            'Published ${result.peopleCount} people at ${result.decibel.toStringAsFixed(1)} dB via ${result.mode}.';
+      });
+      await _refreshStatus();
+    });
+  }
+
+  Future<void> _runBusyTask(Future<void> Function() action) async {
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() {
+      _submitting = true;
+      _lastResult = null;
+    });
+    try {
+      await action();
+    } on Object catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _lastResultIsError = true;
+        _lastResult = error.toString();
+      });
+      messenger.showSnackBar(SnackBar(content: Text(error.toString())));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _submitting = false;
+        });
+      }
+    }
+  }
+
+  int? _tryParseInt(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) return null;
+    return int.tryParse(trimmed);
+  }
+
+  double? _tryParseDouble(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) return null;
+    return double.tryParse(trimmed);
+  }
+}
+
+class _DevelopModePresetSheet extends StatefulWidget {
+  const _DevelopModePresetSheet({
+    required this.palette,
+    required this.initialBaseUrl,
+    required this.binding,
+  });
+
+  final _HubPalette palette;
+  final String? initialBaseUrl;
+  final SpaceHubBinding? binding;
+
+  @override
+  State<_DevelopModePresetSheet> createState() =>
+      _DevelopModePresetSheetState();
+}
+
+class _DevelopModePresetSheetState extends State<_DevelopModePresetSheet> {
+  final _client = EspDevelopModeClient();
+  late final TextEditingController _baseUrlController;
+
+  bool _loadingStatus = false;
+  bool _submitting = false;
+  EspDevelopModeStatus? _status;
+  EspDevelopModePreset _selectedPreset =
+      EspDevelopModePreset.lowPeopleLowDecibel;
+  String? _lastResult;
+  bool _lastResultIsError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _baseUrlController = TextEditingController(
+      text: widget.initialBaseUrl?.trim() ?? '',
+    );
+    if (_baseUrlController.text.trim().isNotEmpty) {
+      _refreshStatus();
+    }
+  }
+
+  @override
+  void dispose() {
+    _baseUrlController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = widget.palette;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: palette.card,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          16,
+          16,
+          16,
+          MediaQuery.of(context).viewInsets.bottom + 20,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: palette.textMuted.withValues(alpha: 0.28),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'develop-mode',
+                style: GoogleFonts.poppins(
+                  color: palette.textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Choose the demo scenario here. After you turn it on, the ESP32 keeps publishing that scenario to IoT Core until you turn it off.',
+                style: GoogleFonts.inter(
+                  color: palette.textMuted,
+                  fontSize: 13,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _baseUrlController,
+                decoration: const InputDecoration(
+                  labelText: 'ESP32 preview server',
+                  hintText: 'http://192.168.1.50:8080 or 192.168.1.50',
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: palette.bg,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: palette.textMuted.withValues(alpha: 0.16),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Scenario',
+                      style: GoogleFonts.inter(
+                        color: palette.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'The mobile app only selects the preset. The ESP32 handles the repeated send loop.',
+                      style: GoogleFonts.inter(
+                        color: palette.textMuted,
+                        fontSize: 12,
+                        height: 1.45,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: EspDevelopModePreset.values
+                          .map(
+                            (preset) => ChoiceChip(
+                              label: Text(preset.label),
+                              selected: _selectedPreset == preset,
+                              onSelected: _submitting
+                                  ? null
+                                  : (_) {
+                                      setState(() {
+                                        _selectedPreset = preset;
+                                      });
+                                    },
+                            ),
+                          )
+                          .toList(growable: false),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: _loadingStatus ? null : _refreshStatus,
+                    icon: const Icon(LucideIcons.badgeInfo, size: 18),
+                    label:
+                        Text(_loadingStatus ? 'Checking...' : 'Check status'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: _submitting ? null : () => _setEnabled(true),
+                    icon: const Icon(LucideIcons.toggleRight, size: 18),
+                    label: const Text('Turn on'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: _submitting ? null : () => _setEnabled(false),
+                    icon: const Icon(LucideIcons.toggleLeft, size: 18),
+                    label: const Text('Turn off'),
+                  ),
+                  if (_status?.enabled == true)
+                    FilledButton.icon(
+                      onPressed: _submitting ? null : _applyPreset,
+                      icon: const Icon(LucideIcons.refreshCw, size: 18),
+                      label: const Text('Switch mode'),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              if (_status != null)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: (_status!.enabled
+                            ? AppColors.success
+                            : palette.textMuted)
+                        .withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: (_status!.enabled
+                              ? AppColors.success
+                              : palette.textMuted)
+                          .withValues(alpha: 0.24),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _status!.enabled
+                            ? 'Develop mode is on'
+                            : 'Develop mode is off',
+                        style: GoogleFonts.inter(
+                          color: palette.textPrimary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Current preset: ${_status!.preset.label}'
+                        '${_status!.previewBaseUrl != null && _status!.previewBaseUrl!.trim().isNotEmpty ? '\nPreview URL: ${_status!.previewBaseUrl}' : ''}',
+                        style: GoogleFonts.inter(
+                          color: palette.textMuted,
+                          fontSize: 12,
+                          height: 1.45,
+                        ),
+                      ),
+                      if (_status!.lastPeopleCount != null ||
+                          _status!.lastPublishIsoUtc != null) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          'Last publish: ${_status!.lastPeopleCount ?? '-'} people'
+                          '${_status!.lastDecibel != null ? ' · ${_status!.lastDecibel!.toStringAsFixed(1)} dB' : ''}'
+                          '${_status!.lastPublishIsoUtc != null ? ' · ${_status!.lastPublishIsoUtc}' : ''}',
+                          style: GoogleFonts.inter(
+                            color: palette.textMuted,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              if (_lastResult != null) ...[
+                const SizedBox(height: 14),
+                Text(
+                  _lastResult!,
+                  style: GoogleFonts.inter(
+                    color: _lastResultIsError
+                        ? AppColors.error
+                        : AppColors.success,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    height: 1.45,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _refreshStatus() async {
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() {
+      _loadingStatus = true;
+      _lastResult = null;
+    });
+    try {
+      final status = await _client.fetchStatus(_baseUrlController.text);
+      if (!mounted) return;
+      setState(() {
+        _status = status;
+        _selectedPreset = status.preset;
+        _loadingStatus = false;
+      });
+    } on Object catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _loadingStatus = false;
+        _lastResultIsError = true;
+        _lastResult = error.toString();
+      });
+      messenger.showSnackBar(SnackBar(content: Text(error.toString())));
+    }
+  }
+
+  Future<void> _setEnabled(bool enabled) async {
+    await _runBusyTask(() async {
+      final status = await _client.configure(
+        _baseUrlController.text,
+        enabled: enabled,
+        preset: _selectedPreset,
+      );
+      if (!mounted) return;
+      setState(() {
+        _status = status;
+        _selectedPreset = status.preset;
+        _lastResultIsError = false;
+        _lastResult = enabled
+            ? 'Develop mode enabled. ESP32 is now publishing the ${status.preset.label.toLowerCase()} scenario.'
+            : 'Develop mode disabled. Normal live data can run again.';
+      });
+    });
+  }
+
+  Future<void> _applyPreset() async {
+    await _runBusyTask(() async {
+      final status = await _client.configure(
+        _baseUrlController.text,
+        enabled: true,
+        preset: _selectedPreset,
+      );
+      if (!mounted) return;
+      setState(() {
+        _status = status;
+        _selectedPreset = status.preset;
+        _lastResultIsError = false;
+        _lastResult =
+            'Scenario switched. ESP32 is now publishing the ${status.preset.label.toLowerCase()} scenario.';
+      });
+    });
+  }
+
+  Future<void> _runBusyTask(Future<void> Function() action) async {
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() {
+      _submitting = true;
+      _lastResult = null;
+    });
+    try {
+      await action();
+    } on Object catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _lastResultIsError = true;
+        _lastResult = error.toString();
+      });
+      messenger.showSnackBar(SnackBar(content: Text(error.toString())));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _submitting = false;
+        });
+      }
+    }
   }
 }
 
