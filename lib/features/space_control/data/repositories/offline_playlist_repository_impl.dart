@@ -1,44 +1,59 @@
 import 'package:dartz/dartz.dart';
 
+import '../../../../core/error/error_mapper.dart';
 import '../../../../core/error/failures.dart';
 import '../../domain/entities/offline_playlist.dart';
 import '../../domain/repositories/offline_playlist_repository.dart';
-import '../datasources/offline_playlist_mock_datasource.dart';
+import '../datasources/offline_playlist_datasource.dart';
 
 class OfflinePlaylistRepositoryImpl implements OfflinePlaylistRepository {
-  final OfflinePlaylistMockDatasource mockDatasource;
+  final OfflinePlaylistDataSource dataSource;
 
-  OfflinePlaylistRepositoryImpl({required this.mockDatasource});
+  OfflinePlaylistRepositoryImpl({required this.dataSource});
 
   @override
   Future<Either<Failure, List<OfflinePlaylist>>> getAvailablePlaylists() async {
     try {
-      final playlists = await mockDatasource.getAvailablePlaylists();
+      final playlists = await dataSource.getAvailablePlaylists();
       return Right(playlists);
     } catch (e) {
-      return Left(ServerFailure(e.toString()));
+      return Left(
+        ErrorMapper.toFailure(
+          e,
+          fallbackMessage: 'Unable to load offline playlists right now.',
+        ),
+      );
     }
   }
 
   @override
   Stream<Either<Failure, double>> downloadPlaylist(String playlistId) async* {
     try {
-      await for (final progress
-          in mockDatasource.downloadPlaylist(playlistId)) {
+      await for (final progress in dataSource.downloadPlaylist(playlistId)) {
         yield Right(progress);
       }
     } catch (e) {
-      yield Left(ServerFailure(e.toString()));
+      yield Left(
+        ErrorMapper.toFailure(
+          e,
+          fallbackMessage: 'Unable to download this playlist right now.',
+        ),
+      );
     }
   }
 
   @override
   Future<Either<Failure, void>> deleteLocalPlaylist(String playlistId) async {
     try {
-      await mockDatasource.deletePlaylist(playlistId);
+      await dataSource.deletePlaylist(playlistId);
       return const Right(null);
     } catch (e) {
-      return Left(CacheFailure(e.toString()));
+      return Left(
+        ErrorMapper.toFailure(
+          e,
+          fallbackMessage: 'Unable to remove the downloaded playlist.',
+        ),
+      );
     }
   }
 
@@ -46,14 +61,19 @@ class OfflinePlaylistRepositoryImpl implements OfflinePlaylistRepository {
   Future<Either<Failure, List<OfflinePlaylist>>>
       getDownloadedPlaylists() async {
     try {
-      // Mock: filter downloaded playlists from local storage
-      final allPlaylists = await mockDatasource.getAvailablePlaylists();
+      // Filter downloaded playlists from local storage
+      final allPlaylists = await dataSource.getAvailablePlaylists();
       final downloaded = allPlaylists
           .where((p) => p.downloadStatus == DownloadStatus.downloaded)
           .toList();
       return Right(downloaded);
     } catch (e) {
-      return Left(CacheFailure(e.toString()));
+      return Left(
+        ErrorMapper.toFailure(
+          e,
+          fallbackMessage: 'Unable to load downloaded playlists right now.',
+        ),
+      );
     }
   }
 }

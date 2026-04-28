@@ -6,7 +6,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/player/player_bloc.dart';
-import '../../../../core/player/player_state.dart' as ps;
+import '../../../../core/presentation/shell_layout_metrics.dart';
 import '../../domain/entities/context_rule_entity.dart';
 
 class ContextRulesPage extends StatefulWidget {
@@ -28,32 +28,32 @@ class _ContextRulesPageState extends State<ContextRulesPage> {
   final List<ContextRuleEntity> _rules = [
     const ContextRuleEntity(
       id: 'rule-1',
-      name: 'Nhiệt cao → Chill',
+      name: 'High Temp → Chill',
       conditionType: ConditionType.temperature,
       operator_: ConditionOperator.greaterThan,
       conditionValue: 30,
-      actionLabel: 'Phát Chill Retail Playlist',
+      actionLabel: 'Play Chill Retail Playlist',
       targetPlaylistId: 'pl-chill',
       isEnabled: true,
       isTriggered: true, // Demo: sensor is currently above threshold
     ),
     const ContextRuleEntity(
       id: 'rule-2',
-      name: 'Đông khách → Energy',
+      name: 'Crowded → Energy',
       conditionType: ConditionType.crowd,
       operator_: ConditionOperator.greaterThan,
       conditionValue: 50,
-      actionLabel: 'Phát Energy Boost Playlist',
+      actionLabel: 'Play Energy Boost Playlist',
       targetPlaylistId: 'pl-energy',
       isEnabled: true,
     ),
     const ContextRuleEntity(
       id: 'rule-3',
-      name: 'Ồn → Focus',
+      name: 'Noisy → Focus',
       conditionType: ConditionType.noiseLevel,
       operator_: ConditionOperator.greaterThan,
       conditionValue: 65,
-      actionLabel: 'Phát Deep Focus Playlist',
+      actionLabel: 'Play Deep Focus Playlist',
       targetPlaylistId: 'pl-focus',
       isEnabled: false,
     ),
@@ -82,6 +82,14 @@ class _ContextRulesPageState extends State<ContextRulesPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final palette = _Palette.fromBrightness(Theme.of(context).brightness);
+    final hasMiniPlayer =
+        context.select((PlayerBloc bloc) => bloc.state.hasTrack);
+    final reservedBottom = ShellLayoutMetrics.reservedBottom(
+      context,
+      hasMiniPlayer: hasMiniPlayer,
+      extra: 20,
+    );
+    final listBottomPadding = reservedBottom + 40;
 
     return Scaffold(
       backgroundColor: palette.bg,
@@ -110,7 +118,7 @@ class _ContextRulesPageState extends State<ContextRulesPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Quản lý tự động hóa',
+              'Manage Automations',
               style: GoogleFonts.poppins(
                 color: palette.textPrimary,
                 fontSize: 18,
@@ -118,7 +126,7 @@ class _ContextRulesPageState extends State<ContextRulesPage> {
               ),
             ),
             Text(
-              '${_rules.length} luật đang cấu hình',
+              '${_rules.length} rules configured',
               style: GoogleFonts.inter(
                 color: palette.textMuted,
                 fontSize: 11,
@@ -129,28 +137,23 @@ class _ContextRulesPageState extends State<ContextRulesPage> {
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      floatingActionButton: BlocBuilder<PlayerBloc, ps.PlayerState>(
-        builder: (context, playerState) {
-          final bottomPad = playerState.hasTrack ? 144.0 : 80.0;
-          return Padding(
-            padding: EdgeInsets.only(bottom: bottomPad),
-            child: FloatingActionButton(
-                onPressed: () {
-                  debugPrint('Navigate to Create Rule Page');
-                  context.push(widget.createRulePath);
-                },
-              backgroundColor: palette.accent,
-              foregroundColor: palette.textOnAccent,
-              elevation: 6,
-              child: const Icon(Icons.add, size: 26),
-            ),
-          );
-        },
+      floatingActionButton: Padding(
+        padding: EdgeInsets.only(bottom: reservedBottom),
+        child: FloatingActionButton(
+          onPressed: () {
+            debugPrint('Navigate to Create Rule Page');
+            context.push(widget.createRulePath);
+          },
+          backgroundColor: palette.accent,
+          foregroundColor: palette.textOnAccent,
+          elevation: 6,
+          child: const Icon(Icons.add, size: 26),
+        ),
       ),
       body: _rules.isEmpty
           ? _EmptyState(palette: palette)
           : ReorderableListView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
+              padding: EdgeInsets.fromLTRB(16, 12, 16, listBottomPadding),
               itemCount: _rules.length,
               onReorder: _onReorder,
               proxyDecorator: (child, index, animation) => Material(
@@ -183,21 +186,21 @@ class _ContextRulesPageState extends State<ContextRulesPage> {
         backgroundColor: palette.card,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
-          'Xoá luật',
+          'Delete Rule',
           style: GoogleFonts.poppins(
             color: palette.textPrimary,
             fontWeight: FontWeight.w700,
           ),
         ),
         content: Text(
-          'Bạn có muốn xoá luật "${_rules[index].name}" không?',
+          'Do you want to delete rule "${_rules[index].name}"?',
           style: GoogleFonts.inter(color: palette.textMuted, fontSize: 14),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child:
-                Text('Huỷ', style: GoogleFonts.inter(color: palette.textMuted)),
+            child: Text('Cancel',
+                style: GoogleFonts.inter(color: palette.textMuted)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -210,7 +213,7 @@ class _ContextRulesPageState extends State<ContextRulesPage> {
               Navigator.pop(context);
               _deleteRule(index);
             },
-            child: Text('Xoá',
+            child: Text('Delete',
                 style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
           ),
         ],
@@ -247,24 +250,24 @@ class _RuleTile extends StatelessWidget {
     final isEnabled = rule.isEnabled;
     final isTriggered = rule.isTriggered;
     final accentColor =
-        isEnabled ? palette.accent : palette.textMuted.withOpacity(0.5);
+        isEnabled ? palette.accent : palette.textMuted.withValues(alpha: 0.5);
 
     // Border: green glow when triggered, accent-tinted when enabled, muted when off
     final borderColor = isTriggered
         ? Colors.green
         : isEnabled
-            ? palette.accent.withOpacity(0.35)
+            ? palette.accent.withValues(alpha: 0.35)
             : palette.border;
 
     final boxShadows = <BoxShadow>[
       if (isTriggered)
         BoxShadow(
-          color: Colors.green.withOpacity(0.28),
+          color: Colors.green.withValues(alpha: 0.28),
           blurRadius: 14,
           spreadRadius: 2,
         ),
       BoxShadow(
-        color: Colors.black.withOpacity(isDark ? 0.25 : 0.06),
+        color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.06),
         blurRadius: 12,
         offset: const Offset(0, 4),
       ),
@@ -300,7 +303,7 @@ class _RuleTile extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: Icon(
                       Icons.drag_handle_rounded,
-                      color: palette.textMuted.withOpacity(0.45),
+                      color: palette.textMuted.withValues(alpha: 0.45),
                       size: 22,
                     ),
                   ),
@@ -321,7 +324,7 @@ class _RuleTile extends StatelessWidget {
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      // "Đang thực thi" badge when triggered
+                      // "Executing" badge when triggered
                       if (isTriggered) ...[
                         const SizedBox(height: 2),
                         Row(
@@ -337,7 +340,7 @@ class _RuleTile extends StatelessWidget {
                             ),
                             const SizedBox(width: 5),
                             Text(
-                              'Đang thực thi',
+                              'Executing',
                               style: GoogleFonts.inter(
                                 color: Colors.green,
                                 fontSize: 10,
@@ -384,7 +387,7 @@ class _RuleTile extends StatelessWidget {
                     Switch(
                       value: isEnabled,
                       onChanged: (_) => onToggle(),
-                      activeColor: palette.accent,
+                      activeThumbColor: palette.accent,
                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     const SizedBox(height: 4),
@@ -399,7 +402,7 @@ class _RuleTile extends StatelessWidget {
                             child: Icon(
                               Icons.edit_outlined,
                               size: 17,
-                              color: palette.textMuted.withOpacity(0.6),
+                              color: palette.textMuted.withValues(alpha: 0.6),
                             ),
                           ),
                         ),
@@ -412,7 +415,8 @@ class _RuleTile extends StatelessWidget {
                             child: Icon(
                               LucideIcons.trash2,
                               size: 16,
-                              color: Colors.red.shade300.withOpacity(0.85),
+                              color:
+                                  Colors.red.shade300.withValues(alpha: 0.85),
                             ),
                           ),
                         ),
@@ -441,9 +445,9 @@ class _ConditionPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Text(
         label,
@@ -471,10 +475,10 @@ class _EmptyState extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(LucideIcons.fileQuestion,
-              size: 64, color: palette.textMuted.withOpacity(0.4)),
+              size: 64, color: palette.textMuted.withValues(alpha: 0.4)),
           const SizedBox(height: 16),
           Text(
-            'Chưa có luật nào',
+            'No rules yet',
             style: GoogleFonts.poppins(
               color: palette.textPrimary,
               fontSize: 18,
@@ -483,7 +487,7 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Bấm + để tạo luật ngữ cảnh đầu tiên',
+            'Tap + to create your first context rule',
             style: GoogleFonts.inter(
               color: palette.textMuted,
               fontSize: 13,
@@ -520,7 +524,7 @@ class _Palette {
         isDark: true,
         bg: AppColors.backgroundDarkPrimary,
         card: AppColors.surfaceDark,
-        overlay: Colors.white.withOpacity(0.06),
+        overlay: Colors.white.withValues(alpha: 0.06),
         border: AppColors.borderDarkMedium,
         textPrimary: AppColors.textDarkPrimary,
         textMuted: AppColors.textDarkSecondary,
@@ -530,7 +534,7 @@ class _Palette {
         shadow: AppColors.shadowDark,
       );
     }
-    return _Palette(
+    return const _Palette(
       isDark: false,
       bg: AppColors.backgroundPrimary,
       card: AppColors.surface,

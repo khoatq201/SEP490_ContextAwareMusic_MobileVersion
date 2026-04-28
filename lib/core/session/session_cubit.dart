@@ -1,9 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../features/store_dashboard/domain/entities/store.dart';
 import '../../features/space_control/domain/entities/space.dart';
 import '../enums/app_mode.dart';
+import '../enums/entity_status_enum.dart';
+import '../enums/space_type_enum.dart';
 import '../enums/user_role.dart';
+import '../services/local_storage_service.dart';
 import 'session_state.dart';
 
 /// A global Cubit that manages the current user session.
@@ -16,12 +21,21 @@ import 'session_state.dart';
 /// Usage in any widget:
 /// ```dart
 /// final session = context.read<SessionCubit>().state;
-/// if (session.canEditDevices) { … }
+/// if (session.canEditDevices) { ... }
 /// ```
 class SessionCubit extends Cubit<SessionState> {
-  SessionCubit() : super(const SessionState.initial());
+  static const String _selectionSnapshotKey = 'session_selection_snapshot';
 
-  // ──────────────────────── Mutators ────────────────────────────────────────
+  final LocalStorageService _localStorage;
+
+  SessionCubit({required LocalStorageService localStorage})
+      : _localStorage = localStorage,
+        super(SessionState.initial(
+          managerLocalPlaybackEnabled:
+              localStorage.getManagerLocalPlaybackEnabled(),
+        ));
+
+  // ------------------------ Mutators ------------------------
 
   /// Replace the active app mode.
   void changeAppMode(AppMode mode) {
@@ -37,15 +51,29 @@ class SessionCubit extends Cubit<SessionState> {
   }
 
   /// Maps string roles from JWT/Auth to internal enum.
+  /// Supports both PascalCase from backend (e.g. "StoreManager") and
+  /// legacy snake_case (e.g. "store_manager").
   void setRoleFromString(String roleStr) {
-    switch (roleStr.toLowerCase()) {
-      case 'store_manager':
+    final normalizedRole = roleStr
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp(r'^role[_\s-]*'), '')
+        .replaceAll(RegExp(r'[\s_-]+'), '');
+
+    switch (normalizedRole) {
+      case 'playbackdevice':
+        changeRole(UserRole.playbackDevice);
+        return;
+      case 'storemanager':
         changeRole(UserRole.storeManager);
-        break;
-      case 'brand_manager':
+        return;
+      case 'brandmanager':
       case 'admin':
-        changeRole(UserRole.brandManager);
-        break;
+      case 'systemadmin':
+        changeRole(
+          UserRole.brandManager,
+        ); // SystemAdmin maps to brandManager in app
+        return;
       default:
         changeRole(UserRole.storeManager);
     }
@@ -57,11 +85,13 @@ class SessionCubit extends Cubit<SessionState> {
   /// previous store. Downstream code should pick a new space after this call.
   void changeStore(Store store) {
     emit(state.copyWith(currentStore: store, clearSpace: true));
+    _persistSelectionSnapshot();
   }
 
   /// Set the active space inside the current store.
   void changeSpace(Space space) {
     emit(state.copyWith(currentSpace: space));
+    _persistSelectionSnapshot();
   }
 
   /// Sets up the session for Playback Device mode in one go.
@@ -77,19 +107,165 @@ class SessionCubit extends Cubit<SessionState> {
       currentSpace: space,
       pairedDeviceId: deviceId,
     ));
+    _persistSelectionSnapshot();
   }
 
   /// Clear the space selection (e.g. when navigating away from space detail).
   void clearSpace() {
     emit(state.copyWith(clearSpace: true));
+    _persistSelectionSnapshot();
   }
 
-  /// Full reset — used on logout or unpairing.
+  Future<void> setManagerLocalPlaybackEnabled(bool enabled) async {
+    if (state.managerLocalPlaybackEnabled == enabled) return;
+    emit(state.copyWith(managerLocalPlaybackEnabled: enabled));
+    try {
+      await _localStorage.saveManagerLocalPlaybackEnabled(enabled);
+    } catch (_) {
+      // Best effort only; keep in-memory preference for this session.
+    }
+  }
+
+  /// Full reset - used on logout or unpairing.
   void reset() {
-    emit(const SessionState.initial());
+    emit(SessionState.initial(
+      managerLocalPlaybackEnabled:
+          _localStorage.getManagerLocalPlaybackEnabled(),
+    ));
+    unawaited(clearSelectionSnapshot());
   }
 
-  // ──────────────────── Convenience Shortcuts ──────────────────────────────
+  // ------------------------ Persistence ------------------------
+
+  /// Restore selected store/space from local storage.
+  ///
+  /// If data is missing or malformed, restore is ignored and snapshot is cleared.
+  Future<void> restoreSelectionFromStorage() async {
+    try {
+      final raw = _localStorage.getSetting(_selectionSnapshotKey);
+      if (raw is! Map) return;
+
+      final snapshot = Map<String, dynamic>.from(raw);
+      final restoredStore = _storeFromSnapshot(snapshot['store']);
+      if (restoredStore == null) {
+        await clearSelectionSnapshot();
+        return;
+      }
+
+      final restoredSpace = _spaceFromSnapshot(
+        snapshot['space'],
+        expectedStoreId: restoredStore.id,
+      );
+
+      emit(state.copyWith(
+        currentStore: restoredStore,
+        currentSpace: restoredSpace,
+        clearSpace: restoredSpace == null,
+      ));
+    } catch (_) {
+      await clearSelectionSnapshot();
+    }
+  }
+
+  Future<void> clearSelectionSnapshot() async {
+    try {
+      await _localStorage.removeSetting(_selectionSnapshotKey);
+    } catch (_) {
+      // Best effort only.
+    }
+  }
+
+  Future<void> _saveSelectionSnapshot() async {
+    final selectedStore = state.currentStore;
+    if (selectedStore == null) {
+      await clearSelectionSnapshot();
+      return;
+    }
+
+    final selectedSpace = state.currentSpace;
+    final snapshot = <String, dynamic>{
+      'store': <String, dynamic>{
+        'id': selectedStore.id,
+        'name': selectedStore.name,
+        'brandId': selectedStore.brandId,
+        'status': selectedStore.status.value,
+      },
+      if (selectedSpace != null)
+        'space': <String, dynamic>{
+          'id': selectedSpace.id,
+          'name': selectedSpace.name,
+          'storeId': selectedSpace.storeId,
+          'type': selectedSpace.type.value,
+          'status': selectedSpace.status.value,
+          'currentMood': selectedSpace.currentMood,
+        },
+    };
+
+    try {
+      await _localStorage.saveSetting(_selectionSnapshotKey, snapshot);
+    } catch (_) {
+      // Best effort only.
+    }
+  }
+
+  Store? _storeFromSnapshot(dynamic rawStore) {
+    if (rawStore is! Map) return null;
+    final map = Map<String, dynamic>.from(rawStore);
+
+    final id = map['id']?.toString();
+    final name = map['name']?.toString();
+    if (id == null || id.isEmpty || name == null || name.isEmpty) {
+      return null;
+    }
+
+    return Store(
+      id: id,
+      name: name,
+      brandId: map['brandId']?.toString() ?? '',
+      status: EntityStatusEnum.fromJson(map['status'] ?? 1),
+    );
+  }
+
+  Space? _spaceFromSnapshot(
+    dynamic rawSpace, {
+    required String expectedStoreId,
+  }) {
+    if (rawSpace is! Map) return null;
+    final map = Map<String, dynamic>.from(rawSpace);
+
+    final id = map['id']?.toString();
+    final name = map['name']?.toString();
+    final storeId = map['storeId']?.toString();
+    if (id == null ||
+        id.isEmpty ||
+        name == null ||
+        name.isEmpty ||
+        storeId == null ||
+        storeId != expectedStoreId) {
+      return null;
+    }
+
+    return Space(
+      id: id,
+      name: name,
+      storeId: storeId,
+      type: SpaceTypeEnum.fromValue(_parseInt(map['type'])),
+      status: EntityStatusEnum.fromJson(map['status'] ?? 1),
+      currentMood: map['currentMood']?.toString(),
+    );
+  }
+
+  int? _parseInt(dynamic value) {
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
+
+  void _persistSelectionSnapshot() {
+    unawaited(_saveSelectionSnapshot());
+  }
+
+  // -------------------- Convenience Shortcuts --------------------
 
   /// Quick access to the app mode.
   AppMode get appMode => state.appMode;

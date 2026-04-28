@@ -1,7 +1,9 @@
 import 'package:dartz/dartz.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/error/failures.dart';
+import '../../../../core/models/pagination_result.dart';
 import '../../../../core/network/network_info.dart';
+import '../../../music_policy/data/models/fuzzy_override_profile_request.dart';
 import '../../domain/entities/location_space.dart';
 import '../../domain/repositories/location_repository.dart';
 import '../datasources/location_remote_datasource.dart';
@@ -16,7 +18,8 @@ class LocationRepositoryImpl implements LocationRepository {
   });
 
   @override
-  Future<Either<Failure, LocationSpace>> getPairedSpace(String spaceId, String storeId) async {
+  Future<Either<Failure, LocationSpace>> getPairedSpace(
+      String spaceId, String storeId) async {
     if (await networkInfo.isConnected) {
       try {
         final result = await remoteDataSource.getSpace(spaceId, storeId);
@@ -31,10 +34,70 @@ class LocationRepositoryImpl implements LocationRepository {
   }
 
   @override
-  Future<Either<Failure, List<LocationSpace>>> getSpacesForStore(String storeId) async {
+  Future<Either<Failure, PaginationResult<LocationSpace>>> getSpacesForStore(
+      String storeId,
+      {int page = 1,
+      int pageSize = 10}) async {
     if (await networkInfo.isConnected) {
       try {
-        final result = await remoteDataSource.getSpacesForStore(storeId);
+        final result = await remoteDataSource.getSpacesForStore(storeId,
+            page: page, pageSize: pageSize);
+        // Cast the paginated model list to entity list without mapping,
+        // since LocationSpaceModel extends LocationSpace and the type is covariant.
+        return Right(PaginationResult<LocationSpace>(
+          currentPage: result.currentPage,
+          pageSize: result.pageSize,
+          totalItems: result.totalItems,
+          totalPages: result.totalPages,
+          hasPrevious: result.hasPrevious,
+          hasNext: result.hasNext,
+          items: result.items, // covariant casting
+        ));
+      } on ServerException catch (e) {
+        return Left(ServerFailure(e.message));
+      } catch (e) {
+        return Left(ServerFailure('Unexpected error: $e'));
+      }
+    }
+    return const Left(NetworkFailure('No internet connection'));
+  }
+
+  @override
+  Future<Either<Failure, Map<String, PaginationResult<LocationSpace>>>>
+      getSpacesForBrand(List<String> storeIds,
+          {int page = 1, int pageSize = 10}) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final result = await remoteDataSource.getSpacesForBrand(storeIds,
+            page: page, pageSize: pageSize);
+        final resultMap = result.map((key, paginationModel) => MapEntry(
+            key,
+            PaginationResult<LocationSpace>(
+              currentPage: paginationModel.currentPage,
+              pageSize: paginationModel.pageSize,
+              totalItems: paginationModel.totalItems,
+              totalPages: paginationModel.totalPages,
+              hasPrevious: paginationModel.hasPrevious,
+              hasNext: paginationModel.hasNext,
+              items: paginationModel.items,
+            )));
+        return Right(resultMap);
+      } on ServerException catch (e) {
+        return Left(ServerFailure(e.message));
+      } catch (e) {
+        return Left(ServerFailure('Unexpected error: $e'));
+      }
+    }
+    return const Left(NetworkFailure('No internet connection'));
+  }
+
+  @override
+  Future<Either<Failure, SpaceMutationResult>> createSpace(
+    SpaceMutationRequest request,
+  ) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final result = await remoteDataSource.createSpace(request);
         return Right(result);
       } on ServerException catch (e) {
         return Left(ServerFailure(e.message));
@@ -46,10 +109,68 @@ class LocationRepositoryImpl implements LocationRepository {
   }
 
   @override
-  Future<Either<Failure, Map<String, List<LocationSpace>>>> getSpacesForBrand(List<String> storeIds) async {
-     if (await networkInfo.isConnected) {
+  Future<Either<Failure, SpaceMutationResult>> updateSpace(
+    String spaceId,
+    SpaceMutationRequest request,
+  ) async {
+    if (await networkInfo.isConnected) {
       try {
-        final result = await remoteDataSource.getSpacesForBrand(storeIds);
+        final result = await remoteDataSource.updateSpace(spaceId, request);
+        return Right(result);
+      } on ServerException catch (e) {
+        return Left(ServerFailure(e.message));
+      } catch (e) {
+        return Left(ServerFailure('Unexpected error: $e'));
+      }
+    }
+    return const Left(NetworkFailure('No internet connection'));
+  }
+
+  @override
+  Future<Either<Failure, SpaceMutationResult>> deleteSpace(
+    String spaceId,
+  ) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final result = await remoteDataSource.deleteSpace(spaceId);
+        return Right(result);
+      } on ServerException catch (e) {
+        return Left(ServerFailure(e.message));
+      } catch (e) {
+        return Left(ServerFailure('Unexpected error: $e'));
+      }
+    }
+    return const Left(NetworkFailure('No internet connection'));
+  }
+
+  @override
+  Future<Either<Failure, SpaceMutationResult>> toggleSpaceStatus(
+    String spaceId,
+  ) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final result = await remoteDataSource.toggleSpaceStatus(spaceId);
+        return Right(result);
+      } on ServerException catch (e) {
+        return Left(ServerFailure(e.message));
+      } catch (e) {
+        return Left(ServerFailure('Unexpected error: $e'));
+      }
+    }
+    return const Left(NetworkFailure('No internet connection'));
+  }
+
+  @override
+  Future<Either<Failure, SpaceMutationResult>> createFuzzyOverrideProfile(
+    String spaceId,
+    FuzzyOverrideProfileRequest request,
+  ) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final result = await remoteDataSource.createFuzzyOverrideProfile(
+          spaceId,
+          request,
+        );
         return Right(result);
       } on ServerException catch (e) {
         return Left(ServerFailure(e.message));

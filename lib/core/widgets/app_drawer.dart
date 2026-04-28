@@ -94,7 +94,7 @@ class AppDrawer extends StatelessWidget {
         AppDimensions.spacingLg,
         AppDimensions.spacingLg,
       ),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         gradient: LinearGradient(
           colors: [
             AppColors.primaryOrange,
@@ -149,7 +149,7 @@ class AppDrawer extends StatelessWidget {
           Text(
             user?.email ?? '',
             style: AppTypography.bodySmall.copyWith(
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white.withValues(alpha: 0.9),
             ),
           ),
           const SizedBox(height: AppDimensions.spacingXs),
@@ -161,7 +161,7 @@ class AppDrawer extends StatelessWidget {
               vertical: AppDimensions.spacingXs,
             ),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
             ),
             child: Text(
@@ -254,7 +254,7 @@ class AppDrawer extends StatelessWidget {
       ),
       selected: isSelected,
       selectedTileColor: isDark
-          ? AppColors.primaryOrange.withOpacity(0.15)
+          ? AppColors.primaryOrange.withValues(alpha: 0.15)
           : AppColors.primaryOrangePale,
       onTap: () {
         Navigator.pop(context); // Close drawer

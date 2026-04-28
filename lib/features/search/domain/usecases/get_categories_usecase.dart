@@ -1,9 +1,14 @@
+import 'package:dartz/dartz.dart';
+
+import '../../../../core/error/failures.dart';
 import '../entities/search_category.dart';
 import '../repositories/search_repository.dart';
 
 class GetCategoriesUseCase {
-  final SearchRepository repository;
   GetCategoriesUseCase(this.repository);
 
-  Future<List<SearchCategory>> call() => repository.getCategories();
+  final SearchRepository repository;
+
+  Future<Either<Failure, List<SearchCategory>>> call() =>
+      repository.getCategories();
 }

@@ -38,14 +38,14 @@ class _SpaceDevicePageState extends State<SpaceDevicePage> {
 
   // ── Action handlers ─────────────────────────────────────────────────────
 
-  void _showUnpairDialog(BuildContext context, _Palette palette) {
+  void _showUnpairDialog(BuildContext context, SpaceDevicePalette palette) {
     showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: palette.card,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
-          'Xóa Hub khỏi không gian?',
+          'Remove Hub from space?',
           style: GoogleFonts.poppins(
             color: palette.textPrimary,
             fontWeight: FontWeight.w700,
@@ -53,7 +53,7 @@ class _SpaceDevicePageState extends State<SpaceDevicePage> {
           ),
         ),
         content: Text(
-          'Bạn có chắc chắn muốn xóa Hub này khỏi ${_space.name} không?\nCác tự động hóa sẽ ngừng hoạt động.',
+          'Are you sure you want to remove this Hub from ${_space.name}?\nAutomations will stop working.',
           style: GoogleFonts.inter(
             color: palette.textMuted,
             fontSize: 14,
@@ -64,7 +64,7 @@ class _SpaceDevicePageState extends State<SpaceDevicePage> {
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
             child: Text(
-              'Hủy',
+              'Cancel',
               style: GoogleFonts.inter(
                 color: palette.textMuted,
                 fontWeight: FontWeight.w600,
@@ -80,7 +80,7 @@ class _SpaceDevicePageState extends State<SpaceDevicePage> {
             ),
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(
-              'Xóa',
+              'Delete',
               style: GoogleFonts.inter(fontWeight: FontWeight.w700),
             ),
           ),
@@ -96,7 +96,7 @@ class _SpaceDevicePageState extends State<SpaceDevicePage> {
     });
   }
 
-  void _showWifiSheet(BuildContext context, _Palette palette) {
+  void _showWifiSheet(BuildContext context, SpaceDevicePalette palette) {
     showModalBottomSheet(
       context: context,
       useRootNavigator: true,
@@ -108,7 +108,8 @@ class _SpaceDevicePageState extends State<SpaceDevicePage> {
 
   @override
   Widget build(BuildContext context) {
-    final palette = _Palette.fromBrightness(Theme.of(context).brightness);
+    final palette =
+        SpaceDevicePalette.fromBrightness(Theme.of(context).brightness);
     final hub = _space.currentHub;
 
     return BlocListener<PlayerBloc, ps.PlayerState>(
@@ -140,7 +141,7 @@ class _SpaceDevicePageState extends State<SpaceDevicePage> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Thiết bị & Phần cứng',
+                    'Devices & Hardware',
                     style: GoogleFonts.poppins(
                       color: palette.textPrimary,
                       fontSize: 18,
@@ -148,7 +149,7 @@ class _SpaceDevicePageState extends State<SpaceDevicePage> {
                     ),
                   ),
                   Text(
-                    'Đang quản lý: $displayName',
+                    'Managing: $displayName',
                     style: GoogleFonts.inter(
                       color: palette.textMuted,
                       fontSize: 11,
@@ -181,7 +182,7 @@ class _SpaceDevicePageState extends State<SpaceDevicePage> {
 
 class _NoHubState extends StatelessWidget {
   const _NoHubState({required this.palette});
-  final _Palette palette;
+  final SpaceDevicePalette palette;
 
   @override
   Widget build(BuildContext context) {
@@ -194,11 +195,11 @@ class _NoHubState extends StatelessWidget {
             Icon(
               Icons.developer_board_outlined,
               size: 88,
-              color: palette.textMuted.withOpacity(0.3),
+              color: palette.textMuted.withValues(alpha: 0.3),
             ),
             const SizedBox(height: 20),
             Text(
-              'Chưa có thiết bị điều khiển',
+              'No control devices yet',
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
                 color: palette.textPrimary,
@@ -208,7 +209,7 @@ class _NoHubState extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Không gian này chưa được lắp đặt thiết bị điều khiển.',
+              'This space has no control devices installed.',
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
                 color: palette.textMuted,
@@ -218,7 +219,7 @@ class _NoHubState extends StatelessWidget {
             ),
             const SizedBox(height: 28),
             FilledButton.icon(
-              onPressed: () => debugPrint('Bắt đầu luồng kết nối Bluetooth'),
+              onPressed: () => debugPrint('Start Bluetooth connection flow'),
               style: FilledButton.styleFrom(
                 backgroundColor: palette.accent,
                 foregroundColor: palette.textOnAccent,
@@ -230,7 +231,7 @@ class _NoHubState extends StatelessWidget {
                     fontSize: 15, fontWeight: FontWeight.w700),
               ),
               icon: const Icon(Icons.bluetooth, size: 20),
-              label: const Text('Bắt đầu ghép nối Hub'),
+              label: const Text('Start Hub Pairing'),
             ),
           ],
         ),
@@ -255,7 +256,7 @@ class _HubPresentState extends StatelessWidget {
 
   final HubEntity hub;
   final double volume;
-  final _Palette palette;
+  final SpaceDevicePalette palette;
   final ValueChanged<double> onVolumeChanged;
   final VoidCallback onChangeWifi;
   final VoidCallback onUnpair;
@@ -299,7 +300,7 @@ class _HubOverviewCard extends StatelessWidget {
   const _HubOverviewCard({required this.hub, required this.palette});
 
   final HubEntity hub;
-  final _Palette palette;
+  final SpaceDevicePalette palette;
 
   @override
   Widget build(BuildContext context) {
@@ -318,7 +319,7 @@ class _HubOverviewCard extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: palette.accent.withOpacity(0.12),
+                  color: palette.accent.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(LucideIcons.cpu, size: 20, color: palette.accent),
@@ -326,7 +327,7 @@ class _HubOverviewCard extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Tổng quan Hub',
+                  'Hub Overview',
                   style: GoogleFonts.poppins(
                     color: palette.textPrimary,
                     fontSize: 14,
@@ -339,9 +340,9 @@ class _HubOverviewCard extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
+                  color: statusColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: statusColor.withOpacity(0.4)),
+                  border: Border.all(color: statusColor.withValues(alpha: 0.4)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -355,7 +356,7 @@ class _HubOverviewCard extends StatelessWidget {
                         boxShadow: hub.isOnline
                             ? [
                                 BoxShadow(
-                                    color: Colors.green.withOpacity(0.6),
+                                    color: Colors.green.withValues(alpha: 0.6),
                                     blurRadius: 5)
                               ]
                             : null,
@@ -395,7 +396,7 @@ class _HubOverviewCard extends StatelessWidget {
           // ── Wi-Fi signal ─────────────────────────────────────────────
           _InfoRow(
             icon: LucideIcons.wifi,
-            label: 'Cường độ Wi-Fi',
+            label: 'Wi-Fi Signal Strength',
             value: hub.wifiSignalStrength,
             palette: palette,
             valueColor: _wifiColor(hub.wifiSignalStrength),
@@ -407,9 +408,9 @@ class _HubOverviewCard extends StatelessWidget {
 
   Color _wifiColor(String strength) {
     switch (strength) {
-      case 'Mạnh':
+      case 'Strong':
         return Colors.green;
-      case 'Yếu':
+      case 'Weak':
         return Colors.orange;
       default:
         return Colors.orange.shade300;
@@ -425,7 +426,7 @@ class _SensorsCard extends StatelessWidget {
   const _SensorsCard({required this.sensors, required this.palette});
 
   final List<HubSensorEntity> sensors;
-  final _Palette palette;
+  final SpaceDevicePalette palette;
 
   @override
   Widget build(BuildContext context) {
@@ -439,7 +440,7 @@ class _SensorsCard extends StatelessWidget {
               Icon(LucideIcons.activity, size: 16, color: palette.accent),
               const SizedBox(width: 8),
               Text(
-                'Trạng thái Cảm biến',
+                'Sensor Status',
                 style: GoogleFonts.poppins(
                   color: palette.textPrimary,
                   fontSize: 14,
@@ -480,7 +481,7 @@ class _AudioCard extends StatelessWidget {
 
   final HubEntity hub;
   final double volume;
-  final _Palette palette;
+  final SpaceDevicePalette palette;
   final ValueChanged<double> onVolumeChanged;
 
   @override
@@ -495,7 +496,7 @@ class _AudioCard extends StatelessWidget {
               Icon(LucideIcons.volume, size: 16, color: palette.accent),
               const SizedBox(width: 8),
               Text(
-                'Âm thanh',
+                'Audio',
                 style: GoogleFonts.poppins(
                   color: palette.textPrimary,
                   fontSize: 14,
@@ -529,7 +530,7 @@ class _AudioCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Loa đang kết nối',
+                          'Connected Speaker',
                           style: GoogleFonts.inter(
                             color: palette.textMuted,
                             fontSize: 11,
@@ -565,7 +566,7 @@ class _AudioCard extends StatelessWidget {
                     activeTrackColor: palette.accent,
                     inactiveTrackColor: palette.border,
                     thumbColor: palette.accent,
-                    overlayColor: palette.accent.withOpacity(0.15),
+                    overlayColor: palette.accent.withValues(alpha: 0.15),
                     trackHeight: 4,
                   ),
                   child: Slider(
@@ -610,7 +611,7 @@ class _SettingsSection extends StatelessWidget {
     required this.onUnpair,
   });
 
-  final _Palette palette;
+  final SpaceDevicePalette palette;
   final VoidCallback onChangeWifi;
   final VoidCallback onUnpair;
 
@@ -620,7 +621,7 @@ class _SettingsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'Cài đặt thiết bị',
+          'Device Settings',
           style: GoogleFonts.poppins(
             color: palette.textMuted,
             fontSize: 12,
@@ -631,21 +632,21 @@ class _SettingsSection extends StatelessWidget {
         const SizedBox(height: 10),
         _SettingsButton(
           icon: Icons.wifi_outlined,
-          label: 'Đổi mạng Wi-Fi',
+          label: 'Change Wi-Fi Network',
           palette: palette,
           onTap: onChangeWifi,
         ),
         const SizedBox(height: 8),
         _SettingsButton(
           icon: Icons.restart_alt,
-          label: 'Khởi động lại Hub',
+          label: 'Restart Hub',
           palette: palette,
-          onTap: () => debugPrint('Khởi động lại Hub'),
+          onTap: () => debugPrint('Restart Hub'),
         ),
         const SizedBox(height: 8),
         _SettingsButton(
           icon: Icons.delete_outline,
-          label: 'Hủy ghép nối thiết bị',
+          label: 'Unpair Device',
           palette: palette,
           isDestructive: true,
           onTap: onUnpair,
@@ -666,15 +667,16 @@ class _SettingsButton extends StatelessWidget {
 
   final IconData icon;
   final String label;
-  final _Palette palette;
+  final SpaceDevicePalette palette;
   final VoidCallback onTap;
   final bool isDestructive;
 
   @override
   Widget build(BuildContext context) {
     final color = isDestructive ? Colors.red.shade400 : palette.textPrimary;
-    final borderColor =
-        isDestructive ? Colors.red.shade300.withOpacity(0.5) : palette.border;
+    final borderColor = isDestructive
+        ? Colors.red.shade300.withValues(alpha: 0.5)
+        : palette.border;
 
     return OutlinedButton.icon(
       onPressed: onTap,
@@ -699,7 +701,7 @@ class _SettingsButton extends StatelessWidget {
 class _SectionCard extends StatelessWidget {
   const _SectionCard({required this.palette, required this.child});
 
-  final _Palette palette;
+  final SpaceDevicePalette palette;
   final Widget child;
 
   @override
@@ -713,7 +715,7 @@ class _SectionCard extends StatelessWidget {
         border: Border.all(color: palette.border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(palette.isDark ? 0.22 : 0.06),
+            color: Colors.black.withValues(alpha: palette.isDark ? 0.22 : 0.06),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -741,7 +743,7 @@ class _InfoRow extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-  final _Palette palette;
+  final SpaceDevicePalette palette;
   final Color? valueColor;
   final TextStyle? valueStyle;
 
@@ -780,7 +782,7 @@ class _SensorChip extends StatelessWidget {
   const _SensorChip({required this.sensor, required this.palette});
 
   final HubSensorEntity sensor;
-  final _Palette palette;
+  final SpaceDevicePalette palette;
 
   IconData get _icon {
     switch (sensor.type) {
@@ -801,14 +803,14 @@ class _SensorChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final isOffline = sensor.currentValue == null;
     final chipColor =
-        isOffline ? palette.textMuted.withOpacity(0.4) : palette.accent;
+        isOffline ? palette.textMuted.withValues(alpha: 0.4) : palette.accent;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: chipColor.withOpacity(0.09),
+        color: chipColor.withValues(alpha: 0.09),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: chipColor.withOpacity(0.28)),
+        border: Border.all(color: chipColor.withValues(alpha: 0.28)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -850,7 +852,7 @@ class _SensorChip extends StatelessWidget {
 
 class WifiConfigBottomSheet extends StatefulWidget {
   const WifiConfigBottomSheet({super.key, required this.palette});
-  final _Palette palette;
+  final SpaceDevicePalette palette;
 
   @override
   State<WifiConfigBottomSheet> createState() => _WifiConfigBottomSheetState();
@@ -862,7 +864,7 @@ class _WifiConfigBottomSheetState extends State<WifiConfigBottomSheet> {
   bool _obscurePassword = true;
   bool _isLoading = false;
 
-  _Palette get _p => widget.palette;
+  SpaceDevicePalette get _p => widget.palette;
 
   @override
   void dispose() {
@@ -880,7 +882,7 @@ class _WifiConfigBottomSheetState extends State<WifiConfigBottomSheet> {
     Navigator.pop(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('Đổi Wi-Fi thành công'),
+        content: const Text('Wi-Fi changed successfully'),
         backgroundColor: Colors.green.shade600,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -920,7 +922,7 @@ class _WifiConfigBottomSheetState extends State<WifiConfigBottomSheet> {
               Icon(Icons.wifi_outlined, color: _p.accent, size: 22),
               const SizedBox(width: 10),
               Text(
-                'Đổi mạng Wi-Fi cho Hub',
+                'Change Wi-Fi Network for Hub',
                 style: GoogleFonts.poppins(
                   color: _p.textPrimary,
                   fontSize: 17,
@@ -931,13 +933,13 @@ class _WifiConfigBottomSheetState extends State<WifiConfigBottomSheet> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Cấu hình sẽ được gửi đến Hub qua kết nối Bluetooth.',
+            'Configuration will be sent to Hub via Bluetooth.',
             style: GoogleFonts.inter(color: _p.textMuted, fontSize: 12),
           ),
           const SizedBox(height: 20),
           // ── SSID field ───────────────────────────────────────────────
           Text(
-            'Tên Wi-Fi (SSID)',
+            'Wi-Fi Name (SSID)',
             style: GoogleFonts.inter(
               color: _p.textMuted,
               fontSize: 12,
@@ -974,7 +976,7 @@ class _WifiConfigBottomSheetState extends State<WifiConfigBottomSheet> {
           const SizedBox(height: 14),
           // ── Password field ───────────────────────────────────────────
           Text(
-            'Mật khẩu',
+            'Password',
             style: GoogleFonts.inter(
               color: _p.textMuted,
               fontSize: 12,
@@ -987,7 +989,7 @@ class _WifiConfigBottomSheetState extends State<WifiConfigBottomSheet> {
             obscureText: _obscurePassword,
             style: GoogleFonts.inter(color: _p.textPrimary, fontSize: 14),
             decoration: InputDecoration(
-              hintText: 'Nhập mật khẩu Wi-Fi',
+              hintText: 'Enter Wi-Fi password',
               hintStyle: GoogleFonts.inter(color: _p.textMuted, fontSize: 14),
               prefixIcon:
                   Icon(Icons.lock_outline, color: _p.textMuted, size: 20),
@@ -1030,7 +1032,7 @@ class _WifiConfigBottomSheetState extends State<WifiConfigBottomSheet> {
               style: FilledButton.styleFrom(
                 backgroundColor: _p.accent,
                 foregroundColor: _p.textOnAccent,
-                disabledBackgroundColor: _p.accent.withOpacity(0.5),
+                disabledBackgroundColor: _p.accent.withValues(alpha: 0.5),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14)),
               ),
@@ -1046,8 +1048,8 @@ class _WifiConfigBottomSheetState extends State<WifiConfigBottomSheet> {
                   : const Icon(Icons.bluetooth, size: 18),
               label: Text(
                 _isLoading
-                    ? 'Đang gửi cấu hình...'
-                    : 'Gửi cấu hình qua Bluetooth',
+                    ? 'Sending configuration...'
+                    : 'Send configuration via Bluetooth',
                 style: GoogleFonts.inter(
                   fontWeight: FontWeight.w700,
                   fontSize: 14,
@@ -1068,7 +1070,7 @@ class _WifiConfigBottomSheetState extends State<WifiConfigBottomSheet> {
 class BluetoothSpeakerSelectionSheet extends StatelessWidget {
   const BluetoothSpeakerSelectionSheet({super.key, required this.palette});
 
-  final _Palette palette;
+  final SpaceDevicePalette palette;
 
   static const _mockSpeakers = [
     'Marshall Stanmore III',
@@ -1103,7 +1105,7 @@ class BluetoothSpeakerSelectionSheet extends StatelessWidget {
           const SizedBox(height: 20),
           // ── Title ─────────────────────────────────────────────────────
           Text(
-            'Chọn loa Bluetooth',
+            'Select Bluetooth Speaker',
             style: GoogleFonts.poppins(
               color: palette.textPrimary,
               fontSize: 17,
@@ -1124,7 +1126,7 @@ class BluetoothSpeakerSelectionSheet extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               Text(
-                'Đang quét loa Bluetooth gần Hub...',
+                'Scanning for Bluetooth speakers near Hub...',
                 style: GoogleFonts.inter(
                   color: palette.textMuted,
                   fontSize: 13,
@@ -1149,7 +1151,7 @@ class BluetoothSpeakerSelectionSheet extends StatelessWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: palette.accent.withOpacity(0.12),
+                    color: palette.accent.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(Icons.speaker_rounded,
@@ -1176,7 +1178,8 @@ class BluetoothSpeakerSelectionSheet extends StatelessWidget {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: const Text('Đã gửi lệnh kết nối loa đến Hub'),
+                      content:
+                          const Text('Speaker connection command sent to Hub'),
                       backgroundColor: palette.accent,
                       behavior: SnackBarBehavior.floating,
                       shape: RoundedRectangleBorder(
@@ -1199,8 +1202,8 @@ class BluetoothSpeakerSelectionSheet extends StatelessWidget {
 // Palette
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _Palette {
-  const _Palette({
+class SpaceDevicePalette {
+  const SpaceDevicePalette({
     required this.isDark,
     required this.bg,
     required this.card,
@@ -1211,10 +1214,10 @@ class _Palette {
     required this.textOnAccent,
   });
 
-  factory _Palette.fromBrightness(Brightness brightness) {
+  factory SpaceDevicePalette.fromBrightness(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
     if (isDark) {
-      return _Palette(
+      return const SpaceDevicePalette(
         isDark: true,
         bg: AppColors.backgroundDarkPrimary,
         card: AppColors.surfaceDark,
@@ -1225,7 +1228,7 @@ class _Palette {
         textOnAccent: AppColors.textDarkPrimary,
       );
     }
-    return _Palette(
+    return const SpaceDevicePalette(
       isDark: false,
       bg: AppColors.backgroundPrimary,
       card: AppColors.surface,

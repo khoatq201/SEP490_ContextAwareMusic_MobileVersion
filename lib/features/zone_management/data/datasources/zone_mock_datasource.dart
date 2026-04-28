@@ -3,13 +3,16 @@ import '../models/music_profile_model.dart';
 import '../models/playlist_model.dart';
 import '../models/speaker_model.dart';
 import '../../../space_control/data/models/track_model.dart';
+import 'zone_remote_datasource.dart';
 
-/// Mock data source for zone management
-/// Provides realistic demo data for zones, music profiles, playlists, and speakers
-class ZoneMockDataSource {
+/// Mock data source for zone management.
+/// Provides realistic demo data for zones, music profiles, playlists, and speakers.
+/// Implements [ZoneRemoteDataSource] so it can be swapped with the real API impl.
+class ZoneMockDataSource implements ZoneRemoteDataSource {
   // ==================== ZONES ====================
 
   /// Get all zones for a specific space
+  @override
   Future<List<ZoneModel>> getZonesBySpace(String spaceId) async {
     await Future.delayed(const Duration(milliseconds: 400));
 
@@ -102,6 +105,7 @@ class ZoneMockDataSource {
   // ==================== MUSIC PROFILES ====================
 
   /// Get music profile by zone ID
+  @override
   Future<MusicProfileModel> getMusicProfileByZone(String zoneId) async {
     await Future.delayed(const Duration(milliseconds: 300));
 
@@ -124,23 +128,23 @@ class ZoneMockDataSource {
           maxVolume: 80,
           autoAdjust: true,
         ),
-        scheduleConfig: ScheduleConfigModel(
+        scheduleConfig: const ScheduleConfigModel(
           enabled: true,
           timeSlots: [
-            const TimeSlotModel(
+            TimeSlotModel(
               startTime: '07:00',
               endTime: '11:00',
               playlistId: 'playlist-009', // Calm morning
               moodOverride: 'calm',
               daysOfWeek: [1, 2, 3, 4, 5], // Weekdays
             ),
-            const TimeSlotModel(
+            TimeSlotModel(
               startTime: '11:00',
               endTime: '16:00',
               playlistId: 'playlist-001', // Welcoming afternoon
               daysOfWeek: [],
             ),
-            const TimeSlotModel(
+            TimeSlotModel(
               startTime: '16:00',
               endTime: '20:00',
               playlistId: 'playlist-002', // Happy evening
@@ -172,22 +176,22 @@ class ZoneMockDataSource {
           maxVolume: 85,
           autoAdjust: true,
         ),
-        scheduleConfig: ScheduleConfigModel(
+        scheduleConfig: const ScheduleConfigModel(
           enabled: true,
           timeSlots: [
-            const TimeSlotModel(
+            TimeSlotModel(
               startTime: '09:00',
               endTime: '12:00',
               playlistId: 'playlist-003', // Energetic morning
               daysOfWeek: [],
             ),
-            const TimeSlotModel(
+            TimeSlotModel(
               startTime: '12:00',
               endTime: '18:00',
               playlistId: 'playlist-004', // Happy peak hours
               daysOfWeek: [],
             ),
-            const TimeSlotModel(
+            TimeSlotModel(
               startTime: '18:00',
               endTime: '21:00',
               playlistId: 'playlist-005', // Focused evening
@@ -301,12 +305,14 @@ class ZoneMockDataSource {
   // ==================== PLAYLISTS ====================
 
   /// Get all available playlists
+  @override
   Future<List<PlaylistModel>> getAllPlaylists() async {
     await Future.delayed(const Duration(milliseconds: 500));
     return _mockPlaylists;
   }
 
   /// Get playlist by ID
+  @override
   Future<PlaylistModel> getPlaylistById(String playlistId) async {
     await Future.delayed(const Duration(milliseconds: 300));
     return _mockPlaylists.firstWhere(
@@ -321,8 +327,8 @@ class ZoneMockDataSource {
       id: 'playlist-001',
       name: 'Welcome Vibes',
       description: 'Uplifting and friendly music to greet customers',
-      tracks: [
-        const TrackModel(
+      tracks: const [
+        TrackModel(
           id: 'track-001',
           title: 'Good Day Sunshine',
           artist: 'Retail Mix Artists',
@@ -332,7 +338,7 @@ class ZoneMockDataSource {
           duration: 195,
           albumArt: 'https://example.com/art/001.jpg',
         ),
-        const TrackModel(
+        TrackModel(
           id: 'track-002',
           title: 'Morning Breeze',
           artist: 'Ambient Collective',
@@ -341,7 +347,7 @@ class ZoneMockDataSource {
           moodTags: ['welcoming', 'calm'],
           duration: 210,
         ),
-        const TrackModel(
+        TrackModel(
           id: 'track-003',
           title: 'Friendly Faces',
           artist: 'Store Sounds',
@@ -364,8 +370,8 @@ class ZoneMockDataSource {
       name: 'Happy Shopping',
       description:
           'Upbeat and joyful tracks for a positive shopping experience',
-      tracks: [
-        const TrackModel(
+      tracks: const [
+        TrackModel(
           id: 'track-004',
           title: 'Smile & Shop',
           artist: 'Happy Beats',
@@ -374,7 +380,7 @@ class ZoneMockDataSource {
           moodTags: ['happy', 'energetic'],
           duration: 200,
         ),
-        const TrackModel(
+        TrackModel(
           id: 'track-005',
           title: 'Joy Ride',
           artist: 'Positive Vibes',
@@ -396,8 +402,8 @@ class ZoneMockDataSource {
       id: 'playlist-003',
       name: 'Upbeat Retail Mix Vol.3',
       description: 'High-energy music to boost shopping momentum',
-      tracks: [
-        const TrackModel(
+      tracks: const [
+        TrackModel(
           id: 'track-006',
           title: 'Power Shopping',
           artist: 'Energy Mix',
@@ -406,7 +412,7 @@ class ZoneMockDataSource {
           moodTags: ['energetic'],
           duration: 180,
         ),
-        const TrackModel(
+        TrackModel(
           id: 'track-007',
           title: 'Momentum',
           artist: 'Dynamic Sounds',
@@ -415,7 +421,7 @@ class ZoneMockDataSource {
           moodTags: ['energetic', 'focused'],
           duration: 195,
         ),
-        const TrackModel(
+        TrackModel(
           id: 'track-008',
           title: 'Drive',
           artist: 'Tempo Masters',
@@ -436,8 +442,8 @@ class ZoneMockDataSource {
       id: 'playlist-004',
       name: 'Peak Hours Energy',
       description: 'Dynamic tracks for busy shopping periods',
-      tracks: [
-        const TrackModel(
+      tracks: const [
+        TrackModel(
           id: 'track-009',
           title: 'Rush Hour',
           artist: 'Beat Makers',
@@ -445,7 +451,7 @@ class ZoneMockDataSource {
           moodTags: ['energetic', 'happy'],
           duration: 205,
         ),
-        const TrackModel(
+        TrackModel(
           id: 'track-010',
           title: 'On The Move',
           artist: 'Active Mix',
@@ -466,8 +472,8 @@ class ZoneMockDataSource {
       id: 'playlist-005',
       name: 'Focused Shopper',
       description: 'Moderate energy to maintain shopping focus',
-      tracks: [
-        const TrackModel(
+      tracks: const [
+        TrackModel(
           id: 'track-011',
           title: 'Concentration',
           artist: 'Focus Sounds',
@@ -476,7 +482,7 @@ class ZoneMockDataSource {
           moodTags: ['focused', 'calm'],
           duration: 240,
         ),
-        const TrackModel(
+        TrackModel(
           id: 'track-012',
           title: 'Steady Pace',
           artist: 'Rhythm Group',
@@ -498,8 +504,8 @@ class ZoneMockDataSource {
       id: 'playlist-006',
       name: 'Smooth Checkout',
       description: 'Calming music to ease the checkout experience',
-      tracks: [
-        const TrackModel(
+      tracks: const [
+        TrackModel(
           id: 'track-013',
           title: 'Easy Flow',
           artist: 'Calm Collective',
@@ -508,7 +514,7 @@ class ZoneMockDataSource {
           moodTags: ['calm'],
           duration: 255,
         ),
-        const TrackModel(
+        TrackModel(
           id: 'track-014',
           title: 'Peaceful Moments',
           artist: 'Serenity Sounds',
@@ -530,8 +536,8 @@ class ZoneMockDataSource {
       id: 'playlist-007',
       name: 'Relaxed Atmosphere',
       description: 'Gentle music for a comfortable shopping environment',
-      tracks: [
-        const TrackModel(
+      tracks: const [
+        TrackModel(
           id: 'track-015',
           title: 'Soft Touch',
           artist: 'Lounge Artists',
@@ -539,7 +545,7 @@ class ZoneMockDataSource {
           moodTags: ['relaxed'],
           duration: 300,
         ),
-        const TrackModel(
+        TrackModel(
           id: 'track-016',
           title: 'Comfort Zone',
           artist: 'Easy Listening',
@@ -561,8 +567,8 @@ class ZoneMockDataSource {
       id: 'playlist-008',
       name: 'Quiet Luxury',
       description: 'Sophisticated calm music for premium experiences',
-      tracks: [
-        const TrackModel(
+      tracks: const [
+        TrackModel(
           id: 'track-017',
           title: 'Elegance',
           artist: 'Classical Modern',
@@ -571,7 +577,7 @@ class ZoneMockDataSource {
           moodTags: ['calm', 'focused'],
           duration: 320,
         ),
-        const TrackModel(
+        TrackModel(
           id: 'track-018',
           title: 'Refined Taste',
           artist: 'Jazz Ensemble',
@@ -593,8 +599,8 @@ class ZoneMockDataSource {
       id: 'playlist-009',
       name: 'Morning Fresh',
       description: 'Light and refreshing music for morning hours',
-      tracks: [
-        const TrackModel(
+      tracks: const [
+        TrackModel(
           id: 'track-019',
           title: 'New Day',
           artist: 'Dawn Sounds',
@@ -603,7 +609,7 @@ class ZoneMockDataSource {
           moodTags: ['calm', 'welcoming'],
           duration: 230,
         ),
-        const TrackModel(
+        TrackModel(
           id: 'track-020',
           title: 'Sunrise Melody',
           artist: 'Morning Vibes',
@@ -624,8 +630,8 @@ class ZoneMockDataSource {
       id: 'playlist-010',
       name: 'Premium Selection',
       description: 'Curated tracks for VIP and premium areas',
-      tracks: [
-        const TrackModel(
+      tracks: const [
+        TrackModel(
           id: 'track-021',
           title: 'Distinguished',
           artist: 'Premium Sounds',
@@ -633,7 +639,7 @@ class ZoneMockDataSource {
           moodTags: ['focused', 'calm'],
           duration: 280,
         ),
-        const TrackModel(
+        TrackModel(
           id: 'track-022',
           title: 'Prestige',
           artist: 'Elite Mix',
@@ -655,8 +661,8 @@ class ZoneMockDataSource {
       id: 'playlist-011',
       name: 'Consultation Ambience',
       description: 'Very subtle background music for conversations',
-      tracks: [
-        const TrackModel(
+      tracks: const [
+        TrackModel(
           id: 'track-023',
           title: 'Whisper',
           artist: 'Ambient Masters',
@@ -665,7 +671,7 @@ class ZoneMockDataSource {
           moodTags: ['calm'],
           duration: 360,
         ),
-        const TrackModel(
+        TrackModel(
           id: 'track-024',
           title: 'Subtle Notes',
           artist: 'Background Sounds',
@@ -686,6 +692,7 @@ class ZoneMockDataSource {
   // ==================== SPEAKERS ====================
 
   /// Get speakers by zone ID
+  @override
   Future<List<SpeakerModel>> getSpeakersByZone(String zoneId) async {
     await Future.delayed(const Duration(milliseconds: 250));
 
@@ -818,5 +825,95 @@ class ZoneMockDataSource {
     };
 
     return speakerMap[zoneId] ?? [];
+  }
+
+  // ==================== WRITE OPERATIONS (mock stubs) ====================
+
+  @override
+  Future<ZoneModel> createZone(ZoneModel zone) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    return zone;
+  }
+
+  @override
+  Future<ZoneModel> updateZone(ZoneModel zone) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    return zone;
+  }
+
+  @override
+  Future<void> deleteZone(String zoneId) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+  }
+
+  @override
+  Future<void> updateSpeakerVolume({
+    required String speakerId,
+    required int volume,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+  }
+
+  @override
+  Future<void> syncZonesMusic(List<String> zoneIds) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+  }
+
+  @override
+  Future<void> unsyncZones(List<String> zoneIds) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+  }
+
+  @override
+  Future<void> updateMusicProfile(MusicProfileModel profile) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+  }
+
+  @override
+  Future<void> assignPlaylistToZone({
+    required String zoneId,
+    required String playlistId,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+  }
+
+  @override
+  Future<void> removePlaylistFromZone({
+    required String zoneId,
+    required String playlistId,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+  }
+
+  @override
+  Future<void> updateMoodMapping({
+    required String zoneId,
+    required Map<String, String> moodToPlaylistMap,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+  }
+
+  @override
+  Future<void> updateVolumeSettings({
+    required String zoneId,
+    required Map<String, dynamic> volumeSettingsJson,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+  }
+
+  @override
+  Future<void> updateScheduleConfig({
+    required String zoneId,
+    required Map<String, dynamic>? scheduleConfigJson,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+  }
+
+  @override
+  Future<void> toggleAutoMoodDetection({
+    required String zoneId,
+    required bool enabled,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 300));
   }
 }

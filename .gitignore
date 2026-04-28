@@ -46,4 +46,14 @@ app.*.map.json
 
 # User specified ignores
 *.md
+!CAMS_QUEUE_FIRST_RECONNECT_ACCEPTANCE.md
 docs/
+docs copy 2/
+analyze*.txt
+src/
+
+# Environment files
+.env
+.env.release
+.env.staging
+!.env.example

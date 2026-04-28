@@ -8,12 +8,7 @@ abstract class StoreSelectionEvent extends Equatable {
 }
 
 class LoadUserStores extends StoreSelectionEvent {
-  final List<String> storeIds;
-
-  const LoadUserStores(this.storeIds);
-
-  @override
-  List<Object> get props => [storeIds];
+  const LoadUserStores();
 }
 
 class SelectStore extends StoreSelectionEvent {

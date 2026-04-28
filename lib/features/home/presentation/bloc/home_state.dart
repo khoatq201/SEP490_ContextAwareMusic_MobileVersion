@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../cams/domain/entities/space_playback_state.dart';
+import '../../../moods/domain/entities/mood.dart';
 import '../../domain/entities/category_entity.dart';
 import '../../domain/entities/sensor_entity.dart';
 
@@ -10,33 +12,130 @@ class HomeState extends Equatable {
   final List<SensorEntity> sensors;
   final List<CategoryEntity> categories;
   final String? errorMessage;
-  final bool autoModeEnabled;
+
+  /// Active space currently controlled on Home.
+  final String? activeSpaceId;
+
+  /// Whether CAMS currently has active manual override on the space.
+  final bool isManualOverride;
+
+  /// Local UI mode while user turned Manual on but has not selected mood yet.
+  final bool isManualSelectionOpen;
+
+  /// In-flight state for override/cancel requests.
+  final bool isApplyingOverride;
+
+  /// Mood list from GET /api/moods.
+  final List<Mood> moods;
+
+  /// Current mood name from CAMS space state (e.g. "Chill", "Energetic").
+  final String? currentMoodName;
+
+  /// Current playback label from CAMS space state (track-first).
+  final String? currentPlaybackName;
+
+  /// Whether the space is currently streaming.
+  final bool isStreaming;
+
+  /// True when override returned accepted/pending transcode.
+  final bool isPendingTranscode;
+
+  /// Inline message for mode changes (pending transcode, action failures, etc.).
+  final String? modeMessage;
+  final SpacePlaybackExplainability? explainability;
 
   const HomeState({
     this.status = HomeStatus.initial,
     this.sensors = const [],
     this.categories = const [],
     this.errorMessage,
-    this.autoModeEnabled = true,
+    this.activeSpaceId,
+    this.isManualOverride = false,
+    this.isManualSelectionOpen = false,
+    this.isApplyingOverride = false,
+    this.moods = const [],
+    this.currentMoodName,
+    this.currentPlaybackName,
+    this.isStreaming = false,
+    this.isPendingTranscode = false,
+    this.modeMessage,
+    this.explainability,
   });
+
+  bool get isManualMode => isManualOverride || isManualSelectionOpen;
+  bool get autoModeEnabled => !isManualMode;
+  bool get showMoodPicker => isManualSelectionOpen;
+
+  /// Legacy alias kept for backward-compatible UI bindings.
+  String? get currentPlaylistName => currentPlaybackName;
 
   HomeState copyWith({
     HomeStatus? status,
     List<SensorEntity>? sensors,
     List<CategoryEntity>? categories,
     String? errorMessage,
-    bool? autoModeEnabled,
+    String? activeSpaceId,
+    bool? isManualOverride,
+    bool? isManualSelectionOpen,
+    bool? isApplyingOverride,
+    List<Mood>? moods,
+    String? currentMoodName,
+    String? currentPlaybackName,
+    String? currentPlaylistName,
+    bool? isStreaming,
+    bool? isPendingTranscode,
+    String? modeMessage,
+    SpacePlaybackExplainability? explainability,
+    bool clearError = false,
+    bool clearActiveSpace = false,
+    bool clearMood = false,
+    bool clearPlaylist = false,
+    bool clearModeMessage = false,
+    bool clearExplainability = false,
   }) {
     return HomeState(
       status: status ?? this.status,
       sensors: sensors ?? this.sensors,
       categories: categories ?? this.categories,
-      errorMessage: errorMessage ?? this.errorMessage,
-      autoModeEnabled: autoModeEnabled ?? this.autoModeEnabled,
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      activeSpaceId:
+          clearActiveSpace ? null : (activeSpaceId ?? this.activeSpaceId),
+      isManualOverride: isManualOverride ?? this.isManualOverride,
+      isManualSelectionOpen:
+          isManualSelectionOpen ?? this.isManualSelectionOpen,
+      isApplyingOverride: isApplyingOverride ?? this.isApplyingOverride,
+      moods: moods ?? this.moods,
+      currentMoodName:
+          clearMood ? null : (currentMoodName ?? this.currentMoodName),
+      currentPlaybackName: clearPlaylist
+          ? null
+          : (currentPlaybackName ??
+              currentPlaylistName ??
+              this.currentPlaybackName),
+      isStreaming: isStreaming ?? this.isStreaming,
+      isPendingTranscode: isPendingTranscode ?? this.isPendingTranscode,
+      modeMessage: clearModeMessage ? null : (modeMessage ?? this.modeMessage),
+      explainability:
+          clearExplainability ? null : (explainability ?? this.explainability),
     );
   }
 
   @override
-  List<Object?> get props =>
-      [status, sensors, categories, errorMessage, autoModeEnabled];
+  List<Object?> get props => [
+        status,
+        sensors,
+        categories,
+        errorMessage,
+        activeSpaceId,
+        isManualOverride,
+        isManualSelectionOpen,
+        isApplyingOverride,
+        moods,
+        currentMoodName,
+        currentPlaybackName,
+        isStreaming,
+        isPendingTranscode,
+        modeMessage,
+        explainability,
+      ];
 }

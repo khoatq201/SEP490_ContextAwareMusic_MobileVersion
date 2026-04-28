@@ -1,4 +1,7 @@
 import 'package:equatable/equatable.dart';
+
+import '../../../../core/error/failures.dart';
+import '../../../../core/presentation/app_feedback.dart';
 import '../../domain/entities/user.dart';
 
 enum AuthStatus {
@@ -6,38 +9,45 @@ enum AuthStatus {
   loading,
   authenticated,
   unauthenticated,
-  paired, // New: for Playback Device mode
+  paired,
   error,
-  forgotPasswordSuccess
+  changePasswordSuccess,
 }
 
 class AuthState extends Equatable {
-  final AuthStatus status;
-  final User? user;
-  final String? errorMessage;
-  final String? successMessage;
-
   const AuthState({
     this.status = AuthStatus.initial,
     this.user,
-    this.errorMessage,
-    this.successMessage,
+    this.failure,
+    this.feedback,
   });
+
+  final AuthStatus status;
+  final User? user;
+  final Failure? failure;
+  final AppFeedback? feedback;
+
+  String? get errorMessage => failure?.message;
+  String? get successMessage =>
+      feedback?.type == AppFeedbackType.success ? feedback?.message : null;
 
   AuthState copyWith({
     AuthStatus? status,
     User? user,
-    String? errorMessage,
-    String? successMessage,
+    bool clearUser = false,
+    Failure? failure,
+    bool clearFailure = false,
+    AppFeedback? feedback,
+    bool clearFeedback = false,
   }) {
     return AuthState(
       status: status ?? this.status,
-      user: user ?? this.user,
-      errorMessage: errorMessage ?? this.errorMessage,
-      successMessage: successMessage ?? this.successMessage,
+      user: clearUser ? null : (user ?? this.user),
+      failure: clearFailure ? null : (failure ?? this.failure),
+      feedback: clearFeedback ? null : (feedback ?? this.feedback),
     );
   }
 
   @override
-  List<Object?> get props => [status, user, errorMessage, successMessage];
+  List<Object?> get props => [status, user, failure, feedback];
 }

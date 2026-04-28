@@ -45,10 +45,10 @@ class AppDimensions {
   static const double radiusFull = 9999; // Fully rounded
 
   // Component-specific radius
-  static const double radiusButton = radiusLg;
+  static const double radiusButton = radiusXl;
   static const double radiusCard = radiusXxl;
   static const double radiusDialog = radiusXl;
-  static const double radiusTextField = radiusMd;
+  static const double radiusTextField = radiusLg;
   static const double radiusChip = radiusFull;
 
   // ========================================

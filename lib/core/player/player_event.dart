@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../enums/playback_command_enum.dart';
 import '../../../features/space_control/domain/entities/track.dart';
 import 'space_info.dart';
 
@@ -8,22 +9,30 @@ abstract class PlayerEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-/// Fired by MusicControlBloc when the playing track changes.
+/// Fired when a non-CAMS playback flow updates the active track directly.
 class PlayerTrackChanged extends PlayerEvent {
   final Track? track;
   final bool isPlaying;
   final int currentPosition; // seconds
   final int duration; // seconds
+  final bool playLocally;
 
   const PlayerTrackChanged({
     required this.track,
     required this.isPlaying,
     required this.currentPosition,
     required this.duration,
+    this.playLocally = true,
   });
 
   @override
-  List<Object?> get props => [track, isPlaying, currentPosition, duration];
+  List<Object?> get props => [
+        track,
+        isPlaying,
+        currentPosition,
+        duration,
+        playLocally,
+      ];
 }
 
 /// Fired when the user taps Play/Pause on the MiniPlayer.
@@ -34,6 +43,77 @@ class PlayerPlayPauseToggled extends PlayerEvent {
 /// Fired when the user skips to the next track via MiniPlayer.
 class PlayerSkipRequested extends PlayerEvent {
   const PlayerSkipRequested();
+}
+
+/// Fired when the user taps the skip-back button.
+class PlayerSkipBackRequested extends PlayerEvent {
+  const PlayerSkipBackRequested();
+}
+
+/// Fired when starting playback from a playlist (sets the queue).
+class PlayerPlaylistStarted extends PlayerEvent {
+  final List<Track> tracks;
+  final int startIndex;
+  final String? playlistName;
+  final String? playlistId;
+  final bool playLocally;
+
+  const PlayerPlaylistStarted({
+    required this.tracks,
+    this.startIndex = 0,
+    this.playlistName,
+    this.playlistId,
+    this.playLocally = true,
+  });
+
+  @override
+  List<Object?> get props => [
+        tracks,
+        startIndex,
+        playlistName,
+        playlistId,
+        playLocally,
+      ];
+}
+
+/// Seeds PlayerBloc with playlist metadata without starting playback.
+class PlayerQueueSeeded extends PlayerEvent {
+  final List<Track> tracks;
+  final String? playlistName;
+  final String? playlistId;
+  final bool force;
+
+  const PlayerQueueSeeded({
+    required this.tracks,
+    this.playlistName,
+    this.playlistId,
+    this.force = false,
+  });
+
+  @override
+  List<Object?> get props => [tracks, playlistName, playlistId, force];
+}
+
+/// Focuses a queue item/track from a remote CAMS queue snapshot without
+/// requiring an active HLS stream yet.
+class PlayerQueueFocusApplied extends PlayerEvent {
+  final String? queueItemId;
+  final String? trackId;
+  final bool isPlaying;
+
+  const PlayerQueueFocusApplied({
+    this.queueItemId,
+    this.trackId,
+    this.isPlaying = false,
+  });
+
+  @override
+  List<Object?> get props => [queueItemId, trackId, isPlaying];
+}
+
+/// Internal: fired when the audio engine reports playback completed.
+class PlayerTrackCompleted extends PlayerEvent {
+  const PlayerTrackCompleted();
 }
 
 /// Fired when the active space context changes (store / space ids).
@@ -60,4 +140,131 @@ class PlayerContextUpdated extends PlayerEvent {
 /// Fired when leaving the space (no active space).
 class PlayerContextCleared extends PlayerEvent {
   const PlayerContextCleared();
+}
+
+/// Fired periodically by the audio engine to update playback position.
+class PlayerPositionUpdated extends PlayerEvent {
+  final double positionSeconds;
+  final bool isAbsolutePosition;
+  const PlayerPositionUpdated({
+    required this.positionSeconds,
+    this.isAbsolutePosition = false,
+  });
+
+  @override
+  List<Object?> get props => [positionSeconds, isAbsolutePosition];
+}
+
+/// Fired when the user seeks to a specific position via the progress bar.
+class PlayerSeekRequested extends PlayerEvent {
+  final int positionSeconds;
+  const PlayerSeekRequested({required this.positionSeconds});
+
+  @override
+  List<Object?> get props => [positionSeconds];
+}
+
+/// Internal: fired when the audio engine reports a new total duration.
+class PlayerDurationUpdated extends PlayerEvent {
+  final int durationSeconds;
+  const PlayerDurationUpdated({required this.durationSeconds});
+
+  @override
+  List<Object?> get props => [durationSeconds];
+}
+
+/// Fired when CAMS provides an HLS URL for streaming.
+/// The PlayerBloc should load this URL and seek to the offset.
+class PlayerHlsStarted extends PlayerEvent {
+  final String hlsUrl;
+  final String? playlistName;
+  final String? playlistId;
+  final String? queueItemId;
+  final String? trackId;
+  final String? trackName;
+  final double seekOffsetSeconds;
+  final DateTime? startedAtUtc;
+  final DateTime? expectedEndAtUtc;
+  final int serverClockOffsetMs;
+  final bool isPaused;
+  final bool playLocally;
+  final bool forceReload;
+
+  const PlayerHlsStarted({
+    required this.hlsUrl,
+    this.playlistName,
+    this.playlistId,
+    this.queueItemId,
+    this.trackId,
+    this.trackName,
+    this.seekOffsetSeconds = 0,
+    this.startedAtUtc,
+    this.expectedEndAtUtc,
+    this.serverClockOffsetMs = 0,
+    this.isPaused = false,
+    this.playLocally = true,
+    this.forceReload = false,
+  });
+
+  @override
+  List<Object?> get props => [
+        hlsUrl,
+        playlistName,
+        playlistId,
+        queueItemId,
+        trackId,
+        trackName,
+        seekOffsetSeconds,
+        startedAtUtc,
+        expectedEndAtUtc,
+        serverClockOffsetMs,
+        isPaused,
+        playLocally,
+        forceReload,
+      ];
+}
+
+/// Applies remote volume/mute settings from CAMS state.
+class PlayerAudioSettingsApplied extends PlayerEvent {
+  final int volumePercent;
+  final bool isMuted;
+
+  const PlayerAudioSettingsApplied({
+    required this.volumePercent,
+    required this.isMuted,
+  });
+
+  @override
+  List<Object?> get props => [volumePercent, isMuted];
+}
+
+/// Fired when CAMS stops playback.
+class PlayerHlsStopped extends PlayerEvent {
+  const PlayerHlsStopped();
+}
+
+/// Applies a playback command received from CAMS/SignalR.
+class PlayerRemoteCommandApplied extends PlayerEvent {
+  final PlaybackCommandEnum command;
+  final double? positionSeconds;
+  final String? targetQueueItemId;
+  final String? targetTrackId;
+  final bool playLocally;
+
+  const PlayerRemoteCommandApplied({
+    required this.command,
+    this.positionSeconds,
+    this.targetQueueItemId,
+    this.targetTrackId,
+    this.playLocally = true,
+  });
+
+  @override
+  List<Object?> get props => [
+        command,
+        positionSeconds,
+        targetQueueItemId,
+        targetTrackId,
+        playLocally,
+      ];
 }

@@ -6,12 +6,17 @@ class SpaceSummary extends Equatable {
   final String storeId;
   final String currentMood;
   final bool isOnline;
-  final int customerCount;
+  final int? customerCount;
+  final double? noiseLevel;
   final double temperature;
   final double humidity;
   final int lightLevel;
   final bool isMusicPlaying;
   final String? currentTrack;
+  final bool isManualOverride;
+  final bool isScheduling;
+  final int? manualOverrideRemainingSeconds;
+  final int? schedulingRemainingSeconds;
 
   /// Total number of zones in this space
   final int totalZones;
@@ -29,11 +34,16 @@ class SpaceSummary extends Equatable {
     required this.currentMood,
     required this.isOnline,
     required this.customerCount,
+    this.noiseLevel,
     required this.temperature,
     required this.humidity,
     required this.lightLevel,
     required this.isMusicPlaying,
     this.currentTrack,
+    this.isManualOverride = false,
+    this.isScheduling = false,
+    this.manualOverrideRemainingSeconds,
+    this.schedulingRemainingSeconds,
     this.totalZones = 1, // Default to 1 zone for backward compatibility
     this.activeZones = 1,
     this.hasMultiZoneMusic = false,
@@ -47,11 +57,16 @@ class SpaceSummary extends Equatable {
         currentMood,
         isOnline,
         customerCount,
+        noiseLevel,
         temperature,
         humidity,
         lightLevel,
         isMusicPlaying,
         currentTrack,
+        isManualOverride,
+        isScheduling,
+        manualOverrideRemainingSeconds,
+        schedulingRemainingSeconds,
         totalZones,
         activeZones,
         hasMultiZoneMusic,

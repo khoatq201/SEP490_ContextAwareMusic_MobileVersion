@@ -3,12 +3,12 @@ import '../constants/app_colors.dart';
 import '../widgets/cams_logo.dart';
 
 class SplashScreen extends StatefulWidget {
-  final VoidCallback onInitializationComplete;
+  final Future<void> Function() onInitializationComplete;
 
   const SplashScreen({
-    Key? key,
+    super.key,
     required this.onInitializationComplete,
-  }) : super(key: key);
+  });
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -37,9 +37,9 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller.forward();
 
-    // Navigate after animation
-    Future.delayed(const Duration(milliseconds: 2500), () {
-      widget.onInitializationComplete();
+    // Wait for animation + initialization to complete before transitioning
+    Future.delayed(const Duration(milliseconds: 2500), () async {
+      await widget.onInitializationComplete();
     });
   }
 

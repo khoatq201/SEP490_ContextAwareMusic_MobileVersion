@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
@@ -18,7 +17,7 @@ class CAMSCard extends StatelessWidget {
   final Gradient? borderGradient;
 
   const CAMSCard({
-    Key? key,
+    super.key,
     required this.child,
     this.padding,
     this.width,
@@ -30,7 +29,7 @@ class CAMSCard extends StatelessWidget {
     this.gradient,
     this.hasGradientBorder = false,
     this.borderGradient,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -71,8 +70,8 @@ class CAMSCard extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
-          splashColor: AppColors.primaryOrange.withOpacity(0.1),
-          highlightColor: AppColors.primaryOrange.withOpacity(0.05),
+          splashColor: AppColors.primaryOrange.withValues(alpha: 0.1),
+          highlightColor: AppColors.primaryOrange.withValues(alpha: 0.05),
           child: cardContent,
         ),
       );
@@ -87,8 +86,6 @@ class CAMSCard extends StatelessWidget {
         return _solidDecoration();
       case CAMSCardVariant.outlined:
         return _outlinedDecoration();
-      default:
-        return _solidDecoration();
     }
   }
 
@@ -105,7 +102,7 @@ class CAMSCard extends StatelessWidget {
       boxShadow: showShadow
           ? [
               BoxShadow(
-                color: Colors.black.withOpacity(0.08),
+                color: Colors.black.withValues(alpha: 0.08),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
                 spreadRadius: 0,
@@ -143,7 +140,7 @@ class CAMSSensorCard extends StatelessWidget {
   final VoidCallback? onTap;
 
   const CAMSSensorCard({
-    Key? key,
+    super.key,
     required this.label,
     required this.value,
     required this.unit,
@@ -151,7 +148,7 @@ class CAMSSensorCard extends StatelessWidget {
     this.iconColor,
     this.valueColor,
     this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -168,7 +165,8 @@ class CAMSSensorCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(AppDimensions.spacing8),
             decoration: BoxDecoration(
-              color: (iconColor ?? AppColors.primaryOrange).withOpacity(0.1),
+              color:
+                  (iconColor ?? AppColors.primaryOrange).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
             ),
             child: Icon(
@@ -235,14 +233,14 @@ class CAMSInfoCard extends StatelessWidget {
   final Widget? trailing;
 
   const CAMSInfoCard({
-    Key? key,
+    super.key,
     required this.title,
     required this.subtitle,
     required this.icon,
     this.iconColor,
     this.onTap,
     this.trailing,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -255,7 +253,8 @@ class CAMSInfoCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(AppDimensions.spacing12),
             decoration: BoxDecoration(
-              color: (iconColor ?? AppColors.primaryOrange).withOpacity(0.1),
+              color:
+                  (iconColor ?? AppColors.primaryOrange).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
             ),
             child: Icon(

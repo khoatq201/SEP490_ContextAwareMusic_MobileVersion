@@ -1,138 +1,190 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 
-/// CAMS Logo Widget - Recreates the logo design using Flutter widgets
-/// Theme-aware: Orange+Teal for light mode, Cyan+Lime for dark mode
+/// CAMS logo lockup inspired by the provided login mockup.
 class CAMSLogo extends StatelessWidget {
   final double size;
   final bool animated;
 
   const CAMSLogo({
-    Key? key,
+    super.key,
     this.size = 200,
     this.animated = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryColor =
-        isDark ? AppColors.primaryCyan : AppColors.primaryOrange;
-    final secondaryColor =
-        isDark ? AppColors.secondaryLime : AppColors.secondaryTeal;
+    final accent = isDark ? AppColors.primaryCyan : AppColors.primaryOrange;
+    final accentDark =
+        isDark ? AppColors.primaryCyanBright : AppColors.secondaryTealDark;
+    final accentLight =
+        isDark ? AppColors.primaryCyanMuted : AppColors.primaryOrangeLight;
 
-    return SizedBox(
-      width: size,
-      height: size,
+    return SizedBox.square(
+      dimension: size,
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Concentric circles (Orange for light, Cyan for dark)
-          ...List.generate(3, (index) {
-            final circleSize = size * (0.9 - (index * 0.15));
-            return Container(
-              width: circleSize,
-              height: circleSize,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: primaryColor.withOpacity(0.6 - (index * 0.1)),
-                  width: 2,
-                ),
-              ),
-            );
-          }),
-
-          // Central circle with music note (Teal for light, Lime for dark)
-          Container(
-            width: size * 0.35,
-            height: size * 0.35,
-            decoration: BoxDecoration(
-              color: secondaryColor,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.music_note,
-              color: isDark ? AppColors.backgroundDarkPrimary : Colors.white,
-              size: size * 0.2,
+          CustomPaint(
+            size: Size.square(size),
+            painter: _CAMSLogoPainter(
+              accent: accent,
+              accentDark: accentDark,
+              accentLight: accentLight,
             ),
           ),
-
-          // Three sensor nodes (positioned around the circles)
-          ..._buildSensorNodes(context),
-
-          // Connecting lines (optional)
-          if (animated) ..._buildConnectingLines(),
+          Transform.translate(
+            offset: Offset(size * 0.015, size * 0.02),
+            child: Icon(
+              Icons.music_note_rounded,
+              color: accentDark,
+              size: size * 0.34,
+            ),
+          ),
         ],
       ),
     );
   }
+}
 
-  List<Widget> _buildSensorNodes(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final secondaryColor =
-        isDark ? AppColors.secondaryLime : AppColors.secondaryTeal;
-    final secondaryLight =
-        isDark ? AppColors.secondaryLimeBright : AppColors.secondaryTealLight;
+class _CAMSLogoPainter extends CustomPainter {
+  final Color accent;
+  final Color accentDark;
+  final Color accentLight;
 
-    final nodeSize = size * 0.15;
-    final radius = size * 0.45;
+  _CAMSLogoPainter({
+    required this.accent,
+    required this.accentDark,
+    required this.accentLight,
+  });
 
-    return List.generate(3, (index) {
-      final x = radius *
-          (index == 0
-              ? 0.8
-              : index == 1
-                  ? -0.8
-                  : -0.3);
-      final y = radius *
-          (index == 0
-              ? -0.6
-              : index == 1
-                  ? -0.3
-                  : 0.9);
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final arcRadius = size.width * 0.29;
 
-      return Positioned(
-        left: (size / 2) + x - (nodeSize / 2),
-        top: (size / 2) + y - (nodeSize / 2),
-        child: Container(
-          width: nodeSize,
-          height: nodeSize,
-          decoration: BoxDecoration(
-            color:
-                index == 0 ? secondaryLight : secondaryColor.withOpacity(0.8),
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: secondaryColor,
-              width: 2,
-            ),
-          ),
-          child: Icon(
-            _getSensorIcon(index),
-            color: isDark ? AppColors.backgroundDarkPrimary : Colors.white,
-            size: nodeSize * 0.5,
-          ),
-        ),
+    final darkArcPaint = Paint()
+      ..color = accentDark
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = size.width * 0.082
+      ..strokeCap = StrokeCap.round;
+
+    final accentPaint = Paint()
+      ..color = accent
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = size.width * 0.048
+      ..strokeCap = StrokeCap.round;
+
+    final lightPaint = Paint()
+      ..color = accentLight
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = size.width * 0.036
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: arcRadius),
+      0.72,
+      4.92,
+      false,
+      darkArcPaint,
+    );
+
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: size.width * 0.37),
+      -1.16,
+      1.36,
+      false,
+      accentPaint,
+    );
+
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: size.width * 0.31),
+      0.84,
+      1.46,
+      false,
+      accentPaint,
+    );
+
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: size.width * 0.19),
+      -1.18,
+      1.02,
+      false,
+      lightPaint,
+    );
+
+    _drawWaveBars(
+      canvas: canvas,
+      center: center,
+      size: size,
+      isLeft: true,
+    );
+    _drawWaveBars(
+      canvas: canvas,
+      center: center,
+      size: size,
+      isLeft: false,
+    );
+  }
+
+  void _drawWaveBars({
+    required Canvas canvas,
+    required Offset center,
+    required Size size,
+    required bool isLeft,
+  }) {
+    final direction = isLeft ? -1.0 : 1.0;
+    final xBase = center.dx + direction * size.width * 0.39;
+
+    final barSpecs = [
+      (height: size.width * 0.13, offset: 0.0, width: size.width * 0.03),
+      (
+        height: size.width * 0.22,
+        offset: size.width * 0.085,
+        width: size.width * 0.042
+      ),
+      (
+        height: size.width * 0.13,
+        offset: size.width * 0.17,
+        width: size.width * 0.03
+      ),
+    ];
+
+    final colors = [accent, accentDark, accentLight];
+
+    for (var index = 0; index < barSpecs.length; index++) {
+      final spec = barSpecs[index];
+      final paint = Paint()
+        ..color = colors[index]
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round
+        ..strokeWidth = spec.width;
+
+      final x = xBase + (spec.offset * direction);
+      final top = center.dy - (spec.height / 2);
+      final bottom = center.dy + (spec.height / 2);
+      canvas.drawLine(
+        Offset(x, top),
+        Offset(x, bottom),
+        paint,
       );
-    });
-  }
-
-  IconData _getSensorIcon(int index) {
-    switch (index) {
-      case 0:
-        return Icons.thermostat_outlined;
-      case 1:
-        return Icons.people_outline;
-      case 2:
-        return Icons.graphic_eq;
-      default:
-        return Icons.sensors;
     }
+
+    final dotPaint = Paint()
+      ..color = accentLight
+      ..style = PaintingStyle.fill;
+
+    canvas.drawCircle(
+      Offset(
+        center.dx + direction * size.width * 0.64,
+        center.dy,
+      ),
+      size.width * 0.018,
+      dotPaint,
+    );
   }
 
-  List<Widget> _buildConnectingLines() {
-    // This would require CustomPaint for precise lines
-    // Simplified version - could be enhanced with CustomPainter
-    return [];
-  }
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

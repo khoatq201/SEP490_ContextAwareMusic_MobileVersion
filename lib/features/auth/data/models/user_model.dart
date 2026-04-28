@@ -6,23 +6,61 @@ class UserModel extends User {
     required super.username,
     required super.email,
     super.fullName,
+    super.firstName,
+    super.lastName,
+    super.phoneNumber,
     required super.role,
+    super.roles = const [],
     required super.storeIds,
     super.avatarUrl,
     super.lastLogin,
   });
 
+  /// The backend returns roles as integers:
+  ///   0 → SystemAdmin, 1 → BrandManager, 2 → StoreManager
+  /// If the backend returns a string, it is kept as-is.
+  static String _mapRole(dynamic raw) {
+    if (raw is int) {
+      switch (raw) {
+        case 0:
+          return 'SystemAdmin';
+        case 1:
+          return 'BrandManager';
+        case 2:
+          return 'StoreManager';
+        default:
+          return 'Unknown';
+      }
+    }
+    return raw.toString();
+  }
+
   factory UserModel.fromJson(Map<String, dynamic> json) {
+    final rolesList =
+        (json['roles'] as List<dynamic>?)?.map((e) => _mapRole(e)).toList() ??
+            [];
+    final directStoreId = json['storeId']?.toString();
+    final storeIds = <String>{
+      ...?(json['storeIds'] as List<dynamic>?)
+          ?.map((entry) => entry.toString())
+          .where((entry) => entry.trim().isNotEmpty),
+      if (directStoreId != null && directStoreId.trim().isNotEmpty) directStoreId,
+    }.toList(growable: false);
+
     return UserModel(
       id: json['id'] as String,
       username: json['username'] as String,
       email: json['email'] as String,
       fullName: json['fullName'] as String?,
-      role: json['role'] as String,
-      storeIds: (json['storeIds'] as List<dynamic>?)
-              ?.map((e) => e as String)
-              .toList() ??
-          [],
+      firstName: json['firstName'] as String?,
+      lastName: json['lastName'] as String?,
+      phoneNumber: json['phoneNumber'] as String?,
+      role: json['role'] is int
+          ? _mapRole(json['role'])
+          : (json['role'] as String? ??
+              (rolesList.isNotEmpty ? rolesList.first : '')),
+      roles: rolesList,
+      storeIds: storeIds,
       avatarUrl: json['avatarUrl'] as String?,
       lastLogin: json['lastLogin'] != null
           ? DateTime.parse(json['lastLogin'] as String)
@@ -36,8 +74,13 @@ class UserModel extends User {
       'username': username,
       'email': email,
       'fullName': fullName,
+      'firstName': firstName,
+      'lastName': lastName,
+      'phoneNumber': phoneNumber,
       'role': role,
+      'roles': roles,
       'storeIds': storeIds,
+      if (storeIds.isNotEmpty) 'storeId': storeIds.first,
       'avatarUrl': avatarUrl,
       'lastLogin': lastLogin?.toIso8601String(),
     };
@@ -49,7 +92,11 @@ class UserModel extends User {
       username: username,
       email: email,
       fullName: fullName,
+      firstName: firstName,
+      lastName: lastName,
+      phoneNumber: phoneNumber,
       role: role,
+      roles: roles,
       storeIds: storeIds,
       avatarUrl: avatarUrl,
       lastLogin: lastLogin,
@@ -62,7 +109,11 @@ class UserModel extends User {
       username: user.username,
       email: user.email,
       fullName: user.fullName,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      phoneNumber: user.phoneNumber,
       role: user.role,
+      roles: user.roles,
       storeIds: user.storeIds,
       avatarUrl: user.avatarUrl,
       lastLogin: user.lastLogin,

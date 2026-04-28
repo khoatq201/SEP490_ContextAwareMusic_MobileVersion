@@ -1,36 +1,48 @@
 import 'package:equatable/equatable.dart';
+
+import '../../../../core/error/failures.dart';
+import '../../../../core/presentation/app_feedback.dart';
 import '../../domain/entities/store.dart';
 import '../../domain/entities/space_summary.dart';
 
 enum StoreDashboardStatus { initial, loading, loaded, error }
 
 class StoreDashboardState extends Equatable {
-  final StoreDashboardStatus status;
-  final Store? store;
-  final List<SpaceSummary> spaces;
-  final String? errorMessage;
-
   const StoreDashboardState({
     this.status = StoreDashboardStatus.initial,
     this.store,
     this.spaces = const [],
-    this.errorMessage,
+    this.failure,
+    this.feedback,
   });
+
+  final StoreDashboardStatus status;
+  final Store? store;
+  final List<SpaceSummary> spaces;
+  final Failure? failure;
+  final AppFeedback? feedback;
+
+  String? get errorMessage => failure?.message;
 
   StoreDashboardState copyWith({
     StoreDashboardStatus? status,
     Store? store,
+    bool clearStore = false,
     List<SpaceSummary>? spaces,
-    String? errorMessage,
+    Failure? failure,
+    bool clearFailure = false,
+    AppFeedback? feedback,
+    bool clearFeedback = false,
   }) {
     return StoreDashboardState(
       status: status ?? this.status,
-      store: store ?? this.store,
+      store: clearStore ? null : (store ?? this.store),
       spaces: spaces ?? this.spaces,
-      errorMessage: errorMessage,
+      failure: clearFailure ? null : (failure ?? this.failure),
+      feedback: clearFeedback ? null : (feedback ?? this.feedback),
     );
   }
 
   @override
-  List<Object?> get props => [status, store, spaces, errorMessage];
+  List<Object?> get props => [status, store, spaces, failure, feedback];
 }

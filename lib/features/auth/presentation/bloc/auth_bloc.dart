@@ -1,53 +1,72 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../../../core/presentation/app_feedback.dart';
+import '../../../../core/session/session_cubit.dart';
+import '../../domain/usecases/change_password.dart';
 import '../../domain/usecases/get_current_user.dart';
 import '../../domain/usecases/login.dart';
 import '../../domain/usecases/logout.dart';
-import '../../domain/usecases/request_password_reset.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
-  final Login login;
-  final Logout logout;
-  final GetCurrentUser getCurrentUser;
-  final RequestPasswordReset requestPasswordReset;
-
   AuthBloc({
     required this.login,
     required this.logout,
     required this.getCurrentUser,
-    required this.requestPasswordReset,
+    required this.changePassword,
+    required this.sessionCubit,
   }) : super(const AuthState()) {
     on<LoginRequested>(_onLoginRequested);
     on<LogoutRequested>(_onLogoutRequested);
     on<CheckAuthStatus>(_onCheckAuthStatus);
     on<AuthUserLoaded>(_onAuthUserLoaded);
-    on<ForgotPasswordRequested>(_onForgotPasswordRequested);
+    on<ChangePasswordRequested>(_onChangePasswordRequested);
   }
+
+  final Login login;
+  final Logout logout;
+  final GetCurrentUser getCurrentUser;
+  final ChangePassword changePassword;
+  final SessionCubit sessionCubit;
 
   Future<void> _onLoginRequested(
     LoginRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(state.copyWith(status: AuthStatus.loading));
+    emit(state.copyWith(
+      status: AuthStatus.loading,
+      clearFailure: true,
+      clearFeedback: true,
+    ));
 
     final result = await login(
-      username: event.username,
+      email: event.email,
       password: event.password,
+      rememberMe: event.rememberMe,
     );
 
-    result.fold(
-      (failure) {
-        emit(state.copyWith(
-          status: AuthStatus.error,
-          errorMessage: failure.message,
-        ));
+    await result.fold<Future<void>>(
+      (failure) async {
+        emit(
+          state.copyWith(
+            status: AuthStatus.error,
+            failure: failure,
+            clearFeedback: true,
+          ),
+        );
       },
-      (user) {
-        emit(state.copyWith(
-          status: AuthStatus.authenticated,
-          user: user,
-        ));
+      (user) async {
+        sessionCubit.setRoleFromString(user.role);
+        await sessionCubit.restoreSelectionFromStorage();
+        emit(
+          state.copyWith(
+            status: AuthStatus.authenticated,
+            user: user,
+            clearFailure: true,
+            clearFeedback: true,
+          ),
+        );
       },
     );
   }
@@ -56,18 +75,24 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     LogoutRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(state.copyWith(status: AuthStatus.loading));
+    emit(state.copyWith(
+      status: AuthStatus.loading,
+      clearFailure: true,
+      clearFeedback: true,
+    ));
 
     final result = await logout();
 
     result.fold(
-      (failure) {
-        emit(state.copyWith(
+      (failure) => emit(
+        state.copyWith(
           status: AuthStatus.error,
-          errorMessage: failure.message,
-        ));
-      },
+          failure: failure,
+          clearFeedback: true,
+        ),
+      ),
       (_) {
+        sessionCubit.reset();
         emit(const AuthState(status: AuthStatus.unauthenticated));
       },
     );
@@ -77,19 +102,28 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     CheckAuthStatus event,
     Emitter<AuthState> emit,
   ) async {
-    emit(state.copyWith(status: AuthStatus.loading));
+    emit(state.copyWith(
+      status: AuthStatus.loading,
+      clearFailure: true,
+      clearFeedback: true,
+    ));
 
     final result = await getCurrentUser();
 
     result.fold(
-      (failure) {
+      (_) {
+        sessionCubit.reset();
         emit(const AuthState(status: AuthStatus.unauthenticated));
       },
       (user) {
-        emit(state.copyWith(
-          status: AuthStatus.authenticated,
-          user: user,
-        ));
+        emit(
+          state.copyWith(
+            status: AuthStatus.authenticated,
+            user: user,
+            clearFailure: true,
+            clearFeedback: true,
+          ),
+        );
       },
     );
   }
@@ -101,33 +135,50 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     final result = await getCurrentUser();
 
     result.fold(
-      (failure) => null,
+      (_) {},
       (user) {
-        emit(state.copyWith(user: user));
+        emit(
+          state.copyWith(
+            user: user,
+            clearFailure: true,
+          ),
+        );
       },
     );
   }
 
-  Future<void> _onForgotPasswordRequested(
-    ForgotPasswordRequested event,
+  Future<void> _onChangePasswordRequested(
+    ChangePasswordRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(state.copyWith(status: AuthStatus.loading));
+    emit(state.copyWith(
+      status: AuthStatus.loading,
+      clearFailure: true,
+      clearFeedback: true,
+    ));
 
-    final result = await requestPasswordReset(event.email);
+    final result = await changePassword(
+      currentPassword: event.currentPassword,
+      newPassword: event.newPassword,
+      confirmPassword: event.confirmPassword,
+    );
 
     result.fold(
-      (failure) {
-        emit(state.copyWith(
+      (failure) => emit(
+        state.copyWith(
           status: AuthStatus.error,
-          errorMessage: failure.message,
-        ));
-      },
-      (message) {
-        emit(state.copyWith(
-          status: AuthStatus.forgotPasswordSuccess,
-          successMessage: message,
-        ));
+          failure: failure,
+          clearFeedback: true,
+        ),
+      ),
+      (_) {
+        emit(
+          state.copyWith(
+            status: AuthStatus.changePasswordSuccess,
+            feedback: AppFeedback.success('Password changed successfully'),
+            clearFailure: true,
+          ),
+        );
       },
     );
   }

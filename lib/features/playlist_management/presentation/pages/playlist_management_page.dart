@@ -66,7 +66,7 @@ class PlaylistManagementPage extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: AppDimensions.spacingMd),
-                    LinearProgressIndicator(
+                    const LinearProgressIndicator(
                       value: 0.0,
                       backgroundColor: AppColors.backgroundSecondary,
                       color: AppColors.primaryOrange,

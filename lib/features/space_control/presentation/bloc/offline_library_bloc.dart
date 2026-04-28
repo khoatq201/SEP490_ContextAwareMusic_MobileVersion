@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/error/error_mapper.dart';
 import '../../domain/entities/offline_playlist.dart';
 import '../../domain/repositories/offline_playlist_repository.dart';
 import 'offline_library_event.dart';
@@ -31,7 +32,7 @@ class OfflineLibraryBloc
     result.fold(
       (failure) => emit(state.copyWith(
         status: OfflineLibraryStatus.error,
-        errorMessage: failure.message,
+        errorMessage: ErrorMapper.displayMessageForFailure(failure),
       )),
       (playlists) => emit(state.copyWith(
         status: OfflineLibraryStatus.loaded,
@@ -129,7 +130,7 @@ class OfflineLibraryBloc
     result.fold(
       (failure) => emit(state.copyWith(
         status: OfflineLibraryStatus.error,
-        errorMessage: failure.message,
+        errorMessage: ErrorMapper.displayMessageForFailure(failure),
       )),
       (_) {
         final updatedPlaylists = state.playlists.map((p) {

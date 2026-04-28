@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 class Track extends Equatable {
+  final String? queueItemId;
   final String id;
   final String title;
   final String artist;
@@ -9,8 +10,10 @@ class Track extends Equatable {
   final List<String> moodTags;
   final int? duration; // in seconds
   final String? albumArt;
+  final int? seekOffsetSeconds;
 
   const Track({
+    this.queueItemId,
     required this.id,
     required this.title,
     required this.artist,
@@ -19,11 +22,13 @@ class Track extends Equatable {
     required this.moodTags,
     this.duration,
     this.albumArt,
+    this.seekOffsetSeconds,
   });
 
   @override
   List<Object?> get props => [
         id,
+        queueItemId,
         title,
         artist,
         fileUrl,
@@ -31,6 +36,7 @@ class Track extends Equatable {
         moodTags,
         duration,
         albumArt,
+        seekOffsetSeconds,
       ];
 
   bool get isAvailableOffline => localPath != null && localPath!.isNotEmpty;

@@ -1,4 +1,6 @@
-﻿import 'package:flutter/material.dart';
+import 'dart:async';
+
+import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -6,30 +8,241 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/enums/entity_status_enum.dart';
+import '../../../../core/enums/playback_command_enum.dart';
+import '../../../../core/enums/queue_end_behavior_enum.dart';
+import '../../../../core/enums/space_type_enum.dart';
 import '../../../../core/player/player_bloc.dart';
 import '../../../../core/player/player_event.dart';
 import '../../../../core/player/player_state.dart' as ps;
 import '../../../../core/player/space_info.dart';
-import '../../../../features/space_control/presentation/bloc/music_control_bloc.dart';
-import '../../../../features/space_control/presentation/bloc/music_control_event.dart';
-import '../../../../features/space_control/presentation/bloc/music_control_state.dart';
+import '../../../../core/presentation/app_feedback.dart';
+import '../../../../core/presentation/playback_mood_label.dart';
+import '../../../../core/widgets/app_feedback_presenter.dart';
+import '../../../../features/cams/data/models/override_response_model.dart';
+import '../../../../features/cams/domain/entities/space_playback_state.dart';
+import '../../../../features/cams/presentation/bloc/cams_playback_bloc.dart';
+import '../../../../features/cams/presentation/bloc/cams_playback_event.dart';
+import '../../../../features/cams/presentation/bloc/cams_playback_state.dart';
+import '../../../../features/moods/domain/entities/mood.dart';
+import '../models/queue_sheet_view_data.dart';
+import '../widgets/queue_management_sheets.dart';
+import '../../../../features/space_control/domain/entities/space.dart';
 import '../../../../features/space_control/presentation/bloc/space_monitoring_bloc.dart';
 import '../../../../features/space_control/presentation/bloc/space_monitoring_event.dart';
 import '../../../../features/space_control/presentation/bloc/space_monitoring_state.dart';
-import '../../../../features/space_control/domain/entities/sensor_data.dart';
 import '../../../../core/session/session_cubit.dart';
 
-/// Redesigned "Now Playing" tab — Spotify-style full-screen player.
+/// Redesigned "Now Playing" tab â€” Spotify-style full-screen player.
 class NowPlayingTabPage extends StatefulWidget {
-  const NowPlayingTabPage({super.key});
+  const NowPlayingTabPage({
+    super.key,
+    this.embedInParentScaffold = false,
+    this.showTopBar = true,
+  });
+
+  final bool embedInParentScaffold;
+  final bool showTopBar;
 
   @override
   State<NowPlayingTabPage> createState() => _NowPlayingTabPageState();
 }
 
-class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
+class _NowPlayingTabPageState extends State<NowPlayingTabPage>
+    with SingleTickerProviderStateMixin {
+  static const int _defaultRemoteVolumePercent = 60;
+  static const int _minimumRemoteVolumePercent = 30;
+
   double _volume = 0.6;
   bool _isShuffleOn = false;
+  late final AnimationController _discRotationController;
+
+  @override
+  void initState() {
+    super.initState();
+    _discRotationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 18),
+    );
+  }
+
+  @override
+  void dispose() {
+    _discRotationController.dispose();
+    super.dispose();
+  }
+
+  void _syncDiscRotation(bool shouldSpin) {
+    if (shouldSpin) {
+      if (!_discRotationController.isAnimating) {
+        _discRotationController.repeat();
+      }
+      return;
+    }
+
+    if (_discRotationController.isAnimating) {
+      _discRotationController.stop(canceled: false);
+    }
+  }
+
+  void _dispatchRemoteSkipBack(BuildContext context) {
+    context.read<CamsPlaybackBloc>().add(const CamsPreviousTapped());
+  }
+
+  bool _isCamsPlaybackLoading(CamsPlaybackState camsState) {
+    return camsState.status == CamsStatus.initial ||
+        camsState.status == CamsStatus.loading;
+  }
+
+  bool _hasRemoteNext(
+    CamsPlaybackState camsState,
+    ps.PlayerState playerState,
+  ) {
+    final playback = camsState.playbackState;
+    final queueItems = playback?.spaceQueueItems ?? const [];
+    if (queueItems.isEmpty) return false;
+
+    final sortedItems = [...queueItems]
+      ..sort((a, b) => a.position.compareTo(b.position));
+
+    var currentIndex = -1;
+    final currentQueueItemId = playback?.currentQueueItemId;
+    if (currentQueueItemId != null && currentQueueItemId.isNotEmpty) {
+      currentIndex = sortedItems
+          .indexWhere((item) => item.queueItemId == currentQueueItemId);
+    }
+
+    if (currentIndex < 0) {
+      currentIndex = sortedItems.indexWhere((item) => item.queueStatus == 1);
+    }
+
+    if (currentIndex < 0 &&
+        playerState.currentTrackId != null &&
+        playerState.currentTrackId!.isNotEmpty) {
+      currentIndex = sortedItems
+          .indexWhere((item) => item.trackId == playerState.currentTrackId);
+    }
+
+    return currentIndex >= 0 && currentIndex < sortedItems.length - 1;
+  }
+
+  int _normalizeAudibleVolumePercent(int requestedVolumePercent) {
+    final boundedVolume = requestedVolumePercent.clamp(0, 100).toInt();
+    if (boundedVolume <= 0) return 0;
+    if (boundedVolume < _minimumRemoteVolumePercent) {
+      return _minimumRemoteVolumePercent;
+    }
+    return boundedVolume;
+  }
+
+  int _preferredAudibleVolumePercent(BuildContext context) {
+    final playback = context.read<CamsPlaybackBloc>().state.playbackState;
+    final playbackVolume = playback?.volumePercent;
+    if (playbackVolume != null && playbackVolume > 0) {
+      return _normalizeAudibleVolumePercent(playbackVolume);
+    }
+
+    final localVolume = (_volume * 100).round().clamp(0, 100).toInt();
+    if (localVolume > 0) {
+      return _normalizeAudibleVolumePercent(localVolume);
+    }
+
+    return _defaultRemoteVolumePercent;
+  }
+
+  void _previewLocalVolume(
+    BuildContext context, {
+    required int volumePercent,
+    required bool isMuted,
+  }) {
+    context.read<PlayerBloc>().add(
+          PlayerAudioSettingsApplied(
+            volumePercent: volumePercent.clamp(0, 100).toInt(),
+            isMuted: isMuted,
+          ),
+        );
+  }
+
+  void _dispatchAudioStatePatch(
+    BuildContext context, {
+    int? volumePercent,
+    bool? isMuted,
+    int? queueEndBehavior,
+    int? localVolumePercent,
+    bool? localIsMuted,
+  }) {
+    context.read<CamsPlaybackBloc>().add(
+          CamsUpdateAudioState(
+            volumePercent: volumePercent,
+            isMuted: isMuted,
+            queueEndBehavior: queueEndBehavior,
+          ),
+        );
+
+    if (volumePercent != null || isMuted != null) {
+      context.read<PlayerBloc>().add(
+            PlayerAudioSettingsApplied(
+              volumePercent: (localVolumePercent ?? volumePercent ?? 100)
+                  .clamp(0, 100)
+                  .toInt(),
+              isMuted: localIsMuted ?? isMuted ?? false,
+            ),
+          );
+    }
+  }
+
+  void _applyVolumeIntent(
+    BuildContext context, {
+    required int requestedVolumePercent,
+  }) {
+    final boundedVolume = requestedVolumePercent.clamp(0, 100).toInt();
+    if (boundedVolume <= 0) {
+      _applyMuteIntent(context, isMuted: true);
+      return;
+    }
+
+    final normalizedVolume = _normalizeAudibleVolumePercent(boundedVolume);
+    setState(() {
+      _volume = normalizedVolume / 100.0;
+    });
+    _dispatchAudioStatePatch(
+      context,
+      volumePercent: normalizedVolume,
+      isMuted: false,
+      localVolumePercent: normalizedVolume,
+      localIsMuted: false,
+    );
+  }
+
+  void _applyMuteIntent(
+    BuildContext context, {
+    required bool isMuted,
+  }) {
+    if (isMuted) {
+      setState(() {
+        _volume = 0;
+      });
+      _dispatchAudioStatePatch(
+        context,
+        isMuted: true,
+        localVolumePercent: 0,
+        localIsMuted: true,
+      );
+      return;
+    }
+
+    final restoredVolume = _preferredAudibleVolumePercent(context);
+    setState(() {
+      _volume = restoredVolume / 100.0;
+    });
+    _dispatchAudioStatePatch(
+      context,
+      volumePercent: restoredVolume,
+      isMuted: false,
+      localVolumePercent: restoredVolume,
+      localIsMuted: false,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,27 +250,87 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
     final session = context.watch<SessionCubit>().state;
     final isPlayback = session.isPlaybackDevice;
 
-    return BlocBuilder<PlayerBloc, ps.PlayerState>(
-      builder: (context, playerState) {
-        return BlocBuilder<SpaceMonitoringBloc, SpaceMonitoringState>(
-          builder: (context, spaceState) {
-            return BlocBuilder<MusicControlBloc, MusicControlState>(
-              builder: (context, musicState) {
-                return Scaffold(
-                  backgroundColor: palette.bg,
-                  body: SafeArea(
-                    bottom: false,
-                    child: _buildBody(
-                      context, playerState, spaceState, musicState,
-                      palette, isPlayback,
-                    ),
-                  ),
-                );
-              },
-            );
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<PlayerBloc, ps.PlayerState>(
+          listenWhen: (previous, current) {
+            if (!isPlayback) return false;
+            final hasHlsStream =
+                current.isHlsMode && (current.hlsUrl?.isNotEmpty ?? false);
+            if (!hasHlsStream) return false;
+            final bucketChanged = (previous.currentPosition ~/ 5) !=
+                (current.currentPosition ~/ 5);
+            final playingChanged = previous.isPlaying != current.isPlaying;
+            final streamChanged = previous.hlsUrl != current.hlsUrl;
+            return bucketChanged || playingChanged || streamChanged;
           },
-        );
-      },
+          listener: (context, playerState) {
+            final camsBloc = context.read<CamsPlaybackBloc>();
+            final camsState = camsBloc.state;
+            if (!camsState.isStreaming && !playerState.isSyncedCamsPlayback) {
+              return;
+            }
+
+            final spaceId = camsState.spaceId ?? playerState.activeSpaceId;
+            final hlsUrl = playerState.hlsUrl ?? camsState.hlsUrl;
+            if (spaceId == null || hlsUrl == null || hlsUrl.isEmpty) return;
+
+            camsBloc.add(CamsReportPlaybackState(
+              spaceId: spaceId,
+              isPlaying: playerState.isPlaying,
+              positionSeconds: playerState.currentPositionPrecise,
+              currentHlsUrl: hlsUrl,
+            ));
+          },
+        ),
+        BlocListener<CamsPlaybackBloc, CamsPlaybackState>(
+          listenWhen: (previous, current) =>
+              previous.errorMessage != current.errorMessage &&
+              current.errorMessage != null,
+          listener: (context, camsState) {
+            if (camsState.errorMessage != null) {
+              AppFeedbackPresenter.show(
+                context,
+                AppFeedback.error(camsState.errorMessage!),
+              );
+            }
+          },
+        ),
+      ],
+      child: BlocBuilder<PlayerBloc, ps.PlayerState>(
+        builder: (context, playerState) {
+          return BlocBuilder<SpaceMonitoringBloc, SpaceMonitoringState>(
+            builder: (context, spaceState) {
+              return BlocBuilder<CamsPlaybackBloc, CamsPlaybackState>(
+                builder: (context, camsState) {
+                  return Scaffold(
+                    backgroundColor: palette.bg,
+                    body: widget.embedInParentScaffold
+                        ? _buildBody(
+                            context,
+                            playerState,
+                            spaceState,
+                            camsState,
+                            palette,
+                            isPlayback,
+                          )
+                        : SafeArea(
+                            child: _buildBody(
+                              context,
+                              playerState,
+                              spaceState,
+                              camsState,
+                              palette,
+                              isPlayback,
+                            ),
+                          ),
+                  );
+                },
+              );
+            },
+          );
+        },
+      ),
     );
   }
 
@@ -65,23 +338,57 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
     BuildContext context,
     ps.PlayerState playerState,
     SpaceMonitoringState spaceState,
-    MusicControlState musicState,
+    CamsPlaybackState camsState,
     _NPPalette palette,
     bool isPlayback,
   ) {
     final track = playerState.currentTrack;
-    final trackMoodTags = track?.moodTags;
-    final mood = (trackMoodTags != null && trackMoodTags.isNotEmpty)
-        ? trackMoodTags.first
-        : spaceState.space?.currentMood;
+    final isManualOverride = camsState.playbackState?.isManualOverride == true;
+    final fallbackTrackMood =
+        (track?.moodTags != null && track!.moodTags.isNotEmpty)
+            ? track.moodTags.first
+            : null;
+    final mood = buildPlaybackMoodLabel(
+      isManualOverride: isManualOverride,
+      primaryMoodName: camsState.currentMoodName,
+      fallbackMoodNames: [
+        fallbackTrackMood,
+        spaceState.space?.currentMood,
+      ],
+    );
     final duration = playerState.duration;
-    final currentPosition = playerState.currentPosition;
-    final isPlaying = musicState.status == MusicControlStatus.playing ||
-        (musicState.status == MusicControlStatus.initial && playerState.isPlaying);
+    final displayPosition = playerState.displayPosition;
+    final displayPositionPrecise = playerState.displayPositionPrecise;
+    final isPlaying = playerState.isPlaying;
+    final useRemoteControls =
+        playerState.isSyncedCamsPlayback || camsState.isStreaming;
+    final hasPlayableTrack = track != null;
+    final isWaitingForRemoteState =
+        useRemoteControls && _isCamsPlaybackLoading(camsState);
+    final playbackActionsEnabled = hasPlayableTrack && !isWaitingForRemoteState;
+    _syncDiscRotation(isPlaying && playbackActionsEnabled);
+    final hasNextForControls = useRemoteControls
+        ? playbackActionsEnabled &&
+            (_hasRemoteNext(camsState, playerState) || playerState.hasNext)
+        : playbackActionsEnabled && playerState.hasNext;
+    final syncedVolumePercent =
+        camsState.playbackState?.volumePercent.clamp(0, 100).toInt();
+    final syncedIsMuted = camsState.playbackState?.isMuted;
+    final resolvedVolumePercent =
+        syncedVolumePercent ?? (_volume * 100).round().clamp(0, 100);
+    final resolvedIsMuted = syncedIsMuted ?? resolvedVolumePercent == 0;
+    final effectiveVolume =
+        resolvedIsMuted ? 0.0 : (resolvedVolumePercent / 100.0);
+    final showLocalPreviewBanner = isPlayback && playerState.isLocalPreview;
 
-    final spaceName = spaceState.space?.name ?? playerState.activeSpaceName ?? 'No Space';
-    final playlistName = mood?.toUpperCase() ?? 'MUSIC';
-
+    final spaceName =
+        spaceState.space?.name ?? playerState.activeSpaceName ?? 'No Space';
+    final effectiveSpaceId = playerState.activeSpaceId ??
+        context.read<SessionCubit>().state.currentSpace?.id;
+    // Show CAMS playback label (track-first), then fallback to mood.
+    final playbackLabel = camsState.currentPlaybackName?.toUpperCase() ??
+        mood?.toUpperCase() ??
+        'MUSIC';
     // Device label for "Playing from"
     final String deviceLabel;
     if (isPlayback) {
@@ -92,32 +399,36 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
 
     return Column(
       children: [
-        // ── Top bar: ↓  title  ⋮ ──────────────────────────────────────
-        _TopBar(
-          spaceName: spaceName,
-          playlistName: playlistName,
-          palette: palette,
-          canSwap: !isPlayback && playerState.availableSpaces.length > 1,
-          onMinimize: () {
-            // Navigate back to previous tab (go to home)
-            context.go('/home');
-          },
-          onMenu: () => _showSongOptionsSheet(context, playerState, palette),
-          onTitleTap: (!isPlayback && playerState.availableSpaces.length > 1)
-              ? () => showModalBottomSheet(
-                    context: context,
-                    useRootNavigator: true,
-                    backgroundColor: Colors.transparent,
-                    isScrollControlled: true,
-                    builder: (_) => _SpaceSwapSheet(
-                      playerState: playerState,
-                      palette: palette,
-                    ),
-                  )
-              : null,
-        ),
+        // â”€â”€ Top bar: â†“  title  â‹® â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        if (widget.showTopBar)
+          _TopBar(
+            spaceName: spaceName,
+            playlistName: playbackLabel,
+            palette: palette,
+            canSwap: !isPlayback && playerState.availableSpaces.length > 1,
+            onMinimize: () {
+              if (GoRouter.of(context).canPop()) {
+                context.pop();
+              } else {
+                context.go('/home');
+              }
+            },
+            onMenu: () => _showSongOptionsSheet(context, playerState, palette),
+            onTitleTap: (!isPlayback && playerState.availableSpaces.length > 1)
+                ? () => showModalBottomSheet(
+                      context: context,
+                      useRootNavigator: true,
+                      backgroundColor: Colors.transparent,
+                      isScrollControlled: true,
+                      builder: (_) => _SpaceSwapSheet(
+                        playerState: playerState,
+                        palette: palette,
+                      ),
+                    )
+                : null,
+          ),
 
-        // ── Scrollable content ────────────────────────────────────────
+        // â”€â”€ Scrollable content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         Expanded(
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
@@ -127,39 +438,28 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
               children: [
                 const SizedBox(height: 8),
 
-                // Sensor dashboard (if monitoring)
-                if (spaceState.latestSensorData != null ||
-                    spaceState.status == SpaceMonitoringStatus.monitoring) ...[
-                  _SensorDashboard(
-                    sensorData: spaceState.latestSensorData,
-                    palette: palette,
-                  ).animate().fadeIn(duration: 350.ms).slideY(begin: 0.08),
-                  const SizedBox(height: 16),
-                ],
-
-                // ── Album art ───────────────────────────────────────
+                // â”€â”€ Album art â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 Center(
                   child: AspectRatio(
                     aspectRatio: 1,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: track?.albumArt != null
-                          ? Image.network(
-                              track!.albumArt!,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => _artPlaceholder(palette),
-                            )
-                          : _artPlaceholder(palette),
+                    child: _SpinningAlbumDisc(
+                      artUrl: track?.albumArt,
+                      palette: palette,
+                      rotation: _discRotationController,
+                      placeholder: _artPlaceholder(palette),
                     ),
                   ),
-                ).animate().fadeIn(duration: 380.ms).scale(begin: const Offset(0.96, 0.96)),
+                )
+                    .animate()
+                    .fadeIn(duration: 380.ms)
+                    .scale(begin: const Offset(0.96, 0.96)),
 
                 const SizedBox(height: 28),
 
-                // ── Song title + artist ─────────────────────────────
+                // â”€â”€ Song title + artist â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 Text(
                   track?.title ?? 'No track playing',
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.poppins(
                     color: palette.textPrimary,
@@ -179,39 +479,162 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
+                if (playerState.playlistName != null &&
+                    playerState.playlistName!.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Playing from: ${playerState.playlistName}',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      color: palette.accent,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+                if (showLocalPreviewBanner) ...[
+                  const SizedBox(height: 12),
+                  _LocalPreviewBanner(palette: palette),
+                ],
+                if (camsState.playbackState?.isIotDeviceOffline == true) ...[
+                  const SizedBox(height: 12),
+                  _IotOfflineBanner(palette: palette),
+                ],
 
                 const SizedBox(height: 24),
 
-                // ── Progress bar ────────────────────────────────────
+                // â”€â”€ Progress bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 _ProgressBar(
                   duration: duration,
-                  currentPosition: currentPosition,
+                  currentPosition: displayPositionPrecise,
+                  remainingDuration: playerState.remainingDuration,
+                  seekBaseOffsetSeconds: playerState.currentTrackStartOffset,
+                  useAbsoluteSeek: playerState.isSyncedCamsPlayback,
+                  useRemoteControls: useRemoteControls,
+                  enabled: playbackActionsEnabled,
                   palette: palette,
                 ),
 
                 const SizedBox(height: 20),
 
-                // ── Controls row ────────────────────────────────────
+                // â”€â”€ Controls row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 _ControlsRow(
                   isPlaying: isPlaying,
                   isShuffleOn: _isShuffleOn,
-                  volume: _volume,
+                  volume: effectiveVolume,
                   palette: palette,
+                  actionsEnabled: playbackActionsEnabled,
+                  hasNext: hasNextForControls,
+                  hasPrevious: playbackActionsEnabled &&
+                      (useRemoteControls
+                          ? playerState.hasTrack ||
+                              (camsState.playbackState?.hasPlayableHls ?? false)
+                          : playerState.hasPrevious || displayPosition > 3),
                   onShuffle: () => setState(() => _isShuffleOn = !_isShuffleOn),
-                  onPlayPause: () => context.read<PlayerBloc>().add(const PlayerPlayPauseToggled()),
-                  onSkip: () => context.read<PlayerBloc>().add(const PlayerSkipRequested()),
-                  onVolumeChanged: (v) => setState(() => _volume = v),
+                  onPlayPause: () {
+                    if (useRemoteControls) {
+                      context.read<CamsPlaybackBloc>().add(CamsSendCommand(
+                            command: isPlaying
+                                ? PlaybackCommandEnum.pause
+                                : PlaybackCommandEnum.resume,
+                          ));
+                      return;
+                    }
+                    context
+                        .read<PlayerBloc>()
+                        .add(const PlayerPlayPauseToggled());
+                  },
+                  onSkipBack: () {
+                    if (useRemoteControls) {
+                      _dispatchRemoteSkipBack(context);
+                      return;
+                    }
+                    context
+                        .read<PlayerBloc>()
+                        .add(const PlayerSkipBackRequested());
+                  },
+                  onSkip: () {
+                    if (useRemoteControls) {
+                      context
+                          .read<CamsPlaybackBloc>()
+                          .add(const CamsSendCommand(
+                            command: PlaybackCommandEnum.skipNext,
+                          ));
+                      return;
+                    }
+                    context.read<PlayerBloc>().add(const PlayerSkipRequested());
+                  },
+                  onVolumeChanged: (v) {
+                    final normalized = v.clamp(0.0, 1.0);
+                    setState(() => _volume = normalized);
+
+                    if (useRemoteControls) {
+                      _applyVolumeIntent(
+                        context,
+                        requestedVolumePercent:
+                            (normalized * 100).round().clamp(0, 100).toInt(),
+                      );
+                      return;
+                    }
+
+                    _previewLocalVolume(
+                      context,
+                      volumePercent:
+                          (normalized * 100).round().clamp(0, 100).toInt(),
+                      isMuted: normalized == 0,
+                    );
+                  },
                 ),
 
                 const SizedBox(height: 24),
 
-                // ── Override Mood CTA ───────────────────────────────
-                if (playerState.activeSpaceId != null)
+                // â”€â”€ Override Mood CTA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                if (effectiveSpaceId != null &&
+                    (camsState.hasActiveOverride ||
+                        camsState.explainability?.hasAnyData == true))
+                  _AiExplainabilityPanel(
+                    explainability: camsState.explainability,
+                    hasActiveOverride: camsState.hasActiveOverride,
+                    palette: palette,
+                  ).animate().fadeIn(duration: 420.ms).slideY(begin: 0.10),
+
+                if (effectiveSpaceId != null &&
+                    (camsState.hasActiveOverride ||
+                        camsState.explainability?.hasAnyData == true))
+                  const SizedBox(height: 16),
+
+                if (effectiveSpaceId != null)
                   _OverrideMoodCTA(
-                    spaceId: playerState.activeSpaceId!,
+                    spaceId: effectiveSpaceId,
                     currentMood: mood,
                     palette: palette,
+                    moods: camsState.moods,
+                    hasActiveOverride: camsState.hasActiveOverride,
+                    isOverriding: camsState.isOverriding,
+                    isPreparing: camsState.isPreparing,
+                    lastOverrideResponse: camsState.lastOverrideResponse,
+                    onOpenOverrideSheet: () => _showOverrideMusicSheet(
+                      context,
+                      palette,
+                      camsState.moods,
+                    ),
                   ).animate().fadeIn(duration: 450.ms).slideY(begin: 0.12),
+
+                if (effectiveSpaceId != null &&
+                    (camsState.playbackState?.isManualOverride == true ||
+                        camsState.playbackState?.isScheduling == true)) ...[
+                  const SizedBox(height: 16),
+                  _RuntimeStatusPanel(
+                    playbackState: camsState.playbackState!,
+                    palette: palette,
+                    isBusy: camsState.isOverriding,
+                    onSchedulingChanged: (enabled) =>
+                        context.read<CamsPlaybackBloc>().add(
+                              CamsUpdateSchedulingState(isScheduling: enabled),
+                            ),
+                  ).animate().fadeIn(duration: 450.ms).slideY(begin: 0.12),
+                ],
 
                 const SizedBox(height: 100), // breathing space
               ],
@@ -219,12 +642,12 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
           ),
         ),
 
-        // ── Bottom bar: "Playing from…" + Queue ────────────────────────
+        // â”€â”€ Bottom bar: "Playing fromâ€¦" + Queue â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         _BottomBar(
           deviceLabel: deviceLabel,
           isPlayback: isPlayback,
           palette: palette,
-          onQueue: () => _showQueueSheet(context, playerState, palette),
+          onQueue: () => _showQueueSheet(context, palette),
         ),
       ],
     );
@@ -239,8 +662,9 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
     );
   }
 
-  // ── Song Options Bottom Sheet ──────────────────────────────────────────────
-  void _showSongOptionsSheet(BuildContext ctx, ps.PlayerState state, _NPPalette palette) {
+  // â”€â”€ Song Options Bottom Sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  void _showSongOptionsSheet(
+      BuildContext ctx, ps.PlayerState state, _NPPalette palette) {
     final track = state.currentTrack;
     showModalBottomSheet(
       context: ctx,
@@ -257,7 +681,8 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
               const SizedBox(height: 8),
               Center(
                 child: Container(
-                  width: 40, height: 4,
+                  width: 40,
+                  height: 4,
                   decoration: BoxDecoration(
                     color: palette.border,
                     borderRadius: BorderRadius.circular(20),
@@ -273,12 +698,14 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                     ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: SizedBox(
-                        width: 48, height: 48,
+                        width: 48,
+                        height: 48,
                         child: track?.albumArt != null
                             ? Image.network(track!.albumArt!, fit: BoxFit.cover)
                             : Container(
                                 color: palette.overlay,
-                                child: Icon(Icons.music_note, color: palette.textMuted, size: 24),
+                                child: Icon(Icons.music_note,
+                                    color: palette.textMuted, size: 24),
                               ),
                       ),
                     ),
@@ -289,15 +716,20 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
                         children: [
                           Text(
                             track?.title ?? 'No track',
-                            maxLines: 1, overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.poppins(
-                              color: palette.textPrimary, fontSize: 15, fontWeight: FontWeight.w600,
+                              color: palette.textPrimary,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                           Text(
                             track?.artist ?? '',
-                            maxLines: 1, overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.inter(color: palette.textMuted, fontSize: 13),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(
+                                color: palette.textMuted, fontSize: 13),
                           ),
                         ],
                       ),
@@ -307,12 +739,47 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
               ),
               const SizedBox(height: 12),
               Divider(color: palette.border, height: 1),
-              _SheetOption(icon: LucideIcons.listMusic, label: 'Go to playlist', palette: palette, onTap: () => Navigator.pop(ctx)),
-              _SheetOption(icon: LucideIcons.listPlus, label: 'Add to playlist', palette: palette, onTap: () => Navigator.pop(ctx)),
-              _SheetOption(icon: LucideIcons.ban, label: 'Block song', palette: palette, onTap: () => Navigator.pop(ctx)),
-              _SheetOption(icon: LucideIcons.listEnd, label: 'Add to queue', palette: palette, onTap: () => Navigator.pop(ctx)),
-              _SheetOption(icon: LucideIcons.disc, label: 'Go to album', palette: palette, onTap: () => Navigator.pop(ctx)),
-              _SheetOption(icon: LucideIcons.mic2, label: 'Go to artist', palette: palette, onTap: () => Navigator.pop(ctx)),
+              _SheetOption(
+                  icon: LucideIcons.listMusic,
+                  label: 'Go to playlist',
+                  palette: palette,
+                  onTap: () => Navigator.pop(ctx)),
+              _SheetOption(
+                  icon: LucideIcons.listPlus,
+                  label: 'Add to playlist',
+                  palette: palette,
+                  onTap: () => Navigator.pop(ctx)),
+              _SheetOption(
+                  icon: LucideIcons.ban,
+                  label: 'Block song',
+                  palette: palette,
+                  onTap: () => Navigator.pop(ctx)),
+              _SheetOption(
+                  icon: LucideIcons.listEnd,
+                  label: 'Add to queue',
+                  palette: palette,
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    if (track?.id != null && track!.id.isNotEmpty) {
+                      _showAddToQueueSheet(
+                        ctx,
+                        palette,
+                        initialTrackId: track.id,
+                      );
+                    } else {
+                      _showAddToQueueSheet(ctx, palette);
+                    }
+                  }),
+              _SheetOption(
+                  icon: LucideIcons.disc,
+                  label: 'Go to album',
+                  palette: palette,
+                  onTap: () => Navigator.pop(ctx)),
+              _SheetOption(
+                  icon: LucideIcons.mic2,
+                  label: 'Go to artist',
+                  palette: palette,
+                  onTap: () => Navigator.pop(ctx)),
               const SizedBox(height: 16),
             ],
           ),
@@ -321,17 +788,8 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
     );
   }
 
-  // ── Queue Bottom Sheet ─────────────────────────────────────────────────────
-  void _showQueueSheet(BuildContext ctx, ps.PlayerState state, _NPPalette palette) {
-    final track = state.currentTrack;
-    // Mock upcoming tracks for demo
-    final upNext = [
-      {'title': 'Maybe This Time', 'artist': 'Empress Of'},
-      {'title': 'One in a Million', 'artist': 'Bebe Rexha, David Guetta'},
-      {'title': 'Kings & Queens', 'artist': 'Ava Max'},
-      {'title': 'Kids Again', 'artist': 'Sam Smith'},
-    ];
-
+  // â”€â”€ Queue Bottom Sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  void _showQueueSheet(BuildContext ctx, _NPPalette palette) {
     showModalBottomSheet(
       context: ctx,
       useRootNavigator: true,
@@ -345,65 +803,957 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
         initialChildSize: 0.6,
         maxChildSize: 0.85,
         minChildSize: 0.4,
-        builder: (_, controller) => SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 8),
-              Center(
-                child: Container(
-                  width: 40, height: 4,
-                  decoration: BoxDecoration(
-                    color: palette.border,
-                    borderRadius: BorderRadius.circular(20),
+        builder: (_, controller) => _QueueSheet(
+          palette: palette,
+          controller: controller,
+          onOpenAddToQueue: () => _showAddToQueueSheet(ctx, palette),
+        ),
+      ),
+    );
+  }
+
+  void _showAddToQueueSheet(
+    BuildContext ctx,
+    _NPPalette palette, {
+    String? initialTrackId,
+  }) {
+    showModalBottomSheet(
+      context: ctx,
+      useRootNavigator: true,
+      isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
+      backgroundColor: palette.isDark ? palette.card : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => FractionallySizedBox(
+        heightFactor: 0.88,
+        child: Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+          ),
+          child: NowPlayingAddToQueueSheet(
+            initialTrackId: initialTrackId,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showOverrideMusicSheet(
+    BuildContext ctx,
+    _NPPalette palette,
+    List<Mood> moods,
+  ) {
+    showModalBottomSheet(
+      context: ctx,
+      useRootNavigator: true,
+      isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
+      backgroundColor: palette.isDark ? palette.card : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => FractionallySizedBox(
+        heightFactor: 0.9,
+        child: Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+          ),
+          child: NowPlayingOverrideMusicSheet(
+            moods: moods,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _QueueSheet extends StatelessWidget {
+  static const int _defaultRemoteVolumePercent = 60;
+  static const int _minimumRemoteVolumePercent = 30;
+
+  const _QueueSheet({
+    required this.palette,
+    required this.controller,
+    required this.onOpenAddToQueue,
+  });
+
+  final _NPPalette palette;
+  final ScrollController controller;
+  final VoidCallback onOpenAddToQueue;
+
+  int _normalizeAudibleVolumePercent(int requestedVolumePercent) {
+    final boundedVolume = requestedVolumePercent.clamp(0, 100).toInt();
+    if (boundedVolume <= 0) return 0;
+    if (boundedVolume < _minimumRemoteVolumePercent) {
+      return _minimumRemoteVolumePercent;
+    }
+    return boundedVolume;
+  }
+
+  int _preferredAudibleVolumePercent(BuildContext context) {
+    final playback = context.read<CamsPlaybackBloc>().state.playbackState;
+    final playbackVolume = playback?.volumePercent;
+    if (playbackVolume != null && playbackVolume > 0) {
+      return _normalizeAudibleVolumePercent(playbackVolume);
+    }
+    return _defaultRemoteVolumePercent;
+  }
+
+  void _previewLocalVolume(
+    BuildContext context, {
+    required int volumePercent,
+    required bool isMuted,
+  }) {
+    context.read<PlayerBloc>().add(
+          PlayerAudioSettingsApplied(
+            volumePercent: volumePercent.clamp(0, 100).toInt(),
+            isMuted: isMuted,
+          ),
+        );
+  }
+
+  void _applyMuteIntent(
+    BuildContext context, {
+    required bool isMuted,
+  }) {
+    if (isMuted) {
+      _dispatchAudioStatePatch(
+        context,
+        isMuted: true,
+        localVolumePercent: 0,
+        localIsMuted: true,
+      );
+      return;
+    }
+
+    final restoredVolume = _preferredAudibleVolumePercent(context);
+    _dispatchAudioStatePatch(
+      context,
+      volumePercent: restoredVolume,
+      isMuted: false,
+      localVolumePercent: restoredVolume,
+      localIsMuted: false,
+    );
+  }
+
+  void _applyVolumeIntent(
+    BuildContext context, {
+    required int requestedVolumePercent,
+  }) {
+    final boundedVolume = requestedVolumePercent.clamp(0, 100).toInt();
+    if (boundedVolume <= 0) {
+      _applyMuteIntent(context, isMuted: true);
+      return;
+    }
+
+    final normalizedVolume = _normalizeAudibleVolumePercent(boundedVolume);
+    _dispatchAudioStatePatch(
+      context,
+      volumePercent: normalizedVolume,
+      isMuted: false,
+      localVolumePercent: normalizedVolume,
+      localIsMuted: false,
+    );
+  }
+
+  void _dispatchQueueReorder(
+    BuildContext context,
+    QueueSheetViewData data,
+    int fromIndex,
+    int toIndex,
+  ) {
+    final reorderableItems = data.reorderablePendingItems;
+    if (!data.isFromCams ||
+        fromIndex < 0 ||
+        toIndex < 0 ||
+        fromIndex >= reorderableItems.length ||
+        toIndex >= reorderableItems.length ||
+        fromIndex == toIndex) {
+      return;
+    }
+
+    final queueItemIds = reorderableItems
+        .map((item) => item.queueItemId)
+        .whereType<String>()
+        .toList(growable: true);
+    if (queueItemIds.length != reorderableItems.length) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Cannot reorder pending queue because some queue ids are missing.',
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    final movedQueueItemId = queueItemIds.removeAt(fromIndex);
+    queueItemIds.insert(toIndex, movedQueueItemId);
+    context.read<CamsPlaybackBloc>().add(
+          CamsReorderQueue(queueItemIds: queueItemIds),
+        );
+  }
+
+  void _dispatchRemoveQueueItem(BuildContext context, QueueSheetItem item) {
+    final queueItemId = item.queueItemId;
+    if (queueItemId == null || queueItemId.isEmpty) return;
+
+    context.read<CamsPlaybackBloc>().add(
+          CamsRemoveQueueItems(queueItemIds: [queueItemId]),
+        );
+  }
+
+  Future<void> _confirmAndClearQueue(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Clear Queue'),
+          content: const Text(
+            'Remove all queued tracks and stop queued playback for this space?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Clear'),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed != true) return;
+    if (!context.mounted) return;
+
+    context.read<CamsPlaybackBloc>().add(const CamsClearQueue());
+  }
+
+  void _dispatchAudioStatePatch(
+    BuildContext context, {
+    int? volumePercent,
+    bool? isMuted,
+    int? queueEndBehavior,
+    int? localVolumePercent,
+    bool? localIsMuted,
+  }) {
+    context.read<CamsPlaybackBloc>().add(
+          CamsUpdateAudioState(
+            volumePercent: volumePercent,
+            isMuted: isMuted,
+            queueEndBehavior: queueEndBehavior,
+          ),
+        );
+
+    if (volumePercent != null || isMuted != null) {
+      context.read<PlayerBloc>().add(
+            PlayerAudioSettingsApplied(
+              volumePercent: (localVolumePercent ?? volumePercent ?? 100)
+                  .clamp(0, 100)
+                  .toInt(),
+              isMuted: localIsMuted ?? isMuted ?? false,
+            ),
+          );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<PlayerBloc, ps.PlayerState>(
+      builder: (context, playerState) {
+        return BlocBuilder<CamsPlaybackBloc, CamsPlaybackState>(
+          builder: (context, camsState) {
+            final queueData = QueueSheetViewData.resolve(
+              playerState: playerState,
+              camsState: camsState,
+            );
+            final playback = camsState.playbackState;
+            final currentTrack = queueData.currentItem;
+
+            return SafeArea(
+              child: CustomScrollView(
+                controller: controller,
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 8),
+                        Center(
+                          child: Container(
+                            width: 40,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: palette.border,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: Text('Queue',
+                                        style: GoogleFonts.poppins(
+                                          color: palette.textPrimary,
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w700,
+                                        )),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.of(
+                                      context,
+                                      rootNavigator: true,
+                                    ).pop(),
+                                    child: Text('Close',
+                                        style: GoogleFonts.inter(
+                                          color: palette.textMuted,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                        )),
+                                  ),
+                                ],
+                              ),
+                              if (queueData.isFromCams) ...[
+                                const SizedBox(height: 8),
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    alignment: WrapAlignment.end,
+                                    children: [
+                                      TextButton.icon(
+                                        onPressed: () {
+                                          Navigator.of(
+                                            context,
+                                            rootNavigator: true,
+                                          ).pop();
+                                          Future.microtask(onOpenAddToQueue);
+                                        },
+                                        icon: const Icon(
+                                          Icons.queue_music,
+                                          size: 16,
+                                        ),
+                                        label: const Text('Add'),
+                                        style: TextButton.styleFrom(
+                                          foregroundColor: palette.textMuted,
+                                          textStyle: GoogleFonts.inter(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                      if (queueData.items.isNotEmpty)
+                                        TextButton.icon(
+                                          onPressed: () =>
+                                              _confirmAndClearQueue(context),
+                                          icon: const Icon(
+                                            Icons.clear_all,
+                                            size: 16,
+                                          ),
+                                          label: const Text('Clear'),
+                                          style: TextButton.styleFrom(
+                                            foregroundColor: palette.textMuted,
+                                            textStyle: GoogleFonts.inter(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                          child: Text(
+                            queueData.summaryLabel,
+                            style: GoogleFonts.inter(
+                              color: palette.textMuted,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        if (queueData.isFromCams && playback != null)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+                            child: _QueueAudioControls(
+                              palette: palette,
+                              volumePercent: playback.volumePercent,
+                              isMuted: playback.isMuted,
+                              queueEndBehavior: playback.queueEndBehavior,
+                              onToggleMute: (nextMuted) {
+                                _applyMuteIntent(
+                                  context,
+                                  isMuted: nextMuted,
+                                );
+                              },
+                              onVolumePreviewChanged: (volumePercent) {
+                                final bounded =
+                                    volumePercent.clamp(0, 100).toInt();
+                                final previewMuted = bounded == 0;
+                                _previewLocalVolume(
+                                  context,
+                                  volumePercent: previewMuted
+                                      ? 0
+                                      : _normalizeAudibleVolumePercent(
+                                          bounded,
+                                        ),
+                                  isMuted: previewMuted,
+                                );
+                              },
+                              onVolumeChanged: (volumePercent) {
+                                _applyVolumeIntent(
+                                  context,
+                                  requestedVolumePercent: volumePercent,
+                                );
+                              },
+                              onQueueEndBehaviorChanged: (behavior) {
+                                _dispatchAudioStatePatch(
+                                  context,
+                                  queueEndBehavior: behavior.value,
+                                );
+                              },
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  if (!queueData.hasVisibleItems)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 32),
+                          child: Text(
+                            queueData.emptyMessage,
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.inter(
+                              color: palette.textMuted,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ),
+                    )
+                  else ...[
+                    if (queueData.played.isNotEmpty)
+                      ..._buildSectionSlivers(
+                        context,
+                        title: 'Played',
+                        items: queueData.played,
+                        queueData: queueData,
+                      ),
+                    if (currentTrack != null)
+                      ..._buildSectionSlivers(
+                        context,
+                        title: 'Now playing',
+                        items: [currentTrack],
+                        queueData: queueData,
+                        isCurrentSection: true,
+                      ),
+                    if (queueData.pendingNotInQueueLabel != null)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: palette.overlay,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: palette.border),
+                            ),
+                            child: Row(
+                              children: [
+                                SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: palette.accent,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    queueData.pendingNotInQueueLabel!,
+                                    style: GoogleFonts.inter(
+                                      color: palette.textMuted,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ..._buildSectionSlivers(
+                      context,
+                      title: 'Up next',
+                      items: queueData.upNext,
+                      queueData: queueData,
+                      emptyMessage: queueData.upNextEmptyMessage,
+                    ),
+                  ],
+                  const SliverToBoxAdapter(
+                    child: SizedBox(height: 12),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  List<Widget> _buildSectionSlivers(
+    BuildContext context, {
+    required String title,
+    required List<QueueSheetItem> items,
+    required QueueSheetViewData queueData,
+    bool isCurrentSection = false,
+    String? emptyMessage,
+  }) {
+    final slivers = <Widget>[
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+          child: Text(
+            title,
+            style: isCurrentSection
+                ? GoogleFonts.inter(
+                    color: palette.textMuted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  )
+                : GoogleFonts.poppins(
+                    color: palette.textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+          ),
+        ),
+      ),
+    ];
+
+    if (items.isEmpty) {
+      if (emptyMessage != null && emptyMessage.isNotEmpty) {
+        slivers.add(
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: palette.overlay,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: palette.border),
+                ),
+                child: Text(
+                  emptyMessage,
+                  style: GoogleFonts.inter(
+                    color: palette.textMuted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Queue', style: GoogleFonts.poppins(
-                      color: palette.textPrimary, fontSize: 20, fontWeight: FontWeight.w700,
-                    )),
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: Text('Clear', style: GoogleFonts.inter(
-                        color: palette.textMuted, fontSize: 14, fontWeight: FontWeight.w600,
-                      )),
+            ),
+          ),
+        );
+      }
+      return slivers;
+    }
+
+    slivers.add(
+      SliverPadding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        sliver: SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (_, index) {
+              final queuedTrack = items[index];
+              final canManageQueue = queueData.isFromCams &&
+                  queuedTrack.queueItemId != null &&
+                  queuedTrack.queueItemId!.isNotEmpty;
+
+              Widget? trailing;
+              if (canManageQueue && queuedTrack.isUpNext) {
+                final reorderableItems = queueData.reorderablePendingItems;
+                final reorderableIndex = reorderableItems.indexWhere(
+                  (item) => item.queueItemId == queuedTrack.queueItemId,
+                );
+                final canMoveUp = reorderableIndex > 0;
+                final canMoveDown = reorderableIndex >= 0 &&
+                    reorderableIndex < reorderableItems.length - 1;
+                trailing = _QueueTrackActions(
+                  palette: palette,
+                  canMoveUp: canMoveUp,
+                  canMoveDown: canMoveDown,
+                  onMoveUp: canMoveUp
+                      ? () => _dispatchQueueReorder(
+                            context,
+                            queueData,
+                            reorderableIndex,
+                            reorderableIndex - 1,
+                          )
+                      : null,
+                  onMoveDown: canMoveDown
+                      ? () => _dispatchQueueReorder(
+                            context,
+                            queueData,
+                            reorderableIndex,
+                            reorderableIndex + 1,
+                          )
+                      : null,
+                  onRemove: () => _dispatchRemoveQueueItem(
+                    context,
+                    queuedTrack,
+                  ),
+                );
+              } else if (canManageQueue && queuedTrack.isPlayed) {
+                trailing = _QueueTrackActions(
+                  palette: palette,
+                  canMoveUp: false,
+                  canMoveDown: false,
+                  onMoveUp: null,
+                  onMoveDown: null,
+                  onRemove: () => _dispatchRemoveQueueItem(
+                    context,
+                    queuedTrack,
+                  ),
+                  showReorderButtons: false,
+                );
+              }
+
+              return _QueueTrackTile(
+                title: queuedTrack.title,
+                artist: queuedTrack.artist,
+                artUrl: queuedTrack.artUrl,
+                isPlaying: queuedTrack.isCurrent,
+                isPending: queuedTrack.isPending,
+                meta: queuedTrack.metaLabel,
+                palette: palette,
+                trailing: trailing,
+              );
+            },
+            childCount: items.length,
+          ),
+        ),
+      ),
+    );
+
+    return slivers;
+  }
+}
+
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// Sub-widgets
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+
+// â”€â”€ Top Bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+class _QueueAudioControls extends StatefulWidget {
+  const _QueueAudioControls({
+    required this.palette,
+    required this.volumePercent,
+    required this.isMuted,
+    required this.queueEndBehavior,
+    required this.onToggleMute,
+    required this.onVolumePreviewChanged,
+    required this.onVolumeChanged,
+    required this.onQueueEndBehaviorChanged,
+  });
+
+  final _NPPalette palette;
+  final int volumePercent;
+  final bool isMuted;
+  final int queueEndBehavior;
+  final ValueChanged<bool> onToggleMute;
+  final ValueChanged<int> onVolumePreviewChanged;
+  final ValueChanged<int> onVolumeChanged;
+  final ValueChanged<QueueEndBehaviorEnum> onQueueEndBehaviorChanged;
+
+  @override
+  State<_QueueAudioControls> createState() => _QueueAudioControlsState();
+}
+
+class _QueueAudioControlsState extends State<_QueueAudioControls> {
+  double? _draftVolumePercent;
+  bool _isDragging = false;
+
+  int get _effectiveVolumePercent =>
+      widget.isMuted ? 0 : widget.volumePercent.clamp(0, 100).toInt();
+
+  @override
+  void didUpdateWidget(covariant _QueueAudioControls oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_isDragging || _draftVolumePercent == null) return;
+
+    final drift = (_effectiveVolumePercent - _draftVolumePercent!).abs();
+    if (drift <= 1) {
+      setState(() {
+        _draftVolumePercent = null;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final displayedVolumePercent =
+        (_draftVolumePercent ?? _effectiveVolumePercent.toDouble())
+            .clamp(0.0, 100.0)
+            .toDouble();
+    final selectedBehavior =
+        QueueEndBehaviorEnum.fromValue(widget.queueEndBehavior);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+      decoration: BoxDecoration(
+        color: widget.palette.overlay,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: widget.palette.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                'Audio settings',
+                style: GoogleFonts.inter(
+                  color: widget.palette.textPrimary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '${displayedVolumePercent.round()}%',
+                style: GoogleFonts.inter(
+                  color: widget.palette.textMuted,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(width: 6),
+              IconButton(
+                constraints:
+                    const BoxConstraints.tightFor(width: 28, height: 28),
+                padding: EdgeInsets.zero,
+                tooltip: widget.isMuted ? 'Unmute' : 'Mute',
+                onPressed: () {
+                  setState(() {
+                    _draftVolumePercent = widget.isMuted
+                        ? widget.volumePercent.clamp(0, 100).toDouble()
+                        : 0;
+                    _isDragging = false;
+                  });
+                  widget.onToggleMute(!widget.isMuted);
+                },
+                icon: Icon(
+                  widget.isMuted ? LucideIcons.volumeX : LucideIcons.volume2,
+                  size: 16,
+                  color: widget.palette.textMuted,
+                ),
+              ),
+            ],
+          ),
+          SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              trackHeight: 3,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+              activeTrackColor: widget.palette.textPrimary,
+              inactiveTrackColor:
+                  widget.palette.textMuted.withValues(alpha: 0.25),
+              thumbColor: widget.palette.textPrimary,
+              overlayColor: widget.palette.textPrimary.withValues(alpha: 0.15),
+            ),
+            child: Slider(
+              value: displayedVolumePercent,
+              min: 0,
+              max: 100,
+              divisions: 20,
+              onChangeStart: (value) {
+                setState(() {
+                  _isDragging = true;
+                  _draftVolumePercent = value.clamp(0.0, 100.0).toDouble();
+                });
+              },
+              onChanged: (value) {
+                final nextValue = value.clamp(0.0, 100.0).toDouble();
+                setState(() {
+                  _draftVolumePercent = nextValue;
+                });
+                widget.onVolumePreviewChanged(nextValue.round());
+              },
+              onChangeEnd: (value) {
+                final roundedVolume =
+                    value.clamp(0.0, 100.0).round().clamp(0, 100).toInt();
+                setState(() {
+                  _isDragging = false;
+                  _draftVolumePercent = roundedVolume.toDouble();
+                });
+                widget.onVolumeChanged(roundedVolume);
+              },
+            ),
+          ),
+          const SizedBox(height: 4),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: QueueEndBehaviorEnum.values.map((behavior) {
+              final selected = behavior == selectedBehavior;
+              return ChoiceChip(
+                label: Text(
+                  behavior.label,
+                  style: GoogleFonts.inter(
+                    color: selected
+                        ? widget.palette.textOnAccent
+                        : widget.palette.textPrimary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                selected: selected,
+                selectedColor: widget.palette.accent,
+                backgroundColor: widget.palette.card,
+                side: BorderSide(
+                  color:
+                      selected ? widget.palette.accent : widget.palette.border,
+                ),
+                onSelected: (_) => widget.onQueueEndBehaviorChanged(behavior),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SpinningAlbumDisc extends StatelessWidget {
+  const _SpinningAlbumDisc({
+    required this.artUrl,
+    required this.palette,
+    required this.rotation,
+    required this.placeholder,
+  });
+
+  final String? artUrl;
+  final _NPPalette palette;
+  final Animation<double> rotation;
+  final Widget placeholder;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: palette.accent.withValues(alpha: 0.22),
+            blurRadius: 32,
+            spreadRadius: 2,
+            offset: const Offset(0, 16),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(6),
+        child: RotationTransition(
+          turns: rotation,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: palette.card,
+                    border: Border.all(
+                      color: palette.border.withValues(alpha: 0.75),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: ClipOval(
+                      child: artUrl != null
+                          ? Image.network(
+                              artUrl!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => placeholder,
+                            )
+                          : placeholder,
+                    ),
+                  ),
+                ),
+              ),
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          Colors.transparent,
+                          Colors.transparent,
+                          Colors.black.withValues(alpha: 0.18),
+                        ],
+                        stops: const [0.0, 0.62, 1.0],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: palette.bg,
+                  border: Border.all(
+                    color: palette.border.withValues(alpha: 0.9),
+                    width: 8,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.18),
+                      blurRadius: 12,
                     ),
                   ],
                 ),
-              ),
-              // Current track
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: _QueueTrackTile(
-                  title: track?.title ?? 'No track',
-                  artist: track?.artist ?? '',
-                  artUrl: track?.albumArt,
-                  isPlaying: true,
-                  palette: palette,
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                child: Text('Up next', style: GoogleFonts.poppins(
-                  color: palette.textPrimary, fontSize: 16, fontWeight: FontWeight.w600,
-                )),
-              ),
-              Expanded(
-                child: ListView.builder(
-                  controller: controller,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  itemCount: upNext.length,
-                  itemBuilder: (_, i) => _QueueTrackTile(
-                    title: upNext[i]['title']!,
-                    artist: upNext[i]['artist']!,
-                    artUrl: null,
-                    isPlaying: false,
-                    palette: palette,
+                child: Center(
+                  child: Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: palette.textMuted.withValues(alpha: 0.45),
+                    ),
                   ),
                 ),
               ),
@@ -413,24 +1763,96 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage> {
       ),
     );
   }
+}
 
-  String _fmt(int sec) {
-    final m = sec ~/ 60;
-    final s = sec % 60;
-    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+class _LocalPreviewBanner extends StatelessWidget {
+  const _LocalPreviewBanner({required this.palette});
+
+  final _NPPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: palette.overlay,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: palette.border),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            LucideIcons.smartphone,
+            color: palette.accent,
+            size: 18,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Local preview only. Manager devices and Location sync update only for CAMS playlist streams.',
+              style: GoogleFonts.inter(
+                color: palette.textMuted,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                height: 1.35,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// Sub-widgets
-// ═════════════════════════════════════════════════════════════════════════════
+class _IotOfflineBanner extends StatelessWidget {
+  const _IotOfflineBanner({required this.palette});
 
-// ── Top Bar ──────────────────────────────────────────────────────────────────
+  final _NPPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: palette.overlay,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: palette.border),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            LucideIcons.wifiOff,
+            color: AppColors.warning,
+            size: 18,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'IoT device is offline. Manual override remains available while CAMS waits for fresh telemetry.',
+              style: GoogleFonts.inter(
+                color: palette.textMuted,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                height: 1.35,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _TopBar extends StatelessWidget {
   const _TopBar({
-    required this.spaceName, required this.playlistName,
-    required this.palette, required this.canSwap,
-    required this.onMinimize, required this.onMenu,
+    required this.spaceName,
+    required this.playlistName,
+    required this.palette,
+    required this.canSwap,
+    required this.onMinimize,
+    required this.onMenu,
     this.onTitleTap,
   });
   final String spaceName, playlistName;
@@ -442,12 +1864,20 @@ class _TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+      padding: const EdgeInsets.fromLTRB(4, 12, 4, 4),
       child: Row(
         children: [
-          IconButton(
-            icon: Icon(LucideIcons.chevronDown, color: palette.textMuted, size: 26),
-            onPressed: onMinimize,
+          // Minimize button â€” compact to give more room to title
+          SizedBox(
+            width: 40,
+            height: 40,
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              icon: Icon(LucideIcons.chevronDown,
+                  color: palette.textMuted, size: 26),
+              onPressed: onMinimize,
+            ),
           ),
           Expanded(
             child: GestureDetector(
@@ -457,38 +1887,55 @@ class _TopBar extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Row(
-                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Flexible(
                         child: Text(
                           spaceName,
-                          maxLines: 1, overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
                           style: GoogleFonts.poppins(
-                            color: palette.textPrimary, fontSize: 14, fontWeight: FontWeight.w700,
+                            color: palette.textPrimary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
                       if (canSwap) ...[
                         const SizedBox(width: 4),
-                        Icon(Icons.expand_more, color: palette.textMuted, size: 18),
+                        Icon(Icons.expand_more,
+                            color: palette.textMuted, size: 18),
                       ],
                     ],
                   ),
                   Text(
                     playlistName,
-                    maxLines: 1, overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
                     style: GoogleFonts.inter(
-                      color: palette.textMuted, fontSize: 11,
-                      fontWeight: FontWeight.w600, letterSpacing: 1.2,
+                      color: palette.textMuted,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 1.2,
                     ),
                   ),
                 ],
               ),
             ),
           ),
-          IconButton(
-            icon: Icon(LucideIcons.moreVertical, color: palette.textMuted, size: 22),
-            onPressed: onMenu,
+          // Menu button â€” compact
+          SizedBox(
+            width: 40,
+            height: 40,
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              icon: Icon(LucideIcons.moreVertical,
+                  color: palette.textMuted, size: 22),
+              onPressed: onMenu,
+            ),
           ),
         ],
       ),
@@ -496,11 +1943,36 @@ class _TopBar extends StatelessWidget {
   }
 }
 
-// ── Progress Bar ─────────────────────────────────────────────────────────────
-class _ProgressBar extends StatelessWidget {
-  const _ProgressBar({required this.duration, required this.currentPosition, required this.palette});
-  final int duration, currentPosition;
+// â”€â”€ Progress Bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+class _ProgressBar extends StatefulWidget {
+  const _ProgressBar(
+      {required this.duration,
+      required this.currentPosition,
+      required this.remainingDuration,
+      required this.seekBaseOffsetSeconds,
+      required this.useAbsoluteSeek,
+      required this.useRemoteControls,
+      required this.enabled,
+      required this.palette});
+  final int duration;
+  final double currentPosition;
+  final int remainingDuration;
+  final int seekBaseOffsetSeconds;
+  final bool useAbsoluteSeek;
+  final bool useRemoteControls;
+  final bool enabled;
   final _NPPalette palette;
+
+  @override
+  State<_ProgressBar> createState() => _ProgressBarState();
+}
+
+class _ProgressBarState extends State<_ProgressBar> {
+  static const Duration _remoteSeekDebounce = Duration(milliseconds: 180);
+
+  Timer? _remoteSeekTimer;
+  double? _dragPositionSeconds;
+  bool _isDragging = false;
 
   String _fmt(int sec) {
     final m = sec ~/ 60;
@@ -509,7 +1981,74 @@ class _ProgressBar extends StatelessWidget {
   }
 
   @override
+  void didUpdateWidget(covariant _ProgressBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_isDragging || _dragPositionSeconds == null) return;
+
+    final drift = (widget.currentPosition - _dragPositionSeconds!).abs();
+    if (drift <= 1) {
+      setState(() {
+        _dragPositionSeconds = null;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _remoteSeekTimer?.cancel();
+    super.dispose();
+  }
+
+  double _clampSliderPosition(double value) {
+    if (widget.duration <= 0) return 0;
+    return value.clamp(0.0, widget.duration.toDouble()).toDouble();
+  }
+
+  int _resolveAbsoluteTargetSeconds(double sliderPositionSeconds) {
+    final seekSeconds = sliderPositionSeconds.round();
+    return widget.useAbsoluteSeek
+        ? widget.seekBaseOffsetSeconds + seekSeconds
+        : seekSeconds;
+  }
+
+  void _dispatchSeekCommit(double sliderPositionSeconds) {
+    if (!widget.enabled) return;
+    final localTargetSeconds =
+        _resolveAbsoluteTargetSeconds(sliderPositionSeconds);
+    final remoteTargetSeconds = sliderPositionSeconds.round();
+    context.read<PlayerBloc>().add(
+          PlayerSeekRequested(positionSeconds: localTargetSeconds),
+        );
+
+    if (!widget.useRemoteControls) return;
+
+    _remoteSeekTimer?.cancel();
+    _remoteSeekTimer = Timer(_remoteSeekDebounce, () {
+      if (!mounted) return;
+      // CAMS seek payload targets the current HLS stream position, not the
+      // cumulative queue offset shown in local PlayerState.
+      context.read<CamsPlaybackBloc>().add(
+            CamsSendCommand(
+              command: PlaybackCommandEnum.seek,
+              seekPositionSeconds: remoteTargetSeconds.toDouble(),
+            ),
+          );
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final displayedPosition = _dragPositionSeconds ?? widget.currentPosition;
+    final clampedPosition = widget.duration > 0
+        ? displayedPosition.clamp(0.0, widget.duration.toDouble()).toDouble()
+        : 0.0;
+    final displayedRemaining = widget.duration > 0
+        ? (widget.duration - clampedPosition.floor())
+            .clamp(0, widget.duration)
+            .toInt()
+        : 0;
+    final canSeek = widget.enabled && widget.duration > 0;
+
     return Column(
       children: [
         SliderTheme(
@@ -517,16 +2056,42 @@ class _ProgressBar extends StatelessWidget {
             trackHeight: 3,
             thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
             overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
-            activeTrackColor: palette.textPrimary,
-            inactiveTrackColor: palette.textMuted.withOpacity(0.25),
-            thumbColor: palette.textPrimary,
-            overlayColor: palette.textPrimary.withOpacity(0.15),
+            activeTrackColor: widget.palette.textPrimary,
+            inactiveTrackColor:
+                widget.palette.textMuted.withValues(alpha: 0.25),
+            thumbColor: widget.palette.textPrimary,
+            overlayColor: widget.palette.textPrimary.withValues(alpha: 0.15),
           ),
           child: Slider(
-            value: duration > 0 ? currentPosition.clamp(0, duration).toDouble() : 0,
+            value: widget.duration > 0 ? clampedPosition : 0,
             min: 0,
-            max: duration > 0 ? duration.toDouble() : 1,
-            onChanged: (_) {},
+            max: widget.duration > 0 ? widget.duration.toDouble() : 1,
+            onChangeStart: canSeek
+                ? (value) {
+                    _remoteSeekTimer?.cancel();
+                    setState(() {
+                      _isDragging = true;
+                      _dragPositionSeconds = _clampSliderPosition(value);
+                    });
+                  }
+                : null,
+            onChanged: canSeek
+                ? (value) {
+                    setState(() {
+                      _dragPositionSeconds = _clampSliderPosition(value);
+                    });
+                  }
+                : null,
+            onChangeEnd: canSeek
+                ? (value) {
+                    final clampedValue = _clampSliderPosition(value);
+                    setState(() {
+                      _isDragging = false;
+                      _dragPositionSeconds = clampedValue;
+                    });
+                    _dispatchSeekCommit(clampedValue);
+                  }
+                : null,
           ),
         ),
         Padding(
@@ -534,9 +2099,15 @@ class _ProgressBar extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(_fmt(currentPosition), style: GoogleFonts.inter(color: palette.textMuted, fontSize: 12)),
-              Text(duration > 0 ? '-${_fmt(duration - currentPosition)}' : '--:--',
-                  style: GoogleFonts.inter(color: palette.textMuted, fontSize: 12)),
+              Text(_fmt(clampedPosition.floor()),
+                  style: GoogleFonts.inter(
+                      color: widget.palette.textMuted, fontSize: 12)),
+              Text(
+                  widget.duration > 0
+                      ? '-${_fmt(displayedRemaining)}'
+                      : '--:--',
+                  style: GoogleFonts.inter(
+                      color: widget.palette.textMuted, fontSize: 12)),
             ],
           ),
         ),
@@ -545,80 +2116,137 @@ class _ProgressBar extends StatelessWidget {
   }
 }
 
-// ── Controls Row ─────────────────────────────────────────────────────────────
+// â”€â”€ Controls Row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _ControlsRow extends StatelessWidget {
   const _ControlsRow({
-    required this.isPlaying, required this.isShuffleOn,
-    required this.volume, required this.palette,
-    required this.onShuffle, required this.onPlayPause,
-    required this.onSkip, required this.onVolumeChanged,
+    required this.isPlaying,
+    required this.isShuffleOn,
+    required this.volume,
+    required this.palette,
+    required this.actionsEnabled,
+    required this.hasNext,
+    required this.hasPrevious,
+    required this.onShuffle,
+    required this.onPlayPause,
+    required this.onSkipBack,
+    required this.onSkip,
+    required this.onVolumeChanged,
   });
   final bool isPlaying, isShuffleOn;
+  final bool actionsEnabled;
+  final bool hasNext, hasPrevious;
   final double volume;
   final _NPPalette palette;
-  final VoidCallback onShuffle, onPlayPause, onSkip;
+  final VoidCallback onShuffle, onPlayPause, onSkipBack, onSkip;
   final ValueChanged<double> onVolumeChanged;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            // Shuffle
-            IconButton(
-              icon: Icon(
-                LucideIcons.shuffle,
-                color: isShuffleOn ? palette.accent : palette.textMuted,
-                size: 22,
-              ),
-              onPressed: onShuffle,
+        // Shuffle
+        _ControlButton(
+          icon: LucideIcons.shuffle,
+          color: actionsEnabled
+              ? (isShuffleOn ? palette.accent : palette.textMuted)
+              : palette.textMuted.withValues(alpha: 0.4),
+          size: 22,
+          onTap: actionsEnabled ? onShuffle : null,
+        ),
+        const SizedBox(width: 20),
+        // Skip Previous
+        _ControlButton(
+          icon: LucideIcons.skipBack,
+          color: hasPrevious
+              ? palette.textPrimary
+              : palette.textMuted.withValues(alpha: 0.4),
+          size: 26,
+          onTap: hasPrevious ? onSkipBack : null,
+        ),
+        const SizedBox(width: 16),
+        // Play/Pause (large center button)
+        GestureDetector(
+          onTap: actionsEnabled ? onPlayPause : null,
+          child: Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: actionsEnabled
+                  ? palette.textPrimary
+                  : palette.textMuted.withValues(alpha: 0.35),
             ),
-            // Play/Pause (large)
-            GestureDetector(
-              onTap: onPlayPause,
-              child: Container(
-                width: 68, height: 68,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: palette.textPrimary,
-                ),
-                child: Icon(
-                  isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                  color: palette.bg,
-                  size: 38,
-                ),
-              ),
+            child: Icon(
+              isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+              color: palette.bg,
+              size: 36,
             ),
-            // Skip
-            IconButton(
-              icon: Icon(LucideIcons.skipForward, color: palette.textPrimary, size: 28),
-              onPressed: onSkip,
-            ),
-            // Volume
-            IconButton(
-              icon: Icon(
-                volume > 0 ? LucideIcons.volume2 : LucideIcons.volumeX,
-                color: palette.textMuted, size: 22,
-              ),
-              onPressed: () {
-                // Toggle mute
-                onVolumeChanged(volume > 0 ? 0 : 0.6);
-              },
-            ),
-          ],
+          ),
+        ),
+        const SizedBox(width: 16),
+        // Skip Next
+        _ControlButton(
+          icon: LucideIcons.skipForward,
+          color: hasNext
+              ? palette.textPrimary
+              : palette.textMuted.withValues(alpha: 0.4),
+          size: 26,
+          onTap: hasNext ? onSkip : null,
+        ),
+        const SizedBox(width: 20),
+        // Volume
+        _ControlButton(
+          icon: volume > 0 ? LucideIcons.volume2 : LucideIcons.volumeX,
+          color: actionsEnabled
+              ? palette.textMuted
+              : palette.textMuted.withValues(alpha: 0.4),
+          size: 22,
+          onTap: actionsEnabled
+              ? () => onVolumeChanged(volume > 0 ? 0 : 0.6)
+              : null,
         ),
       ],
     );
   }
 }
 
-// ── Bottom Bar ───────────────────────────────────────────────────────────────
+/// Uniform-sized control button to keep the row balanced.
+class _ControlButton extends StatelessWidget {
+  const _ControlButton({
+    required this.icon,
+    required this.color,
+    required this.size,
+    required this.onTap,
+  });
+  final IconData icon;
+  final Color color;
+  final double size;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 44,
+      height: 44,
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints(),
+        icon: Icon(icon, color: color, size: size),
+        onPressed: onTap,
+      ),
+    );
+  }
+}
+
+// â”€â”€ Bottom Bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _BottomBar extends StatelessWidget {
   const _BottomBar({
-    required this.deviceLabel, required this.isPlayback,
-    required this.palette, required this.onQueue,
+    required this.deviceLabel,
+    required this.isPlayback,
+    required this.palette,
+    required this.onQueue,
   });
   final String deviceLabel;
   final bool isPlayback;
@@ -636,7 +2264,8 @@ class _BottomBar extends StatelessWidget {
         children: [
           Icon(
             isPlayback ? LucideIcons.speaker : LucideIcons.smartphone,
-            color: palette.accent, size: 18,
+            color: palette.accent,
+            size: 18,
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -647,15 +2276,18 @@ class _BottomBar extends StatelessWidget {
                 Text(
                   'Playing from',
                   style: GoogleFonts.inter(
-                    color: palette.textMuted, fontSize: 10,
+                    color: palette.textMuted,
+                    fontSize: 10,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
                   deviceLabel,
-                  maxLines: 1, overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.poppins(
-                    color: palette.textPrimary, fontSize: 13,
+                    color: palette.textPrimary,
+                    fontSize: 13,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -663,7 +2295,8 @@ class _BottomBar extends StatelessWidget {
             ),
           ),
           IconButton(
-            icon: Icon(LucideIcons.listMusic, color: palette.textPrimary, size: 22),
+            icon: Icon(LucideIcons.listMusic,
+                color: palette.textPrimary, size: 22),
             onPressed: onQueue,
           ),
         ],
@@ -672,9 +2305,13 @@ class _BottomBar extends StatelessWidget {
   }
 }
 
-// ── Sheet Option ─────────────────────────────────────────────────────────────
+// â”€â”€ Sheet Option â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _SheetOption extends StatelessWidget {
-  const _SheetOption({required this.icon, required this.label, required this.palette, required this.onTap});
+  const _SheetOption(
+      {required this.icon,
+      required this.label,
+      required this.palette,
+      required this.onTap});
   final IconData icon;
   final String label;
   final _NPPalette palette;
@@ -690,9 +2327,12 @@ class _SheetOption extends StatelessWidget {
           children: [
             Icon(icon, color: palette.textPrimary, size: 20),
             const SizedBox(width: 16),
-            Text(label, style: GoogleFonts.inter(
-              color: palette.textPrimary, fontSize: 15, fontWeight: FontWeight.w500,
-            )),
+            Text(label,
+                style: GoogleFonts.inter(
+                  color: palette.textPrimary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                )),
           ],
         ),
       ),
@@ -700,32 +2340,56 @@ class _SheetOption extends StatelessWidget {
   }
 }
 
-// ── Queue Track Tile ─────────────────────────────────────────────────────────
+// â”€â”€ Queue Track Tile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _QueueTrackTile extends StatelessWidget {
   const _QueueTrackTile({
-    required this.title, required this.artist,
-    this.artUrl, required this.isPlaying, required this.palette,
+    required this.title,
+    required this.artist,
+    this.artUrl,
+    required this.isPlaying,
+    this.isPending = false,
+    this.meta,
+    this.trailing,
+    required this.palette,
   });
   final String title, artist;
   final String? artUrl;
   final bool isPlaying;
+  final bool isPending;
+  final String? meta;
+  final Widget? trailing;
   final _NPPalette palette;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+    final child = AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: isPlaying
+            ? palette.accent.withValues(alpha: 0.08)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isPlaying
+              ? palette.accent.withValues(alpha: 0.24)
+              : Colors.transparent,
+        ),
+      ),
       child: Row(
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: SizedBox(
-              width: 48, height: 48,
+              width: 48,
+              height: 48,
               child: artUrl != null
                   ? Image.network(artUrl!, fit: BoxFit.cover)
                   : Container(
                       color: palette.overlay,
-                      child: Icon(Icons.music_note, color: palette.textMuted, size: 22),
+                      child: Icon(Icons.music_note,
+                          color: palette.textMuted, size: 22),
                     ),
             ),
           ),
@@ -734,16 +2398,363 @@ class _QueueTrackTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, maxLines: 1, overflow: TextOverflow.ellipsis,
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.poppins(
                     color: isPlaying ? palette.accent : palette.textPrimary,
-                    fontSize: 14, fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                Text(artist, maxLines: 1, overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(color: palette.textMuted, fontSize: 12),
+                Text(
+                  artist,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style:
+                      GoogleFonts.inter(color: palette.textMuted, fontSize: 12),
                 ),
+                if (meta != null && meta!.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    meta!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      color: isPending ? palette.accent : palette.textMuted,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ],
+            ),
+          ),
+          if (trailing != null)
+            trailing!
+          else if (isPending)
+            SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: palette.accent,
+              ),
+            )
+          else if (isPlaying)
+            Icon(
+              LucideIcons.volume2,
+              size: 18,
+              color: palette.accent,
+            ),
+        ],
+      ),
+    );
+
+    return child;
+  }
+}
+
+class _QueueTrackActions extends StatelessWidget {
+  const _QueueTrackActions({
+    required this.palette,
+    required this.canMoveUp,
+    required this.canMoveDown,
+    required this.onMoveUp,
+    required this.onMoveDown,
+    required this.onRemove,
+    this.showReorderButtons = true,
+  });
+
+  final _NPPalette palette;
+  final bool canMoveUp;
+  final bool canMoveDown;
+  final VoidCallback? onMoveUp;
+  final VoidCallback? onMoveDown;
+  final VoidCallback onRemove;
+  final bool showReorderButtons;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (showReorderButtons) ...[
+          IconButton(
+            tooltip: 'Move up',
+            constraints: const BoxConstraints.tightFor(width: 28, height: 28),
+            padding: EdgeInsets.zero,
+            onPressed: canMoveUp ? onMoveUp : null,
+            icon: Icon(
+              LucideIcons.chevronUp,
+              size: 16,
+              color: canMoveUp ? palette.textMuted : palette.border,
+            ),
+          ),
+          IconButton(
+            tooltip: 'Move down',
+            constraints: const BoxConstraints.tightFor(width: 28, height: 28),
+            padding: EdgeInsets.zero,
+            onPressed: canMoveDown ? onMoveDown : null,
+            icon: Icon(
+              LucideIcons.chevronDown,
+              size: 16,
+              color: canMoveDown ? palette.textMuted : palette.border,
+            ),
+          ),
+        ],
+        IconButton(
+          tooltip: 'Remove',
+          constraints: const BoxConstraints.tightFor(width: 28, height: 28),
+          padding: EdgeInsets.zero,
+          onPressed: onRemove,
+          icon: Icon(
+            LucideIcons.trash2,
+            size: 16,
+            color: palette.textMuted,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ============================================================================
+// Manual / Auto Override panel (same behavior as Home)
+// ============================================================================
+class _RuntimeStatusPanel extends StatefulWidget {
+  const _RuntimeStatusPanel({
+    required this.playbackState,
+    required this.palette,
+    required this.isBusy,
+    required this.onSchedulingChanged,
+  });
+
+  final SpacePlaybackState playbackState;
+  final _NPPalette palette;
+  final bool isBusy;
+  final ValueChanged<bool> onSchedulingChanged;
+
+  @override
+  State<_RuntimeStatusPanel> createState() => _RuntimeStatusPanelState();
+}
+
+class _RuntimeStatusPanelState extends State<_RuntimeStatusPanel> {
+  late final Timer _ticker;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _ticker.cancel();
+    super.dispose();
+  }
+
+  int? _remainingSecondsUntil(DateTime? utcDeadline) {
+    if (utcDeadline == null) return null;
+    final remaining = utcDeadline.toUtc().difference(DateTime.now().toUtc());
+    return remaining.inSeconds < 0 ? 0 : remaining.inSeconds;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final playbackState = widget.playbackState;
+    final palette = widget.palette;
+    final manualRemainingSeconds =
+        _remainingSecondsUntil(playbackState.manualOverrideExpiresAtUtc) ??
+            playbackState.manualOverrideRemainingSeconds;
+    final schedulingRemainingSeconds =
+        _remainingSecondsUntil(playbackState.schedulingEndsAtUtc) ??
+            playbackState.schedulingRemainingSeconds;
+    final manualRows = <MapEntry<String, String>>[
+      if (playbackState.overrideReason?.trim().isNotEmpty == true)
+        MapEntry('Reason', playbackState.overrideReason!.trim()),
+      if (manualRemainingSeconds != null)
+        MapEntry(
+          'Remaining',
+          _formatRuntimeSeconds(manualRemainingSeconds),
+        ),
+      if (playbackState.manualOverrideActivatedAtUtc != null)
+        MapEntry(
+          'Activated',
+          _formatRuntimeDateTime(playbackState.manualOverrideActivatedAtUtc!),
+        ),
+      if (playbackState.manualOverrideExpiresAtUtc != null)
+        MapEntry(
+          'Expires',
+          _formatRuntimeDateTime(playbackState.manualOverrideExpiresAtUtc!),
+        ),
+    ];
+    final schedulingRows = <MapEntry<String, String>>[
+      if (playbackState.schedulingOriginLabel != null)
+        MapEntry('Origin', playbackState.schedulingOriginLabel!),
+      if (playbackState.schedulingSlotId?.trim().isNotEmpty == true)
+        MapEntry('Slot', playbackState.schedulingSlotId!.trim()),
+      if (schedulingRemainingSeconds != null)
+        MapEntry(
+          'Remaining',
+          _formatRuntimeSeconds(schedulingRemainingSeconds),
+        ),
+      if (playbackState.schedulingEndsAtUtc != null)
+        MapEntry(
+          'Ends',
+          _formatRuntimeDateTime(playbackState.schedulingEndsAtUtc!),
+        ),
+    ];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      decoration: BoxDecoration(
+        color: palette.card,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: palette.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.schedule_rounded, color: palette.accent, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Runtime status',
+                  style: GoogleFonts.poppins(
+                    color: palette.textPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Switch.adaptive(
+                value: playbackState.isScheduling,
+                activeThumbColor: palette.accent,
+                onChanged: widget.isBusy ? null : widget.onSchedulingChanged,
+              ),
+            ],
+          ),
+          if (playbackState.isManualOverride) ...[
+            const SizedBox(height: 12),
+            _RuntimeStatusSection(
+              title: 'Manual override',
+              rows: manualRows,
+              palette: palette,
+            ),
+          ],
+          if (playbackState.isScheduling) ...[
+            const SizedBox(height: 12),
+            _RuntimeStatusSection(
+              title: 'Scheduling runtime',
+              rows: schedulingRows,
+              palette: palette,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _RuntimeStatusSection extends StatelessWidget {
+  const _RuntimeStatusSection({
+    required this.title,
+    required this.rows,
+    required this.palette,
+  });
+
+  final String title;
+  final List<MapEntry<String, String>> rows;
+  final _NPPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: GoogleFonts.inter(
+            color: palette.textPrimary,
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: rows.isEmpty
+              ? [
+                  _RuntimePill(
+                    label: 'Active',
+                    value: 'Waiting for details',
+                    palette: palette,
+                  ),
+                ]
+              : rows
+                  .map(
+                    (entry) => _RuntimePill(
+                      label: entry.key,
+                      value: entry.value,
+                      palette: palette,
+                    ),
+                  )
+                  .toList(),
+        ),
+      ],
+    );
+  }
+}
+
+class _RuntimePill extends StatelessWidget {
+  const _RuntimePill({
+    required this.label,
+    required this.value,
+    required this.palette,
+  });
+
+  final String label;
+  final String value;
+  final _NPPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: palette.overlay,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: palette.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              color: palette.textMuted,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: GoogleFonts.inter(
+              color: palette.textPrimary,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -752,168 +2763,453 @@ class _QueueTrackTile extends StatelessWidget {
   }
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// Sensor Dashboard (kept from original)
-// ═════════════════════════════════════════════════════════════════════════════
-class _SensorDashboard extends StatelessWidget {
-  const _SensorDashboard({required this.sensorData, required this.palette});
-  final SensorData? sensorData;
+class _AiExplainabilityPanel extends StatelessWidget {
+  const _AiExplainabilityPanel({
+    required this.explainability,
+    required this.hasActiveOverride,
+    required this.palette,
+  });
+
+  final SpacePlaybackExplainability? explainability;
+  final bool hasActiveOverride;
   final _NPPalette palette;
 
   @override
   Widget build(BuildContext context) {
-    final cards = [
-      _SensorCard(icon: LucideIcons.thermometer, label: 'Temperature',
-          value: sensorData != null ? '${sensorData!.temperature.toStringAsFixed(1)}C' : '--',
-          badge: 'Stable', palette: palette, isAlert: false),
-      _SensorCard(icon: LucideIcons.volume2, label: 'Noise',
-          value: sensorData != null ? '${sensorData!.noiseLevel.toStringAsFixed(0)} dB' : '--',
-          badge: _noiseBadge(sensorData?.noiseLevel), palette: palette,
-          isAlert: _noiseBadge(sensorData?.noiseLevel) == 'Loud'),
-      _SensorCard(icon: LucideIcons.users, label: 'Crowd',
-          value: sensorData != null ? _crowdEstimate(sensorData!) : 'N/A',
-          badge: 'Live', palette: palette, isAlert: false),
-      _SensorCard(icon: LucideIcons.cloudRain, label: 'Humidity',
-          value: sensorData != null ? '${sensorData!.humidity.toStringAsFixed(0)}%' : '--',
-          badge: _humidityBadge(sensorData?.humidity), palette: palette, isAlert: false),
-    ];
-    return SizedBox(
-      height: 140,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: cards.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (_, i) => cards[i],
-      ),
-    );
-  }
+    final showManualState = hasActiveOverride;
+    final data = explainability;
+    final stats = <MapEntry<String, String>>[];
 
-  String _noiseBadge(double? n) { if (n == null) return 'N/A'; if (n < 50) return 'Quiet'; if (n < 70) return 'Moderate'; return 'Loud'; }
-  String _crowdEstimate(SensorData d) { if (d.noiseLevel < 45) return 'Low'; if (d.noiseLevel < 65) return 'Medium'; return 'High'; }
-  String _humidityBadge(double? h) { if (h == null) return 'N/A'; if (h < 30) return 'Dry'; if (h < 60) return 'Optimal'; return 'Humid'; }
-}
-
-class _SensorCard extends StatelessWidget {
-  const _SensorCard({required this.icon, required this.label, required this.value,
-    required this.badge, required this.palette, required this.isAlert});
-  final IconData icon; final String label, value, badge;
-  final _NPPalette palette; final bool isAlert;
-
-  @override
-  Widget build(BuildContext context) {
-    final accentColor = isAlert ? Theme.of(context).colorScheme.error : palette.accent;
-    return Container(
-      width: 160, padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: palette.card, borderRadius: BorderRadius.circular(16), border: Border.all(color: palette.border)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: accentColor.withOpacity(0.10), borderRadius: BorderRadius.circular(10)),
-            child: Icon(icon, color: accentColor, size: 18)),
-          const Spacer(),
-          Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: palette.overlay, borderRadius: BorderRadius.circular(12), border: Border.all(color: palette.border)),
-            child: Text(badge, style: GoogleFonts.inter(color: palette.textMuted, fontSize: 11, fontWeight: FontWeight.w600))),
-        ]),
-        const Spacer(),
-        Text(value, style: GoogleFonts.poppins(color: palette.textPrimary, fontSize: 22, fontWeight: FontWeight.w700)),
-        const SizedBox(height: 4),
-        Text(label, style: GoogleFonts.inter(color: palette.textMuted, fontSize: 12, fontWeight: FontWeight.w500)),
-      ]),
-    );
-  }
-}
-
-// ═════════════════════════════════════════════════════════════════════════════
-// Override Mood CTA (kept from original)
-// ═════════════════════════════════════════════════════════════════════════════
-class _OverrideMoodCTA extends StatelessWidget {
-  const _OverrideMoodCTA({required this.spaceId, required this.currentMood, required this.palette});
-  final String spaceId; final String? currentMood; final _NPPalette palette;
-
-  @override
-  Widget build(BuildContext context) {
-    return FilledButton(
-      style: FilledButton.styleFrom(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
-      ),
-      onPressed: () => _openOverrideDialog(context),
-      child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Override Mood', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700)),
-          const SizedBox(height: 4),
-          Text(currentMood != null ? 'Current: ${currentMood!.toUpperCase()}' : 'Set a new atmosphere',
-              style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600)),
-        ]),
-        const Icon(LucideIcons.slidersHorizontal),
-      ]),
-    );
-  }
-
-  void _openOverrideDialog(BuildContext context) {
-    showModalBottomSheet(
-      context: context, backgroundColor: palette.card,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (sheetCtx) {
-        String mood = currentMood ?? 'happy';
-        int durationMin = 30;
-        final moods = ['happy', 'chill', 'energetic', 'romantic', 'focus'];
-        return StatefulBuilder(
-          builder: (ctx, setModalState) => Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
-            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: palette.border, borderRadius: BorderRadius.circular(20)))),
-              const SizedBox(height: 16),
-              Text('Override Mood', style: GoogleFonts.poppins(color: palette.textPrimary, fontSize: 18, fontWeight: FontWeight.w700)),
-              const SizedBox(height: 14),
-              Wrap(spacing: 10, runSpacing: 10, children: moods.map((m) => ChoiceChip(
-                label: Text(m.toUpperCase(), style: GoogleFonts.inter(color: mood == m ? palette.textOnAccent : palette.textPrimary, fontWeight: FontWeight.w700)),
-                selected: mood == m, onSelected: (_) => setModalState(() => mood = m),
-                backgroundColor: palette.overlay, selectedColor: palette.accent,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: palette.border)),
-              )).toList()),
-              const SizedBox(height: 20),
-              Text('Duration (minutes)', style: GoogleFonts.inter(color: palette.textMuted, fontSize: 12)),
-              Slider(value: durationMin.toDouble(), min: 10, max: 120, divisions: 11,
-                activeColor: palette.accent, inactiveColor: palette.textMuted.withOpacity(0.2),
-                label: '$durationMin', onChanged: (v) => setModalState(() => durationMin = v.round())),
-              const SizedBox(height: 8),
-              Row(children: [
-                Expanded(child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(foregroundColor: palette.textMuted, side: BorderSide(color: palette.border),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
-                  onPressed: () => Navigator.pop(sheetCtx), child: const Text('Cancel'))),
-                const SizedBox(width: 12),
-                Expanded(child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: palette.accent, foregroundColor: palette.textOnAccent,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)), padding: const EdgeInsets.symmetric(vertical: 14)),
-                  onPressed: () {
-                    context.read<MusicControlBloc>().add(OverrideMoodRequested(spaceId: spaceId, moodId: mood, duration: durationMin));
-                    Navigator.pop(sheetCtx);
-                  },
-                  child: const Text('Apply', style: TextStyle(fontWeight: FontWeight.w700)))),
-              ]),
-            ]),
+    if (!showManualState && data != null) {
+      if (data.moodName?.trim().isNotEmpty ?? false) {
+        stats.add(MapEntry('Current Mood', data.moodName!.trim()));
+      }
+      if (data.bpmBandLabel != null) {
+        stats.add(MapEntry('BPM Range', data.bpmBandLabel!));
+      }
+      if (data.bpmTargetLabel != null) {
+        stats.add(MapEntry('Target', data.bpmTargetLabel!));
+      }
+      if (data.aiGenerationMode != null) {
+        stats.add(MapEntry('Mode', data.aiGenerationMode!.displayName));
+      }
+      if (data.fuzzyProfileName?.trim().isNotEmpty ?? false) {
+        stats.add(MapEntry('Profile', data.fuzzyProfileName!.trim()));
+      }
+      if (data.fuzzyProfileTemplate?.trim().isNotEmpty ?? false) {
+        stats.add(MapEntry('Template', data.fuzzyProfileTemplate!.trim()));
+      }
+      if (data.playlistRestrictionLabel?.trim().isNotEmpty ?? false) {
+        stats.add(MapEntry('Playlists', data.playlistRestrictionLabel!.trim()));
+      }
+      if (data.usedMoodOnlyFallback != null) {
+        stats.add(
+          MapEntry(
+            'Fallback',
+            data.usedMoodOnlyFallback!
+                ? 'Mood-only fallback used'
+                : 'BPM-filtered queue retained',
           ),
         );
-      },
+      }
+      if (data.moodOnlyCount != null) {
+        stats.add(MapEntry('Mood-only pool', '${data.moodOnlyCount} tracks'));
+      }
+      if (data.bpmFilteredCount != null) {
+        stats.add(
+          MapEntry('BPM-filtered pool', '${data.bpmFilteredCount} tracks'),
+        );
+      }
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      decoration: BoxDecoration(
+        color: palette.card,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: palette.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: palette.overlay,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  showManualState
+                      ? Icons.pause_circle_outline_rounded
+                      : Icons.auto_graph_rounded,
+                  color: showManualState ? palette.textMuted : palette.accent,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      showManualState
+                          ? 'AI explainability paused'
+                          : 'CAMS explainability',
+                      style: GoogleFonts.poppins(
+                        color: palette.textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      showManualState
+                          ? 'Manual override is active, so the latest AI rule details are intentionally hidden until Auto Mode resumes.'
+                          : 'Review the fuzzy rule, BPM guidance, and fallback signals behind the current auto-selection.',
+                      style: GoogleFonts.inter(
+                        color: palette.textMuted,
+                        fontSize: 12,
+                        height: 1.35,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (!showManualState && stats.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: stats
+                  .map(
+                    (entry) => Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: palette.overlay,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: palette.border),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            entry.key,
+                            style: GoogleFonts.inter(
+                              color: palette.textMuted,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            entry.value,
+                            style: GoogleFonts.inter(
+                              color: palette.textPrimary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ],
+          if (!showManualState &&
+              data?.triggeredRule?.trim().isNotEmpty == true) ...[
+            const SizedBox(height: 14),
+            Text(
+              'Rule fired',
+              style: GoogleFonts.inter(
+                color: palette.textMuted,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              data!.triggeredRule!.trim(),
+              style: GoogleFonts.inter(
+                color: palette.textPrimary,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+          if (!showManualState && data?.reason?.trim().isNotEmpty == true) ...[
+            const SizedBox(height: 12),
+            Text(
+              'Reason',
+              style: GoogleFonts.inter(
+                color: palette.textMuted,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              data!.reason!.trim(),
+              style: GoogleFonts.inter(
+                color: palette.textPrimary,
+                fontSize: 12,
+                height: 1.35,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
+class _OverrideMoodCTA extends StatelessWidget {
+  const _OverrideMoodCTA({
+    required this.spaceId,
+    required this.currentMood,
+    required this.palette,
+    required this.moods,
+    required this.hasActiveOverride,
+    required this.isOverriding,
+    required this.isPreparing,
+    this.lastOverrideResponse,
+    required this.onOpenOverrideSheet,
+  });
+
+  final String spaceId;
+  final String? currentMood;
+  final _NPPalette palette;
+  final List<Mood> moods;
+  final bool hasActiveOverride;
+  final bool isOverriding;
+  final bool isPreparing;
+  final OverrideResponse? lastOverrideResponse;
+  final VoidCallback onOpenOverrideSheet;
+
+  @override
+  Widget build(BuildContext context) {
+    final statusLabel = hasActiveOverride ? 'Manual Override' : 'Auto Mode';
+    final subtitle = hasActiveOverride
+        ? 'Tracks, playlist, or mood are currently overriding CAMS playback.'
+        : 'CAMS is auto-adjusting playback. You can take over with tracks, a playlist, or a mood.';
+    final ctaLabel = hasActiveOverride ? 'Change override' : 'Open override';
+    final overrideSummary = lastOverrideResponse == null
+        ? null
+        : (lastOverrideResponse!.moodName?.trim().isNotEmpty == true)
+            ? 'Latest override mood: ${lastOverrideResponse!.moodName!.trim()}'
+            : (lastOverrideResponse!.playlistName?.trim().isNotEmpty == true)
+                ? 'Latest override playlist: ${lastOverrideResponse!.playlistName!.trim()}'
+                : lastOverrideResponse!.isAckOnly
+                    ? 'Manual override acknowledged by CAMS.'
+                    : null;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      decoration: BoxDecoration(
+        color: palette.card,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: palette.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      statusLabel,
+                      style: GoogleFonts.poppins(
+                        color: palette.textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.inter(
+                        color: palette.textMuted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: isOverriding ? null : onOpenOverrideSheet,
+                icon: const Icon(Icons.tune, size: 16),
+                label: Text(ctaLabel),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: palette.accent,
+                  foregroundColor: palette.textOnAccent,
+                  textStyle: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (currentMood != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              'Mood state: ${currentMood!.toUpperCase()}',
+              style: GoogleFonts.inter(
+                color: palette.textPrimary,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+          if (overrideSummary != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              overrideSummary,
+              style: GoogleFonts.inter(
+                color: palette.textMuted,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+          if (isOverriding || isPreparing) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                if (isOverriding)
+                  const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                else
+                  Icon(
+                    LucideIcons.loader,
+                    size: 14,
+                    color: palette.textMuted,
+                  ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    isOverriding
+                        ? 'Applying override...'
+                        : 'Preparing next stream. Playback will continue automatically.',
+                    style: GoogleFonts.inter(
+                      color: palette.textMuted,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: palette.overlay,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: palette.border),
+                ),
+                child: Text(
+                  '${moods.length} moods available',
+                  style: GoogleFonts.inter(
+                    color: palette.textMuted,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              if (hasActiveOverride)
+                TextButton.icon(
+                  onPressed: isOverriding
+                      ? null
+                      : () => context
+                          .read<CamsPlaybackBloc>()
+                          .add(const CamsCancelOverride()),
+                  icon: const Icon(Icons.close, size: 16),
+                  label: const Text('Cancel override'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: palette.textMuted,
+                    textStyle: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          if (hasActiveOverride && currentMood != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              'Tap "$ctaLabel" to switch source or replace the current manual selection.',
+              style: GoogleFonts.inter(
+                color: palette.textMuted,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // Space Swap Sheet (kept from original)
-// ═════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 class _SpaceSwapSheet extends StatelessWidget {
   const _SpaceSwapSheet({required this.playerState, required this.palette});
-  final ps.PlayerState playerState; final _NPPalette palette;
+  final ps.PlayerState playerState;
+  final _NPPalette palette;
 
   void _switchSpace(BuildContext context, SpaceInfo space) {
-    context.read<SpaceMonitoringBloc>().add(StartMonitoring(storeId: space.storeId, spaceId: space.id));
-    context.read<MusicControlBloc>().add(StartMusicMonitoring(storeId: space.storeId, spaceId: space.id));
+    context.read<SessionCubit>().changeSpace(
+          Space(
+            id: space.id,
+            name: space.name,
+            storeId: space.storeId,
+            type: SpaceTypeEnum.hall,
+            status: space.isOnline
+                ? EntityStatusEnum.active
+                : EntityStatusEnum.inactive,
+            currentMood: space.currentMood,
+          ),
+        );
+    context
+        .read<SpaceMonitoringBloc>()
+        .add(StartMonitoring(storeId: space.storeId, spaceId: space.id));
+    context.read<CamsPlaybackBloc>().add(CamsInitPlayback(spaceId: space.id));
     context.read<PlayerBloc>().add(PlayerContextUpdated(
-      storeId: space.storeId, spaceId: space.id, spaceName: space.name,
-      availableSpaces: playerState.availableSpaces,
-    ));
+          storeId: space.storeId,
+          spaceId: space.id,
+          spaceName: space.name,
+          availableSpaces: playerState.availableSpaces,
+        ));
     Navigator.pop(context);
   }
 
@@ -921,84 +3217,173 @@ class _SpaceSwapSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final spaces = playerState.availableSpaces;
     return Container(
-      decoration: BoxDecoration(color: palette.card, borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
-      padding: EdgeInsets.fromLTRB(20, 12, 20, 32 + MediaQuery.of(context).viewInsets.bottom),
-      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: palette.border, borderRadius: BorderRadius.circular(20)))),
-        const SizedBox(height: 20),
-        Row(children: [
-          Icon(Icons.spatial_audio_outlined, color: palette.accent, size: 22),
-          const SizedBox(width: 10),
-          Text('Chọn không gian', style: GoogleFonts.poppins(color: palette.textPrimary, fontSize: 17, fontWeight: FontWeight.w700)),
-        ]),
-        const SizedBox(height: 4),
-        Text('Đổi space sẽ cập nhật cảm biến, nhạc và trạng thái Hub.', style: GoogleFonts.inter(color: palette.textMuted, fontSize: 12)),
-        const SizedBox(height: 16),
-        Divider(color: palette.border, height: 1),
-        if (spaces.isEmpty)
-          Padding(padding: const EdgeInsets.symmetric(vertical: 24), child: Center(child: Text('Không có không gian nào.', style: GoogleFonts.inter(color: palette.textMuted))))
-        else
-          ListView.separated(
-            shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
-            itemCount: spaces.length,
-            separatorBuilder: (_, __) => Divider(color: palette.border, height: 1),
-            itemBuilder: (context, i) {
-              final space = spaces[i];
-              final isActive = space.id == playerState.activeSpaceId;
-              return ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200), width: 42, height: 42,
-                  decoration: BoxDecoration(
-                    color: isActive ? palette.accent.withOpacity(0.15) : palette.overlay,
-                    borderRadius: BorderRadius.circular(12),
-                    border: isActive ? Border.all(color: palette.accent, width: 1.5) : null,
-                  ),
-                  child: Icon(Icons.spatial_audio_outlined, color: isActive ? palette.accent : palette.textMuted, size: 20),
-                ),
-                title: Text(space.name, style: GoogleFonts.inter(color: palette.textPrimary, fontSize: 14, fontWeight: isActive ? FontWeight.w700 : FontWeight.w500)),
-                subtitle: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Container(width: 8, height: 8, decoration: BoxDecoration(shape: BoxShape.circle, color: space.isOnline ? Colors.green : Colors.orange)),
-                  const SizedBox(width: 4),
-                  Text(space.isOnline ? 'Online' : 'Offline', style: GoogleFonts.inter(color: palette.textMuted, fontSize: 11)),
-                ]),
-                trailing: isActive ? Icon(Icons.check_circle_rounded, color: palette.accent, size: 22) : Icon(Icons.chevron_right, color: palette.textMuted, size: 22),
-                onTap: isActive ? null : () => _switchSpace(context, space),
-              );
-            },
-          ),
-      ]),
+      decoration: BoxDecoration(
+          color: palette.card,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
+      padding: EdgeInsets.fromLTRB(
+          20, 12, 20, 32 + MediaQuery.of(context).viewInsets.bottom),
+      child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+                child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                        color: palette.border,
+                        borderRadius: BorderRadius.circular(20)))),
+            const SizedBox(height: 20),
+            Row(children: [
+              Icon(Icons.spatial_audio_outlined,
+                  color: palette.accent, size: 22),
+              const SizedBox(width: 10),
+              Text('Select Space',
+                  style: GoogleFonts.poppins(
+                      color: palette.textPrimary,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700)),
+            ]),
+            const SizedBox(height: 4),
+            Text('Switching space will update music and Hub status.',
+                style:
+                    GoogleFonts.inter(color: palette.textMuted, fontSize: 12)),
+            const SizedBox(height: 16),
+            Divider(color: palette.border, height: 1),
+            if (spaces.isEmpty)
+              Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: Center(
+                      child: Text('No spaces available.',
+                          style: GoogleFonts.inter(color: palette.textMuted))))
+            else
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: spaces.length,
+                separatorBuilder: (_, __) =>
+                    Divider(color: palette.border, height: 1),
+                itemBuilder: (context, i) {
+                  final space = spaces[i];
+                  final isActive = space.id == playerState.activeSpaceId;
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: isActive
+                            ? palette.accent.withValues(alpha: 0.15)
+                            : palette.overlay,
+                        borderRadius: BorderRadius.circular(12),
+                        border: isActive
+                            ? Border.all(color: palette.accent, width: 1.5)
+                            : null,
+                      ),
+                      child: Icon(Icons.spatial_audio_outlined,
+                          color: isActive ? palette.accent : palette.textMuted,
+                          size: 20),
+                    ),
+                    title: Text(space.name,
+                        style: GoogleFonts.inter(
+                            color: palette.textPrimary,
+                            fontSize: 14,
+                            fontWeight:
+                                isActive ? FontWeight.w700 : FontWeight.w500)),
+                    subtitle: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: space.isOnline
+                                  ? Colors.green
+                                  : Colors.orange)),
+                      const SizedBox(width: 4),
+                      Text(space.isOnline ? 'Online' : 'Offline',
+                          style: GoogleFonts.inter(
+                              color: palette.textMuted, fontSize: 11)),
+                    ]),
+                    trailing: isActive
+                        ? Icon(Icons.check_circle_rounded,
+                            color: palette.accent, size: 22)
+                        : Icon(Icons.chevron_right,
+                            color: palette.textMuted, size: 22),
+                    onTap: isActive ? null : () => _switchSpace(context, space),
+                  );
+                },
+              ),
+          ]),
     );
   }
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // Palette (kept from original)
-// ═════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+String _formatRuntimeSeconds(int seconds) {
+  final safeSeconds = seconds < 0 ? 0 : seconds;
+  final hours = safeSeconds ~/ 3600;
+  final minutes = (safeSeconds % 3600) ~/ 60;
+  if (hours > 0 && minutes > 0) return '${hours}h ${minutes}m';
+  if (hours > 0) return '${hours}h';
+  if (minutes > 0) return '${minutes}m';
+  return '${safeSeconds}s';
+}
+
+String _formatRuntimeDateTime(DateTime value) {
+  final local = value.toLocal();
+  final month = local.month.toString().padLeft(2, '0');
+  final day = local.day.toString().padLeft(2, '0');
+  final hour = local.hour.toString().padLeft(2, '0');
+  final minute = local.minute.toString().padLeft(2, '0');
+  return '$day/$month $hour:$minute';
+}
+
 class _NPPalette {
   const _NPPalette({
-    required this.isDark, required this.bg, required this.card,
-    required this.overlay, required this.border, required this.textPrimary,
-    required this.textMuted, required this.accent, required this.accentAlt,
-    required this.textOnAccent, required this.shadow,
+    required this.isDark,
+    required this.bg,
+    required this.card,
+    required this.overlay,
+    required this.border,
+    required this.textPrimary,
+    required this.textMuted,
+    required this.accent,
+    required this.accentAlt,
+    required this.textOnAccent,
+    required this.shadow,
   });
 
   factory _NPPalette.fromBrightness(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
     if (isDark) {
-      return _NPPalette(isDark: true, bg: AppColors.backgroundDarkPrimary,
-        card: AppColors.surfaceDark, overlay: Colors.white.withOpacity(0.06),
-        border: AppColors.borderDarkMedium, textPrimary: AppColors.textDarkPrimary,
-        textMuted: AppColors.textDarkSecondary, accent: AppColors.primaryCyan,
-        accentAlt: AppColors.secondaryLime, textOnAccent: AppColors.textDarkPrimary,
-        shadow: AppColors.shadowDark);
+      return _NPPalette(
+          isDark: true,
+          bg: AppColors.backgroundDarkPrimary,
+          card: AppColors.surfaceDark,
+          overlay: Colors.white.withValues(alpha: 0.06),
+          border: AppColors.borderDarkMedium,
+          textPrimary: AppColors.textDarkPrimary,
+          textMuted: AppColors.textDarkSecondary,
+          accent: AppColors.primaryCyan,
+          accentAlt: AppColors.secondaryLime,
+          textOnAccent: AppColors.textDarkPrimary,
+          shadow: AppColors.shadowDark);
     }
-    return _NPPalette(isDark: false, bg: AppColors.backgroundPrimary,
-      card: AppColors.surface, overlay: AppColors.backgroundSecondary,
-      border: AppColors.borderLight, textPrimary: AppColors.textPrimary,
-      textMuted: AppColors.textTertiary, accent: AppColors.primaryOrange,
-      accentAlt: AppColors.secondaryTeal, textOnAccent: AppColors.textInverse,
-      shadow: AppColors.shadow);
+    return const _NPPalette(
+        isDark: false,
+        bg: AppColors.backgroundPrimary,
+        card: AppColors.surface,
+        overlay: AppColors.backgroundSecondary,
+        border: AppColors.borderLight,
+        textPrimary: AppColors.textPrimary,
+        textMuted: AppColors.textTertiary,
+        accent: AppColors.primaryOrange,
+        accentAlt: AppColors.secondaryTeal,
+        textOnAccent: AppColors.textInverse,
+        shadow: AppColors.shadow);
   }
 
   final bool isDark;

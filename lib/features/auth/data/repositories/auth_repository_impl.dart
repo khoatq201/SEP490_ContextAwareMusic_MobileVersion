@@ -1,6 +1,8 @@
 import 'package:dartz/dartz.dart';
-import '../../../../core/error/exceptions.dart';
+
+import '../../../../core/error/error_mapper.dart';
 import '../../../../core/error/failures.dart';
+import '../../../../core/network/dio_client.dart';
 import '../../../../core/network/network_info.dart';
 import '../../../../core/services/local_storage_service.dart';
 import '../../domain/entities/user.dart';
@@ -9,108 +11,200 @@ import '../datasources/auth_remote_datasource.dart';
 import '../models/user_model.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
-  final AuthRemoteDataSource remoteDataSource;
-  final LocalStorageService localStorage;
-  final NetworkInfo networkInfo;
-
   AuthRepositoryImpl({
     required this.remoteDataSource,
     required this.localStorage,
     required this.networkInfo,
+    required this.dioClient,
   });
+
+  final AuthRemoteDataSource remoteDataSource;
+  final LocalStorageService localStorage;
+  final NetworkInfo networkInfo;
+  final DioClient dioClient;
 
   @override
   Future<Either<Failure, User>> login({
-    required String username,
+    required String email,
     required String password,
+    bool rememberMe = false,
   }) async {
     if (!await networkInfo.isConnected) {
       return const Left(NetworkFailure());
     }
 
     try {
-      final userModel = await remoteDataSource.login(
-        username: username,
+      final authResponse = await remoteDataSource.login(
+        email: email,
         password: password,
+        rememberMe: rememberMe,
       );
 
-      // Save user to local storage
-      await localStorage.saveUser(userModel.toJson());
-      await localStorage.saveAuthToken('mock_token_${userModel.id}');
+      await localStorage.clearDeviceSession();
+      await localStorage.saveManagerAuthToken(authResponse.accessToken);
+      await localStorage.saveManagerAccessTokenExpiry(authResponse.expiresAt);
+      await localStorage.saveActiveSessionMode(
+        LocalStorageService.sessionModeManager,
+      );
 
-      return Right(userModel.toEntity());
-    } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
-    } catch (e) {
-      return Left(ServerFailure('Failed to login: $e'));
+      final profileResponse = await remoteDataSource.getProfile();
+      final user = profileResponse.toUser();
+
+      await localStorage.saveUser(UserModel.fromEntity(user).toJson());
+
+      return Right(user);
+    } catch (error, stackTrace) {
+      return Left(
+        ErrorMapper.toFailure(
+          error,
+          fallbackMessage: 'Login failed. Please try again.',
+          stackTrace: stackTrace,
+        ),
+      );
     }
   }
 
   @override
   Future<Either<Failure, void>> logout() async {
     try {
-      // Call API to logout
       if (await networkInfo.isConnected) {
-        await remoteDataSource.logout();
+        try {
+          await remoteDataSource.logout();
+        } catch (_) {}
       }
 
-      // Clear local storage
-      await localStorage.clearAuthToken();
-      await localStorage.clearUser();
+      await localStorage.clearManagerSession();
+      await dioClient.clearCookies();
 
       return const Right(null);
-    } catch (e) {
-      return Left(ServerFailure('Failed to logout: $e'));
+    } catch (error, stackTrace) {
+      return Left(
+        ErrorMapper.toFailure(
+          error,
+          fallbackMessage: 'We could not sign you out right now.',
+          stackTrace: stackTrace,
+        ),
+      );
     }
   }
 
   @override
   Future<Either<Failure, User>> getCurrentUser() async {
     try {
+      final token = localStorage.getManagerAuthToken();
+      if (token == null || token.isEmpty) {
+        await localStorage.clearUser();
+        return const Left(CacheFailure('No user found'));
+      }
+
       final userJson = await localStorage.getUser();
       if (userJson != null) {
         final userModel = UserModel.fromJson(userJson);
-        return Right(userModel.toEntity());
+        final cachedUser = userModel.toEntity();
+        final shouldRefreshProfile = await networkInfo.isConnected &&
+            cachedUser.isStoreManager &&
+            cachedUser.storeIds.isEmpty;
+        if (!shouldRefreshProfile) {
+          return Right(cachedUser);
+        }
+
+        final profileResponse = await remoteDataSource.getProfile();
+        final refreshedUser = profileResponse.toUser();
+        await localStorage.saveUser(UserModel.fromEntity(refreshedUser).toJson());
+        await localStorage.saveActiveSessionMode(
+          LocalStorageService.sessionModeManager,
+        );
+        return Right(refreshedUser);
       }
 
-      // If no local user, try to fetch from server
       if (await networkInfo.isConnected) {
-        final userModel = await remoteDataSource.getCurrentUser();
-        await localStorage.saveUser(userModel.toJson());
-        return Right(userModel.toEntity());
+        final profileResponse = await remoteDataSource.getProfile();
+        final user = profileResponse.toUser();
+        await localStorage.saveUser(UserModel.fromEntity(user).toJson());
+        await localStorage.saveActiveSessionMode(
+          LocalStorageService.sessionModeManager,
+        );
+        return Right(user);
       }
 
       return const Left(CacheFailure('No user found'));
-    } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
-    } catch (e) {
-      return Left(CacheFailure('Failed to get current user: $e'));
+    } catch (error, stackTrace) {
+      return Left(
+        ErrorMapper.toFailure(
+          error,
+          fallbackMessage: 'We could not restore your session.',
+          stackTrace: stackTrace,
+        ),
+      );
     }
   }
 
   @override
   Future<Either<Failure, bool>> isLoggedIn() async {
     try {
-      final token = await localStorage.getAuthToken();
+      final token = localStorage.getManagerAuthToken();
       return Right(token != null && token.isNotEmpty);
-    } catch (e) {
+    } catch (_) {
       return const Right(false);
     }
   }
 
   @override
-  Future<Either<Failure, String>> requestPasswordReset(String email) async {
+  Future<Either<Failure, void>> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
     if (!await networkInfo.isConnected) {
       return const Left(NetworkFailure());
     }
 
     try {
-      final message = await remoteDataSource.requestPasswordReset(email);
-      return Right(message);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
-    } catch (e) {
-      return Left(ServerFailure('Failed to request password reset: $e'));
+      await remoteDataSource.changePassword(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+        confirmPassword: confirmPassword,
+      );
+      return const Right(null);
+    } catch (error, stackTrace) {
+      return Left(
+        ErrorMapper.toFailure(
+          error,
+          fallbackMessage: 'We could not change your password right now.',
+          stackTrace: stackTrace,
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<Either<Failure, User>> refreshToken() async {
+    if (!await networkInfo.isConnected) {
+      return const Left(NetworkFailure());
+    }
+
+    try {
+      final authResponse = await remoteDataSource.refreshToken();
+
+      await localStorage.saveManagerAuthToken(authResponse.accessToken);
+      await localStorage.saveManagerAccessTokenExpiry(authResponse.expiresAt);
+      await localStorage.saveActiveSessionMode(
+        LocalStorageService.sessionModeManager,
+      );
+
+      final profileResponse = await remoteDataSource.getProfile();
+      final user = profileResponse.toUser();
+      await localStorage.saveUser(UserModel.fromEntity(user).toJson());
+
+      return Right(user);
+    } catch (error, stackTrace) {
+      return Left(
+        ErrorMapper.toFailure(
+          error,
+          fallbackMessage: 'We could not refresh your session right now.',
+          stackTrace: stackTrace,
+        ),
+      );
     }
   }
 }

@@ -1,0 +1,18 @@
+enum FailureKind {
+  network,
+  timeout,
+  authentication,
+  forbidden,
+  validation,
+  business,
+  notFound,
+  conflict,
+  rateLimited,
+  serverUnavailable,
+  server,
+  cache,
+  mqtt,
+  permission,
+  cancelled,
+  unexpected,
+}

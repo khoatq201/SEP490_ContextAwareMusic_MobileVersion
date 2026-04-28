@@ -29,14 +29,14 @@ class OfflineLibraryBottomSheet extends StatelessWidget {
         return Container(
           decoration: BoxDecoration(
             color: isDarkMode
-                ? const Color(0xFF0F172A).withOpacity(0.95)
-                : Colors.white.withOpacity(0.95),
+                ? const Color(0xFF0F172A).withValues(alpha: 0.95)
+                : Colors.white.withValues(alpha: 0.95),
             borderRadius: const BorderRadius.vertical(
               top: Radius.circular(28),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.3),
+                color: Colors.black.withValues(alpha: 0.3),
                 blurRadius: 30,
                 offset: const Offset(0, -10),
               ),
@@ -57,8 +57,8 @@ class OfflineLibraryBottomSheet extends StatelessWidget {
                     height: 4,
                     decoration: BoxDecoration(
                       color: isDarkMode
-                          ? Colors.white.withOpacity(0.3)
-                          : Colors.black.withOpacity(0.2),
+                          ? Colors.white.withValues(alpha: 0.3)
+                          : Colors.black.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -75,8 +75,8 @@ class OfflineLibraryBottomSheet extends StatelessWidget {
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
                             color: isDarkMode
-                                ? Colors.white.withOpacity(0.1)
-                                : Colors.black.withOpacity(0.05),
+                                ? Colors.white.withValues(alpha: 0.1)
+                                : Colors.black.withValues(alpha: 0.05),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(
@@ -137,7 +137,7 @@ class OfflineLibraryBottomSheet extends StatelessWidget {
                                 Icon(
                                   LucideIcons.alertCircle,
                                   size: 48,
-                                  color: Colors.red.withOpacity(0.7),
+                                  color: Colors.red.withValues(alpha: 0.7),
                                 ),
                                 const SizedBox(height: 12),
                                 Text(
@@ -257,13 +257,13 @@ class OfflinePlaylistCard extends StatelessWidget {
         ),
         border: Border.all(
           color: isDarkMode
-              ? Colors.white.withOpacity(0.1)
-              : Colors.black.withOpacity(0.08),
+              ? Colors.white.withValues(alpha: 0.1)
+              : Colors.black.withValues(alpha: 0.08),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: shadowColor.withOpacity(0.2),
+            color: shadowColor.withValues(alpha: 0.2),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -334,8 +334,8 @@ class OfflinePlaylistCard extends StatelessWidget {
                             child: LinearProgressIndicator(
                               value: playlist.downloadProgress ?? 0.0,
                               backgroundColor: isDarkMode
-                                  ? Colors.white.withOpacity(0.1)
-                                  : Colors.black.withOpacity(0.08),
+                                  ? Colors.white.withValues(alpha: 0.1)
+                                  : Colors.black.withValues(alpha: 0.08),
                               valueColor: AlwaysStoppedAnimation<Color>(
                                 moodGradient.colors.first,
                               ),
@@ -381,7 +381,7 @@ class OfflinePlaylistCard extends StatelessWidget {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: gradient.colors.first.withOpacity(0.4),
+                  color: gradient.colors.first.withValues(alpha: 0.4),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -403,8 +403,8 @@ class OfflinePlaylistCard extends StatelessWidget {
             value: playlist.downloadProgress,
             strokeWidth: 3,
             backgroundColor: isDarkMode
-                ? Colors.white.withOpacity(0.1)
-                : Colors.black.withOpacity(0.1),
+                ? Colors.white.withValues(alpha: 0.1)
+                : Colors.black.withValues(alpha: 0.1),
             valueColor: AlwaysStoppedAnimation<Color>(
               gradient.colors.first,
             ),
@@ -418,10 +418,10 @@ class OfflinePlaylistCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.15),
+                color: Colors.green.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: Colors.green.withOpacity(0.3),
+                  color: Colors.green.withValues(alpha: 0.3),
                   width: 1.5,
                 ),
               ),
@@ -438,8 +438,8 @@ class OfflinePlaylistCard extends StatelessWidget {
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: isDarkMode
-                      ? Colors.red.withOpacity(0.15)
-                      : Colors.red.withOpacity(0.1),
+                      ? Colors.red.withValues(alpha: 0.15)
+                      : Colors.red.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(

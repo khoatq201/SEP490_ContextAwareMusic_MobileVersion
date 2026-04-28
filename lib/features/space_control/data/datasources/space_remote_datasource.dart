@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:convert';
+
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/network/dio_client.dart';
@@ -28,16 +28,34 @@ class SpaceRemoteDataSourceImpl implements SpaceRemoteDataSource {
   Future<List<SpaceModel>> getSpaces(String storeId) async {
     try {
       final response = await dioClient.get(
-        ApiConstants.getSpacesEndpoint.replaceAll('{storeId}', storeId),
+        ApiConstants.getSpacesEndpoint,
+        queryParameters: {'storeId': storeId},
       );
 
-      if (response.statusCode == 200) {
-        final List<dynamic> data = response.data['spaces'] as List<dynamic>;
-        return data.map((json) => SpaceModel.fromJson(json)).toList();
-      } else {
-        throw ServerException('Failed to load spaces');
+      if (response.statusCode != 200) {
+        throw const ServerException('Failed to load spaces');
       }
+
+      final data = response.data;
+      final rawItems = <dynamic>[
+        if (data is Map<String, dynamic>)
+          ...(data['items'] as List<dynamic>? ??
+              data['spaces'] as List<dynamic>? ??
+              data['data'] as List<dynamic>? ??
+              const <dynamic>[])
+        else if (data is List)
+          ...data,
+      ];
+
+      return rawItems
+          .map(
+            (json) => SpaceModel.fromJson(
+              Map<String, dynamic>.from(json as Map),
+            ),
+          )
+          .toList();
     } catch (e) {
+      if (e is ServerException) rethrow;
       throw ServerException('Failed to load spaces: $e');
     }
   }
@@ -49,12 +67,22 @@ class SpaceRemoteDataSourceImpl implements SpaceRemoteDataSource {
         ApiConstants.getSpaceDetailEndpoint.replaceAll('{spaceId}', spaceId),
       );
 
-      if (response.statusCode == 200) {
-        return SpaceModel.fromJson(response.data);
-      } else {
-        throw ServerException('Failed to load space details');
+      if (response.statusCode != 200) {
+        throw const ServerException('Failed to load space details');
       }
+
+      final data = response.data;
+      if (data is! Map<String, dynamic>) {
+        throw const ServerException('Unexpected space details response format');
+      }
+
+      final rawSpace = data['data'] is Map<String, dynamic>
+          ? Map<String, dynamic>.from(data['data'] as Map)
+          : data;
+
+      return SpaceModel.fromJson(rawSpace);
     } catch (e) {
+      if (e is ServerException) rethrow;
       throw ServerException('Failed to load space details: $e');
     }
   }
@@ -63,10 +91,8 @@ class SpaceRemoteDataSourceImpl implements SpaceRemoteDataSource {
   Stream<SpaceModel> subscribeToSpaceStatus(String storeId, String spaceId) {
     final topic = ApiConstants.spaceStatusTopic(storeId, spaceId);
 
-    // Subscribe to the topic
     mqttService.subscribe(topic);
 
-    // Filter messages for this specific topic
     return mqttService.messages
         .where((message) => message.topic == topic)
         .map((message) {
@@ -80,13 +106,13 @@ class SpaceRemoteDataSourceImpl implements SpaceRemoteDataSource {
 
   @override
   Stream<SensorDataModel> subscribeToSensorData(
-      String storeId, String spaceId) {
+    String storeId,
+    String spaceId,
+  ) {
     final topic = ApiConstants.spaceSensorTopic(storeId, spaceId);
 
-    // Subscribe to the topic
     mqttService.subscribe(topic);
 
-    // Filter messages for this specific topic
     return mqttService.messages
         .where((message) => message.topic == topic)
         .map((message) {

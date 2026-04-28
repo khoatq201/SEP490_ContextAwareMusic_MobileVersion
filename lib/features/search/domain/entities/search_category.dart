@@ -6,11 +6,13 @@ class SearchCategory {
   final String name;
   final Color color;
   final IconData icon;
+  final String? imageUrl;
 
   const SearchCategory({
     required this.id,
     required this.name,
     required this.color,
     required this.icon,
+    this.imageUrl,
   });
 }

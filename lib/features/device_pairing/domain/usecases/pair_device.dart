@@ -9,10 +9,25 @@ class PairDevice {
 
   PairDevice(this.repository);
 
-  Future<Either<Failure, PairingResult>> call(String pairCode) {
-    if (pairCode.trim().isEmpty) {
-      return Future.value(const Left(ValidationFailure('Pair code cannot be empty')));
+  Future<Either<Failure, DeviceAuthSession>> call({
+    required String code,
+    String? manufacturer,
+    String? model,
+    String? osVersion,
+    String? appVersion,
+    String? deviceId,
+  }) {
+    if (code.trim().isEmpty) {
+      return Future.value(
+          const Left(ValidationFailure('Pair code cannot be empty')));
     }
-    return repository.pairDevice(pairCode.trim());
+    return repository.pairDevice(
+      code: code.trim(),
+      manufacturer: manufacturer,
+      model: model,
+      osVersion: osVersion,
+      appVersion: appVersion,
+      deviceId: deviceId,
+    );
   }
 }

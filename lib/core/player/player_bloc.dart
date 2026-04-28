@@ -1,102 +1,989 @@
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:just_audio/just_audio.dart' hide PlayerState;
 
-import '../../features/space_control/presentation/bloc/music_control_bloc.dart';
-import '../../features/space_control/presentation/bloc/music_control_event.dart'
-    as mc;
-import '../../features/space_control/presentation/bloc/music_control_state.dart';
+import '../audio/audio_player_service.dart';
+import '../enums/playback_command_enum.dart';
+import '../../features/space_control/domain/entities/track.dart';
 import 'player_event.dart';
 import 'player_state.dart';
 
 /// Global PlayerBloc that lives above the router.
 ///
-/// It mirrors/aggregates the state of whichever [MusicControlBloc] is
-/// currently active (i.e. the one for the selected space).  When
-/// SpaceDetailPage mounts, call [PlayerContextUpdated] and feed it the
-/// SpaceMonitoring stream via [PlayerTrackChanged] events.
+/// When a track has a non-empty [Track.fileUrl], the bloc delegates to
+/// [AudioPlayerService] to actually stream audio (HLS, MP3, etc.).
 ///
-/// The bloc also holds a reference to the active [MusicControlBloc] so
-/// Play/Pause/Skip commands can be forwarded back to the real backend.
+/// Supports playlist queue with next/previous/auto-advance.
 class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
-  /// Injected at the time the space context becomes active.
-  MusicControlBloc? _activeMusicBloc;
+  static const double _hlsPositionResyncToleranceSeconds = 0.8;
 
-  PlayerBloc() : super(const PlayerState()) {
+  /// Audio engine for real playback.
+  final AudioPlayerService _audioService;
+
+  /// Subscriptions to audio-engine streams.
+  StreamSubscription<Duration>? _positionSub;
+  StreamSubscription<Duration?>? _durationSub;
+  StreamSubscription<ProcessingState>? _processingStateSub;
+
+  PlayerBloc({required AudioPlayerService audioPlayerService})
+      : _audioService = audioPlayerService,
+        super(const PlayerState()) {
     on<PlayerTrackChanged>(_onTrackChanged);
     on<PlayerPlayPauseToggled>(_onPlayPauseToggled);
     on<PlayerSkipRequested>(_onSkipRequested);
+    on<PlayerSkipBackRequested>(_onSkipBackRequested);
+    on<PlayerPlaylistStarted>(_onPlaylistStarted);
+    on<PlayerQueueSeeded>(_onQueueSeeded);
+    on<PlayerQueueFocusApplied>(_onQueueFocusApplied);
+    on<PlayerTrackCompleted>(_onTrackCompleted);
     on<PlayerContextUpdated>(_onContextUpdated);
     on<PlayerContextCleared>(_onContextCleared);
+    on<PlayerPositionUpdated>(_onPositionUpdated);
+    on<PlayerSeekRequested>(_onSeekRequested);
+    on<PlayerDurationUpdated>(_onDurationUpdated);
+    on<PlayerHlsStarted>(_onHlsStarted);
+    on<PlayerHlsStopped>(_onHlsStopped);
+    on<PlayerRemoteCommandApplied>(_onRemoteCommandApplied);
+    on<PlayerAudioSettingsApplied>(_onAudioSettingsApplied);
+
+    _listenToAudioStreams();
   }
 
-  // -------------------------------------------------------------------------
-  void _onTrackChanged(PlayerTrackChanged event, Emitter<PlayerState> emit) {
+  // ── Audio-stream listeners ─────────────────────────────────────────────
+  void _listenToAudioStreams() {
+    _positionSub = _audioService.positionStream.listen((pos) {
+      if (!isClosed) {
+        add(
+          PlayerPositionUpdated(
+            positionSeconds: pos.inMilliseconds / 1000.0,
+            isAbsolutePosition: false,
+          ),
+        );
+      }
+    });
+
+    _durationSub = _audioService.durationStream.listen((dur) {
+      if (isClosed) return;
+
+      final metadataDuration = state.currentTrack?.duration;
+      final durationSeconds = dur?.inSeconds ??
+          ((metadataDuration != null && metadataDuration > 0)
+              ? metadataDuration
+              : 0);
+      add(PlayerDurationUpdated(durationSeconds: durationSeconds));
+    });
+
+    // Listen for track completion to auto-advance to next track.
+    _processingStateSub =
+        _audioService.processingStateStream.listen((procState) {
+      if (!isClosed && procState == ProcessingState.completed) {
+        add(const PlayerTrackCompleted());
+      }
+    });
+  }
+
+  // ── Load & play a track from the current queue at given index ──────────
+  Future<void> _loadAndPlayTrack(
+    int index,
+    Emitter<PlayerState> emit, {
+    bool playLocally = true,
+  }) async {
+    if (index < 0 || index >= state.queue.length) return;
+
+    final track = state.queue[index];
+    emit(state.copyWith(
+      currentTrack: track,
+      currentTrackId: track.id,
+      isPlaying: true,
+      currentPosition: 0,
+      currentPositionPrecise: 0,
+      duration: track.duration ?? 0,
+      currentIndex: index,
+      isHlsMode: false,
+      clearHlsUrl: true,
+      clearCurrentQueueItemId: true,
+    ));
+
+    if (!playLocally) return;
+
+    final url = track.fileUrl;
+    if (url.isNotEmpty) {
+      try {
+        await _audioService.loadUrl(url);
+        _audioService.play(); // fire-and-forget
+      } catch (_) {
+        // Silently handle audio errors in demo mode
+      }
+    }
+  }
+
+  // ── Playlist started (sets queue + begins playback) ────────────────────
+  void _onPlaylistStarted(
+      PlayerPlaylistStarted event, Emitter<PlayerState> emit) async {
+    emit(state.copyWith(
+      queue: event.tracks,
+      currentIndex: event.startIndex,
+      playlistName: event.playlistName,
+      playlistId: event.playlistId,
+      isHlsMode: false,
+      clearHlsUrl: true,
+    ));
+
+    await _loadAndPlayTrack(
+      event.startIndex,
+      emit,
+      playLocally: event.playLocally,
+    );
+  }
+
+  void _onQueueSeeded(PlayerQueueSeeded event, Emitter<PlayerState> emit) {
+    // Ignore passive queue seeding from browsing screens while a remote CAMS
+    // stream is active. Remote queue snapshots must only come from
+    // AppPlaybackCoordinator with force=true.
+    if (!event.force && state.isSyncedCamsPlayback) {
+      return;
+    }
+
+    if (!event.force &&
+        state.isPlaying &&
+        !state.isSyncedCamsPlayback &&
+        state.playlistId != null &&
+        state.playlistId != event.playlistId) {
+      return;
+    }
+
+    var nextState = state.copyWith(
+      queue: event.tracks,
+      playlistName: event.playlistName,
+      playlistId: event.playlistId,
+    );
+
+    if (event.tracks.isNotEmpty) {
+      var resolvedIndex =
+          _findIndexForQueueItemId(nextState.currentQueueItemId, event.tracks);
+      if (resolvedIndex < 0) {
+        resolvedIndex = event.tracks.indexWhere(
+          (track) => track.id == nextState.currentTrackId,
+        );
+      }
+      if (resolvedIndex < 0 &&
+          nextState.isHlsMode &&
+          _canResolveIndexFromOffset(event.tracks)) {
+        resolvedIndex = _resolveIndexForOffset(
+          nextState.currentPosition.toDouble(),
+          event.tracks,
+        );
+      }
+      if (resolvedIndex >= 0 && resolvedIndex < event.tracks.length) {
+        final resolvedTrack = event.tracks[resolvedIndex];
+        nextState = nextState.copyWith(
+          currentIndex: resolvedIndex,
+          currentTrack: resolvedTrack,
+          currentTrackId: resolvedTrack.id,
+          duration: _durationForPlaybackIdentity(
+            track: resolvedTrack,
+            queueItemId: nextState.currentQueueItemId,
+            trackId: nextState.currentTrackId,
+            hlsUrl: nextState.hlsUrl,
+          ),
+        );
+      }
+    }
+
+    emit(nextState);
+    _debugLog(
+      'queueSeeded force=${event.force} '
+      'queueCount=${event.tracks.length} '
+      'playlistName=${event.playlistName ?? '-'} '
+      'currentTrack=${nextState.currentTrack?.title ?? '-'} '
+      'currentQueueItemId=${nextState.currentQueueItemId ?? '-'}',
+    );
+  }
+
+  void _onQueueFocusApplied(
+    PlayerQueueFocusApplied event,
+    Emitter<PlayerState> emit,
+  ) {
+    if (state.queue.isEmpty) return;
+
+    var resolvedIndex = _findIndexForQueueItemId(event.queueItemId);
+    if (resolvedIndex < 0 && event.trackId != null) {
+      resolvedIndex = _findIndexForTrackId(event.trackId);
+    }
+    if (resolvedIndex < 0 || resolvedIndex >= state.queue.length) {
+      return;
+    }
+
+    final resolvedTrack = state.queue[resolvedIndex];
+    emit(state.copyWith(
+      currentIndex: resolvedIndex,
+      currentTrack: resolvedTrack,
+      currentQueueItemId: event.queueItemId ?? resolvedTrack.queueItemId,
+      currentTrackId: event.trackId ?? resolvedTrack.id,
+      duration: _durationForPlaybackIdentity(
+        track: resolvedTrack,
+        queueItemId: event.queueItemId ?? resolvedTrack.queueItemId,
+        trackId: event.trackId ?? resolvedTrack.id,
+      ),
+      isPlaying: event.isPlaying,
+    ));
+    _debugLog(
+      'queueFocusApplied index=$resolvedIndex '
+      'trackId=${resolvedTrack.id} '
+      'trackTitle=${resolvedTrack.title} '
+      'queueItemId=${event.queueItemId ?? resolvedTrack.queueItemId ?? '-'} '
+      'isPlaying=${event.isPlaying}',
+    );
+  }
+
+  // ── Single-track changed (legacy / space-context) ─────────────────────
+  void _onTrackChanged(
+      PlayerTrackChanged event, Emitter<PlayerState> emit) async {
+    if (state.isSyncedCamsPlayback) {
+      // Ignore direct local track sync while a CAMS/HLS stream is active.
+      return;
+    }
+
     emit(state.copyWith(
       currentTrack: event.track,
+      currentTrackId: event.track?.id,
       isPlaying: event.isPlaying,
       currentPosition: event.currentPosition,
+      currentPositionPrecise: event.currentPosition.toDouble(),
       duration: event.duration,
+      clearCurrentQueueItemId: true,
     ));
+
+    if (!event.playLocally) return;
+
+    // If the track has a valid stream URL, start real audio playback.
+    final url = event.track?.fileUrl;
+    if (url != null && url.isNotEmpty) {
+      try {
+        await _audioService.loadUrl(url);
+        if (event.isPlaying) {
+          _audioService.play(); // fire-and-forget
+        }
+      } catch (_) {
+        // Silently handle audio errors in demo mode
+      }
+    }
   }
 
   void _onPlayPauseToggled(
       PlayerPlayPauseToggled event, Emitter<PlayerState> emit) {
-    final spaceId = state.activeSpaceId;
-    if (spaceId == null || _activeMusicBloc == null) return;
-
+    // Emit UI state FIRST, then fire-and-forget the audio engine calls.
     if (state.isPlaying) {
-      _activeMusicBloc!.add(mc.PauseMusic(spaceId));
+      _audioService.pause();
     } else {
-      _activeMusicBloc!.add(mc.PlayMusic(spaceId));
+      _audioService.play();
     }
-    // Optimistic UI toggle; real state will arrive via PlayerTrackChanged
+
     emit(state.copyWith(isPlaying: !state.isPlaying));
   }
 
-  void _onSkipRequested(PlayerSkipRequested event, Emitter<PlayerState> emit) {
-    final spaceId = state.activeSpaceId;
-    if (spaceId == null || _activeMusicBloc == null) return;
-    _activeMusicBloc!.add(mc.SkipMusic(spaceId));
+  // ── Skip forward ──────────────────────────────────────────────────────
+  void _onSkipRequested(
+      PlayerSkipRequested event, Emitter<PlayerState> emit) async {
+    if (state.isHlsMode && (state.hlsUrl?.isNotEmpty ?? false)) {
+      // CAMS controls drive the remote HLS stream. Wait for SignalR/state sync
+      // instead of mutating the queue into a fake local preview state.
+      return;
+    }
+
+    // If we have a queue, advance to next track
+    if (state.queue.isNotEmpty && state.hasNext) {
+      await _loadAndPlayTrack(state.currentIndex + 1, emit);
+      return;
+    }
   }
 
-  void _onContextUpdated(
-      PlayerContextUpdated event, Emitter<PlayerState> emit) {
+  // ── Skip back ─────────────────────────────────────────────────────────
+  void _onSkipBackRequested(
+      PlayerSkipBackRequested event, Emitter<PlayerState> emit) async {
+    if (state.isHlsMode && (state.hlsUrl?.isNotEmpty ?? false)) {
+      // Remote HLS playback should be reconciled from CAMS events only.
+      return;
+    }
+
+    // If more than 3 seconds into the track, restart current track
+    if (state.currentPosition > 3) {
+      await _audioService.seek(Duration.zero);
+      emit(state.copyWith(currentPosition: 0, currentPositionPrecise: 0));
+      return;
+    }
+
+    // Otherwise go to previous track if available
+    if (state.queue.isNotEmpty && state.hasPrevious) {
+      await _loadAndPlayTrack(state.currentIndex - 1, emit);
+      return;
+    }
+
+    // If at the beginning of the first track, just restart
+    await _audioService.seek(Duration.zero);
+    emit(state.copyWith(currentPosition: 0, currentPositionPrecise: 0));
+  }
+
+  // ── Auto-advance when track completes ─────────────────────────────────
+  void _onTrackCompleted(
+      PlayerTrackCompleted event, Emitter<PlayerState> emit) async {
+    _traceLog(
+      'LOCAL_COMPLETED '
+      'isHlsMode=${state.isHlsMode} '
+      'queueItemId=${state.currentQueueItemId ?? '-'} '
+      'trackId=${state.currentTrackId ?? state.currentTrack?.id ?? '-'} '
+      'trackTitle=${state.currentTrack?.title ?? '-'} '
+      'position=${state.currentPositionPrecise.toStringAsFixed(2)} '
+      'duration=${state.duration} '
+      'hasNext=${state.hasNext}',
+    );
+    if (state.isHlsMode && (state.hlsUrl?.isNotEmpty ?? false)) {
+      final completionPosition = state.duration > 0
+          ? _absoluteQueuePositionForTrack(state.duration.toDouble()).floor()
+          : state.currentPosition;
+      final completionPositionPrecise = state.duration > 0
+          ? _absoluteQueuePositionForTrack(state.duration.toDouble())
+          : state.currentPositionPrecise;
+      emit(state.copyWith(
+        isPlaying: false,
+        currentPosition: completionPosition,
+        currentPositionPrecise: completionPositionPrecise,
+        hlsCompletionSequence: state.hlsCompletionSequence + 1,
+      ));
+      return;
+    }
+
+    // If there's a next track in the queue, play it
+    if (state.hasNext) {
+      await _loadAndPlayTrack(state.currentIndex + 1, emit);
+      return;
+    }
+
+    // No more tracks — mark as stopped
+    emit(state.copyWith(
+      isPlaying: false,
+      currentPosition: 0,
+      currentPositionPrecise: 0,
+    ));
+  }
+
+  Future<void> _onContextUpdated(
+      PlayerContextUpdated event, Emitter<PlayerState> emit) async {
+    final isSpaceChanged = state.activeSpaceId != null &&
+        state.activeSpaceId!.toLowerCase() != event.spaceId.toLowerCase();
+    final previousSpaceId = state.activeSpaceId;
+    final availableSpaces =
+        event.availableSpaces.isNotEmpty || state.activeStoreId != event.storeId
+            ? event.availableSpaces
+            : state.availableSpaces;
+
+    if (isSpaceChanged) {
+      await _audioService.stop();
+      emit(PlayerState(
+        activeStoreId: event.storeId,
+        activeSpaceId: event.spaceId,
+        activeSpaceName: event.spaceName,
+        availableSpaces: availableSpaces,
+      ));
+      _debugLog(
+        'context switched from ${previousSpaceId ?? '-'} '
+        'to ${event.spaceId} -> cleared playback state',
+      );
+      return;
+    }
+
     emit(state.copyWith(
       activeStoreId: event.storeId,
       activeSpaceId: event.spaceId,
       activeSpaceName: event.spaceName,
-      availableSpaces: event.availableSpaces,
+      availableSpaces: availableSpaces,
     ));
   }
 
   void _onContextCleared(
       PlayerContextCleared event, Emitter<PlayerState> emit) {
+    _audioService.stop();
     emit(const PlayerState());
-    _activeMusicBloc = null;
   }
 
-  // -------------------------------------------------------------------------
-  // Called from SpaceDetailPage after it creates its MusicControlBloc so
-  // the global PlayerBloc can forward commands to it.
-  // -------------------------------------------------------------------------
-  void attachMusicBloc(MusicControlBloc bloc) {
-    _activeMusicBloc = bloc;
-  }
-
-  // -------------------------------------------------------------------------
-  // Convenience: feed a MusicControlState snapshot into PlayerBloc.
-  // Call this inside SpaceDetailPage's BlocListener.
-  // -------------------------------------------------------------------------
-  void syncFromMusicState(MusicControlState musicState) {
-    final track = musicState.playerState?.currentTrack;
-    final isPlaying = musicState.status == MusicControlStatus.playing;
-    final position = musicState.playerState?.currentPosition ?? 0;
-    final duration = track?.duration ?? 0;
-
-    add(PlayerTrackChanged(
-      track: track,
-      isPlaying: isPlaying,
-      currentPosition: position,
-      duration: duration,
+  void _onPositionUpdated(
+      PlayerPositionUpdated event, Emitter<PlayerState> emit) {
+    final resolvedPosition = event.isAbsolutePosition
+        ? event.positionSeconds
+        : _absoluteQueuePositionForTrack(event.positionSeconds);
+    emit(state.copyWith(
+      currentPosition: resolvedPosition.floor(),
+      currentPositionPrecise: resolvedPosition,
     ));
+  }
+
+  void _onSeekRequested(
+      PlayerSeekRequested event, Emitter<PlayerState> emit) async {
+    _traceLog(
+      'LOCAL_SEEK '
+      'targetSeconds=${event.positionSeconds} '
+      'isHlsMode=${state.isHlsMode} '
+      'queueItemId=${state.currentQueueItemId ?? '-'} '
+      'trackId=${state.currentTrackId ?? state.currentTrack?.id ?? '-'} '
+      'trackTitle=${state.currentTrack?.title ?? '-'} '
+      'hls=${state.hlsUrl ?? '-'}',
+    );
+    final absoluteTargetSeconds = event.positionSeconds.toDouble();
+    final localTargetSeconds =
+        _relativeTrackPositionForAbsolute(absoluteTargetSeconds);
+    try {
+      await _audioService.seek(
+        Duration(milliseconds: (localTargetSeconds * 1000).round()),
+      );
+    } catch (_) {
+      // Manager devices can optimistically update UI before SignalR confirms
+      // the new position even though they do not hold a local audio source.
+    }
+    emit(state.copyWith(
+      currentPosition: absoluteTargetSeconds.floor(),
+      currentPositionPrecise: absoluteTargetSeconds,
+    ));
+  }
+
+  void _onDurationUpdated(
+      PlayerDurationUpdated event, Emitter<PlayerState> emit) {
+    emit(state.copyWith(duration: event.durationSeconds));
+  }
+
+  int _findIndexForTrackId(String? trackId) {
+    if (trackId == null || trackId.isEmpty) return -1;
+    return state.queue.indexWhere((track) => track.id == trackId);
+  }
+
+  int _findIndexForQueueItemId(
+    String? queueItemId, [
+    List<Track>? queueOverride,
+  ]) {
+    if (queueItemId == null || queueItemId.isEmpty) return -1;
+    final queue = queueOverride ?? state.queue;
+    return queue.indexWhere((track) => track.queueItemId == queueItemId);
+  }
+
+  int _trackStartOffsetAt(int index, [List<Track>? queueOverride]) {
+    final queue = queueOverride ?? state.queue;
+    if (index < 0 || index >= queue.length) return 0;
+
+    final explicitOffset = queue[index].seekOffsetSeconds;
+    if (explicitOffset != null) return explicitOffset;
+
+    var cumulativeOffset = 0;
+    for (var offsetIndex = 0; offsetIndex < index; offsetIndex++) {
+      cumulativeOffset += queue[offsetIndex].duration ?? 0;
+    }
+    return cumulativeOffset;
+  }
+
+  int _queueTotalDuration([List<Track>? queueOverride]) {
+    final queue = queueOverride ?? state.queue;
+    if (queue.isEmpty) return 0;
+
+    final lastIndex = queue.length - 1;
+    return _trackStartOffsetAt(lastIndex, queue) +
+        (queue[lastIndex].duration ?? 0);
+  }
+
+  double _normalizeOffsetForQueue(
+    double offsetSeconds, [
+    List<Track>? queueOverride,
+  ]) {
+    final totalDuration = _queueTotalDuration(queueOverride);
+    if (totalDuration <= 0) return offsetSeconds;
+
+    final normalized = offsetSeconds % totalDuration;
+    return normalized < 0 ? normalized + totalDuration : normalized;
+  }
+
+  int _resolveIndexForOffset(
+    double offsetSeconds, [
+    List<Track>? queueOverride,
+  ]) {
+    final queue = queueOverride ?? state.queue;
+    if (queue.isEmpty) return -1;
+
+    final normalizedOffset =
+        _normalizeOffsetForQueue(offsetSeconds, queueOverride);
+
+    for (var i = 0; i < queue.length; i++) {
+      final nextTrackStart = i < queue.length - 1
+          ? _trackStartOffsetAt(i + 1, queue).toDouble()
+          : null;
+      if (nextTrackStart == null || normalizedOffset < nextTrackStart) {
+        return i;
+      }
+    }
+    return queue.length - 1;
+  }
+
+  bool _canResolveIndexFromOffset([List<Track>? queueOverride]) {
+    final queue = queueOverride ?? state.queue;
+    if (queue.isEmpty) return false;
+    if (queue.length == 1) return true;
+
+    var previousStartOffset = _trackStartOffsetAt(0, queue);
+    for (var index = 1; index < queue.length; index++) {
+      final startOffset = _trackStartOffsetAt(index, queue);
+      if (startOffset > previousStartOffset) {
+        return true;
+      }
+      previousStartOffset = startOffset;
+    }
+    return false;
+  }
+
+  bool _hasText(String? value) => value != null && value.isNotEmpty;
+
+  bool _matchesCurrentPlaybackIdentity({
+    Track? track,
+    String? queueItemId,
+    String? trackId,
+    String? hlsUrl,
+  }) {
+    final incomingQueueItemId = _hasText(queueItemId)
+        ? queueItemId
+        : (_hasText(track?.queueItemId) ? track!.queueItemId : null);
+    final currentQueueItemId = state.currentQueueItemId;
+    if (_hasText(incomingQueueItemId) && _hasText(currentQueueItemId)) {
+      return incomingQueueItemId == currentQueueItemId;
+    }
+
+    final incomingTrackId =
+        _hasText(trackId) ? trackId : (_hasText(track?.id) ? track!.id : null);
+    final currentTrackId = _hasText(state.currentTrackId)
+        ? state.currentTrackId
+        : (_hasText(state.currentTrack?.id) ? state.currentTrack!.id : null);
+    if (_hasText(incomingTrackId) && _hasText(currentTrackId)) {
+      return incomingTrackId == currentTrackId;
+    }
+
+    if (_hasText(hlsUrl) && _hasText(state.hlsUrl)) {
+      return hlsUrl == state.hlsUrl;
+    }
+
+    return false;
+  }
+
+  int _durationForPlaybackIdentity({
+    Track? track,
+    String? queueItemId,
+    String? trackId,
+    String? hlsUrl,
+  }) {
+    final trackDuration = track?.duration;
+    if (trackDuration != null) {
+      return trackDuration > 0 ? trackDuration : 0;
+    }
+
+    if (_matchesCurrentPlaybackIdentity(
+      track: track,
+      queueItemId: queueItemId,
+      trackId: trackId,
+      hlsUrl: hlsUrl,
+    )) {
+      return state.duration > 0 ? state.duration : 0;
+    }
+
+    return 0;
+  }
+
+  double _absoluteQueuePositionForTrack(
+    double trackPositionSeconds, {
+    int? indexOverride,
+    bool forceQueueOffset = false,
+  }) {
+    if (!forceQueueOffset && !state.isSyncedCamsPlayback) {
+      return trackPositionSeconds;
+    }
+
+    final resolvedIndex = indexOverride ?? state.currentIndex;
+    final trackStartOffset =
+        resolvedIndex >= 0 ? _trackStartOffsetAt(resolvedIndex) : 0;
+    return trackStartOffset + trackPositionSeconds;
+  }
+
+  double _relativeTrackPositionForAbsolute(
+    double absolutePositionSeconds, {
+    int? indexOverride,
+  }) {
+    if (!state.isSyncedCamsPlayback) {
+      return absolutePositionSeconds;
+    }
+
+    final resolvedIndex = indexOverride ?? state.currentIndex;
+    final trackStartOffset =
+        resolvedIndex >= 0 ? _trackStartOffsetAt(resolvedIndex) : 0;
+    final relativePosition = absolutePositionSeconds - trackStartOffset;
+    return relativePosition < 0 ? 0 : relativePosition;
+  }
+
+  Track _buildSyntheticStreamTrack({
+    String? playlistName,
+    String? trackId,
+    String? trackName,
+    String? queueItemId,
+    int? duration,
+  }) {
+    return Track(
+      id: trackId ?? queueItemId ?? state.activeSpaceId ?? 'cams-stream',
+      queueItemId: queueItemId,
+      title: trackName ?? playlistName ?? 'Streaming music',
+      artist: state.activeSpaceName ?? 'CAMS',
+      fileUrl: '',
+      moodTags: const [],
+      duration: duration != null && duration > 0 ? duration : null,
+    );
+  }
+
+  // ── HLS streaming from CAMS ────────────────────────────────────────────
+  void _onHlsStarted(PlayerHlsStarted event, Emitter<PlayerState> emit) async {
+    // ── Stale-replay guard ─────────────────────────────────────────────
+    // When the audio engine is in `completed` state (track just finished)
+    // and this event references the SAME track that just completed, skip
+    // it entirely. This closes the race-condition timing gap where stale
+    // SpaceStateSync snapshots arrive before the AppPlaybackCoordinator
+    // BlocListener has set its `_trackEndedQueueItemId` guard.
+    if (_audioService.processingState == ProcessingState.completed) {
+      final isSameQueueItem = event.queueItemId != null &&
+          event.queueItemId!.isNotEmpty &&
+          event.queueItemId == state.currentQueueItemId;
+      final isSameUrl = event.queueItemId == null &&
+          event.hlsUrl == state.hlsUrl &&
+          state.hlsUrl != null &&
+          state.hlsUrl!.isNotEmpty;
+      if (isSameQueueItem || isSameUrl) {
+        _debugLog(
+          'SKIP stale HLS event — engine completed, same track '
+          'queueItemId=${event.queueItemId ?? '-'} hlsUrl=${event.hlsUrl}',
+        );
+        return;
+      }
+    }
+
+    final hasSeededQueue = state.queue.isNotEmpty;
+
+    var resolvedIndex = _findIndexForQueueItemId(event.queueItemId);
+    if (resolvedIndex < 0) {
+      resolvedIndex =
+          event.trackId != null ? _findIndexForTrackId(event.trackId) : -1;
+    }
+    if (resolvedIndex < 0 && hasSeededQueue && _canResolveIndexFromOffset()) {
+      resolvedIndex = _resolveIndexForOffset(event.seekOffsetSeconds);
+    }
+
+    final canReuseCurrentTrack = _matchesCurrentPlaybackIdentity(
+      queueItemId: event.queueItemId,
+      trackId: event.trackId,
+      hlsUrl: event.hlsUrl,
+    );
+    final resolvedTrack = resolvedIndex >= 0
+        ? state.queue[resolvedIndex]
+        : (canReuseCurrentTrack ? state.currentTrack : null) ??
+            _buildSyntheticStreamTrack(
+              playlistName: event.playlistName,
+              trackId: event.trackId,
+              trackName: event.trackName,
+              queueItemId: event.queueItemId,
+              duration: canReuseCurrentTrack ? state.duration : null,
+            );
+    final resolvedDuration = _durationForPlaybackIdentity(
+      track: resolvedTrack,
+      queueItemId: event.queueItemId ?? resolvedTrack.queueItemId,
+      trackId: event.trackId ?? resolvedTrack.id,
+      hlsUrl: event.hlsUrl,
+    );
+    final absoluteQueuePosition = _absoluteQueuePositionForTrack(
+      event.seekOffsetSeconds,
+      indexOverride: resolvedIndex >= 0 ? resolvedIndex : null,
+      forceQueueOffset: resolvedIndex >= 0,
+    );
+
+    emit(state.copyWith(
+      isHlsMode: true,
+      hlsUrl: event.hlsUrl,
+      playlistName: event.playlistName,
+      playlistId: event.playlistId,
+      currentQueueItemId: event.queueItemId ?? resolvedTrack.queueItemId,
+      currentTrackId: event.trackId ?? resolvedTrack.id,
+      isPlaying: !event.isPaused,
+      currentPosition: absoluteQueuePosition.floor(),
+      currentPositionPrecise: absoluteQueuePosition,
+      currentTrack: resolvedTrack,
+      currentIndex: resolvedIndex >= 0 ? resolvedIndex : state.currentIndex,
+      duration: resolvedDuration,
+      clearPlaylistName:
+          event.playlistName == null || event.playlistName!.isEmpty,
+      clearPlaylistId: event.playlistId == null || event.playlistId!.isEmpty,
+    ));
+    _debugLog(
+      'hlsStarted '
+      'hls=${event.hlsUrl} '
+      'trackId=${event.trackId ?? resolvedTrack.id} '
+      'trackTitle=${resolvedTrack.title} '
+      'queueItemId=${event.queueItemId ?? resolvedTrack.queueItemId ?? '-'} '
+      'seek=${event.seekOffsetSeconds.toStringAsFixed(2)} '
+      'playLocally=${event.playLocally}',
+    );
+
+    if (!event.playLocally) {
+      if (_audioService.loadedUrl != null) {
+        try {
+          await _audioService.stop();
+        } catch (_) {
+          // Best effort only; synthetic sync can continue without local audio.
+        }
+      }
+      return;
+    }
+
+    try {
+      // If the audio engine is at `completed` state (track just ended),
+      // always force a full source reload. ExoPlayer's internal position
+      // tracking corrupts if you seek/play on a completed player — it
+      // silently resets to position 0 and `positionStream` stops emitting.
+      final isEngineCompleted =
+          _audioService.processingState == ProcessingState.completed;
+
+      final shouldReloadSource = event.forceReload ||
+          isEngineCompleted ||
+          _audioService.loadedUrl != event.hlsUrl ||
+          !state.isHlsMode ||
+          state.hlsUrl != event.hlsUrl;
+
+      if (shouldReloadSource) {
+        await _audioService.loadUrl(event.hlsUrl);
+      }
+
+      final targetSeekOffsetSeconds = _resolveFreshHlsSeekOffset(event);
+      if ((targetSeekOffsetSeconds - event.seekOffsetSeconds).abs() > 0.2) {
+        final targetAbsoluteQueuePosition = _absoluteQueuePositionForTrack(
+          targetSeekOffsetSeconds,
+          indexOverride: resolvedIndex >= 0 ? resolvedIndex : null,
+          forceQueueOffset: resolvedIndex >= 0,
+        );
+        emit(state.copyWith(
+          currentPosition: targetAbsoluteQueuePosition.floor(),
+          currentPositionPrecise: targetAbsoluteQueuePosition,
+        ));
+      }
+
+      final targetPosition = Duration(
+        milliseconds: (targetSeekOffsetSeconds * 1000).round(),
+      );
+      final currentPosition = _audioService.position;
+      final positionDrift =
+          (currentPosition - targetPosition).inMilliseconds.abs() / 1000.0;
+      if (shouldReloadSource ||
+          positionDrift > _hlsPositionResyncToleranceSeconds) {
+        await _audioService.seek(targetPosition);
+      }
+      if (event.isPaused) {
+        await _audioService.pause();
+      } else {
+        await _audioService.play();
+      }
+    } catch (_) {
+      // Silently handle audio errors
+    }
+  }
+
+  double _resolveFreshHlsSeekOffset(PlayerHlsStarted event) {
+    if (event.isPaused || event.startedAtUtc == null) {
+      return event.seekOffsetSeconds < 0 ? 0 : event.seekOffsetSeconds;
+    }
+
+    final rawElapsedSeconds = DateTime.now()
+            .toUtc()
+            .difference(event.startedAtUtc!.toUtc())
+            .inMilliseconds /
+        1000.0;
+    var resolvedSeconds =
+        rawElapsedSeconds - (event.serverClockOffsetMs / 1000.0);
+    if (resolvedSeconds < 0 || !resolvedSeconds.isFinite) {
+      resolvedSeconds = 0;
+    }
+
+    final expectedEndAtUtc = event.expectedEndAtUtc?.toUtc();
+    if (expectedEndAtUtc == null) {
+      return resolvedSeconds;
+    }
+
+    final totalDurationSeconds = expectedEndAtUtc
+            .difference(event.startedAtUtc!.toUtc())
+            .inMilliseconds /
+        1000.0;
+    if (totalDurationSeconds <= 0) {
+      return 0;
+    }
+    return resolvedSeconds.clamp(0.0, totalDurationSeconds).toDouble();
+  }
+
+  void _onHlsStopped(PlayerHlsStopped event, Emitter<PlayerState> emit) async {
+    await _audioService.stop();
+    emit(state.copyWith(
+      isPlaying: false,
+      isHlsMode: false,
+      clearHlsUrl: true,
+      clearTrack: true,
+      clearPlaylistName: true,
+      clearPlaylistId: true,
+      clearCurrentQueueItemId: true,
+      clearCurrentTrackId: true,
+      queue: const [],
+      currentIndex: -1,
+      currentPosition: 0,
+      duration: 0,
+    ));
+    _debugLog('hlsStopped -> cleared player state');
+  }
+
+  void _onRemoteCommandApplied(
+    PlayerRemoteCommandApplied event,
+    Emitter<PlayerState> emit,
+  ) async {
+    final absolutePosition = event.positionSeconds;
+    final isSeekCommand = event.command == PlaybackCommandEnum.seek ||
+        event.command == PlaybackCommandEnum.seekForward ||
+        event.command == PlaybackCommandEnum.seekBackward;
+    final shouldResolveFromTargetTrack =
+        event.command == PlaybackCommandEnum.skipNext ||
+            event.command == PlaybackCommandEnum.skipPrevious ||
+            event.command == PlaybackCommandEnum.skipToTrack ||
+            event.command == PlaybackCommandEnum.trackEnded;
+    var resolvedIndex = shouldResolveFromTargetTrack
+        ? _findIndexForQueueItemId(event.targetQueueItemId)
+        : -1;
+    if (resolvedIndex < 0 && shouldResolveFromTargetTrack) {
+      resolvedIndex = _findIndexForTrackId(event.targetTrackId);
+    }
+    if (resolvedIndex < 0 &&
+        !isSeekCommand &&
+        absolutePosition != null &&
+        _canResolveIndexFromOffset()) {
+      resolvedIndex = _resolveIndexForOffset(absolutePosition);
+    }
+    final resolvedTrack =
+        resolvedIndex >= 0 && resolvedIndex < state.queue.length
+            ? state.queue[resolvedIndex]
+            : state.currentTrack;
+    final resolvedTrackId = shouldResolveFromTargetTrack
+        ? (event.targetTrackId ?? resolvedTrack?.id)
+        : resolvedTrack?.id;
+    final resolvedQueueItemId = shouldResolveFromTargetTrack
+        ? (event.targetQueueItemId ??
+            resolvedTrack?.queueItemId ??
+            state.currentQueueItemId)
+        : state.currentQueueItemId;
+    final hasUsefulSeek =
+        absolutePosition != null && (isSeekCommand || absolutePosition > 0);
+    final fallbackTrackOffset =
+        resolvedIndex >= 0 ? _trackStartOffsetAt(resolvedIndex) : null;
+    final resolvedStatePosition = hasUsefulSeek
+        ? (isSeekCommand
+            ? _absoluteQueuePositionForTrack(
+                absolutePosition,
+                indexOverride: resolvedIndex >= 0 ? resolvedIndex : null,
+                forceQueueOffset: state.isSyncedCamsPlayback,
+              )
+            : absolutePosition)
+        : null;
+
+    switch (event.command) {
+      case PlaybackCommandEnum.pause:
+        if (event.playLocally) {
+          _audioService.pause();
+        }
+        emit(state.copyWith(isPlaying: false));
+        return;
+      case PlaybackCommandEnum.resume:
+        if (event.playLocally) {
+          _audioService.play();
+        }
+        emit(state.copyWith(isPlaying: true));
+        return;
+      case PlaybackCommandEnum.seek:
+      case PlaybackCommandEnum.seekForward:
+      case PlaybackCommandEnum.seekBackward:
+      case PlaybackCommandEnum.skipNext:
+      case PlaybackCommandEnum.skipPrevious:
+      case PlaybackCommandEnum.skipToTrack:
+      case PlaybackCommandEnum.trackEnded:
+        if (hasUsefulSeek &&
+            event.playLocally &&
+            state.isHlsMode &&
+            state.hlsUrl != null &&
+            state.hlsUrl!.isNotEmpty) {
+          final localSeekPosition = isSeekCommand
+              ? absolutePosition
+              : _relativeTrackPositionForAbsolute(
+                  absolutePosition,
+                  indexOverride: resolvedIndex >= 0 ? resolvedIndex : null,
+                );
+          try {
+            await _audioService.seek(
+              Duration(milliseconds: (localSeekPosition * 1000).round()),
+            );
+          } catch (_) {
+            // Ignore seeks that arrive before the HLS source is fully loaded.
+          }
+        }
+
+        final nextIsPlaying = event.command == PlaybackCommandEnum.trackEnded
+            ? state.isPlaying
+            : isSeekCommand
+                ? state.isPlaying
+                : true;
+
+        emit(state.copyWith(
+          currentPosition: (resolvedStatePosition ??
+                  fallbackTrackOffset?.toDouble() ??
+                  state.currentPositionPrecise)
+              .floor(),
+          currentPositionPrecise: resolvedStatePosition ??
+              fallbackTrackOffset?.toDouble() ??
+              state.currentPositionPrecise,
+          currentIndex: resolvedIndex >= 0 ? resolvedIndex : state.currentIndex,
+          currentTrack: resolvedTrack,
+          currentQueueItemId: resolvedQueueItemId,
+          currentTrackId: resolvedTrackId,
+          duration: _durationForPlaybackIdentity(
+            track: resolvedTrack,
+            queueItemId: resolvedQueueItemId,
+            trackId: resolvedTrackId,
+          ),
+          isPlaying: nextIsPlaying,
+        ));
+        return;
+    }
+  }
+
+  void _onAudioSettingsApplied(
+    PlayerAudioSettingsApplied event,
+    Emitter<PlayerState> emit,
+  ) {
+    final boundedVolume = event.volumePercent.clamp(0, 100) / 100.0;
+    final effectiveVolume = event.isMuted ? 0.0 : boundedVolume;
+    unawaited(_audioService.setVolume(effectiveVolume));
+  }
+
+  @override
+  Future<void> close() {
+    _positionSub?.cancel();
+    _durationSub?.cancel();
+    _processingStateSub?.cancel();
+    _audioService.dispose();
+    return super.close();
+  }
+
+  void _debugLog(String message) {
+    debugPrint('[PlayerBlocV2] $message');
+  }
+
+  void _traceLog(String message) {
+    debugPrint('[PlaybackTrace] $message');
   }
 }

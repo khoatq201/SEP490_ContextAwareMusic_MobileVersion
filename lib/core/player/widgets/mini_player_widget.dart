@@ -4,6 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../constants/app_colors.dart';
 import '../../constants/app_dimensions.dart';
+import '../../enums/playback_command_enum.dart';
+import '../../../features/cams/presentation/bloc/cams_playback_bloc.dart';
+import '../../../features/cams/presentation/bloc/cams_playback_event.dart';
+import '../../../features/cams/presentation/bloc/cams_playback_state.dart';
 import '../player_bloc.dart';
 import '../player_event.dart';
 import '../player_state.dart' as ps;
@@ -19,12 +23,22 @@ class MiniPlayerWidget extends StatelessWidget {
       builder: (context, state) {
         if (!state.hasTrack) return const SizedBox.shrink();
 
+        final camsState = context.watch<CamsPlaybackBloc>().state;
         final isDark = Theme.of(context).brightness == Brightness.dark;
         final track = state.currentTrack!;
         final colorScheme = Theme.of(context).colorScheme;
+        final useRemoteControls =
+            state.isHlsMode && (state.activeSpaceId?.isNotEmpty ?? false);
+        final isWaitingForRemoteState = useRemoteControls &&
+            (camsState.status == CamsStatus.initial ||
+                camsState.status == CamsStatus.loading);
+        final canControlPlayback = state.hasTrack && !isWaitingForRemoteState;
+        final canEndStream =
+            state.isSyncedCamsPlayback && camsState.hasActiveOverride;
+        final canSkipNext = canControlPlayback && state.hasNext;
 
         return GestureDetector(
-          onTap: () => context.go('/now-playing'),
+          onTap: () => context.push('/now-playing-full'),
           child: Container(
             height: 64,
             margin: const EdgeInsets.symmetric(
@@ -36,7 +50,7 @@ class MiniPlayerWidget extends StatelessWidget {
               borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
+                  color: Colors.black.withValues(alpha: 0.08),
                   blurRadius: 8,
                   offset: const Offset(0, -1),
                 ),
@@ -115,11 +129,29 @@ class MiniPlayerWidget extends StatelessWidget {
                                 ? Icons.pause_rounded
                                 : Icons.play_arrow_rounded,
                             size: 32,
-                            color: colorScheme.primary,
+                            color: canControlPlayback
+                                ? colorScheme.primary
+                                : (isDark
+                                    ? AppColors.textDarkSecondary
+                                    : AppColors.textSecondary),
                           ),
-                          onPressed: () => context
-                              .read<PlayerBloc>()
-                              .add(const PlayerPlayPauseToggled()),
+                          onPressed: canControlPlayback
+                              ? () {
+                                  if (useRemoteControls) {
+                                    context.read<CamsPlaybackBloc>().add(
+                                          CamsSendCommand(
+                                            command: state.isPlaying
+                                                ? PlaybackCommandEnum.pause
+                                                : PlaybackCommandEnum.resume,
+                                          ),
+                                        );
+                                    return;
+                                  }
+                                  context
+                                      .read<PlayerBloc>()
+                                      .add(const PlayerPlayPauseToggled());
+                                }
+                              : null,
                         ),
 
                         // Skip button
@@ -131,10 +163,40 @@ class MiniPlayerWidget extends StatelessWidget {
                                 ? AppColors.textDarkSecondary
                                 : AppColors.textSecondary,
                           ),
-                          onPressed: () => context
-                              .read<PlayerBloc>()
-                              .add(const PlayerSkipRequested()),
+                          onPressed: canSkipNext
+                              ? () {
+                                  if (useRemoteControls) {
+                                    context.read<CamsPlaybackBloc>().add(
+                                          const CamsSendCommand(
+                                            command:
+                                                PlaybackCommandEnum.skipNext,
+                                          ),
+                                        );
+                                    return;
+                                  }
+                                  context
+                                      .read<PlayerBloc>()
+                                      .add(const PlayerSkipRequested());
+                                }
+                              : null,
                         ),
+
+                        if (canEndStream)
+                          IconButton(
+                            icon: Icon(
+                              Icons.close_rounded,
+                              size: 22,
+                              color: isDark
+                                  ? AppColors.textDarkSecondary
+                                  : AppColors.textSecondary,
+                            ),
+                            tooltip: 'End manual stream',
+                            onPressed: () {
+                              context
+                                  .read<CamsPlaybackBloc>()
+                                  .add(const CamsCancelOverride());
+                            },
+                          ),
                       ],
                     ),
                   ),

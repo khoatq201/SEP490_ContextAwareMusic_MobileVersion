@@ -41,6 +41,9 @@ class MainShellPage extends StatelessWidget {
     final currentIndex = _currentIndex(context);
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final keyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
+    final shouldHideShellChromeForKeyboard =
+        keyboardVisible && currentIndex == 1;
 
     // ── Bottom navigation bar ──────────────────────────────────────────
     final bottomNav = Container(
@@ -48,7 +51,7 @@ class MainShellPage extends StatelessWidget {
         color: isDark ? AppColors.surfaceDark : Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 12,
             offset: const Offset(0, -2),
           ),
@@ -130,16 +133,16 @@ class MainShellPage extends StatelessWidget {
         final shouldExit = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Thoát ứng dụng'),
-            content: const Text('Bạn có muốn thoát ứng dụng không?'),
+            title: const Text('Exit Application'),
+            content: const Text('Do you want to exit the application?'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Không'),
+                child: const Text('No'),
               ),
               TextButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Thoát'),
+                child: const Text('Exit'),
               ),
             ],
           ),
@@ -153,18 +156,23 @@ class MainShellPage extends StatelessWidget {
         }
       },
       child: Scaffold(
-        resizeToAvoidBottomInset: false,
+        resizeToAvoidBottomInset: shouldHideShellChromeForKeyboard,
         // extendBody lets the body go behind the MiniPlayer + BottomBar area
         extendBody: true,
         body: child,
-        bottomNavigationBar: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // MiniPlayer sits directly above the BottomNavigationBar
-            const MiniPlayerWidget(),
-            bottomNav,
-          ],
-        ),
+        bottomNavigationBar: shouldHideShellChromeForKeyboard
+            ? null
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Hide MiniPlayer when on the Now Playing tab (redundant)
+                  if (!GoRouterState.of(context)
+                      .matchedLocation
+                      .startsWith('/now-playing'))
+                    const MiniPlayerWidget(),
+                  bottomNav,
+                ],
+              ),
       ),
     );
   }
@@ -255,18 +263,18 @@ class _NavItemCenter extends StatelessWidget {
                     ? LinearGradient(
                         colors: [
                           activeColor,
-                          activeColor.withOpacity(0.7),
+                          activeColor.withValues(alpha: 0.7),
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       )
                     : null,
-                color: isActive ? null : activeColor.withOpacity(0.12),
+                color: isActive ? null : activeColor.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
                 boxShadow: isActive
                     ? [
                         BoxShadow(
-                          color: activeColor.withOpacity(0.45),
+                          color: activeColor.withValues(alpha: 0.45),
                           blurRadius: 10,
                           offset: const Offset(0, 3),
                         ),

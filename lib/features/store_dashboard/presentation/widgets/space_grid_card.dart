@@ -17,13 +17,21 @@ class SpaceGridCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final moodLabel = _formatMoodLabel(space.currentMood);
+    final hasPlaybackLabel =
+        space.currentTrack != null && space.currentTrack!.trim().isNotEmpty;
+    final musicLabel = space.isMusicPlaying
+        ? (hasPlaybackLabel ? space.currentTrack!.trim() : 'Playing')
+        : hasPlaybackLabel
+            ? 'Paused - ${space.currentTrack!.trim()}'
+            : 'No music';
     return Card(
       elevation: AppDimensions.elevationMd,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
         child: Padding(
-          padding: const EdgeInsets.all(AppDimensions.spacingMd),
+          padding: const EdgeInsets.all(AppDimensions.cardPaddingSm),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -58,12 +66,14 @@ class SpaceGridCard extends StatelessWidget {
 
               // Mood Badge
               Container(
+                width: double.infinity,
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppDimensions.spacingSm,
-                  vertical: AppDimensions.spacingXs,
+                  vertical: AppDimensions.spacing2,
                 ),
                 decoration: BoxDecoration(
-                  color: _getMoodColor(space.currentMood).withOpacity(0.1),
+                  color:
+                      _getMoodColor(space.currentMood).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
                   border: Border.all(
                     color: _getMoodColor(space.currentMood),
@@ -71,14 +81,39 @@ class SpaceGridCard extends StatelessWidget {
                   ),
                 ),
                 child: Text(
-                  space.currentMood.toUpperCase(),
+                  moodLabel,
                   style: AppTypography.labelSmall.copyWith(
                     color: _getMoodColor(space.currentMood),
                     fontWeight: FontWeight.bold,
                     fontSize: 10,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: false,
                 ),
               ),
+
+              if (space.isScheduling || space.isManualOverride) ...[
+                const SizedBox(height: AppDimensions.spacingXs),
+                Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
+                  children: [
+                    if (space.isScheduling)
+                      _RuntimeBadge(
+                        label: 'Scheduling',
+                        color: AppColors.info,
+                        isDark: isDark,
+                      ),
+                    if (space.isManualOverride)
+                      _RuntimeBadge(
+                        label: 'Manual',
+                        color: AppColors.warning,
+                        isDark: isDark,
+                      ),
+                  ],
+                ),
+              ],
 
               const SizedBox(height: AppDimensions.spacingSm),
 
@@ -89,19 +124,21 @@ class SpaceGridCard extends StatelessWidget {
                 children: [
                   _StatRow(
                     icon: Icons.people_outline,
-                    value: '${space.customerCount}',
+                    value: space.customerCount?.toString() ?? '--',
                     color: AppColors.primaryOrange,
                   ),
                   const SizedBox(height: 2),
                   _StatRow(
-                    icon: Icons.thermostat_outlined,
-                    value: '${space.temperature.toStringAsFixed(1)}°C',
+                    icon: Icons.volume_up_outlined,
+                    value: space.noiseLevel == null
+                        ? '-- dB'
+                        : '${space.noiseLevel!.toStringAsFixed(1)} dB',
                     color: AppColors.secondaryTeal,
                   ),
                 ],
               ),
 
-              const SizedBox(height: AppDimensions.spacingSm),
+              const SizedBox(height: AppDimensions.spacingXs),
               const Divider(height: 1),
               const SizedBox(height: AppDimensions.spacingXs),
 
@@ -109,9 +146,11 @@ class SpaceGridCard extends StatelessWidget {
               Row(
                 children: [
                   Icon(
-                    space.isMusicPlaying ? Icons.music_note : Icons.music_off,
+                    space.isMusicPlaying || hasPlaybackLabel
+                        ? Icons.music_note
+                        : Icons.music_off,
                     size: 16,
-                    color: space.isMusicPlaying
+                    color: space.isMusicPlaying || hasPlaybackLabel
                         ? AppColors.success
                         : (isDark
                             ? AppColors.textDarkTertiary
@@ -120,9 +159,7 @@ class SpaceGridCard extends StatelessWidget {
                   const SizedBox(width: AppDimensions.spacingXs),
                   Expanded(
                     child: Text(
-                      space.isMusicPlaying
-                          ? (space.currentTrack ?? 'Playing')
-                          : 'No music',
+                      musicLabel,
                       style: AppTypography.labelSmall.copyWith(
                         color: isDark
                             ? AppColors.textDarkSecondary
@@ -154,6 +191,54 @@ class SpaceGridCard extends StatelessWidget {
       default:
         return AppColors.textSecondary;
     }
+  }
+
+  String _formatMoodLabel(String mood) {
+    final trimmed = mood.trim();
+    if (trimmed.isEmpty) return 'UNKNOWN';
+
+    // Convert "manualoverride", "manual_override", "manual-override",
+    // and camelCase forms into a readable single-line label.
+    final withSpaces =
+        trimmed.replaceAll(RegExp(r'[_-]+'), ' ').replaceAllMapped(
+              RegExp(r'([a-z])([A-Z])'),
+              (match) => '${match.group(1)} ${match.group(2)}',
+            );
+
+    final collapsed = withSpaces.replaceAll(RegExp(r'\s+'), ' ').trim();
+    return collapsed.toUpperCase();
+  }
+}
+
+class _RuntimeBadge extends StatelessWidget {
+  const _RuntimeBadge({
+    required this.label,
+    required this.color,
+    required this.isDark,
+  });
+
+  final String label;
+  final Color color;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: isDark ? 0.22 : 0.12),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+        border: Border.all(color: color.withValues(alpha: 0.7)),
+      ),
+      child: Text(
+        label,
+        style: AppTypography.labelSmall.copyWith(
+          color: color,
+          fontWeight: FontWeight.w800,
+          fontSize: 9,
+        ),
+      ),
+    );
   }
 }
 

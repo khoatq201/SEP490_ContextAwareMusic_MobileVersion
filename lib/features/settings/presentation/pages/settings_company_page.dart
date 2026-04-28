@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/widgets/app_error_view.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../bloc/settings_cubit.dart';
@@ -14,7 +15,8 @@ class SettingsCompanyPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = _CompanyPalette.fromBrightness(Theme.of(context).brightness);
+    final palette =
+        _CompanyPalette.fromBrightness(Theme.of(context).brightness);
 
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
@@ -59,12 +61,12 @@ class SettingsCompanyPage extends StatelessWidget {
               );
             }
 
-            if (state.status == SettingsStatus.error || state.snapshot == null) {
-              return Center(
-                child: Text(
-                  state.errorMessage ?? 'Cannot load company data.',
-                  style: GoogleFonts.inter(color: palette.textSecondary),
-                ),
+            if (state.status == SettingsStatus.error ||
+                state.snapshot == null) {
+              return AppErrorView(
+                title: 'Company data unavailable',
+                message: state.errorMessage ?? 'Cannot load company data.',
+                onRetry: () => context.read<SettingsCubit>().load(),
               );
             }
 
@@ -77,7 +79,8 @@ class SettingsCompanyPage extends StatelessWidget {
                   palette: palette,
                   rows: [
                     _InfoRow(label: 'Name', value: snapshot.companyName),
-                    _InfoRow(label: 'Business type', value: snapshot.businessType),
+                    _InfoRow(
+                        label: 'Business type', value: snapshot.businessType),
                     _InfoRow(label: 'Plan', value: snapshot.planName),
                   ],
                 ),
@@ -121,7 +124,8 @@ class SettingsCompanyPage extends StatelessWidget {
 
   void _showControlHint(BuildContext context, String title) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$title settings are managed by your admin panel.')),
+      SnackBar(
+          content: Text('$title settings are managed by your admin panel.')),
     );
   }
 }
@@ -209,7 +213,8 @@ class _ControlCard extends StatelessWidget {
             InkWell(
               onTap: () => onPressed(rows[i].title),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                 child: Row(
                   children: [
                     Container(
@@ -219,7 +224,8 @@ class _ControlCard extends StatelessWidget {
                         color: palette.iconBackground,
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: Icon(rows[i].icon, color: palette.iconColor, size: 16),
+                      child: Icon(rows[i].icon,
+                          color: palette.iconColor, size: 16),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -327,7 +333,7 @@ class _CompanyPalette {
       textPrimary: AppColors.textPrimary,
       textSecondary: AppColors.textTertiary,
       sectionLabel: AppColors.textTertiary,
-      iconBackground: AppColors.primaryOrange.withOpacity(0.14),
+      iconBackground: AppColors.primaryOrange.withValues(alpha: 0.14),
       iconColor: AppColors.primaryOrange,
       trailingIcon: AppColors.textTertiary,
     );

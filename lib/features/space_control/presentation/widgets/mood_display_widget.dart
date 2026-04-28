@@ -5,10 +5,10 @@ class MoodDisplayWidget extends StatelessWidget {
   final bool isOffline;
 
   const MoodDisplayWidget({
-    Key? key,
+    super.key,
     this.mood,
     required this.isOffline,
-  }) : super(key: key);
+  });
 
   IconData _getMoodIcon(String? mood) {
     switch (mood?.toLowerCase()) {
@@ -57,8 +57,8 @@ class MoodDisplayWidget extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           color: isDark
-              ? _getMoodColor(mood).withOpacity(0.1)
-              : _getMoodColor(mood).withOpacity(0.05),
+              ? _getMoodColor(mood).withValues(alpha: 0.1)
+              : _getMoodColor(mood).withValues(alpha: 0.05),
         ),
         child: Column(
           children: [

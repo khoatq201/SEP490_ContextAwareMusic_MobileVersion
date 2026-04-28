@@ -1,8 +1,9 @@
 import 'dart:async';
-import 'dart:convert';
 import '../models/sensor_data_model.dart';
 import '../models/space_model.dart';
 import 'space_remote_datasource.dart';
+import '../../../../core/enums/entity_status_enum.dart';
+import '../../../../core/enums/space_type_enum.dart';
 
 /// Mock implementation of SpaceRemoteDataSource for development and testing
 /// Provides realistic data without requiring API server or MQTT broker
@@ -113,7 +114,8 @@ class SpaceMockDataSource implements SpaceRemoteDataSource {
       id: id,
       name: name,
       storeId: storeId,
-      status: isOnline ? 'Online' : 'Offline',
+      type: SpaceTypeEnum.hall,
+      status: isOnline ? EntityStatusEnum.active : EntityStatusEnum.inactive,
       currentMood: mood,
       assignedHubId: 'hub-001',
     );

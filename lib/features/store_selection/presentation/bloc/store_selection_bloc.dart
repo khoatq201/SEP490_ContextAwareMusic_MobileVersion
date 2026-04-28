@@ -21,10 +21,10 @@ class StoreSelectionBloc
   ) async {
     emit(StoreSelectionLoading());
 
-    final result = await getUserStores(event.storeIds);
+    final result = await getUserStores();
 
     result.fold(
-      (failure) => emit(StoreSelectionError(failure.message)),
+      (failure) => emit(StoreSelectionError(failure)),
       (stores) => emit(StoreSelectionLoaded(
         stores: stores,
         filteredStores: stores,
@@ -55,7 +55,7 @@ class StoreSelectionBloc
       } else {
         final filtered = currentState.stores.where((store) {
           return store.name.toLowerCase().contains(query) ||
-              store.address.toLowerCase().contains(query);
+              store.fullAddress.toLowerCase().contains(query);
         }).toList();
 
         emit(currentState.copyWith(

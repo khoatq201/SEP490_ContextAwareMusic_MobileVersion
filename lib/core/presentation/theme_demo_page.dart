@@ -2,13 +2,12 @@ import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
 import '../constants/app_typography.dart';
-import '../widgets/cams_button.dart';
 import '../widgets/cams_logo.dart';
 import '../widgets/theme_toggle.dart';
 
 /// Theme Demo Page - Shows both light and dark themes
 class ThemeDemoPage extends StatelessWidget {
-  const ThemeDemoPage({Key? key}) : super(key: key);
+  const ThemeDemoPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +54,7 @@ class ThemeDemoPage extends StatelessWidget {
             const SizedBox(height: AppDimensions.spacingXxl),
 
             // Color Palette
-            Text(
+            const Text(
               'Color Palette',
               style: AppTypography.titleLarge,
             ),

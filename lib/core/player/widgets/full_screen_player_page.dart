@@ -5,6 +5,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../constants/app_colors.dart';
+import '../../enums/playback_command_enum.dart';
+import '../../../features/cams/presentation/bloc/cams_playback_bloc.dart';
+import '../../../features/cams/presentation/bloc/cams_playback_event.dart';
 import '../player_bloc.dart';
 import '../player_event.dart';
 import '../player_state.dart' as ps;
@@ -18,6 +21,10 @@ class FullScreenPlayerPage extends StatelessWidget {
     final m = sec ~/ 60;
     final s = sec % 60;
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
+
+  void _dispatchRemoteSkipBack(BuildContext context) {
+    context.read<CamsPlaybackBloc>().add(const CamsPreviousTapped());
   }
 
   @override
@@ -35,6 +42,8 @@ class FullScreenPlayerPage extends StatelessWidget {
         builder: (context, state) {
           final track = state.currentTrack;
           final isPlaying = state.isPlaying;
+          final useRemoteControls =
+              state.isHlsMode && (state.activeSpaceId?.isNotEmpty ?? false);
           final moodTags = track?.moodTags;
           final mood =
               (moodTags != null && moodTags.isNotEmpty) ? moodTags.first : null;
@@ -136,9 +145,9 @@ class FullScreenPlayerPage extends StatelessWidget {
                             horizontal: 14, vertical: 7),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20),
-                          color: palette.accent.withOpacity(0.12),
+                          color: palette.accent.withValues(alpha: 0.12),
                           border: Border.all(
-                            color: palette.accent.withOpacity(0.4),
+                            color: palette.accent.withValues(alpha: 0.4),
                           ),
                         ),
                         child: Row(
@@ -160,7 +169,7 @@ class FullScreenPlayerPage extends StatelessWidget {
                       ),
                     Text(
                       track?.title ?? 'No track playing',
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
                       style: GoogleFonts.poppins(
@@ -235,9 +244,9 @@ class FullScreenPlayerPage extends StatelessWidget {
                               const RoundSliderOverlayShape(overlayRadius: 14),
                           activeTrackColor: palette.accent,
                           inactiveTrackColor:
-                              palette.textMuted.withOpacity(0.2),
+                              palette.textMuted.withValues(alpha: 0.2),
                           thumbColor: palette.accentAlt,
-                          overlayColor: palette.accent.withOpacity(0.2),
+                          overlayColor: palette.accent.withValues(alpha: 0.2),
                         ),
                         child: Slider(
                           value: state.progress,
@@ -250,7 +259,7 @@ class FullScreenPlayerPage extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              _fmt(state.currentPosition),
+                              _fmt(state.displayPosition),
                               style: GoogleFonts.inter(
                                   color: palette.textMuted, fontSize: 12),
                             ),
@@ -276,7 +285,15 @@ class FullScreenPlayerPage extends StatelessWidget {
                   children: [
                     // Skip previous
                     GestureDetector(
-                      onTap: () {},
+                      onTap: () {
+                        if (useRemoteControls) {
+                          _dispatchRemoteSkipBack(context);
+                          return;
+                        }
+                        context
+                            .read<PlayerBloc>()
+                            .add(const PlayerSkipBackRequested());
+                      },
                       child: Container(
                         width: 52,
                         height: 52,
@@ -293,9 +310,21 @@ class FullScreenPlayerPage extends StatelessWidget {
 
                     // Play / Pause
                     GestureDetector(
-                      onTap: () => context
-                          .read<PlayerBloc>()
-                          .add(const PlayerPlayPauseToggled()),
+                      onTap: () {
+                        if (useRemoteControls) {
+                          context.read<CamsPlaybackBloc>().add(
+                                CamsSendCommand(
+                                  command: isPlaying
+                                      ? PlaybackCommandEnum.pause
+                                      : PlaybackCommandEnum.resume,
+                                ),
+                              );
+                          return;
+                        }
+                        context
+                            .read<PlayerBloc>()
+                            .add(const PlayerPlayPauseToggled());
+                      },
                       child: Container(
                         width: 76,
                         height: 76,
@@ -314,9 +343,21 @@ class FullScreenPlayerPage extends StatelessWidget {
 
                     // Skip next
                     GestureDetector(
-                      onTap: () => context
-                          .read<PlayerBloc>()
-                          .add(const PlayerSkipRequested()),
+                      onTap: state.hasNext
+                          ? () {
+                              if (useRemoteControls) {
+                                context.read<CamsPlaybackBloc>().add(
+                                      const CamsSendCommand(
+                                        command: PlaybackCommandEnum.skipNext,
+                                      ),
+                                    );
+                                return;
+                              }
+                              context
+                                  .read<PlayerBloc>()
+                                  .add(const PlayerSkipRequested());
+                            }
+                          : null,
                       child: Container(
                         width: 52,
                         height: 52,
@@ -374,7 +415,7 @@ class _FSPalette {
         isDark: true,
         bg: AppColors.backgroundDarkPrimary,
         card: AppColors.surfaceDark,
-        overlay: Colors.white.withOpacity(0.06),
+        overlay: Colors.white.withValues(alpha: 0.06),
         border: AppColors.borderDarkMedium,
         textPrimary: AppColors.textDarkPrimary,
         textMuted: AppColors.textDarkSecondary,
@@ -384,7 +425,7 @@ class _FSPalette {
         shadow: AppColors.shadowDark,
       );
     }
-    return _FSPalette(
+    return const _FSPalette(
       isDark: false,
       bg: AppColors.backgroundPrimary,
       card: AppColors.surface,

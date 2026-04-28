@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -21,14 +21,14 @@ class _CreateRulePageState extends State<CreateRulePage> {
   final _nameController = TextEditingController();
 
   // Condition state
-  String? _selectedSensorType; // 'Nhiệt độ' | 'Độ ẩm' | 'Lượng khách'
+  String? _selectedSensorType; // 'Temperature' | 'Humidity' | 'Crowd Level'
   double _sliderValue = 25;
-  int _crowdLevelIndex = 1; // 0=Vắng, 1=Bình thường, 2=Đông
+  int _crowdLevelIndex = 1; // 0=Low, 1=Normal, 2=Crowded
 
   // Action state
-  String _selectedPlaylist = 'Chưa chọn';
+  final String _selectedPlaylist = 'Not selected';
 
-  static const _crowdLabels = ['Vắng', 'Bình thường', 'Đông'];
+  static const _crowdLabels = ['Low', 'Normal', 'Crowded'];
 
   @override
   void dispose() {
@@ -39,13 +39,13 @@ class _CreateRulePageState extends State<CreateRulePage> {
   // Computed helpers
 
   double get _sliderMin => 0;
-  double get _sliderMax => _selectedSensorType == 'Độ ẩm' ? 100 : 50;
-  int get _sliderDivisions => _selectedSensorType == 'Độ ẩm' ? 20 : 25;
-  String get _sliderUnit => _selectedSensorType == 'Độ ẩm' ? '%' : '°C';
+  double get _sliderMax => _selectedSensorType == 'Humidity' ? 100 : 50;
+  int get _sliderDivisions => _selectedSensorType == 'Humidity' ? 20 : 25;
+  String get _sliderUnit => _selectedSensorType == 'Humidity' ? '%' : '°C';
 
-  bool get _isCrowd => _selectedSensorType == 'Lượng khách';
+  bool get _isCrowd => _selectedSensorType == 'Crowd Level';
   bool get _isSlider =>
-      _selectedSensorType == 'Nhiệt độ' || _selectedSensorType == 'Độ ẩm';
+      _selectedSensorType == 'Temperature' || _selectedSensorType == 'Humidity';
 
   @override
   Widget build(BuildContext context) {
@@ -68,7 +68,7 @@ class _CreateRulePageState extends State<CreateRulePage> {
                   children: [
                     _BlockTitle(
                       icon: LucideIcons.tag,
-                      label: 'TÊN QUY TẮC',
+                      label: 'RULE NAME',
                       palette: palette,
                     ),
                     const SizedBox(height: 14),
@@ -78,12 +78,12 @@ class _CreateRulePageState extends State<CreateRulePage> {
                           color: palette.textPrimary, fontSize: 14),
                       cursorColor: palette.accent,
                       validator: (v) => (v == null || v.trim().isEmpty)
-                          ? 'Vui lòng đặt tên quy tắc'
+                          ? 'Please enter a rule name'
                           : null,
                       decoration: InputDecoration(
-                        hintText: 'VD: Nhạc buổi trưa đông khách',
+                        hintText: 'E.g.: Lunchtime crowd music',
                         hintStyle: GoogleFonts.inter(
-                          color: palette.textMuted.withOpacity(0.55),
+                          color: palette.textMuted.withValues(alpha: 0.55),
                           fontSize: 14,
                         ),
                         filled: true,
@@ -126,12 +126,12 @@ class _CreateRulePageState extends State<CreateRulePage> {
                   children: [
                     _BlockTitle(
                       icon: LucideIcons.thermometer,
-                      label: 'NẾU  (Điều kiện môi trường)',
+                      label: 'IF  (Environmental Condition)',
                       palette: palette,
                     ),
                     const SizedBox(height: 14),
                     Text(
-                      'Loại cảm biến',
+                      'Sensor Type',
                       style: GoogleFonts.inter(
                         color: palette.textMuted,
                         fontSize: 12,
@@ -141,16 +141,16 @@ class _CreateRulePageState extends State<CreateRulePage> {
                     ),
                     const SizedBox(height: 6),
                     DropdownButtonFormField<String>(
-                      value: _selectedSensorType,
+                      initialValue: _selectedSensorType,
                       hint: Text(
-                        'Chọn loại cảm biến…',
+                        'Select sensor type…',
                         style: GoogleFonts.inter(
-                          color: palette.textMuted.withOpacity(0.55),
+                          color: palette.textMuted.withValues(alpha: 0.55),
                           fontSize: 14,
                         ),
                       ),
                       validator: (v) =>
-                          v == null ? 'Vui lòng chọn loại cảm biến' : null,
+                          v == null ? 'Please select a sensor type' : null,
                       dropdownColor: palette.card,
                       iconEnabledColor: palette.accent,
                       borderRadius: BorderRadius.circular(12),
@@ -190,15 +190,16 @@ class _CreateRulePageState extends State<CreateRulePage> {
                       ),
                       items: const [
                         DropdownMenuItem(
-                            value: 'Nhiệt độ', child: Text('Nhiệt độ')),
-                        DropdownMenuItem(value: 'Độ ẩm', child: Text('Độ ẩm')),
+                            value: 'Temperature', child: Text('Temperature')),
                         DropdownMenuItem(
-                            value: 'Lượng khách', child: Text('Lượng khách')),
+                            value: 'Humidity', child: Text('Humidity')),
+                        DropdownMenuItem(
+                            value: 'Crowd Level', child: Text('Crowd Level')),
                       ],
                       onChanged: (v) {
                         setState(() {
                           _selectedSensorType = v;
-                          _sliderValue = v == 'Độ ẩm' ? 50 : 25;
+                          _sliderValue = v == 'Humidity' ? 50 : 25;
                           _crowdLevelIndex = 1;
                         });
                       },
@@ -213,7 +214,7 @@ class _CreateRulePageState extends State<CreateRulePage> {
                               children: [
                                 const SizedBox(height: 20),
                                 Text(
-                                  'Ngưỡng giá trị',
+                                  'Threshold Value',
                                   style: GoogleFonts.inter(
                                     color: palette.textMuted,
                                     fontSize: 12,
@@ -256,12 +257,12 @@ class _CreateRulePageState extends State<CreateRulePage> {
                   children: [
                     _BlockTitle(
                       icon: LucideIcons.music2,
-                      label: 'THÌ  (Phát nhạc)',
+                      label: 'THEN  (Play Music)',
                       palette: palette,
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Playlist hoặc chủ đề sẽ được phát khi điều kiện đúng',
+                      'Playlist or theme to play when condition is met',
                       style: GoogleFonts.inter(
                         color: palette.textMuted,
                         fontSize: 12,
@@ -276,12 +277,12 @@ class _CreateRulePageState extends State<CreateRulePage> {
                       ),
                       child: ListTile(
                         onTap: () {
-                          debugPrint('Mở BottomSheet chọn nhạc');
+                          debugPrint('Open music selection BottomSheet');
                         },
                         contentPadding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 4),
                         title: Text(
-                          'Chọn Playlist / Chủ đề',
+                          'Select Playlist / Theme',
                           style: GoogleFonts.inter(
                             color: palette.textPrimary,
                             fontSize: 14,
@@ -291,8 +292,8 @@ class _CreateRulePageState extends State<CreateRulePage> {
                         subtitle: Text(
                           _selectedPlaylist,
                           style: GoogleFonts.inter(
-                            color: _selectedPlaylist == 'Chưa chọn'
-                                ? palette.textMuted.withOpacity(0.55)
+                            color: _selectedPlaylist == 'Not selected'
+                                ? palette.textMuted.withValues(alpha: 0.55)
                                 : palette.accent,
                             fontSize: 12,
                           ),
@@ -327,7 +328,7 @@ class _CreateRulePageState extends State<CreateRulePage> {
                       elevation: 0,
                     ),
                     child: Text(
-                      'Lưu quy tắc',
+                      'Save Rule',
                       style: GoogleFonts.poppins(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
@@ -362,7 +363,7 @@ class _CreateRulePageState extends State<CreateRulePage> {
         ),
       ),
       title: Text(
-        'Tạo luật tự động mới',
+        'Create New Automation Rule',
         style: GoogleFonts.poppins(
           color: palette.textPrimary,
           fontSize: 17,
@@ -405,15 +406,16 @@ class _SliderInput extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Lớn hơn',
+              'Greater than',
               style: GoogleFonts.inter(color: palette.textMuted, fontSize: 12),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
               decoration: BoxDecoration(
-                color: palette.accent.withOpacity(0.12),
+                color: palette.accent.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: palette.accent.withOpacity(0.3)),
+                border:
+                    Border.all(color: palette.accent.withValues(alpha: 0.3)),
               ),
               child: Text(
                 '${value.round()}$unit',
@@ -430,9 +432,9 @@ class _SliderInput extends StatelessWidget {
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
             activeTrackColor: palette.accent,
-            inactiveTrackColor: palette.textMuted.withOpacity(0.2),
+            inactiveTrackColor: palette.textMuted.withValues(alpha: 0.2),
             thumbColor: palette.accent,
-            overlayColor: palette.accent.withOpacity(0.15),
+            overlayColor: palette.accent.withValues(alpha: 0.15),
             trackHeight: 3,
           ),
           child: Slider(
@@ -533,7 +535,7 @@ class _BlockCard extends StatelessWidget {
         border: Border.all(color: palette.border),
         boxShadow: [
           BoxShadow(
-            color: palette.shadow.withOpacity(0.07),
+            color: palette.shadow.withValues(alpha: 0.07),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -562,7 +564,7 @@ class _BlockTitle extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: palette.accent.withOpacity(0.12),
+            color: palette.accent.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, color: palette.accent, size: 16),
@@ -604,7 +606,7 @@ class _Palette {
         isDark: true,
         bg: AppColors.backgroundDarkPrimary,
         card: AppColors.surfaceDark,
-        overlay: Colors.white.withOpacity(0.06),
+        overlay: Colors.white.withValues(alpha: 0.06),
         border: AppColors.borderDarkMedium,
         textPrimary: AppColors.textDarkPrimary,
         textMuted: AppColors.textDarkSecondary,
@@ -614,7 +616,7 @@ class _Palette {
         shadow: AppColors.shadowDark,
       );
     }
-    return _Palette(
+    return const _Palette(
       isDark: false,
       bg: AppColors.backgroundPrimary,
       card: AppColors.surface,

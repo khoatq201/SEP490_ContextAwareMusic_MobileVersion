@@ -1,0 +1,1711 @@
+import 'dart:async';
+
+import 'package:dartz/dartz.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:just_audio/just_audio.dart';
+
+import 'package:cams_store_manager/core/audio/audio_player_service.dart';
+import 'package:cams_store_manager/core/audio/playback_notification_service.dart';
+import 'package:cams_store_manager/core/enums/entity_status_enum.dart';
+import 'package:cams_store_manager/core/enums/playback_command_enum.dart';
+import 'package:cams_store_manager/core/enums/queue_insert_mode_enum.dart';
+import 'package:cams_store_manager/core/enums/space_type_enum.dart';
+import 'package:cams_store_manager/core/error/failures.dart';
+import 'package:cams_store_manager/core/player/player_bloc.dart';
+import 'package:cams_store_manager/core/player/player_event.dart';
+import 'package:cams_store_manager/core/player/player_state.dart' as ps;
+import 'package:cams_store_manager/core/presentation/app_playback_coordinator.dart';
+import 'package:cams_store_manager/core/services/local_storage_service.dart';
+import 'package:cams_store_manager/core/session/session_cubit.dart';
+import 'package:cams_store_manager/features/cams/data/models/override_response_model.dart';
+import 'package:cams_store_manager/features/cams/data/models/space_playback_state_model.dart';
+import 'package:cams_store_manager/features/cams/data/repositories/cams_repository_impl.dart';
+import 'package:cams_store_manager/features/cams/data/services/queue_first_playback_runtime.dart';
+import 'package:cams_store_manager/features/cams/data/services/store_hub_service.dart';
+import 'package:cams_store_manager/features/cams/domain/entities/pair_code_snapshot.dart';
+import 'package:cams_store_manager/features/cams/domain/entities/pair_device_info.dart';
+import 'package:cams_store_manager/features/cams/domain/entities/space_playback_state.dart';
+import 'package:cams_store_manager/features/cams/domain/entities/space_queue_state_item.dart';
+import 'package:cams_store_manager/features/cams/domain/usecases/cancel_override.dart';
+import 'package:cams_store_manager/features/cams/domain/usecases/get_space_state.dart';
+import 'package:cams_store_manager/features/cams/domain/usecases/override_space.dart';
+import 'package:cams_store_manager/features/cams/domain/usecases/queue_usecases.dart';
+import 'package:cams_store_manager/features/cams/domain/usecases/send_playback_command.dart';
+import 'package:cams_store_manager/features/cams/domain/usecases/update_audio_state.dart';
+import 'package:cams_store_manager/features/cams/domain/usecases/update_scheduling_state.dart';
+import 'package:cams_store_manager/features/cams/presentation/bloc/cams_playback_bloc.dart';
+import 'package:cams_store_manager/features/cams/presentation/bloc/cams_playback_event.dart';
+import 'package:cams_store_manager/features/moods/data/repositories/mood_repository_impl.dart';
+import 'package:cams_store_manager/features/moods/domain/entities/mood.dart';
+import 'package:cams_store_manager/features/moods/domain/usecases/get_moods.dart';
+import 'package:cams_store_manager/features/playlists/data/datasources/playlist_remote_datasource.dart';
+import 'package:cams_store_manager/features/playlists/data/models/api_playlist_model.dart';
+import 'package:cams_store_manager/features/space_control/domain/entities/space.dart';
+import 'package:cams_store_manager/features/store_dashboard/domain/entities/store.dart';
+import 'package:cams_store_manager/features/tracks/data/repositories/track_repository_impl.dart';
+import 'package:cams_store_manager/features/tracks/data/datasources/track_remote_datasource.dart';
+import 'package:cams_store_manager/features/tracks/domain/entities/api_track.dart';
+import 'package:cams_store_manager/features/tracks/domain/entities/track_filter.dart';
+import 'package:cams_store_manager/features/tracks/domain/usecases/track_usecases.dart';
+import 'package:cams_store_manager/injection_container.dart';
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  group('AppPlaybackCoordinator queue-first orchestration', () {
+    late _FakeAudioPlayerService audioService;
+    late _FakePlaybackNotificationService notificationService;
+    late SessionCubit sessionCubit;
+    late _FakeCamsRepository camsRepository;
+    late _FakeMoodRepository moodRepository;
+    late _FakeStoreHubService storeHubService;
+    late _FakePlaylistRemoteDataSource playlistDataSource;
+    late _FakeTrackRepository trackRepository;
+    late PlayerBloc playerBloc;
+    late QueueFirstPlaybackRuntime runtime;
+    late _ManualCamsPlaybackBloc camsBloc;
+
+    setUp(() {
+      audioService = _FakeAudioPlayerService();
+      notificationService = _FakePlaybackNotificationService();
+      sessionCubit = SessionCubit(localStorage: _InMemoryLocalStorageService());
+      camsRepository = _FakeCamsRepository();
+      moodRepository = _FakeMoodRepository();
+      storeHubService = _FakeStoreHubService();
+      playlistDataSource = _FakePlaylistRemoteDataSource();
+      trackRepository = _FakeTrackRepository();
+      playerBloc = PlayerBloc(audioPlayerService: audioService);
+      runtime = QueueFirstPlaybackRuntime(
+        getSpaceState: GetSpaceState(camsRepository),
+        queueTracks: QueueTracks(camsRepository),
+        queuePlaylist: QueuePlaylist(camsRepository),
+        reorderQueue: ReorderQueue(camsRepository),
+        removeQueueItems: RemoveQueueItems(camsRepository),
+        clearQueue: ClearQueue(camsRepository),
+        getSpaceQueue: GetSpaceQueue(camsRepository),
+        sendPlaybackCommand: SendPlaybackCommand(camsRepository),
+        updateAudioState: UpdateAudioState(camsRepository),
+        updateSchedulingState: UpdateSchedulingState(camsRepository),
+        storeHubService: storeHubService,
+      );
+      camsBloc = _ManualCamsPlaybackBloc(
+        overrideSpace: OverrideSpace(camsRepository),
+        cancelOverride: CancelOverride(camsRepository),
+        getMoods: GetMoods(moodRepository),
+        storeHubService: storeHubService,
+        sessionCubit: sessionCubit,
+        runtime: runtime,
+      );
+
+      if (sl.isRegistered<PlaylistRemoteDataSource>()) {
+        sl.unregister<PlaylistRemoteDataSource>();
+      }
+      sl.registerSingleton<PlaylistRemoteDataSource>(playlistDataSource);
+      if (sl.isRegistered<GetTrackById>()) {
+        sl.unregister<GetTrackById>();
+      }
+      sl.registerSingleton<GetTrackById>(GetTrackById(trackRepository));
+
+      sessionCubit.changeStore(const Store(
+        id: 'store-1',
+        name: 'Store 1',
+        brandId: 'brand-1',
+      ));
+      sessionCubit.changeSpace(const Space(
+        id: 'space-1',
+        name: 'Space 1',
+        storeId: 'store-1',
+        type: SpaceTypeEnum.hall,
+        status: EntityStatusEnum.active,
+      ));
+    });
+
+    tearDown(() async {
+      if (sl.isRegistered<PlaylistRemoteDataSource>()) {
+        sl.unregister<PlaylistRemoteDataSource>();
+      }
+      if (sl.isRegistered<GetTrackById>()) {
+        sl.unregister<GetTrackById>();
+      }
+      await playerBloc.close();
+      await camsBloc.close();
+      await runtime.dispose();
+      await sessionCubit.close();
+      await audioService.dispose();
+      notificationService.dispose();
+      storeHubService.dispose();
+    });
+
+    testWidgets(
+        'hydrates player queue from spaceQueueItems and currentQueueItemId',
+        (tester) async {
+      addTearDown(() async {
+        await _disposeHarness(tester);
+      });
+      const playbackState = SpacePlaybackState(
+        spaceId: 'space-1',
+        storeId: 'store-1',
+        hlsUrl: 'https://stream.example.com/live.m3u8',
+        currentQueueItemId: 'queue-2',
+        currentTrackName: 'Track Two',
+        volumePercent: 70,
+        isMuted: false,
+        spaceQueueItems: [
+          SpaceQueueStateItem(
+            queueItemId: 'queue-1',
+            trackId: 'track-1',
+            trackName: 'Track One',
+            position: 1,
+            queueStatus: 2,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/t1.m3u8',
+            isReadyToStream: true,
+          ),
+          SpaceQueueStateItem(
+            queueItemId: 'queue-2',
+            trackId: 'track-2',
+            trackName: 'Track Two',
+            position: 2,
+            queueStatus: 1,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/t2.m3u8',
+            isReadyToStream: true,
+          ),
+        ],
+      );
+
+      await _pumpCoordinator(
+          tester, notificationService, sessionCubit, playerBloc, camsBloc);
+      camsBloc.seed(playbackState);
+      await tester.pump();
+
+      await _waitUntil(tester, () => playerBloc.state.queue.length == 2);
+
+      expect(playerBloc.state.isSyncedCamsPlayback, isTrue);
+      expect(playerBloc.state.playlistId, isNull);
+      expect(playerBloc.state.currentTrackId, 'track-2');
+      expect(playerBloc.state.currentQueueItemId, 'queue-2');
+      expect(playerBloc.state.queue.first.id, 'track-1');
+      expect(playerBloc.state.queue.last.id, 'track-2');
+      expect(audioService.lastSetVolume, closeTo(0.7, 0.0001));
+    });
+
+    testWidgets(
+        'shows queue preview without starting HLS when top-level hlsUrl is null',
+        (tester) async {
+      addTearDown(() async {
+        await _disposeHarness(tester);
+      });
+      const playbackState = SpacePlaybackState(
+        spaceId: 'space-1',
+        storeId: 'store-1',
+        hlsUrl: null,
+        currentQueueItemId: null,
+        currentTrackName: null,
+        volumePercent: 55,
+        isMuted: false,
+        spaceQueueItems: [
+          SpaceQueueStateItem(
+            queueItemId: 'queue-1',
+            trackId: 'track-1',
+            trackName: 'Track One',
+            position: 1,
+            queueStatus: 0,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/t1.m3u8',
+            isReadyToStream: true,
+          ),
+          SpaceQueueStateItem(
+            queueItemId: 'queue-2',
+            trackId: 'track-2',
+            trackName: 'Track Two',
+            position: 2,
+            queueStatus: 0,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/t2.m3u8',
+            isReadyToStream: true,
+          ),
+        ],
+      );
+
+      await _pumpCoordinator(
+          tester, notificationService, sessionCubit, playerBloc, camsBloc);
+      camsBloc.seed(playbackState);
+      await tester.pump();
+
+      await _waitUntil(
+          tester,
+          () =>
+              !playerBloc.state.isSyncedCamsPlayback &&
+              playerBloc.state.currentTrackId == 'track-1');
+
+      expect(playerBloc.state.hlsUrl, isNull);
+      expect(playerBloc.state.currentQueueItemId, 'queue-1');
+      expect(playerBloc.state.currentTrack?.title, 'Track One');
+      expect(playerBloc.state.isPlaying, isFalse);
+      expect(playerBloc.state.queue.length, 2);
+    });
+
+    testWidgets('does not restart identical remote HLS snapshot',
+        (tester) async {
+      addTearDown(() async {
+        await _disposeHarness(tester);
+      });
+      final startedAtUtc =
+          DateTime.now().toUtc().subtract(const Duration(seconds: 113));
+      final playbackState = SpacePlaybackState(
+        spaceId: 'space-1',
+        storeId: 'store-1',
+        currentQueueItemId: 'queue-1',
+        currentTrackName: 'Track One',
+        hlsUrl: 'https://stream.example.com/t1.m3u8',
+        startedAtUtc: startedAtUtc,
+        isPaused: false,
+        spaceQueueItems: const [
+          SpaceQueueStateItem(
+            queueItemId: 'queue-1',
+            trackId: 'track-1',
+            trackName: 'Track One',
+            position: 1,
+            queueStatus: 1,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/t1.m3u8',
+            isReadyToStream: true,
+          ),
+        ],
+      );
+
+      await _pumpCoordinator(
+          tester, notificationService, sessionCubit, playerBloc, camsBloc);
+      camsBloc.seed(playbackState);
+      await tester.pump();
+      await _waitUntil(
+        tester,
+        () => playerBloc.state.isSyncedCamsPlayback,
+      );
+
+      final loadCallCount = audioService.loadCallCount;
+      final playCallCount = audioService.playCallCount;
+      final seekCallCount = audioService.seekCallCount;
+
+      camsBloc.seed(
+        SpacePlaybackState(
+          spaceId: 'space-1',
+          storeId: 'store-1',
+          currentQueueItemId: 'queue-1',
+          currentTrackName: 'Track One',
+          hlsUrl: 'https://stream.example.com/t1.m3u8',
+          startedAtUtc: startedAtUtc.add(const Duration(milliseconds: 400)),
+          isPaused: false,
+          spaceQueueItems: const [
+            SpaceQueueStateItem(
+              queueItemId: 'queue-1',
+              trackId: 'track-1',
+              trackName: 'Track One',
+              position: 1,
+              queueStatus: 1,
+              source: 1,
+              hlsUrl: 'https://stream.example.com/t1.m3u8',
+              isReadyToStream: true,
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      expect(audioService.loadCallCount, loadCallCount);
+      expect(audioService.playCallCount, playCallCount);
+      expect(audioService.seekCallCount, seekCallCount);
+    });
+
+    testWidgets('pauses same remote HLS snapshot without restarting player',
+        (tester) async {
+      addTearDown(() async {
+        await _disposeHarness(tester);
+      });
+      sessionCubit.setPlaybackMode(
+        store: const Store(
+          id: 'store-1',
+          name: 'Store 1',
+          brandId: 'brand-1',
+        ),
+        space: const Space(
+          id: 'space-1',
+          name: 'Space 1',
+          storeId: 'store-1',
+          type: SpaceTypeEnum.hall,
+          status: EntityStatusEnum.active,
+        ),
+        deviceId: 'device-1',
+      );
+      final startedAtUtc =
+          DateTime.now().toUtc().subtract(const Duration(seconds: 4));
+      final playbackState = SpacePlaybackState(
+        spaceId: 'space-1',
+        storeId: 'store-1',
+        currentQueueItemId: 'queue-1',
+        currentTrackName: 'Track One',
+        hlsUrl: 'https://stream.example.com/t1.m3u8',
+        startedAtUtc: startedAtUtc,
+        isPaused: false,
+        spaceQueueItems: const [
+          SpaceQueueStateItem(
+            queueItemId: 'queue-1',
+            trackId: 'track-1',
+            trackName: 'Track One',
+            position: 1,
+            queueStatus: 1,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/t1.m3u8',
+            isReadyToStream: true,
+          ),
+        ],
+      );
+
+      await _pumpCoordinator(
+          tester, notificationService, sessionCubit, playerBloc, camsBloc);
+      camsBloc.seed(playbackState);
+      await tester.pump();
+      await _waitUntil(
+        tester,
+        () =>
+            playerBloc.state.isSyncedCamsPlayback && playerBloc.state.isPlaying,
+      );
+
+      final loadCallCount = audioService.loadCallCount;
+      final seekCallCount = audioService.seekCallCount;
+      final pauseCallCount = audioService.pauseCallCount;
+
+      camsBloc.seed(
+        SpacePlaybackState(
+          spaceId: 'space-1',
+          storeId: 'store-1',
+          currentQueueItemId: 'queue-1',
+          currentTrackName: 'Track One',
+          hlsUrl: 'https://stream.example.com/t1.m3u8',
+          startedAtUtc: startedAtUtc,
+          isPaused: true,
+          pausePositionSeconds: 4,
+          seekOffsetSeconds: 4,
+          spaceQueueItems: const [
+            SpaceQueueStateItem(
+              queueItemId: 'queue-1',
+              trackId: 'track-1',
+              trackName: 'Track One',
+              position: 1,
+              queueStatus: 1,
+              source: 1,
+              hlsUrl: 'https://stream.example.com/t1.m3u8',
+              isReadyToStream: true,
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      await _waitUntil(tester, () => playerBloc.state.isPlaying == false);
+
+      expect(audioService.pauseCallCount, pauseCallCount + 1);
+      expect(audioService.loadCallCount, loadCallCount);
+      expect(audioService.seekCallCount, seekCallCount);
+      expect(playerBloc.state.currentQueueItemId, 'queue-1');
+    });
+
+    testWidgets(
+        'holds expired current HLS until server switches identity or HLS url',
+        (tester) async {
+      addTearDown(() async {
+        await _disposeHarness(tester);
+      });
+      sessionCubit.setPlaybackMode(
+        store: const Store(
+          id: 'store-1',
+          name: 'Store 1',
+          brandId: 'brand-1',
+        ),
+        space: const Space(
+          id: 'space-1',
+          name: 'Space 1',
+          storeId: 'store-1',
+          type: SpaceTypeEnum.hall,
+          status: EntityStatusEnum.active,
+        ),
+        deviceId: 'device-1',
+      );
+
+      final nowUtc = DateTime.now().toUtc();
+      final activePlaybackState = SpacePlaybackState(
+        spaceId: 'space-1',
+        storeId: 'store-1',
+        currentQueueItemId: 'queue-1',
+        currentTrackName: 'Track One',
+        hlsUrl: 'https://stream.example.com/t1.m3u8',
+        startedAtUtc: nowUtc.subtract(const Duration(seconds: 5)),
+        expectedEndAtUtc: nowUtc.add(const Duration(seconds: 30)),
+        isPaused: false,
+        volumePercent: 80,
+        spaceQueueItems: const [
+          SpaceQueueStateItem(
+            queueItemId: 'queue-1',
+            trackId: 'track-1',
+            trackName: 'Track One',
+            position: 1,
+            queueStatus: 1,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/t1.m3u8',
+            isReadyToStream: true,
+          ),
+        ],
+      );
+      final expiredPlaybackState = SpacePlaybackState(
+        spaceId: 'space-1',
+        storeId: 'store-1',
+        currentQueueItemId: 'queue-1',
+        currentTrackName: 'Track One',
+        hlsUrl: 'https://stream.example.com/t1.m3u8',
+        startedAtUtc: nowUtc.subtract(const Duration(seconds: 40)),
+        expectedEndAtUtc: nowUtc.subtract(const Duration(seconds: 1)),
+        isPaused: false,
+        volumePercent: 70,
+        spaceQueueItems: const [
+          SpaceQueueStateItem(
+            queueItemId: 'queue-1',
+            trackId: 'track-1',
+            trackName: 'Track One',
+            position: 1,
+            queueStatus: 1,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/t1.m3u8',
+            isReadyToStream: true,
+          ),
+        ],
+      );
+
+      await _pumpCoordinator(
+          tester, notificationService, sessionCubit, playerBloc, camsBloc);
+      playerBloc.add(const PlayerHlsStarted(
+        hlsUrl: 'https://stream.example.com/t1.m3u8',
+        queueItemId: 'queue-1',
+        trackId: 'track-1',
+        trackName: 'Track One',
+        playLocally: false,
+      ));
+      await tester.pump();
+      await _waitUntil(
+        tester,
+        () =>
+            playerBloc.state.isSyncedCamsPlayback && playerBloc.state.isPlaying,
+      );
+      camsBloc.seed(activePlaybackState);
+      await tester.pump();
+
+      camsBloc.seed(expiredPlaybackState);
+      await tester.pump();
+      await _waitUntil(tester, () => playerBloc.state.isPlaying == false);
+
+      expect(playerBloc.state.hlsUrl, 'https://stream.example.com/t1.m3u8');
+      expect(audioService.pauseCallCount, 1);
+      expect(camsBloc.refreshStateEvents, hasLength(1));
+
+      camsBloc.seed(expiredPlaybackState.copyWith(seekOffsetSeconds: 2));
+      await tester.pump();
+      expect(camsBloc.refreshStateEvents, hasLength(1));
+    });
+
+    testWidgets(
+        'hydrates queue-first artist and artwork from track detail metadata',
+        (tester) async {
+      addTearDown(() async {
+        await _disposeHarness(tester);
+      });
+      trackRepository.tracksById['track-1'] = ApiTrack(
+        id: 'track-1',
+        title: 'Track One',
+        artist: 'Artist One',
+        hlsUrl: 'https://stream.example.com/t1.m3u8',
+        coverImageUrl: 'https://img.example.com/track-1.jpg',
+        durationSec: 181,
+        createdAt: DateTime.utc(2026, 1, 1),
+      );
+
+      const playbackState = SpacePlaybackState(
+        spaceId: 'space-1',
+        storeId: 'store-1',
+        hlsUrl: 'https://stream.example.com/t1.m3u8',
+        currentQueueItemId: 'queue-1',
+        currentTrackName: 'Track One',
+        volumePercent: 55,
+        isMuted: false,
+        spaceQueueItems: [
+          SpaceQueueStateItem(
+            queueItemId: 'queue-1',
+            trackId: 'track-1',
+            trackName: 'Track One',
+            position: 1,
+            queueStatus: 1,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/t1.m3u8',
+            isReadyToStream: true,
+          ),
+        ],
+      );
+
+      await _pumpCoordinator(
+          tester, notificationService, sessionCubit, playerBloc, camsBloc);
+      camsBloc.seed(playbackState);
+      await tester.pump();
+
+      await _waitUntil(
+        tester,
+        () => playerBloc.state.currentTrack?.artist == 'Artist One',
+      );
+
+      expect(playerBloc.state.queue.single.artist, 'Artist One');
+      expect(
+        playerBloc.state.queue.single.albumArt,
+        'https://img.example.com/track-1.jpg',
+      );
+      expect(playerBloc.state.currentTrack?.artist, 'Artist One');
+      expect(
+        playerBloc.state.currentTrack?.albumArt,
+        'https://img.example.com/track-1.jpg',
+      );
+    });
+
+    testWidgets('routes notification previous through CAMS previous tap',
+        (tester) async {
+      addTearDown(() async {
+        await _disposeHarness(tester);
+      });
+      sessionCubit.setPlaybackMode(
+        store: const Store(
+          id: 'store-1',
+          name: 'Store 1',
+          brandId: 'brand-1',
+        ),
+        space: const Space(
+          id: 'space-1',
+          name: 'Space 1',
+          storeId: 'store-1',
+          type: SpaceTypeEnum.hall,
+          status: EntityStatusEnum.active,
+        ),
+        deviceId: 'device-1',
+      );
+
+      await _pumpCoordinator(
+          tester, notificationService, sessionCubit, playerBloc, camsBloc);
+      playerBloc.add(const PlayerHlsStarted(
+        hlsUrl: 'https://stream.example.com/t2.m3u8',
+        queueItemId: 'queue-2',
+        trackId: 'track-2',
+        trackName: 'Track Two',
+        playLocally: false,
+      ));
+      await tester.pump();
+      await _waitUntil(tester, () => playerBloc.state.isSyncedCamsPlayback);
+
+      final previousTapCount =
+          camsBloc.addedEvents.whereType<CamsPreviousTapped>().length;
+      notificationService.emitCommand(
+        PlaybackNotificationCommand.skipPrevious,
+      );
+      await tester.pump();
+
+      expect(
+        camsBloc.addedEvents.whereType<CamsPreviousTapped>(),
+        hasLength(previousTapCount + 1),
+      );
+    });
+
+    testWidgets(
+        'keeps queue-first HLS playback synthetic when queue snapshot is empty',
+        (tester) async {
+      addTearDown(() async {
+        await _disposeHarness(tester);
+      });
+      const playbackState = SpacePlaybackState(
+        spaceId: 'space-1',
+        storeId: 'store-1',
+        currentPlaylistId: 'playlist-legacy',
+        currentPlaylistName: 'Legacy Playlist',
+        hlsUrl: 'https://stream.example.com/legacy.m3u8',
+        seekOffsetSeconds: 45,
+      );
+
+      await _pumpCoordinator(
+          tester, notificationService, sessionCubit, playerBloc, camsBloc);
+      camsBloc.seed(playbackState);
+      await tester.pump();
+
+      await _waitUntil(
+          tester,
+          () =>
+              playerBloc.state.isSyncedCamsPlayback &&
+              playerBloc.state.currentTrack != null);
+
+      expect(playlistDataSource.getPlaylistByIdCallCount, 0);
+      expect(playerBloc.state.playlistId, isNull);
+      expect(playerBloc.state.queue, isEmpty);
+      expect(playerBloc.state.currentTrack?.id, 'space-1');
+      expect(playerBloc.state.currentTrack?.title, 'Legacy Playlist');
+    });
+
+    testWidgets(
+        'applies volume and mute updates from state sync to player audio',
+        (tester) async {
+      addTearDown(() async {
+        await _disposeHarness(tester);
+      });
+      const initialPlaybackState = SpacePlaybackState(
+        spaceId: 'space-1',
+        storeId: 'store-1',
+        hlsUrl: 'https://stream.example.com/live.m3u8',
+        currentQueueItemId: 'queue-1',
+        volumePercent: 60,
+        isMuted: false,
+        spaceQueueItems: [
+          SpaceQueueStateItem(
+            queueItemId: 'queue-1',
+            trackId: 'track-1',
+            trackName: 'Track One',
+            position: 1,
+            queueStatus: 1,
+            source: 1,
+          ),
+        ],
+      );
+      const mutedPlaybackState = SpacePlaybackState(
+        spaceId: 'space-1',
+        storeId: 'store-1',
+        hlsUrl: 'https://stream.example.com/live.m3u8',
+        currentQueueItemId: 'queue-1',
+        volumePercent: 60,
+        isMuted: true,
+        spaceQueueItems: [
+          SpaceQueueStateItem(
+            queueItemId: 'queue-1',
+            trackId: 'track-1',
+            trackName: 'Track One',
+            position: 1,
+            queueStatus: 1,
+            source: 1,
+          ),
+        ],
+      );
+
+      await _pumpCoordinator(
+          tester, notificationService, sessionCubit, playerBloc, camsBloc);
+      camsBloc.seed(initialPlaybackState);
+      await tester.pump();
+      await _waitUntil(tester, () => audioService.lastSetVolume != null);
+      expect(audioService.lastSetVolume, closeTo(0.6, 0.0001));
+
+      camsBloc.seed(mutedPlaybackState);
+      await tester.pump();
+
+      await _waitUntil(tester, () => audioService.lastSetVolume == 0.0);
+      expect(playerBloc.state.currentQueueItemId, 'queue-1');
+    });
+
+    testWidgets('does not stop player when sync is pending next queue item',
+        (tester) async {
+      addTearDown(() async {
+        await _disposeHarness(tester);
+      });
+      const streamingPlaybackState = SpacePlaybackState(
+        spaceId: 'space-1',
+        storeId: 'store-1',
+        hlsUrl: 'https://stream.example.com/live.m3u8',
+        currentQueueItemId: 'queue-1',
+        currentTrackName: 'Track One',
+        volumePercent: 100,
+        isMuted: false,
+        spaceQueueItems: [
+          SpaceQueueStateItem(
+            queueItemId: 'queue-1',
+            trackId: 'track-1',
+            trackName: 'Track One',
+            position: 1,
+            queueStatus: 1,
+            source: 1,
+          ),
+        ],
+      );
+      const pendingPlaybackState = SpacePlaybackState(
+        spaceId: 'space-1',
+        storeId: 'store-1',
+        pendingQueueItemId: 'queue-2',
+      );
+
+      await _pumpCoordinator(
+          tester, notificationService, sessionCubit, playerBloc, camsBloc);
+      camsBloc.seed(streamingPlaybackState);
+      await tester.pump();
+      await _waitUntil(tester, () => playerBloc.state.isSyncedCamsPlayback);
+      final hlsBeforePending = playerBloc.state.hlsUrl;
+
+      camsBloc.seed(pendingPlaybackState);
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 120));
+
+      expect(playerBloc.state.isSyncedCamsPlayback, isTrue);
+      expect(playerBloc.state.hlsUrl, hlsBeforePending);
+    });
+
+    testWidgets(
+        'shows pending queue preview when queue exists but HLS has not started',
+        (tester) async {
+      addTearDown(() async {
+        await _disposeHarness(tester);
+      });
+      const pendingPlaybackState = SpacePlaybackState(
+        spaceId: 'space-1',
+        storeId: 'store-1',
+        pendingQueueItemId: 'queue-2',
+        volumePercent: 55,
+        isMuted: false,
+        spaceQueueItems: [
+          SpaceQueueStateItem(
+            queueItemId: 'queue-1',
+            trackId: 'track-1',
+            trackName: 'Track One',
+            position: 1,
+            queueStatus: 0,
+            source: 1,
+          ),
+          SpaceQueueStateItem(
+            queueItemId: 'queue-2',
+            trackId: 'track-2',
+            trackName: 'Track Two',
+            position: 2,
+            queueStatus: 0,
+            source: 1,
+          ),
+        ],
+      );
+
+      await _pumpCoordinator(
+          tester, notificationService, sessionCubit, playerBloc, camsBloc);
+      camsBloc.seed(pendingPlaybackState);
+      await tester.pump();
+
+      await _waitUntil(
+        tester,
+        () => playerBloc.state.hasTrack && playerBloc.state.queue.length == 2,
+      );
+
+      expect(playerBloc.state.currentTrack?.id, 'track-2');
+      expect(playerBloc.state.currentTrackId, 'track-2');
+      expect(playerBloc.state.currentQueueItemId, 'queue-2');
+      expect(playerBloc.state.isPlaying, isFalse);
+      expect(playerBloc.state.isSyncedCamsPlayback, isFalse);
+      expect(audioService.lastSetVolume, closeTo(0.55, 0.0001));
+    });
+
+    testWidgets(
+        'derives manager seek position from startedAtUtc when seekOffsetSeconds is null',
+        (tester) async {
+      addTearDown(() async {
+        await _disposeHarness(tester);
+      });
+      final playbackState = SpacePlaybackState(
+        spaceId: 'space-1',
+        storeId: 'store-1',
+        hlsUrl: 'https://stream.example.com/live.m3u8',
+        startedAtUtc: DateTime.now().toUtc().subtract(
+              const Duration(seconds: 30),
+            ),
+        seekOffsetSeconds: null,
+      );
+
+      await _pumpCoordinator(
+          tester, notificationService, sessionCubit, playerBloc, camsBloc);
+      camsBloc.seed(playbackState);
+      await tester.pump();
+
+      await _waitUntil(
+        tester,
+        () => playerBloc.state.isSyncedCamsPlayback,
+      );
+
+      expect(playerBloc.state.currentPosition, greaterThanOrEqualTo(25));
+      expect(playerBloc.state.currentPositionPrecise, greaterThanOrEqualTo(25));
+    });
+
+    testWidgets(
+        'manager sessions locally load remote HLS playback instead of synthetic-only sync',
+        (tester) async {
+      addTearDown(() async {
+        await _disposeHarness(tester);
+      });
+      trackRepository.tracksById['track-1'] = ApiTrack(
+        id: 'track-1',
+        title: 'Track One',
+        artist: 'Artist One',
+        hlsUrl: 'https://stream.example.com/t1.m3u8',
+        durationSec: 180,
+        createdAt: DateTime.utc(2026, 1, 1),
+      );
+      trackRepository.tracksById['track-2'] = ApiTrack(
+        id: 'track-2',
+        title: 'Track Two',
+        artist: 'Artist Two',
+        hlsUrl: 'https://stream.example.com/t2.m3u8',
+        durationSec: 200,
+        createdAt: DateTime.utc(2026, 1, 1),
+      );
+
+      await _pumpCoordinator(
+          tester, notificationService, sessionCubit, playerBloc, camsBloc);
+
+      camsBloc.seed(
+        SpacePlaybackState(
+          spaceId: 'space-1',
+          storeId: 'store-1',
+          currentQueueItemId: 'queue-1',
+          currentTrackName: 'Track One',
+          hlsUrl: 'https://stream.example.com/t1.m3u8',
+          startedAtUtc:
+              DateTime.now().toUtc().subtract(const Duration(seconds: 12)),
+          isPaused: false,
+          spaceQueueItems: const [
+            SpaceQueueStateItem(
+              queueItemId: 'queue-1',
+              trackId: 'track-1',
+              trackName: 'Track One',
+              position: 1,
+              queueStatus: 1,
+              source: 1,
+              hlsUrl: 'https://stream.example.com/t1.m3u8',
+              isReadyToStream: true,
+            ),
+            SpaceQueueStateItem(
+              queueItemId: 'queue-2',
+              trackId: 'track-2',
+              trackName: 'Track Two',
+              position: 2,
+              queueStatus: 0,
+              source: 1,
+              hlsUrl: 'https://stream.example.com/t2.m3u8',
+              isReadyToStream: true,
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      await _waitUntil(
+        tester,
+        () =>
+            playerBloc.state.isSyncedCamsPlayback &&
+            playerBloc.state.currentTrackId == 'track-1' &&
+            playerBloc.state.queue.length == 2 &&
+            audioService.loadCallCount >= 1,
+        timeout: const Duration(seconds: 8),
+      );
+
+      audioService.emitPosition(const Duration(seconds: 6));
+      await tester.pump();
+      await _waitUntil(
+        tester,
+        () => playerBloc.state.displayPositionPrecise >= 5.5,
+      );
+
+      expect(
+        playerBloc.state.displayPositionPrecise,
+        greaterThanOrEqualTo(5.5),
+      );
+      expect(
+        audioService.loadedUrl,
+        'https://stream.example.com/t1.m3u8',
+      );
+    });
+
+    testWidgets('ignores stale CAMS playback snapshots after switching spaces',
+        (tester) async {
+      addTearDown(() async {
+        await _disposeHarness(tester);
+      });
+
+      await _pumpCoordinator(
+          tester, notificationService, sessionCubit, playerBloc, camsBloc);
+
+      camsBloc.seed(
+        SpacePlaybackState(
+          spaceId: 'space-1',
+          storeId: 'store-1',
+          currentQueueItemId: 'queue-1',
+          currentTrackName: 'Track One',
+          hlsUrl: 'https://stream.example.com/space-1.m3u8',
+          startedAtUtc:
+              DateTime.now().toUtc().subtract(const Duration(seconds: 4)),
+          isPaused: false,
+          spaceQueueItems: const [
+            SpaceQueueStateItem(
+              queueItemId: 'queue-1',
+              trackId: 'track-1',
+              trackName: 'Track One',
+              position: 1,
+              queueStatus: SpacePlaybackState.queueStatusPlaying,
+              source: 1,
+              hlsUrl: 'https://stream.example.com/space-1.m3u8',
+              isReadyToStream: true,
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      await _waitUntil(
+        tester,
+        () =>
+            playerBloc.state.isSyncedCamsPlayback &&
+            audioService.loadedUrl == 'https://stream.example.com/space-1.m3u8',
+      );
+
+      sessionCubit.changeSpace(const Space(
+        id: 'space-2',
+        name: 'Space 2',
+        storeId: 'store-1',
+        type: SpaceTypeEnum.hall,
+        status: EntityStatusEnum.active,
+      ));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 10)),
+      );
+      await tester.pump();
+      await _waitUntil(
+        tester,
+        () =>
+            playerBloc.state.activeSpaceId == 'space-2' &&
+            !playerBloc.state.hasTrack,
+        timeout: const Duration(seconds: 8),
+      );
+
+      expect(audioService.loadedUrl, isNull);
+
+      camsBloc.seed(const SpacePlaybackState(
+        spaceId: 'space-1',
+        storeId: 'store-1',
+        currentQueueItemId: 'queue-stale',
+        currentTrackName: 'Stale Track',
+        hlsUrl: 'https://stream.example.com/stale-space-1.m3u8',
+      ));
+      await tester.pump();
+
+      expect(playerBloc.state.activeSpaceId, 'space-2');
+      expect(playerBloc.state.hasTrack, isFalse);
+      expect(playerBloc.state.hlsUrl, isNull);
+      expect(audioService.loadedUrl, isNull);
+
+      camsBloc.seed(
+        SpacePlaybackState(
+          spaceId: 'space-2',
+          storeId: 'store-1',
+          currentQueueItemId: 'queue-2',
+          currentTrackName: 'Track Two',
+          hlsUrl: 'https://stream.example.com/space-2.m3u8',
+          startedAtUtc:
+              DateTime.now().toUtc().subtract(const Duration(seconds: 2)),
+          isPaused: false,
+          spaceQueueItems: const [
+            SpaceQueueStateItem(
+              queueItemId: 'queue-2',
+              trackId: 'track-2',
+              trackName: 'Track Two',
+              position: 1,
+              queueStatus: SpacePlaybackState.queueStatusPlaying,
+              source: 1,
+              hlsUrl: 'https://stream.example.com/space-2.m3u8',
+              isReadyToStream: true,
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await _waitUntil(
+        tester,
+        () =>
+            playerBloc.state.activeSpaceId == 'space-2' &&
+            playerBloc.state.hlsUrl ==
+                'https://stream.example.com/space-2.m3u8',
+      );
+
+      camsBloc.seed(const SpacePlaybackState(
+        spaceId: 'space-1',
+        storeId: 'store-1',
+        currentQueueItemId: 'queue-stale-again',
+        currentTrackName: 'Stale Track Again',
+        hlsUrl: 'https://stream.example.com/stale-again.m3u8',
+      ));
+      await tester.pump();
+
+      expect(playerBloc.state.activeSpaceId, 'space-2');
+      expect(
+          playerBloc.state.hlsUrl, 'https://stream.example.com/space-2.m3u8');
+      expect(audioService.loadedUrl, 'https://stream.example.com/space-2.m3u8');
+    });
+  });
+}
+
+Future<void> _pumpCoordinator(
+  WidgetTester tester,
+  _FakePlaybackNotificationService notificationService,
+  SessionCubit sessionCubit,
+  PlayerBloc playerBloc,
+  CamsPlaybackBloc camsBloc,
+) async {
+  await tester.pumpWidget(
+    MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider<PlaybackNotificationService>.value(
+          value: notificationService,
+        ),
+      ],
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider<SessionCubit>.value(value: sessionCubit),
+          BlocProvider<PlayerBloc>.value(value: playerBloc),
+          BlocProvider<CamsPlaybackBloc>.value(value: camsBloc),
+        ],
+        child: const MaterialApp(
+          home: AppPlaybackCoordinator(
+            child: SizedBox.shrink(),
+          ),
+        ),
+      ),
+    ),
+  );
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 40));
+}
+
+Future<void> _disposeHarness(WidgetTester tester) async {
+  await tester.pumpWidget(const SizedBox.shrink());
+  await tester.pump();
+}
+
+ApiPlaylistModel _buildLegacyPlaylist(String playlistId) {
+  return ApiPlaylistModel.fromDetailJson({
+    'id': playlistId,
+    'name': 'Legacy Playlist',
+    'status': 1,
+    'trackCount': 2,
+    'totalDurationSeconds': 300,
+    'createdAt': DateTime.now().toUtc().toIso8601String(),
+    'tracks': const [
+      {
+        'trackId': 'track-legacy-1',
+        'title': 'Legacy One',
+        'artist': 'Legacy Artist',
+        'seekOffsetSeconds': 0,
+        'durationSeconds': 150,
+      },
+      {
+        'trackId': 'track-legacy-2',
+        'title': 'Legacy Two',
+        'artist': 'Legacy Artist',
+        'seekOffsetSeconds': 150,
+        'durationSeconds': 150,
+      },
+    ],
+  });
+}
+
+Future<void> _waitUntil(
+  WidgetTester tester,
+  bool Function() condition, {
+  Duration timeout = const Duration(seconds: 3),
+}) async {
+  final deadline = DateTime.now().add(timeout);
+  while (!condition()) {
+    if (DateTime.now().isAfter(deadline)) {
+      fail('Timed out waiting for condition');
+    }
+    await tester.pump(const Duration(milliseconds: 40));
+  }
+}
+
+class _InMemoryLocalStorageService extends LocalStorageService {
+  final Map<String, dynamic> _settings = {};
+
+  @override
+  dynamic getSetting(String key) => _settings[key];
+
+  @override
+  Future<void> saveSetting(String key, dynamic value) async {
+    _settings[key] = value;
+  }
+
+  @override
+  Future<void> removeSetting(String key) async {
+    _settings.remove(key);
+  }
+}
+
+class _FakePlaybackNotificationService implements PlaybackNotificationService {
+  final _commandsController =
+      StreamController<PlaybackNotificationCommand>.broadcast();
+
+  ps.PlayerState lastState = const ps.PlayerState();
+  bool? lastEnabled;
+  int syncCalls = 0;
+  int clearCalls = 0;
+
+  @override
+  Stream<PlaybackNotificationCommand> get commands =>
+      _commandsController.stream;
+
+  void emitCommand(PlaybackNotificationCommand command) {
+    _commandsController.add(command);
+  }
+
+  @override
+  void syncPlayerState(
+    ps.PlayerState playerState, {
+    required bool enabled,
+    bool forceMediaItem = false,
+    bool immediate = false,
+  }) {
+    lastState = playerState;
+    lastEnabled = enabled;
+    syncCalls += 1;
+  }
+
+  @override
+  Future<void> clear() async {
+    clearCalls += 1;
+  }
+
+  @override
+  Future<void> dispose() async {
+    await _commandsController.close();
+  }
+}
+
+class _FakeAudioPlayerService extends AudioPlayerService {
+  final _positionController = StreamController<Duration>.broadcast();
+  final _durationController = StreamController<Duration?>.broadcast();
+  final _processingController = StreamController<ProcessingState>.broadcast();
+  final _playerStateController = StreamController<PlayerState>.broadcast();
+
+  String? _loadedUrl;
+  Duration _position = Duration.zero;
+  ProcessingState _processingState = ProcessingState.idle;
+  double? lastSetVolume;
+  int loadCallCount = 0;
+  int playCallCount = 0;
+  int pauseCallCount = 0;
+  int seekCallCount = 0;
+  int stopCallCount = 0;
+
+  @override
+  Stream<Duration> get positionStream => _positionController.stream;
+
+  @override
+  Stream<Duration?> get durationStream => _durationController.stream;
+
+  @override
+  Stream<ProcessingState> get processingStateStream =>
+      _processingController.stream;
+
+  @override
+  Stream<PlayerState> get playerStateStream => _playerStateController.stream;
+
+  @override
+  Duration get position => _position;
+
+  @override
+  Duration get bufferedPosition => Duration.zero;
+
+  @override
+  ProcessingState get processingState => _processingState;
+
+  @override
+  String? get loadedUrl => _loadedUrl;
+
+  @override
+  Future<Duration?> loadUrl(String url) async {
+    loadCallCount += 1;
+    _loadedUrl = url;
+    _processingState = ProcessingState.ready;
+    return null;
+  }
+
+  @override
+  Future<void> play() async {
+    playCallCount += 1;
+  }
+
+  @override
+  Future<void> pause() async {
+    pauseCallCount += 1;
+  }
+
+  @override
+  Future<void> stop() async {
+    stopCallCount += 1;
+    _loadedUrl = null;
+    _position = Duration.zero;
+  }
+
+  @override
+  Future<void> seek(Duration position) async {
+    seekCallCount += 1;
+    _position = position;
+  }
+
+  @override
+  Future<void> setVolume(double volume) async {
+    lastSetVolume = volume;
+  }
+
+  void emitPosition(Duration position) {
+    _position = position;
+    _positionController.add(position);
+  }
+
+  void emitDuration(Duration? duration) {
+    _durationController.add(duration);
+  }
+
+  void emitProcessingState(ProcessingState processingState) {
+    _processingState = processingState;
+    _processingController.add(processingState);
+  }
+
+  @override
+  Future<void> dispose() async {
+    await _positionController.close();
+    await _durationController.close();
+    await _processingController.close();
+    await _playerStateController.close();
+  }
+}
+
+class _FakeMoodRepository implements MoodRepository {
+  @override
+  Future<Either<Failure, List<Mood>>> getMoods() async {
+    return const Right([]);
+  }
+}
+
+class _FakeTrackRepository implements TrackRepository {
+  final Map<String, ApiTrack> tracksById = <String, ApiTrack>{};
+
+  @override
+  Future<Either<Failure, TrackListResponse>> getTracks({
+    int page = 1,
+    int pageSize = 10,
+    String? search,
+    String? moodId,
+    String? genre,
+    TrackFilter? filter,
+  }) async {
+    return const Left(ServerFailure('not used in this test'));
+  }
+
+  @override
+  Future<Either<Failure, ApiTrack>> getTrackById(String trackId) async {
+    final track = tracksById[trackId];
+    if (track == null) {
+      return Left(ServerFailure('Track $trackId not found'));
+    }
+    return Right(track);
+  }
+
+  @override
+  Future<Either<Failure, TrackMutationResult>> createTrack(
+    CreateTrackRequest request,
+  ) async {
+    return const Left(ServerFailure('not used in this test'));
+  }
+
+  @override
+  Future<Either<Failure, TrackMutationResult>> updateTrack(
+    String trackId,
+    UpdateTrackRequest request,
+  ) async {
+    return const Left(ServerFailure('not used in this test'));
+  }
+
+  @override
+  Future<Either<Failure, TrackMutationResult>> deleteTrack(
+    String trackId,
+  ) async {
+    return const Left(ServerFailure('not used in this test'));
+  }
+
+  @override
+  Future<Either<Failure, TrackMutationResult>> toggleTrackStatus(
+    String trackId,
+  ) async {
+    return const Left(ServerFailure('not used in this test'));
+  }
+
+  @override
+  Future<Either<Failure, TrackMutationResult>> retranscodeTrack(
+    String trackId,
+  ) async {
+    return const Left(ServerFailure('not used in this test'));
+  }
+
+  @override
+  Future<Either<Failure, TrackMutationResult>> setTrackCopyrightClearance(
+    String trackId, {
+    required bool approve,
+  }) async {
+    return const Left(ServerFailure('not used in this test'));
+  }
+}
+
+class _FakeStoreHubService extends StoreHubService {
+  _FakeStoreHubService() : super(accessTokenFactory: () => '');
+
+  final _playStreamController = StreamController<PlayStreamEvent>.broadcast();
+  final _playbackCommandController =
+      StreamController<PlaybackCommandEvent>.broadcast();
+  final _stateSyncController =
+      StreamController<SpacePlaybackStateModel>.broadcast();
+  final _stopPlaybackController = StreamController<void>.broadcast();
+  final _connectionController = StreamController<ConnectionStatus>.broadcast();
+
+  @override
+  Stream<PlayStreamEvent> get onPlayStream => _playStreamController.stream;
+
+  @override
+  Stream<PlaybackCommandEvent> get onPlaybackCommand =>
+      _playbackCommandController.stream;
+
+  @override
+  Stream<SpacePlaybackStateModel> get onSpaceStateSync =>
+      _stateSyncController.stream;
+
+  @override
+  Stream<void> get onStopPlayback => _stopPlaybackController.stream;
+
+  @override
+  Stream<ConnectionStatus> get onConnectionStatus =>
+      _connectionController.stream;
+
+  @override
+  Future<void> connect() async {
+    _connectionController.add(ConnectionStatus.connected);
+  }
+
+  @override
+  Future<void> disconnect() async {
+    _connectionController.add(ConnectionStatus.disconnected);
+  }
+
+  @override
+  Future<void> joinSpace(String spaceId) async {}
+
+  @override
+  Future<void> leaveSpace(String spaceId) async {}
+
+  @override
+  Future<void> joinManagerRoom(String storeId) async {}
+
+  @override
+  Future<void> leaveManagerRoom(String storeId) async {}
+
+  @override
+  Future<void> reportPlaybackState({
+    required String spaceId,
+    required bool isPlaying,
+    double? positionSeconds,
+    String? currentHlsUrl,
+  }) async {}
+
+  @override
+  void dispose() {
+    _playStreamController.close();
+    _playbackCommandController.close();
+    _stateSyncController.close();
+    _stopPlaybackController.close();
+    _connectionController.close();
+  }
+}
+
+class _FakePlaylistRemoteDataSource implements PlaylistRemoteDataSource {
+  final Map<String, ApiPlaylistModel> playlistById = {};
+  int getPlaylistByIdCallCount = 0;
+
+  @override
+  Future<PlaylistMutationResult> addTracksToPlaylist({
+    required String playlistId,
+    required List<String> trackIds,
+  }) async {
+    return const PlaylistMutationResult(isSuccess: true);
+  }
+
+  @override
+  Future<ApiPlaylistModel> getPlaylistById(String playlistId) async {
+    getPlaylistByIdCallCount += 1;
+    final playlist = playlistById[playlistId];
+    if (playlist != null) return playlist;
+
+    return _buildLegacyPlaylist(playlistId);
+  }
+
+  @override
+  Future<PlaylistListResponse> getPlaylists({
+    int page = 1,
+    int pageSize = 10,
+    String? search,
+    String? sortBy,
+    bool? isAscending,
+    int? status,
+    String? brandId,
+    String? storeId,
+    String? moodId,
+    bool? isDefault,
+    DateTime? createdFrom,
+    DateTime? createdTo,
+  }) async {
+    return PlaylistListResponse(
+      items: const [],
+      currentPage: 1,
+      totalPages: 1,
+      totalItems: 0,
+      hasNext: false,
+      hasPrevious: false,
+    );
+  }
+
+  @override
+  Future<PlaylistMutationResult> createPlaylist(
+    PlaylistMutationRequest request,
+  ) async {
+    return const PlaylistMutationResult(isSuccess: true);
+  }
+
+  @override
+  Future<PlaylistMutationResult> updatePlaylist(
+    String playlistId,
+    PlaylistMutationRequest request,
+  ) async {
+    return const PlaylistMutationResult(isSuccess: true);
+  }
+
+  @override
+  Future<PlaylistMutationResult> deletePlaylist(String playlistId) async {
+    return const PlaylistMutationResult(isSuccess: true);
+  }
+
+  @override
+  Future<PlaylistMutationResult> togglePlaylistStatus(String playlistId) async {
+    return const PlaylistMutationResult(isSuccess: true);
+  }
+
+  @override
+  Future<PlaylistMutationResult> removeTrackFromPlaylist({
+    required String playlistId,
+    required String trackId,
+  }) async {
+    return const PlaylistMutationResult(isSuccess: true);
+  }
+}
+
+class _ManualCamsPlaybackBloc extends CamsPlaybackBloc {
+  _ManualCamsPlaybackBloc({
+    required super.overrideSpace,
+    required super.cancelOverride,
+    required super.getMoods,
+    required super.storeHubService,
+    required super.sessionCubit,
+    required super.runtime,
+  });
+
+  final List<CamsPlaybackEvent> addedEvents = <CamsPlaybackEvent>[];
+
+  List<CamsRefreshState> get refreshStateEvents =>
+      addedEvents.whereType<CamsRefreshState>().toList(growable: false);
+
+  void seed(SpacePlaybackState playbackState) {
+    emit(
+      state.copyWith(
+        spaceId: playbackState.spaceId,
+        playbackState: playbackState,
+      ),
+    );
+  }
+
+  @override
+  void add(CamsPlaybackEvent event) {
+    addedEvents.add(event);
+    // Ignore coordinator-triggered events in this harness.
+  }
+}
+
+class _FakeCamsRepository implements CamsRepository {
+  Either<Failure, SpacePlaybackState> getSpaceStateResult =
+      const Right(SpacePlaybackState(spaceId: 'space-1'));
+
+  @override
+  Future<Either<Failure, SpacePlaybackState>> getSpaceState(
+    String spaceId, {
+    bool usePlaybackDeviceScope = false,
+  }) async {
+    return getSpaceStateResult.fold(
+      Left.new,
+      (state) => Right(
+        state.spaceId.isEmpty ? SpacePlaybackState(spaceId: spaceId) : state,
+      ),
+    );
+  }
+
+  @override
+  Future<Either<Failure, SpacePlaybackState>>
+      getSpaceStateForPlaybackDevice() async {
+    return getSpaceState('', usePlaybackDeviceScope: true);
+  }
+
+  @override
+  Future<Either<Failure, List<SpaceQueueStateItem>>> getQueue(
+    String spaceId, {
+    bool usePlaybackDeviceScope = false,
+  }) async {
+    return const Right([]);
+  }
+
+  @override
+  Future<Either<Failure, OverrideResponse>> overrideSpace({
+    required String spaceId,
+    List<String>? trackIds,
+    String? playlistId,
+    String? moodId,
+    bool? isClearManagerSelectedQueues,
+    bool? isCutOver,
+    int? manualOverrideTtlSeconds,
+    String? reason,
+    bool usePlaybackDeviceScope = false,
+  }) async {
+    return Right(OverrideResponse(spaceId: spaceId));
+  }
+
+  @override
+  Future<Either<Failure, void>> cancelOverride(
+    String spaceId, {
+    bool usePlaybackDeviceScope = false,
+  }) async {
+    return const Right(null);
+  }
+
+  @override
+  Future<Either<Failure, void>> sendPlaybackCommand({
+    required String spaceId,
+    required PlaybackCommandEnum command,
+    double? seekPositionSeconds,
+    String? targetQueueItemId,
+    String? targetTrackId,
+    bool usePlaybackDeviceScope = false,
+  }) async {
+    return const Right(null);
+  }
+
+  @override
+  Future<Either<Failure, void>> updateAudioState({
+    required String spaceId,
+    int? volumePercent,
+    bool? isMuted,
+    int? queueEndBehavior,
+    bool usePlaybackDeviceScope = false,
+  }) async {
+    return const Right(null);
+  }
+
+  @override
+  Future<Either<Failure, void>> updateSchedulingState({
+    required String spaceId,
+    required bool isScheduling,
+    bool usePlaybackDeviceScope = false,
+  }) async {
+    return const Right(null);
+  }
+
+  @override
+  Future<Either<Failure, void>> queueTracks({
+    required String spaceId,
+    required List<String> trackIds,
+    required QueueInsertModeEnum mode,
+    bool isClearExistingQueue = false,
+    String? reason,
+    bool usePlaybackDeviceScope = false,
+  }) async {
+    return const Right(null);
+  }
+
+  @override
+  Future<Either<Failure, void>> queuePlaylist({
+    required String spaceId,
+    required String playlistId,
+    required QueueInsertModeEnum mode,
+    bool isClearExistingQueue = false,
+    String? reason,
+    bool usePlaybackDeviceScope = false,
+  }) async {
+    return const Right(null);
+  }
+
+  @override
+  Future<Either<Failure, void>> reorderQueue({
+    required String spaceId,
+    required List<String> queueItemIds,
+    bool usePlaybackDeviceScope = false,
+  }) async {
+    return const Right(null);
+  }
+
+  @override
+  Future<Either<Failure, void>> removeQueueItems({
+    required String spaceId,
+    required List<String> queueItemIds,
+    bool usePlaybackDeviceScope = false,
+  }) async {
+    return const Right(null);
+  }
+
+  @override
+  Future<Either<Failure, void>> clearQueue({
+    required String spaceId,
+    bool usePlaybackDeviceScope = false,
+  }) async {
+    return const Right(null);
+  }
+
+  @override
+  Future<Either<Failure, PairDeviceInfo>> getPairDeviceInfoForManager(
+    String spaceId,
+  ) async {
+    return const Left(ServerFailure('not used in this test'));
+  }
+
+  @override
+  Future<Either<Failure, PairDeviceInfo>>
+      getPairDeviceInfoForPlaybackDevice() async {
+    return const Left(ServerFailure('not used in this test'));
+  }
+
+  @override
+  Future<Either<Failure, PairCodeSnapshot>> generatePairCode(
+    String spaceId,
+  ) async {
+    return const Left(ServerFailure('not used in this test'));
+  }
+
+  @override
+  Future<Either<Failure, void>> revokePairCode(String spaceId) async {
+    return const Left(ServerFailure('not used in this test'));
+  }
+
+  @override
+  Future<Either<Failure, void>> unpairDevice(String spaceId) async {
+    return const Left(ServerFailure('not used in this test'));
+  }
+}

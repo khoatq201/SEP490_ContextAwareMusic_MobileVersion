@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print, prefer_const_constructors
+
 import 'dart:async';
 import 'dart:convert';
 import 'package:mqtt_client/mqtt_client.dart';
@@ -6,11 +8,16 @@ import 'package:mqtt_client/mqtt_client.dart' as mqtt;
 import '../constants/api_constants.dart';
 import '../error/exceptions.dart';
 
+const bool _isE2ERun = bool.fromEnvironment('E2E_RUN', defaultValue: false);
+
 class MqttService {
   MqttServerClient? _client;
   final _messageController = StreamController<MqttMessage>.broadcast();
   final _connectionController =
       StreamController<MqttConnectionState>.broadcast();
+  final Set<String> _desiredTopics = <String>{};
+  final Set<String> _subscribedTopics = <String>{};
+  StreamSubscription? _updatesSubscription;
 
   Stream<MqttMessage> get messages => _messageController.stream;
   Stream<MqttConnectionState> get connectionState =>
@@ -25,9 +32,13 @@ class MqttService {
     String? password,
   }) async {
     try {
+      await _updatesSubscription?.cancel();
+      _updatesSubscription = null;
+      _subscribedTopics.clear();
+
       _client = MqttServerClient(ApiConstants.mqttBrokerUrl, clientId);
       _client!.port = ApiConstants.mqttPort;
-      _client!.logging(on: true);
+      _client!.logging(on: !_isE2ERun);
       _client!.keepAlivePeriod = 60;
       _client!.autoReconnect = true;
 
@@ -46,29 +57,45 @@ class MqttService {
       _client!.onConnected = _onConnected;
       _client!.onDisconnected = _onDisconnected;
       _client!.onSubscribed = _onSubscribed;
-      _client!.updates!
-          .listen((List<mqtt.MqttReceivedMessage<mqtt.MqttMessage>> messages) {
-        _onMessage(messages);
-      });
 
       await _client!.connect();
+      if (!isConnected) {
+        throw const MqttConnectionException(
+          'MQTT broker rejected the connection.',
+        );
+      }
+
+      _updatesSubscription = _client!.updates?.listen(
+        (List<mqtt.MqttReceivedMessage<mqtt.MqttMessage>> messages) {
+          _onMessage(messages);
+        },
+      );
+      _restoreSubscriptions();
     } catch (e) {
       throw MqttConnectionException('Failed to connect to MQTT broker: $e');
     }
   }
 
   Future<void> disconnect() async {
+    await _updatesSubscription?.cancel();
+    _updatesSubscription = null;
     _client?.disconnect();
   }
 
   void subscribe(String topic) {
+    _desiredTopics.add(topic);
     if (!isConnected) {
-      throw MqttConnectionException('MQTT client is not connected');
+      if (!_isE2ERun) {
+        print('MQTT subscribe deferred until connected: $topic');
+      }
+      return;
     }
-    _client!.subscribe(topic, MqttQos.atLeastOnce);
+    _subscribeNow(topic);
   }
 
   void unsubscribe(String topic) {
+    _desiredTopics.remove(topic);
+    _subscribedTopics.remove(topic);
     if (!isConnected) return;
     _client!.unsubscribe(topic);
   }
@@ -84,17 +111,25 @@ class MqttService {
   }
 
   void _onConnected() {
-    print('MQTT Connected');
+    if (!_isE2ERun) {
+      print('MQTT Connected');
+    }
     _connectionController.add(MqttConnectionState.connected);
+    _restoreSubscriptions();
   }
 
   void _onDisconnected() {
-    print('MQTT Disconnected');
+    if (!_isE2ERun) {
+      print('MQTT Disconnected');
+    }
+    _subscribedTopics.clear();
     _connectionController.add(MqttConnectionState.disconnected);
   }
 
   void _onSubscribed(String topic) {
-    print('MQTT Subscribed to: $topic');
+    if (!_isE2ERun) {
+      print('MQTT Subscribed to: $topic');
+    }
   }
 
   void _onMessage(List<mqtt.MqttReceivedMessage<mqtt.MqttMessage>> messages) {
@@ -114,8 +149,26 @@ class MqttService {
 
   void dispose() {
     _client?.disconnect();
+    _updatesSubscription?.cancel();
     _messageController.close();
     _connectionController.close();
+  }
+
+  void _restoreSubscriptions() {
+    if (!isConnected) {
+      return;
+    }
+    for (final topic in _desiredTopics) {
+      _subscribeNow(topic);
+    }
+  }
+
+  void _subscribeNow(String topic) {
+    if (!isConnected || _subscribedTopics.contains(topic)) {
+      return;
+    }
+    _client!.subscribe(topic, MqttQos.atLeastOnce);
+    _subscribedTopics.add(topic);
   }
 }
 

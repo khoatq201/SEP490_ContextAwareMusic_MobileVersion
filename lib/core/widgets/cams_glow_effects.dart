@@ -13,7 +13,7 @@ class CAMSGlowContainer extends StatefulWidget {
   final EdgeInsets? padding;
 
   const CAMSGlowContainer({
-    Key? key,
+    super.key,
     required this.child,
     this.glowColor = AppColors.primaryCyan,
     this.glowRadius = 20,
@@ -22,7 +22,7 @@ class CAMSGlowContainer extends StatefulWidget {
     this.animationDuration = const Duration(milliseconds: 2000),
     this.borderRadius,
     this.padding,
-  }) : super(key: key);
+  });
 
   @override
   State<CAMSGlowContainer> createState() => _CAMSGlowContainerState();
@@ -65,7 +65,7 @@ class _CAMSGlowContainerState extends State<CAMSGlowContainer>
           borderRadius: widget.borderRadius,
           boxShadow: [
             BoxShadow(
-              color: widget.glowColor.withOpacity(0.5),
+              color: widget.glowColor.withValues(alpha: 0.5),
               blurRadius: widget.glowRadius,
               spreadRadius: widget.glowSpread,
             ),
@@ -84,7 +84,7 @@ class _CAMSGlowContainerState extends State<CAMSGlowContainer>
             borderRadius: widget.borderRadius,
             boxShadow: [
               BoxShadow(
-                color: widget.glowColor.withOpacity(_glowAnimation.value),
+                color: widget.glowColor.withValues(alpha: _glowAnimation.value),
                 blurRadius: widget.glowRadius,
                 spreadRadius: widget.glowSpread,
               ),
@@ -106,13 +106,13 @@ class CAMSPulseWidget extends StatefulWidget {
   final Curve curve;
 
   const CAMSPulseWidget({
-    Key? key,
+    super.key,
     required this.child,
     this.minScale = 0.95,
     this.maxScale = 1.05,
     this.duration = const Duration(milliseconds: 1500),
     this.curve = Curves.easeInOut,
-  }) : super(key: key);
+  });
 
   @override
   State<CAMSPulseWidget> createState() => _CAMSPulseWidgetState();
@@ -165,12 +165,12 @@ class CAMSShimmer extends StatefulWidget {
   final Duration duration;
 
   const CAMSShimmer({
-    Key? key,
+    super.key,
     required this.child,
     this.baseColor = AppColors.surfaceDark,
     this.highlightColor = AppColors.primaryCyan,
     this.duration = const Duration(milliseconds: 1500),
-  }) : super(key: key);
+  });
 
   @override
   State<CAMSShimmer> createState() => _CAMSShimmerState();
@@ -207,7 +207,7 @@ class _CAMSShimmerState extends State<CAMSShimmer>
               end: Alignment.bottomRight,
               colors: [
                 widget.baseColor,
-                widget.highlightColor.withOpacity(0.3),
+                widget.highlightColor.withValues(alpha: 0.3),
                 widget.baseColor,
               ],
               stops: [
@@ -234,13 +234,13 @@ class CAMSNeonBorder extends StatelessWidget {
   final bool glow;
 
   const CAMSNeonBorder({
-    Key? key,
+    super.key,
     required this.child,
     this.borderColor = AppColors.primaryCyan,
     this.borderWidth = 2,
     this.borderRadius = const BorderRadius.all(Radius.circular(12)),
     this.glow = true,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -254,7 +254,7 @@ class CAMSNeonBorder extends StatelessWidget {
         boxShadow: glow
             ? [
                 BoxShadow(
-                  color: borderColor.withOpacity(0.5),
+                  color: borderColor.withValues(alpha: 0.5),
                   blurRadius: 10,
                   spreadRadius: 1,
                 ),

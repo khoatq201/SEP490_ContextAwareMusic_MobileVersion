@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -9,29 +10,89 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/player/player_bloc.dart';
-import '../../data/datasources/mock_home_data_source.dart';
-import '../../data/repositories/mock_home_repository_impl.dart';
+import '../../../../core/presentation/playback_mood_label.dart';
+import '../../../../core/presentation/shell_layout_metrics.dart';
+import '../../../../core/session/session_cubit.dart';
+import '../../../../core/session/session_state.dart';
+import '../../../../injection_container.dart';
+import '../../../cams/domain/entities/space_playback_state.dart';
+import '../../../cams/presentation/bloc/cams_playback_bloc.dart';
+import '../../../cams/presentation/bloc/cams_playback_state.dart';
 import '../../domain/entities/category_entity.dart';
 import '../../domain/entities/playlist_entity.dart';
 import '../../domain/entities/sensor_entity.dart';
+import '../../../moods/domain/entities/mood.dart';
 import '../bloc/home_cubit.dart';
 import '../bloc/home_state.dart';
-import '../../../../core/session/session_cubit.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Entry point — wraps the page with its own HomeCubit (self-contained)
+// Entry point — wraps the page with its own HomeCubit (DI-resolved)
 // ─────────────────────────────────────────────────────────────────────────────
 class HomeTabPage extends StatelessWidget {
   const HomeTabPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final sessionState = context.read<SessionCubit>().state;
+    final isPlaybackDevice = sessionState.isPlaybackDevice;
+    final storeId = sessionState.currentStore?.id;
+    final spaceId = sessionState.currentSpace?.id;
     return BlocProvider(
-      create: (_) => HomeCubit(
-        MockHomeRepositoryImpl(dataSource: MockHomeDataSource()),
-      )..load(),
+      create: (context) {
+        final cubit = sl<HomeCubit>();
+        final camsPlaybackBloc = context.read<CamsPlaybackBloc>();
+        unawaited(
+          _bootstrapHomeCubit(
+            camsPlaybackBloc: camsPlaybackBloc,
+            cubit: cubit,
+            storeId: storeId,
+            spaceId: spaceId,
+            isPlaybackDevice: isPlaybackDevice,
+          ),
+        );
+        return cubit;
+      },
       child: const _HomeDashboardView(),
     );
+  }
+
+  Future<void> _bootstrapHomeCubit({
+    required CamsPlaybackBloc camsPlaybackBloc,
+    required HomeCubit cubit,
+    required String? storeId,
+    required String? spaceId,
+    required bool isPlaybackDevice,
+  }) async {
+    await cubit.load(
+      includeCatalog: true,
+      loadMoods: !isPlaybackDevice,
+      storeId: storeId,
+      spaceId: spaceId,
+    );
+    await cubit.syncForSpace(
+      spaceId,
+      storeId: storeId,
+      loadMoods: !isPlaybackDevice,
+      usePlaybackDeviceScope: isPlaybackDevice,
+    );
+    _applyCurrentRuntimeState(
+      camsPlaybackBloc: camsPlaybackBloc,
+      cubit: cubit,
+      expectedSpaceId: spaceId,
+    );
+  }
+
+  void _applyCurrentRuntimeState({
+    required CamsPlaybackBloc camsPlaybackBloc,
+    required HomeCubit cubit,
+    required String? expectedSpaceId,
+  }) {
+    if (expectedSpaceId == null || expectedSpaceId.isEmpty) return;
+    final runtimePlayback = camsPlaybackBloc.state.playbackState;
+    if (runtimePlayback == null || runtimePlayback.spaceId != expectedSpaceId) {
+      return;
+    }
+    cubit.syncFromRuntimePlaybackState(runtimePlayback);
   }
 }
 
@@ -44,74 +105,196 @@ class _HomeDashboardView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = _Palette.fromBrightness(Theme.of(context).brightness);
+    final isPlaybackDevice =
+        context.select((SessionCubit cubit) => cubit.state.isPlaybackDevice);
+    final hasMiniPlayer =
+        context.select((PlayerBloc bloc) => bloc.state.hasTrack);
+    final bottomSpacing = ShellLayoutMetrics.reservedBottom(
+      context,
+      hasMiniPlayer: hasMiniPlayer,
+      extra: 24,
+    );
 
-    return Scaffold(
-      backgroundColor: palette.bg,
-      body: BlocBuilder<HomeCubit, HomeState>(
-        builder: (context, state) {
-          if (state.status == HomeStatus.loading ||
-              state.status == HomeStatus.initial) {
-            return Center(
-              child: CircularProgressIndicator(color: palette.accent),
-            );
-          }
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<SessionCubit, SessionState>(
+          listenWhen: (previous, current) =>
+              previous.currentSpace?.id != current.currentSpace?.id,
+          listener: (context, sessionState) {
+            final isPlaybackDevice = sessionState.isPlaybackDevice;
+            final homeCubit = context.read<HomeCubit>();
+            final camsPlaybackBloc = context.read<CamsPlaybackBloc>();
+            unawaited(() async {
+              await homeCubit.syncForSpace(
+                sessionState.currentSpace?.id,
+                storeId: sessionState.currentStore?.id,
+                loadMoods: !isPlaybackDevice,
+                usePlaybackDeviceScope: isPlaybackDevice,
+              );
+              final runtimePlayback = camsPlaybackBloc.state.playbackState;
+              if (runtimePlayback == null ||
+                  runtimePlayback.spaceId != sessionState.currentSpace?.id) {
+                return;
+              }
+              homeCubit.syncFromRuntimePlaybackState(runtimePlayback);
+            }());
+          },
+        ),
+        BlocListener<CamsPlaybackBloc, CamsPlaybackState>(
+          listenWhen: (previous, current) =>
+              previous.playbackState != current.playbackState,
+          listener: (context, camsState) {
+            final runtimePlayback = camsState.playbackState;
+            if (runtimePlayback == null) return;
+            context
+                .read<HomeCubit>()
+                .syncFromRuntimePlaybackState(runtimePlayback);
+          },
+        ),
+      ],
+      child: Scaffold(
+        backgroundColor: palette.bg,
+        body: BlocBuilder<HomeCubit, HomeState>(
+          builder: (context, state) {
+            if (state.status == HomeStatus.loading ||
+                state.status == HomeStatus.initial) {
+              return Center(
+                child: CircularProgressIndicator(color: palette.accent),
+              );
+            }
 
-          if (state.status == HomeStatus.error) {
-            return _ErrorView(
-              message: state.errorMessage,
-              palette: palette,
-              onRetry: () => context.read<HomeCubit>().load(),
-            );
-          }
+            if (state.status == HomeStatus.error) {
+              return _ErrorView(
+                message: state.errorMessage,
+                palette: palette,
+                onRetry: () {
+                  final session = context.read<SessionCubit>().state;
+                  context.read<HomeCubit>().load(
+                        includeCatalog: true,
+                        loadMoods: !isPlaybackDevice,
+                        storeId: session.currentStore?.id,
+                        spaceId: session.currentSpace?.id,
+                      );
+                },
+              );
+            }
 
-          return CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              // ── 1. SliverAppBar ─────────────────────────────────────────
-              _HomeSliverAppBar(palette: palette),
+            return CustomScrollView(
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                // 1. SliverAppBar
+                _HomeSliverAppBar(palette: palette),
 
-              // ── 2. Sensors Row ───────────────────────────────────────────
-              SliverToBoxAdapter(
-                child: _SensorsRow(sensors: state.sensors, palette: palette)
-                    .animate()
-                    .fadeIn(duration: 350.ms)
-                    .slideY(begin: 0.06),
-              ),
-
-              // ── 3. Master Control Card ───────────────────────────────────
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                  child: _MasterControlCard(
-                    autoModeEnabled: state.autoModeEnabled,
-                    palette: palette,
-                    onToggle: () => context.read<HomeCubit>().toggleAutoMode(),
-                  ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.08),
-                ),
-              ),
-
-              // ── 4. Dynamic Category Sections ─────────────────────────────
-              SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final category = state.categories[index];
-                    return _CategorySection(
-                      category: category,
+                // 2. Current Mood Chip
+                if (buildPlaybackMoodLabel(
+                  isManualOverride: state.isManualOverride,
+                  primaryMoodName: state.currentMoodName,
+                )
+                    case final moodLabel?)
+                  SliverToBoxAdapter(
+                    child: _CurrentMoodChip(
+                      moodName: moodLabel,
+                      isManualOverride: state.isManualOverride,
+                      playbackLabel: state.currentPlaybackName,
+                      isStreaming: state.isStreaming,
                       palette: palette,
-                    )
-                        .animate()
-                        .fadeIn(duration: 420.ms, delay: (index * 60).ms)
-                        .slideY(begin: 0.10);
-                  },
-                  childCount: state.categories.length,
-                ),
-              ),
+                    ).animate().fadeIn(duration: 320.ms).slideY(begin: 0.04),
+                  ),
 
-              // Bottom padding
-              const SliverToBoxAdapter(child: SizedBox(height: 100)),
-            ],
-          );
-        },
+                // 3. Sensors Row
+                if (state.sensors.isNotEmpty)
+                  SliverToBoxAdapter(
+                    child: _SensorsRow(sensors: state.sensors, palette: palette)
+                        .animate()
+                        .fadeIn(duration: 350.ms)
+                        .slideY(begin: 0.06),
+                  ),
+
+                // 4. Master Control Card
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: _MasterControlCard(
+                      autoModeEnabled: state.autoModeEnabled,
+                      manualModeActive: state.isManualMode,
+                      manualSelectionOpen: state.isManualSelectionOpen,
+                      hasSpaceSelected: state.activeSpaceId != null,
+                      isApplying: state.isApplyingOverride,
+                      isPendingTranscode: state.isPendingTranscode,
+                      currentPlaybackName: state.currentPlaybackName,
+                      modeMessage: state.modeMessage,
+                      palette: palette,
+                      onSelectAuto: () =>
+                          context.read<HomeCubit>().selectAutoMode(),
+                      onSelectManual: () =>
+                          context.read<HomeCubit>().activateManualMode(),
+                      onChangeMood: () =>
+                          context.read<HomeCubit>().openManualSelection(),
+                      onCloseManualPicker: () =>
+                          context.read<HomeCubit>().closeManualSelection(),
+                    ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.08),
+                  ),
+                ),
+
+                if (state.isManualMode ||
+                    state.explainability?.hasAnyData == true)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      child: _AiExplainabilityCard(
+                        explainability: state.explainability,
+                        isManualMode: state.isManualMode,
+                        manualSelectionOpen: state.isManualSelectionOpen,
+                        palette: palette,
+                      ).animate().fadeIn(duration: 380.ms).slideY(begin: 0.06),
+                    ),
+                  ),
+
+                if (state.showMoodPicker)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      child: _MoodPickerCard(
+                        moods: state.moods,
+                        currentMoodName: state.currentMoodName,
+                        isLoading: state.isApplyingOverride,
+                        palette: palette,
+                        onClose: () =>
+                            context.read<HomeCubit>().closeManualSelection(),
+                        onApplyMood: (mood, ttlSeconds, isCutOver) {
+                          context.read<HomeCubit>().applyMoodOverride(
+                                mood.id,
+                                manualOverrideTtlSeconds: ttlSeconds,
+                                isCutOver: isCutOver,
+                              );
+                        },
+                      ),
+                    ),
+                  ),
+
+                // 5. Dynamic Category Sections
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final category = state.categories[index];
+                      return _CategorySection(
+                        category: category,
+                        palette: palette,
+                      )
+                          .animate()
+                          .fadeIn(duration: 420.ms, delay: (index * 60).ms)
+                          .slideY(begin: 0.10);
+                    },
+                    childCount: state.categories.length,
+                  ),
+                ),
+
+                // Bottom padding
+                SliverToBoxAdapter(child: SizedBox(height: bottomSpacing)),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -159,7 +342,7 @@ class _HomeSliverAppBar extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    isPlayback ? (session.currentSpace?.name ?? 'Unknown Space') : 'Sảnh Chính',
+                    session.currentSpace?.name ?? 'No Space Selected',
                     style: GoogleFonts.poppins(
                       color: palette.textPrimary,
                       fontSize: 18,
@@ -191,7 +374,7 @@ class _HomeSliverAppBar extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.all(8),
               child: Icon(LucideIcons.settings,
-                   color: palette.textPrimary, size: 18),
+                  color: palette.textPrimary, size: 18),
             ),
           ),
         ),
@@ -219,72 +402,86 @@ class _SwitchSpaceSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Handle bar
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: palette.border,
-                borderRadius: BorderRadius.circular(20),
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'Không gian hiện tại',
-            style: GoogleFonts.poppins(
-              color: palette.textPrimary,
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Sảnh Chính',
-            style: GoogleFonts.inter(
-              color: palette.textMuted,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: palette.accent,
-                foregroundColor: palette.textOnAccent,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+    final safeBottom = MediaQuery.of(context).viewPadding.bottom;
+
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(20, 12, 20, 20 + safeBottom),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: palette.border,
+                  borderRadius: BorderRadius.circular(20),
                 ),
               ),
-              icon: const Icon(LucideIcons.arrowLeftRight, size: 18),
-              label: Text(
-                'Switch Space',
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Current Space',
+              style: GoogleFonts.poppins(
+                color: palette.textPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Builder(builder: (context) {
+              final spaceName =
+                  context.read<SessionCubit>().state.currentSpace?.name ??
+                      'No Space Selected';
+              return Text(
+                spaceName,
                 style: GoogleFonts.inter(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
+                  color: palette.textMuted,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
                 ),
+              );
+            }),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: palette.accent,
+                  foregroundColor: palette.textOnAccent,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                icon: const Icon(LucideIcons.arrowLeftRight, size: 18),
+                label: Text(
+                  'Switch Space',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.pop(context);
+                  final playerStoreId =
+                      context.read<PlayerBloc>().state.activeStoreId;
+                  final sessionStoreId =
+                      context.read<SessionCubit>().state.currentStore?.id;
+                  final storeId = playerStoreId ?? sessionStoreId;
+                  if (storeId != null && storeId.isNotEmpty) {
+                    context.go('/store/$storeId');
+                  } else {
+                    context.go('/store-selection');
+                  }
+                },
               ),
-              onPressed: () {
-                Navigator.pop(context);
-                final storeId = context.read<PlayerBloc>().state.activeStoreId;
-                if (storeId != null && storeId.isNotEmpty) {
-                  context.go('/store/$storeId');
-                } else {
-                  context.go('/store-selection');
-                }
-              },
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -306,7 +503,7 @@ class _SensorsRow extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
           child: Text(
-            'Môi trường',
+            'Environment',
             style: GoogleFonts.inter(
               color: palette.textMuted,
               fontSize: 12,
@@ -342,9 +539,9 @@ class _SensorChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: accent.withOpacity(palette.isDark ? 0.12 : 0.10),
+        color: accent.withValues(alpha: palette.isDark ? 0.12 : 0.10),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: accent.withOpacity(0.30)),
+        border: Border.all(color: accent.withValues(alpha: 0.30)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -379,7 +576,7 @@ class _SensorChip extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: accent.withOpacity(0.18),
+                color: accent.withValues(alpha: 0.18),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -400,31 +597,173 @@ class _SensorChip extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Current Mood Chip — shows the active mood of the selected space
+// ─────────────────────────────────────────────────────────────────────────────
+class _CurrentMoodChip extends StatelessWidget {
+  const _CurrentMoodChip({
+    required this.moodName,
+    required this.isManualOverride,
+    required this.palette,
+    this.playbackLabel,
+    this.isStreaming = false,
+  });
+  final String moodName;
+  final bool isManualOverride;
+  final String? playbackLabel;
+  final bool isStreaming;
+  final _Palette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = isManualOverride ? palette.accentAlt : palette.accent;
+    final icon = isManualOverride ? Icons.tune_rounded : LucideIcons.sparkles;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: accent.withValues(alpha: palette.isDark ? 0.12 : 0.08),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: accent.withValues(alpha: 0.25),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                icon,
+                color: accent,
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'Mood State',
+                        style: GoogleFonts.inter(
+                          color: palette.textMuted,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.6,
+                        ),
+                      ),
+                      if (isStreaming) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade400,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    moodName,
+                    style: GoogleFonts.poppins(
+                      color: palette.textPrimary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (playbackLabel != null) ...[
+                    const SizedBox(height: 1),
+                    Text(
+                      playbackLabel!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        color: palette.textMuted,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // 3. Master Control Card
 // ─────────────────────────────────────────────────────────────────────────────
 class _MasterControlCard extends StatelessWidget {
   const _MasterControlCard({
     required this.autoModeEnabled,
+    required this.manualModeActive,
+    required this.manualSelectionOpen,
+    required this.hasSpaceSelected,
+    required this.isApplying,
+    required this.isPendingTranscode,
     required this.palette,
-    required this.onToggle,
+    required this.onSelectAuto,
+    required this.onSelectManual,
+    required this.onChangeMood,
+    required this.onCloseManualPicker,
+    this.modeMessage,
+    this.currentPlaybackName,
   });
   final bool autoModeEnabled;
+  final bool manualModeActive;
+  final bool manualSelectionOpen;
+  final bool hasSpaceSelected;
+  final bool isApplying;
+  final bool isPendingTranscode;
   final _Palette palette;
-  final VoidCallback onToggle;
+  final VoidCallback onSelectAuto;
+  final VoidCallback onSelectManual;
+  final VoidCallback onChangeMood;
+  final VoidCallback onCloseManualPicker;
+  final String? modeMessage;
+  final String? currentPlaybackName;
 
   @override
   Widget build(BuildContext context) {
+    final modeTitle = !hasSpaceSelected
+        ? 'No space selected'
+        : autoModeEnabled
+            ? 'AI Auto is active'
+            : manualSelectionOpen
+                ? 'Choose a manual mood'
+                : 'Manual mode is active';
+    final modeDescription = !hasSpaceSelected
+        ? 'Pick a space before changing playback mode.'
+        : autoModeEnabled
+            ? 'AI analyzes context and picks mood and queue for this space.'
+            : manualSelectionOpen
+                ? 'Select a mood below to replace AI decisions for this space.'
+                : 'AI stays paused for this space. Choose a mood only if you want to override the mood too.';
     final gradientColors = palette.isDark
         ? [
-            palette.accent.withOpacity(0.80),
-            palette.accentAlt.withOpacity(0.55),
+            palette.accent.withValues(alpha: 0.80),
+            palette.accentAlt.withValues(alpha: 0.55),
           ]
         : [
             palette.accent,
             palette.accentAlt,
           ];
 
-    final card = Container(
+    return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         gradient: LinearGradient(
@@ -434,7 +773,7 @@ class _MasterControlCard extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: palette.accent.withOpacity(0.30),
+            color: palette.accent.withValues(alpha: 0.30),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -446,133 +785,781 @@ class _MasterControlCard extends StatelessWidget {
           filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Left: icon
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Icon(
-                    autoModeEnabled ? LucideIcons.cpu : LucideIcons.pauseCircle,
-                    color: Colors.white,
-                    size: 28,
-                  ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Icon(
+                        autoModeEnabled
+                            ? LucideIcons.cpu
+                            : manualSelectionOpen
+                                ? LucideIcons.sparkles
+                                : Icons.tune_rounded,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            modeTitle,
+                            style: GoogleFonts.poppins(
+                              color: Colors.white,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            modeDescription,
+                            style: GoogleFonts.inter(
+                              color: Colors.white.withValues(alpha: 0.80),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Icon(
+                                LucideIcons.music2,
+                                color: Colors.white.withValues(alpha: 0.70),
+                                size: 13,
+                              ),
+                              const SizedBox(width: 5),
+                              Expanded(
+                                child: Text(
+                                  currentPlaybackName ?? 'No track active',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.inter(
+                                    color: Colors.white.withValues(alpha: 0.65),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 16),
-                // Center: info
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        autoModeEnabled ? 'Auto Mode' : 'Thủ công',
-                        style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontSize: 17,
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _ModeActionButton(
+                        label: 'AI Auto',
+                        icon: LucideIcons.cpu,
+                        selected: autoModeEnabled,
+                        enabled: hasSpaceSelected && !isApplying,
+                        onTap: onSelectAuto,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _ModeActionButton(
+                        label: 'Manual',
+                        icon: Icons.tune_rounded,
+                        selected: manualModeActive,
+                        enabled: hasSpaceSelected && !isApplying,
+                        onTap: onSelectManual,
+                      ),
+                    ),
+                  ],
+                ),
+                if (manualModeActive && !manualSelectionOpen) ...[
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed:
+                          hasSpaceSelected && !isApplying ? onChangeMood : null,
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.zero,
+                        minimumSize: const Size(0, 0),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      icon: const Icon(Icons.tune_rounded, size: 16),
+                      label: Text(
+                        'Change mood',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        autoModeEnabled
-                            ? 'Hệ thống đang tự điều chỉnh nhạc'
-                            : 'Chờ điều khiển từ người dùng',
-                        style: GoogleFonts.inter(
-                          color: Colors.white.withOpacity(0.80),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+                if (manualSelectionOpen) ...[
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline_rounded,
+                        color: Colors.white.withValues(alpha: 0.88),
+                        size: 14,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Mood options below only open because you explicitly entered manual setup here.',
+                          style: GoogleFonts.inter(
+                            color: Colors.white.withValues(alpha: 0.90),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          Icon(LucideIcons.music2,
-                              color: Colors.white.withOpacity(0.70), size: 13),
-                          const SizedBox(width: 5),
-                          Text(
-                            'Chill Morning — Lo-Fi Beats',
-                            style: GoogleFonts.inter(
-                              color: Colors.white.withOpacity(0.65),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                            ),
+                      TextButton(
+                        onPressed: isApplying ? null : onCloseManualPicker,
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size(0, 0),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Text(
-                            'Xem & quản lý luật',
-                            style: GoogleFonts.inter(
-                              color: Colors.white.withOpacity(0.65),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                            ),
+                        ),
+                        child: Text(
+                          'Hide',
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
                           ),
-                          const SizedBox(width: 4),
-                          Icon(
-                            LucideIcons.chevronRight,
-                            color: Colors.white.withOpacity(0.65),
-                            size: 12,
-                          ),
-                        ],
+                        ),
                       ),
                     ],
                   ),
-                ),
-                // Right: animated toggle
-                GestureDetector(
-                  onTap: onToggle,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
-                    width: 52,
-                    height: 30,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      color: autoModeEnabled
-                          ? Colors.white.withOpacity(0.90)
-                          : Colors.white.withOpacity(0.25),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.40),
-                      ),
-                    ),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        AnimatedAlign(
-                          duration: const Duration(milliseconds: 250),
-                          alignment: autoModeEnabled
-                              ? Alignment.centerRight
-                              : Alignment.centerLeft,
-                          child: Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 3),
-                            width: 22,
-                            height: 22,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: autoModeEnabled
-                                  ? palette.accent
-                                  : Colors.white.withOpacity(0.60),
-                            ),
+                ],
+                if (isApplying ||
+                    isPendingTranscode ||
+                    modeMessage != null) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      if (isApplying)
+                        const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      else
+                        Icon(
+                          isPendingTranscode
+                              ? LucideIcons.loader
+                              : LucideIcons.info,
+                          color: Colors.white.withValues(alpha: 0.85),
+                          size: 14,
+                        ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          isApplying
+                              ? 'Applying changes...'
+                              : (modeMessage ??
+                                  (isPendingTranscode
+                                      ? 'Accepted (202). Stream starts when transcode is ready.'
+                                      : '')),
+                          style: GoogleFonts.inter(
+                            color: Colors.white.withValues(alpha: 0.92),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ),
+                ],
               ],
             ),
           ),
         ),
       ),
     );
-    return GestureDetector(
-      onTap: () => context.go('/create'),
-      child: card,
+  }
+}
+
+class _ModeActionButton extends StatelessWidget {
+  const _ModeActionButton({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: enabled ? onTap : null,
+        borderRadius: BorderRadius.circular(16),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            color: selected
+                ? Colors.white.withValues(alpha: 0.22)
+                : Colors.white.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: selected
+                  ? Colors.white.withValues(alpha: 0.78)
+                  : Colors.white.withValues(alpha: 0.24),
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: Colors.white, size: 16),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: GoogleFonts.inter(
+                  color: Colors.white.withValues(alpha: enabled ? 0.96 : 0.55),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AiExplainabilityCard extends StatelessWidget {
+  const _AiExplainabilityCard({
+    required this.explainability,
+    required this.isManualMode,
+    required this.manualSelectionOpen,
+    required this.palette,
+  });
+
+  final SpacePlaybackExplainability? explainability;
+  final bool isManualMode;
+  final bool manualSelectionOpen;
+  final _Palette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    final showingManualState = isManualMode;
+    final summaryChips = <MapEntry<String, String>>[];
+    final detailRows = <MapEntry<String, String>>[];
+    final data = explainability;
+
+    if (!showingManualState && data != null) {
+      final moodName = data.moodName?.trim();
+      final bpmBand = data.bpmBandLabel;
+      final bpmTarget = data.bpmTargetLabel;
+      final fallbackLabel = data.usedMoodOnlyFallback == null
+          ? null
+          : (data.usedMoodOnlyFallback!
+              ? 'Mood-only fallback enabled'
+              : 'BPM-filter kept enough tracks');
+
+      if (moodName != null && moodName.isNotEmpty) {
+        summaryChips.add(MapEntry('Mood', moodName));
+      }
+      if (bpmBand != null && bpmBand.isNotEmpty) {
+        summaryChips.add(MapEntry('BPM band', bpmBand));
+      }
+      if (bpmTarget != null && bpmTarget.isNotEmpty) {
+        summaryChips.add(MapEntry('Target', bpmTarget));
+      }
+      if (data.aiGenerationMode != null) {
+        summaryChips.add(
+          MapEntry('Mode', data.aiGenerationMode!.displayName),
+        );
+      }
+      if (data.fuzzyProfileName?.trim().isNotEmpty ?? false) {
+        summaryChips.add(
+          MapEntry('Profile', data.fuzzyProfileName!.trim()),
+        );
+      }
+      if (data.fuzzyProfileTemplate?.trim().isNotEmpty ?? false) {
+        summaryChips.add(
+          MapEntry('Template', data.fuzzyProfileTemplate!.trim()),
+        );
+      }
+      if (data.playlistRestrictionLabel?.trim().isNotEmpty ?? false) {
+        summaryChips.add(
+          MapEntry('Playlists', data.playlistRestrictionLabel!.trim()),
+        );
+      }
+      if (fallbackLabel != null) {
+        summaryChips.add(MapEntry('Fallback', fallbackLabel));
+      }
+      if (data.triggeredRule?.trim().isNotEmpty ?? false) {
+        detailRows.add(MapEntry('Rule fired', data.triggeredRule!.trim()));
+      }
+      if (data.reason?.trim().isNotEmpty ?? false) {
+        detailRows.add(MapEntry('Reason', data.reason!.trim()));
+      }
+    }
+
+    final title = showingManualState
+        ? (manualSelectionOpen
+            ? 'AI paused for manual setup'
+            : 'AI paused by manual override')
+        : 'Why CAMS picked this vibe';
+    final subtitle = showingManualState
+        ? (manualSelectionOpen
+            ? 'You opened manual mood selection, so auto explainability is temporarily hidden until AI Auto is active again.'
+            : 'A manual selection is controlling playback right now, so CAMS is not presenting a new auto-selection reason.')
+        : 'Auto mode is active. CAMS is exposing the latest rule, mood, and BPM guidance for this space.';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: palette.card,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: palette.border),
+        boxShadow: [
+          BoxShadow(
+            color: palette.shadow.withValues(alpha: 0.10),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(11),
+                  decoration: BoxDecoration(
+                    color: palette.overlay,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(
+                    showingManualState
+                        ? Icons.pause_circle_outline_rounded
+                        : Icons.auto_graph_rounded,
+                    color:
+                        showingManualState ? palette.textMuted : palette.accent,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: GoogleFonts.poppins(
+                          color: palette.textPrimary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: GoogleFonts.inter(
+                          color: palette.textMuted,
+                          fontSize: 12,
+                          height: 1.35,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (!showingManualState && summaryChips.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: summaryChips
+                    .map((entry) => _ExplainabilityTag(
+                          label: entry.key,
+                          value: entry.value,
+                          palette: palette,
+                        ))
+                    .toList(),
+              ),
+            ],
+            if (!showingManualState && detailRows.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              ...detailRows.map(
+                (entry) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: 84,
+                        child: Text(
+                          entry.key,
+                          style: GoogleFonts.inter(
+                            color: palette.textMuted,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          entry.value,
+                          style: GoogleFonts.inter(
+                            color: palette.textPrimary,
+                            fontSize: 11,
+                            height: 1.35,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ExplainabilityTag extends StatelessWidget {
+  const _ExplainabilityTag({
+    required this.label,
+    required this.value,
+    required this.palette,
+  });
+
+  final String label;
+  final String value;
+  final _Palette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: palette.overlay,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: palette.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              color: palette.textMuted,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            value,
+            style: GoogleFonts.inter(
+              color: palette.textPrimary,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MoodPickerCard extends StatefulWidget {
+  const _MoodPickerCard({
+    required this.moods,
+    required this.currentMoodName,
+    required this.isLoading,
+    required this.palette,
+    required this.onClose,
+    required this.onApplyMood,
+  });
+
+  final List<Mood> moods;
+  final String? currentMoodName;
+  final bool isLoading;
+  final _Palette palette;
+  final VoidCallback onClose;
+  final void Function(Mood mood, int ttlSeconds, bool isCutOver) onApplyMood;
+
+  @override
+  State<_MoodPickerCard> createState() => _MoodPickerCardState();
+}
+
+class _MoodPickerCardState extends State<_MoodPickerCard> {
+  late final TextEditingController _ttlController;
+  String? _selectedMoodId;
+  bool _isCutOver = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _ttlController = TextEditingController();
+    _selectedMoodId = _resolveInitialMoodId();
+  }
+
+  @override
+  void didUpdateWidget(covariant _MoodPickerCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final currentSelectionStillExists = widget.moods.any(
+      (mood) => mood.id == _selectedMoodId,
+    );
+    if (!currentSelectionStillExists) {
+      _selectedMoodId = _resolveInitialMoodId();
+    }
+  }
+
+  @override
+  void dispose() {
+    _ttlController.dispose();
+    super.dispose();
+  }
+
+  String? _resolveInitialMoodId() {
+    final normalizedCurrentMood = widget.currentMoodName?.trim().toLowerCase();
+    if (normalizedCurrentMood == null || normalizedCurrentMood.isEmpty) {
+      return widget.moods.isNotEmpty ? widget.moods.first.id : null;
+    }
+
+    for (final mood in widget.moods) {
+      if (mood.name.trim().toLowerCase() == normalizedCurrentMood ||
+          mood.id.trim().toLowerCase() == normalizedCurrentMood) {
+        return mood.id;
+      }
+    }
+
+    return widget.moods.isNotEmpty ? widget.moods.first.id : null;
+  }
+
+  int? get _ttlSeconds {
+    final raw = _ttlController.text.trim();
+    if (raw.isEmpty) return null;
+    final parsed = int.tryParse(raw);
+    if (parsed == null || parsed <= 0) return null;
+    return parsed;
+  }
+
+  bool get _hasValidTtl => _ttlSeconds != null;
+
+  bool get _canApply =>
+      !widget.isLoading && _selectedMoodId != null && _hasValidTtl;
+
+  @override
+  Widget build(BuildContext context) {
+    Mood? selectedMood;
+    for (final mood in widget.moods) {
+      if (mood.id == _selectedMoodId) {
+        selectedMood = mood;
+        break;
+      }
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+      decoration: BoxDecoration(
+        color: widget.palette.card,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: widget.palette.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Select mood override',
+                  style: GoogleFonts.poppins(
+                    color: widget.palette.textPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: widget.isLoading ? null : widget.onClose,
+                style: TextButton.styleFrom(
+                  foregroundColor: widget.palette.textMuted,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  minimumSize: const Size(0, 0),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  'Close',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Choose a mood only when you want to take control away from AI for this space.',
+            style: GoogleFonts.inter(
+              color: widget.palette.textMuted,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (widget.moods.isEmpty)
+            Text(
+              'No moods available.',
+              style: GoogleFonts.inter(
+                color: widget.palette.textMuted,
+                fontSize: 12,
+              ),
+            )
+          else
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: widget.moods.map((mood) {
+                final selected = _selectedMoodId == mood.id;
+                return ChoiceChip(
+                  label: Text(
+                    mood.name.toUpperCase(),
+                    style: GoogleFonts.inter(
+                      color: selected
+                          ? widget.palette.textOnAccent
+                          : widget.palette.textPrimary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  selected: selected,
+                  selectedColor: widget.palette.accent,
+                  backgroundColor: widget.palette.overlay,
+                  side: BorderSide(
+                    color: selected
+                        ? widget.palette.accent
+                        : widget.palette.border,
+                  ),
+                  onSelected: widget.isLoading
+                      ? null
+                      : (_) => setState(() => _selectedMoodId = mood.id),
+                );
+              }).toList(),
+            ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _ttlController,
+            keyboardType: TextInputType.number,
+            onChanged: (_) => setState(() {}),
+            style: GoogleFonts.inter(color: widget.palette.textPrimary),
+            decoration: InputDecoration(
+              labelText: 'Override TTL seconds *',
+              hintText: 'Example: 1800',
+              helperText: 'Required for mood-only AI take-over.',
+              errorText: _ttlController.text.trim().isEmpty || _hasValidTtl
+                  ? null
+                  : 'Enter a positive number of seconds.',
+            ),
+          ),
+          const SizedBox(height: 8),
+          SwitchListTile.adaptive(
+            value: _isCutOver,
+            onChanged: widget.isLoading
+                ? null
+                : (value) => setState(() => _isCutOver = value),
+            contentPadding: EdgeInsets.zero,
+            title: Text(
+              'Cut over immediately',
+              style: GoogleFonts.inter(
+                color: widget.palette.textPrimary,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            subtitle: Text(
+              'Ask CAMS to transition to the override source right away when supported.',
+              style: GoogleFonts.inter(
+                color: widget.palette.textMuted,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            activeThumbColor: widget.palette.accent,
+            activeTrackColor: widget.palette.accent.withValues(alpha: 0.35),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _canApply && selectedMood != null
+                  ? () => widget.onApplyMood(
+                        selectedMood!,
+                        _ttlSeconds!,
+                        _isCutOver,
+                      )
+                  : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: widget.palette.accent,
+                foregroundColor: widget.palette.textOnAccent,
+                disabledBackgroundColor: widget.palette.overlay,
+                disabledForegroundColor:
+                    widget.palette.textMuted.withValues(alpha: 0.8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              child: Text(
+                'Apply Mood Override',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -656,7 +1643,7 @@ class _PlaylistCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        context.push('/home/playlist-detail', extra: playlist);
+        context.push('/home/playlist-detail', extra: playlist.id);
       },
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
@@ -687,8 +1674,8 @@ class _PlaylistCard extends StatelessWidget {
                       colors: [
                         Colors.transparent,
                         Colors.transparent,
-                        Colors.black.withOpacity(0.45),
-                        Colors.black.withOpacity(0.82),
+                        Colors.black.withValues(alpha: 0.45),
+                        Colors.black.withValues(alpha: 0.82),
                       ],
                       stops: const [0.0, 0.30, 0.65, 1.0],
                     ),
@@ -704,14 +1691,15 @@ class _PlaylistCard extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.50),
+                    color: Colors.black.withValues(alpha: 0.50),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.white.withOpacity(0.15)),
+                    border:
+                        Border.all(color: Colors.white.withValues(alpha: 0.15)),
                   ),
                   child: Text(
                     '${playlist.totalTracks} tracks',
                     style: GoogleFonts.inter(
-                      color: Colors.white.withOpacity(0.90),
+                      color: Colors.white.withValues(alpha: 0.90),
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
                     ),
@@ -753,7 +1741,7 @@ class _PlaylistCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.inter(
-                          color: Colors.white.withOpacity(0.75),
+                          color: Colors.white.withValues(alpha: 0.75),
                           fontSize: 10,
                           fontWeight: FontWeight.w500,
                         ),
@@ -777,7 +1765,7 @@ class _FallbackCover extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: palette.accent.withOpacity(0.20),
+      color: palette.accent.withValues(alpha: 0.20),
       child: Icon(LucideIcons.music4, color: palette.textMuted, size: 40),
     );
   }
@@ -805,7 +1793,7 @@ class _ErrorView extends StatelessWidget {
           const Icon(LucideIcons.alertTriangle, color: Colors.amber, size: 52),
           const SizedBox(height: 12),
           Text(
-            message ?? 'Đã xảy ra lỗi',
+            message ?? 'An error occurred',
             style: GoogleFonts.inter(color: palette.textMuted, fontSize: 15),
             textAlign: TextAlign.center,
           ),
@@ -821,7 +1809,7 @@ class _ErrorView extends StatelessWidget {
             ),
             icon: const Icon(LucideIcons.refreshCw, size: 16),
             label: Text(
-              'Thử lại',
+              'Retry',
               style: GoogleFonts.inter(fontWeight: FontWeight.w700),
             ),
             onPressed: onRetry,
@@ -857,7 +1845,7 @@ class _Palette {
         isDark: true,
         bg: AppColors.backgroundDarkPrimary,
         card: AppColors.surfaceDark,
-        overlay: Colors.white.withOpacity(0.06),
+        overlay: Colors.white.withValues(alpha: 0.06),
         border: AppColors.borderDarkMedium,
         textPrimary: AppColors.textDarkPrimary,
         textMuted: AppColors.textDarkSecondary,
@@ -867,7 +1855,7 @@ class _Palette {
         shadow: AppColors.shadowDark,
       );
     }
-    return _Palette(
+    return const _Palette(
       isDark: false,
       bg: AppColors.backgroundPrimary,
       card: AppColors.surface,

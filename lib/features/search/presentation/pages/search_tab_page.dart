@@ -1,35 +1,215 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/constants/app_typography.dart';
-import '../../data/repositories/search_repository_impl.dart';
+import '../../../../core/enums/queue_insert_mode_enum.dart';
+import '../../../../core/player/player_bloc.dart';
+import '../../../../core/player/player_event.dart';
+import '../../../../core/player/local_preview_feedback.dart';
+import '../../../../core/presentation/shell_layout_metrics.dart';
+import '../../../../core/session/session_cubit.dart';
+import '../../../../core/utils/cams_queue_actions.dart';
+import '../../../../core/widgets/app_error_view.dart';
+import '../../../../core/widgets/app_inline_error_card.dart';
+import '../../../../core/widgets/queue_mode_picker_bottom_sheet.dart';
+import '../../../../core/widgets/select_playlist_bottom_sheet.dart';
+import '../../../../core/widgets/song_list_tile.dart';
+import '../../../../core/widgets/song_options_bottom_sheet.dart';
+import '../../../../injection_container.dart';
+import '../../../home/domain/entities/playlist_entity.dart';
+import '../../../home/domain/entities/song_entity.dart';
+import '../../../space_control/domain/entities/track.dart';
 import '../../domain/entities/search_category.dart';
+import '../../domain/entities/search_filter_tag.dart';
 import '../../domain/entities/search_result.dart';
-import '../../domain/usecases/get_categories_usecase.dart';
-import '../../domain/usecases/search_music_usecase.dart';
 import '../bloc/search_bloc.dart';
 import '../bloc/search_event.dart';
 import '../bloc/search_state.dart';
 
 // ===========================================================================
-// SearchTabPage – entry point (wires up its own BlocProvider)
+// SearchTabPage – entry point (wires up BlocProvider from DI)
 // ===========================================================================
 class SearchTabPage extends StatelessWidget {
   const SearchTabPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final repo = SearchRepositoryImpl();
     return BlocProvider(
-      create: (_) => SearchBloc(
-        getCategories: GetCategoriesUseCase(repo),
-        searchMusic: SearchMusicUseCase(repo),
-      )..add(const LoadCategoriesEvent()),
+      create: (_) => sl<SearchBloc>()..add(const LoadCategoriesEvent()),
       child: const _SearchView(),
     );
   }
+}
+
+void _playSearchSongOrShowMessage(
+  BuildContext context,
+  SearchResult result,
+) {
+  final session = context.read<SessionCubit>().state;
+  if (!session.isPlaybackDevice) {
+    showTrackQueueModePickerAndQueue(
+      context,
+      trackId: result.id,
+      title: result.title,
+      source: 'Search tap',
+    );
+    return;
+  }
+
+  final streamUrl = result.streamUrl;
+  if (streamUrl == null || streamUrl.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('This search result does not include a stream URL yet.'),
+      ),
+    );
+    return;
+  }
+
+  showLocalPreviewStartedSnackBar(
+    context,
+    spaceName: session.currentSpace?.name,
+  );
+
+  context.read<PlayerBloc>().add(PlayerPlaylistStarted(
+        tracks: [
+          Track(
+            id: result.id,
+            title: result.title,
+            artist: result.subtitle,
+            fileUrl: streamUrl,
+            moodTags: const [],
+            duration: result.durationSeconds ?? 0,
+            albumArt: result.imageUrl ?? result.thumbnailUrl,
+          ),
+        ],
+        startIndex: 0,
+        playlistName: result.title,
+      ));
+}
+
+SongEntity _searchResultToSongEntity(SearchResult result) {
+  return SongEntity(
+    id: result.id,
+    title: result.title,
+    artist: result.subtitle,
+    duration: result.durationSeconds ?? 0,
+    coverUrl: result.imageUrl ?? result.thumbnailUrl,
+    streamUrl: result.streamUrl,
+  );
+}
+
+Future<void> _handleSearchSongOption(
+  BuildContext context,
+  SearchResult result,
+  SongOption option,
+) async {
+  final song = _searchResultToSongEntity(result);
+
+  switch (option) {
+    case SongOption.addToPlaylist:
+      await showModalBottomSheet<void>(
+        context: context,
+        useRootNavigator: true,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => SelectPlaylistBottomSheet(song: song),
+      );
+      return;
+    case SongOption.playNow:
+      queueTrackToCurrentSpace(
+        context,
+        trackId: result.id,
+        mode: QueueInsertModeEnum.playNow,
+        reason: buildQueueActionReason(
+          source: 'Search',
+          itemType: 'track',
+          mode: QueueInsertModeEnum.playNow,
+        ),
+      );
+      return;
+    case SongOption.playNext:
+      queueTrackToCurrentSpace(
+        context,
+        trackId: result.id,
+        mode: QueueInsertModeEnum.playNext,
+        reason: buildQueueActionReason(
+          source: 'Search',
+          itemType: 'track',
+          mode: QueueInsertModeEnum.playNext,
+        ),
+      );
+      return;
+    case SongOption.addToQueue:
+      queueTrackToCurrentSpace(
+        context,
+        trackId: result.id,
+        mode: QueueInsertModeEnum.addToQueue,
+        reason: buildQueueActionReason(
+          source: 'Search',
+          itemType: 'track',
+          mode: QueueInsertModeEnum.addToQueue,
+        ),
+      );
+      return;
+    case SongOption.goToAlbum:
+    case SongOption.goToArtist:
+    case SongOption.block:
+    case SongOption.share:
+      return;
+  }
+}
+
+Future<void> _openSearchSongOptions(
+  BuildContext context,
+  SearchResult result,
+) async {
+  final option = await showModalBottomSheet<SongOption>(
+    context: context,
+    useRootNavigator: true,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => SongOptionsBottomSheet(
+      song: _searchResultToSongEntity(result),
+      showPlayNow: true,
+      showPlayNext: true,
+      enableAddToQueue: true,
+      addToQueueLabel: 'Add to space queue',
+    ),
+  );
+
+  if (!context.mounted || option == null) return;
+  await _handleSearchSongOption(context, result, option);
+}
+
+Future<void> _openSearchPlaylistOptions(
+  BuildContext context, {
+  required String playlistId,
+  required String playlistTitle,
+  String source = 'Search',
+}) async {
+  final mode = await showQueueModePickerBottomSheet(
+    context,
+    title: 'Add playlist to queue',
+    subtitle: playlistTitle,
+  );
+  if (!context.mounted || mode == null) return;
+
+  queuePlaylistToCurrentSpace(
+    context,
+    playlistId: playlistId,
+    mode: mode,
+    reason: buildQueueActionReason(
+      source: source,
+      itemType: 'playlist',
+      mode: mode,
+    ),
+  );
 }
 
 // ===========================================================================
@@ -63,6 +243,16 @@ class _SearchViewState extends State<_SearchView> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final hasMiniPlayer =
+        context.select((PlayerBloc bloc) => bloc.state.hasTrack);
+    final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
+    final bottomSpacing = keyboardInset > 0
+        ? AppDimensions.spacingLg
+        : ShellLayoutMetrics.reservedBottom(
+            context,
+            hasMiniPlayer: hasMiniPlayer,
+            extra: AppDimensions.spacingLg,
+          );
     final bgColor =
         isDark ? AppColors.backgroundDarkPrimary : AppColors.backgroundPrimary;
 
@@ -70,33 +260,17 @@ class _SearchViewState extends State<_SearchView> {
       backgroundColor: bgColor,
       body: SafeArea(
         child: CustomScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           slivers: [
-            // Large title
+            // ── Search bar ─────────────────────────────────────────────
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(
                   AppDimensions.spacingMd,
-                  AppDimensions.spacingXl,
                   AppDimensions.spacingMd,
                   AppDimensions.spacingMd,
+                  0,
                 ),
-                child: Text(
-                  'Search',
-                  style: AppTypography.headlineLarge.copyWith(
-                    color: isDark
-                        ? AppColors.textDarkPrimary
-                        : AppColors.textPrimary,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ),
-
-            // Search bar
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: AppDimensions.spacingMd),
                 child: _SearchBar(
                   controller: _controller,
                   focusNode: _focusNode,
@@ -112,22 +286,153 @@ class _SearchViewState extends State<_SearchView> {
               ),
             ),
 
-            const SliverToBoxAdapter(
-                child: SizedBox(height: AppDimensions.spacingXl)),
-
-            // Body: results or browse
-            BlocBuilder<SearchBloc, SearchState>(
-              builder: (context, state) => state.isSearching
-                  ? _SearchResultsSliver(state: state, isDark: isDark)
-                  : _BrowseAllSliver(state: state, isDark: isDark),
+            // ── Filter tag chips ───────────────────────────────────────
+            SliverToBoxAdapter(
+              child: BlocBuilder<SearchBloc, SearchState>(
+                buildWhen: (prev, curr) => prev.activeTag != curr.activeTag,
+                builder: (context, state) => _FilterTagRow(
+                  activeTag: state.activeTag,
+                  isDark: isDark,
+                  onTagSelected: (tag) => context
+                      .read<SearchBloc>()
+                      .add(FilterTagChangedEvent(tag)),
+                ),
+              ),
             ),
 
             const SliverToBoxAdapter(
-                child: SizedBox(height: AppDimensions.spacingXxl)),
+                child: SizedBox(height: AppDimensions.spacingMd)),
+
+            // ── Body: depends on isSearching + activeTag ───────────────
+            BlocBuilder<SearchBloc, SearchState>(
+              builder: (context, state) {
+                if (!state.isSearching) {
+                  return _buildBrowse(state, isDark);
+                }
+                return _buildSearchResults(context, state, isDark);
+              },
+            ),
+
+            SliverToBoxAdapter(child: SizedBox(height: bottomSpacing)),
           ],
         ),
       ),
     );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Browse mode (no query)
+  // ─────────────────────────────────────────────────────────────────────────
+  Widget _buildBrowse(SearchState state, bool isDark) {
+    final tag = state.activeTag;
+
+    if (tag == SearchFilterTag.categories || tag == SearchFilterTag.all) {
+      return _BrowseCategoriesSliver(state: state, isDark: isDark);
+    }
+    if (tag == SearchFilterTag.featuring) {
+      return _FeaturedPlaylistsSliver(
+          playlists: state.featuredPlaylists, isDark: isDark);
+    }
+
+    // For other tags with no query — show a hint
+    return SliverFillRemaining(
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.search,
+                size: 64,
+                color: isDark
+                    ? AppColors.textDarkTertiary
+                    : AppColors.textTertiary),
+            const SizedBox(height: AppDimensions.spacingMd),
+            Text(
+              'Search for ${tag.label.toLowerCase()}',
+              style: TextStyle(
+                color: isDark
+                    ? AppColors.textDarkSecondary
+                    : AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Search results mode
+  // ─────────────────────────────────────────────────────────────────────────
+  Widget _buildSearchResults(
+      BuildContext context, SearchState state, bool isDark) {
+    if (state.status == SearchStatus.loading) {
+      return const SliverFillRemaining(
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (state.status == SearchStatus.failure && state.failure != null) {
+      return SliverFillRemaining(
+        child: Padding(
+          padding:
+              const EdgeInsets.symmetric(horizontal: AppDimensions.spacingMd),
+          child: AppErrorView(
+            failure: state.failure,
+            title: 'Search unavailable',
+            message: state.failure!.message,
+            onRetry: () =>
+                context.read<SearchBloc>().add(QueryChangedEvent(state.query)),
+          ),
+        ),
+      );
+    }
+
+    if (state.results.isEmpty) {
+      return SliverFillRemaining(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.search_off,
+                  size: 64,
+                  color: isDark
+                      ? AppColors.textDarkTertiary
+                      : AppColors.textTertiary),
+              const SizedBox(height: AppDimensions.spacingMd),
+              Text(
+                'No results for "${state.query}"',
+                style: TextStyle(
+                  color: isDark
+                      ? AppColors.textDarkSecondary
+                      : AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final tag = state.activeTag;
+
+    switch (tag) {
+      case SearchFilterTag.all:
+        return _AllResultsSliver(state: state, isDark: isDark);
+      case SearchFilterTag.artists:
+        return _ArtistGridSliver(results: state.artistResults, isDark: isDark);
+      case SearchFilterTag.playlists:
+        return _PlaylistGridSliver(
+            results: state.playlistResults, isDark: isDark);
+      case SearchFilterTag.songs:
+        return _SongListSliver(results: state.songResults, isDark: isDark);
+      case SearchFilterTag.albums:
+        return _AlbumGridSliver(results: state.albumResults, isDark: isDark);
+      case SearchFilterTag.categories:
+        return _CategoryListSliver(
+            results: state.categoryResults, isDark: isDark);
+      case SearchFilterTag.featuring:
+        return _AllResultsSliver(state: state, isDark: isDark);
+    }
   }
 }
 
@@ -152,17 +457,10 @@ class _SearchBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 52,
+      height: 48,
       decoration: BoxDecoration(
         color: isDark ? AppColors.surfaceDark : AppColors.surface,
         borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: TextField(
         controller: controller,
@@ -202,12 +500,84 @@ class _SearchBar extends StatelessWidget {
 }
 
 // ===========================================================================
-// "Browse all" sliver
+// Filter tag row (horizontal scrollable chips)
 // ===========================================================================
-class _BrowseAllSliver extends StatelessWidget {
+class _FilterTagRow extends StatelessWidget {
+  final SearchFilterTag activeTag;
+  final bool isDark;
+  final ValueChanged<SearchFilterTag> onTagSelected;
+
+  const _FilterTagRow({
+    required this.activeTag,
+    required this.isDark,
+    required this.onTagSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 50,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppDimensions.spacingMd,
+          vertical: AppDimensions.spacingSm,
+        ),
+        itemCount: SearchFilterTag.values.length,
+        separatorBuilder: (_, __) =>
+            const SizedBox(width: AppDimensions.spacingSm),
+        itemBuilder: (context, index) {
+          final tag = SearchFilterTag.values[index];
+          final isActive = tag == activeTag;
+
+          return GestureDetector(
+            onTap: () => onTagSelected(tag),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              decoration: BoxDecoration(
+                color: isActive
+                    ? (isDark ? Colors.white : Colors.black87)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isActive
+                      ? Colors.transparent
+                      : (isDark
+                          ? Colors.white.withValues(alpha: 0.3)
+                          : Colors.black.withValues(alpha: 0.2)),
+                  width: 1,
+                ),
+              ),
+              child: Center(
+                child: Text(
+                  tag.label,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: isActive
+                        ? (isDark ? Colors.black : Colors.white)
+                        : (isDark
+                            ? AppColors.textDarkPrimary
+                            : AppColors.textPrimary),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ===========================================================================
+// Browse categories sliver (no search query, "All" or "Categories" tag)
+// ===========================================================================
+class _BrowseCategoriesSliver extends StatelessWidget {
   final SearchState state;
   final bool isDark;
-  const _BrowseAllSliver({required this.state, required this.isDark});
+  const _BrowseCategoriesSliver({required this.state, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -226,14 +596,14 @@ class _BrowseAllSliver extends StatelessWidget {
           if (state.status == SearchStatus.loading)
             const _CategoryGridSkeleton()
           else if (state.status == SearchStatus.failure)
-            Center(
-              child: Text(
-                state.errorMessage ?? 'Something went wrong.',
-                style: const TextStyle(color: AppColors.error),
-              ),
+            AppInlineErrorCard(
+              failure: state.failure,
+              title: 'Browse unavailable',
+              onRetry: () =>
+                  context.read<SearchBloc>().add(const LoadCategoriesEvent()),
             )
           else
-            _CategoryGrid(categories: state.categories),
+            _CategoryGrid(categories: state.categories, isDark: isDark),
         ]),
       ),
     );
@@ -242,7 +612,8 @@ class _BrowseAllSliver extends StatelessWidget {
 
 class _CategoryGrid extends StatelessWidget {
   final List<SearchCategory> categories;
-  const _CategoryGrid({required this.categories});
+  final bool isDark;
+  const _CategoryGrid({required this.categories, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -268,14 +639,25 @@ class _CategoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Opening "${category.name}"...')),
+      onTap: () => context.push(
+        '/search/category/${category.id}',
+        extra: category.name,
       ),
       borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
       child: Container(
         decoration: BoxDecoration(
           color: category.color,
           borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+          image: category.imageUrl != null
+              ? DecorationImage(
+                  image: NetworkImage(category.imageUrl!),
+                  fit: BoxFit.cover,
+                  colorFilter: ColorFilter.mode(
+                    category.color.withValues(alpha: 0.6),
+                    BlendMode.srcOver,
+                  ),
+                )
+              : null,
         ),
         padding: const EdgeInsets.all(AppDimensions.spacingMd),
         child: Stack(
@@ -295,7 +677,7 @@ class _CategoryCard extends StatelessWidget {
               child: Icon(
                 category.icon,
                 size: 52,
-                color: Colors.white.withOpacity(0.25),
+                color: Colors.white.withValues(alpha: 0.25),
               ),
             ),
           ],
@@ -322,7 +704,7 @@ class _CategoryGridSkeleton extends StatelessWidget {
       itemCount: 8,
       itemBuilder: (_, __) => Container(
         decoration: BoxDecoration(
-          color: Colors.grey.withOpacity(0.15),
+          color: Colors.grey.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
         ),
       ),
@@ -331,62 +713,66 @@ class _CategoryGridSkeleton extends StatelessWidget {
 }
 
 // ===========================================================================
-// Search results sliver
+// "All" results sliver — shows mixed top results + featuring section
 // ===========================================================================
-class _SearchResultsSliver extends StatelessWidget {
+class _AllResultsSliver extends StatelessWidget {
   final SearchState state;
   final bool isDark;
-  const _SearchResultsSliver({required this.state, required this.isDark});
+  const _AllResultsSliver({required this.state, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
-    if (state.status == SearchStatus.loading) {
-      return const SliverFillRemaining(
-        child: Center(child: CircularProgressIndicator()),
-      );
-    }
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spacingMd),
+      sliver: SliverList(
+        delegate: SliverChildListDelegate([
+          // ── Top Results heading ──────────────────────────────────────
+          Text(
+            'Top results',
+            style: AppTypography.titleMedium.copyWith(
+              color: isDark ? AppColors.textDarkPrimary : AppColors.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: AppDimensions.spacingSm),
 
-    if (state.results.isEmpty) {
-      return SliverFillRemaining(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.search_off,
-                  size: 64,
-                  color: isDark
-                      ? AppColors.textDarkTertiary
-                      : AppColors.textTertiary),
-              const SizedBox(height: AppDimensions.spacingMd),
-              Text(
-                'No results for "${state.query}"',
-                style: TextStyle(
-                  color: isDark
-                      ? AppColors.textDarkSecondary
-                      : AppColors.textSecondary,
+          // ── Mixed result list ────────────────────────────────────────
+          ...state.results.map((r) => _ResultTile(result: r, isDark: isDark)),
+
+          // ── Featuring section (horizontal playlists) ─────────────────
+          if (state.featuredPlaylists.isNotEmpty) ...[
+            const SizedBox(height: AppDimensions.spacingLg),
+            _SectionHeader(title: 'Featuring', isDark: isDark),
+            const SizedBox(height: AppDimensions.spacingSm),
+            SizedBox(
+              height: 200,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: state.featuredPlaylists.length,
+                separatorBuilder: (_, __) =>
+                    const SizedBox(width: AppDimensions.spacingSm),
+                itemBuilder: (ctx, i) => _PlaylistCard(
+                  playlist: state.featuredPlaylists[i],
+                  isDark: isDark,
                 ),
               ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return SliverList(
-      delegate: SliverChildBuilderDelegate(
-        (ctx, i) => _ResultTile(result: state.results[i], isDark: isDark),
-        childCount: state.results.length,
+            ),
+          ],
+        ]),
       ),
     );
   }
 }
 
+// ===========================================================================
+// Result tile (universal — used in "All" view)
+// ===========================================================================
 class _ResultTile extends StatelessWidget {
   final SearchResult result;
   final bool isDark;
   const _ResultTile({required this.result, required this.isDark});
 
-  IconData get _icon {
+  IconData get _fallbackIcon {
     switch (result.type) {
       case SearchResultType.song:
         return Icons.music_note;
@@ -394,42 +780,746 @@ class _ResultTile extends StatelessWidget {
         return Icons.person;
       case SearchResultType.playlist:
         return Icons.queue_music;
+      case SearchResultType.album:
+        return Icons.album;
+      case SearchResultType.category:
+        return Icons.category;
+    }
+  }
+
+  String get _typeLabel {
+    switch (result.type) {
+      case SearchResultType.song:
+        return 'Song';
+      case SearchResultType.artist:
+        return 'Artist';
+      case SearchResultType.playlist:
+        return 'Playlist';
+      case SearchResultType.album:
+        return 'Album';
+      case SearchResultType.category:
+        return 'Category';
+    }
+  }
+
+  void _onTap(BuildContext context) {
+    switch (result.type) {
+      case SearchResultType.artist:
+        context.push('/search/artist/${result.id}');
+        break;
+      case SearchResultType.playlist:
+        context.push('/search/playlist/${result.id}');
+        break;
+      case SearchResultType.album:
+        context.push('/search/album/${result.id}');
+        break;
+      case SearchResultType.category:
+        context.push('/search/category/${result.id}', extra: result.title);
+        break;
+      case SearchResultType.song:
+        _playSearchSongOrShowMessage(context, result);
+        break;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    Widget? trailing;
+    if (result.type == SearchResultType.song) {
+      trailing = SizedBox(
+        width: 78,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (result.duration != null)
+              Text(
+                result.duration!,
+                style: TextStyle(
+                  color: isDark
+                      ? AppColors.textDarkTertiary
+                      : AppColors.textTertiary,
+                  fontSize: 12,
+                ),
+              ),
+            IconButton(
+              icon: Icon(
+                Icons.more_vert,
+                color: isDark
+                    ? AppColors.textDarkTertiary
+                    : AppColors.textTertiary,
+                size: 18,
+              ),
+              splashRadius: 18,
+              onPressed: () => _openSearchSongOptions(context, result),
+            ),
+          ],
+        ),
+      );
+    } else if (result.type == SearchResultType.playlist) {
+      trailing = IconButton(
+        icon: Icon(
+          Icons.more_vert,
+          color: isDark ? AppColors.textDarkTertiary : AppColors.textTertiary,
+          size: 18,
+        ),
+        splashRadius: 18,
+        onPressed: () => _openSearchPlaylistOptions(
+          context,
+          playlistId: result.id,
+          playlistTitle: result.title,
+        ),
+      );
+    } else {
+      trailing = Icon(
+        Icons.chevron_right,
+        color: isDark ? AppColors.textDarkTertiary : AppColors.textTertiary,
+        size: 20,
+      );
+    }
+
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(
-        horizontal: AppDimensions.spacingMd,
         vertical: AppDimensions.spacingXs,
       ),
-      leading: Container(
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          color: AppColors.primaryOrange.withOpacity(0.12),
-          borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+      leading: ClipRRect(
+        borderRadius: BorderRadius.circular(
+          result.type == SearchResultType.artist ? 24 : 8,
         ),
-        child: Icon(_icon, color: AppColors.primaryOrange, size: 24),
+        child: SizedBox(
+          width: 48,
+          height: 48,
+          child: result.imageUrl != null
+              ? Image.network(
+                  result.imageUrl!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    color: AppColors.primaryOrange.withValues(alpha: 0.12),
+                    child: Icon(_fallbackIcon,
+                        color: AppColors.primaryOrange, size: 24),
+                  ),
+                )
+              : Container(
+                  color: AppColors.primaryOrange.withValues(alpha: 0.12),
+                  child: Icon(_fallbackIcon,
+                      color: AppColors.primaryOrange, size: 24),
+                ),
+        ),
       ),
       title: Text(
         result.title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: TextStyle(
           color: isDark ? AppColors.textDarkPrimary : AppColors.textPrimary,
           fontWeight: FontWeight.w600,
+          fontSize: 14,
         ),
       ),
       subtitle: Text(
-        result.subtitle,
+        result.type == SearchResultType.song ? result.subtitle : _typeLabel,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: TextStyle(
           color: isDark ? AppColors.textDarkSecondary : AppColors.textSecondary,
           fontSize: 12,
         ),
       ),
-      onTap: () {
-        // TODO: navigate to detail
-      },
+      trailing: trailing,
+      onTap: () => _onTap(context),
+    );
+  }
+}
+
+// ===========================================================================
+// Artist grid sliver (2 columns with circular images)
+// ===========================================================================
+class _ArtistGridSliver extends StatelessWidget {
+  final List<SearchResult> results;
+  final bool isDark;
+  const _ArtistGridSliver({required this.results, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spacingMd),
+      sliver: SliverList(
+        delegate: SliverChildListDelegate([
+          Text(
+            'Artists',
+            style: AppTypography.titleMedium.copyWith(
+              color: isDark ? AppColors.textDarkPrimary : AppColors.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: AppDimensions.spacingMd),
+          GridView.builder(
+            physics: const NeverScrollableScrollPhysics(),
+            shrinkWrap: true,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: AppDimensions.spacingMd,
+              mainAxisSpacing: AppDimensions.spacingMd,
+              childAspectRatio: 0.85,
+            ),
+            itemCount: results.length,
+            itemBuilder: (ctx, i) {
+              final r = results[i];
+              return GestureDetector(
+                onTap: () => ctx.push('/search/artist/${r.id}'),
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: AspectRatio(
+                        aspectRatio: 1,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(100),
+                          child: r.imageUrl != null
+                              ? Image.network(r.imageUrl!,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) =>
+                                      _AvatarFallback(isDark: isDark))
+                              : _AvatarFallback(isDark: isDark),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      r.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        color: isDark
+                            ? AppColors.textDarkPrimary
+                            : AppColors.textPrimary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+class _AvatarFallback extends StatelessWidget {
+  final bool isDark;
+  const _AvatarFallback({required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+      child: Icon(Icons.person, size: 48, color: Colors.grey.shade400),
+    );
+  }
+}
+
+// ===========================================================================
+// Playlist grid sliver (2 columns with cover image cards)
+// ===========================================================================
+class _PlaylistGridSliver extends StatelessWidget {
+  final List<SearchResult> results;
+  final bool isDark;
+  const _PlaylistGridSliver({required this.results, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spacingMd),
+      sliver: SliverList(
+        delegate: SliverChildListDelegate([
+          Text(
+            'Playlists',
+            style: AppTypography.titleMedium.copyWith(
+              color: isDark ? AppColors.textDarkPrimary : AppColors.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: AppDimensions.spacingMd),
+          GridView.builder(
+            physics: const NeverScrollableScrollPhysics(),
+            shrinkWrap: true,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: AppDimensions.spacingSm,
+              mainAxisSpacing: AppDimensions.spacingMd,
+              childAspectRatio: 0.75,
+            ),
+            itemCount: results.length,
+            itemBuilder: (ctx, i) {
+              final r = results[i];
+              return GestureDetector(
+                onTap: () => ctx.push('/search/playlist/${r.id}'),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius:
+                            BorderRadius.circular(AppDimensions.radiusMd),
+                        child: r.imageUrl != null
+                            ? Image.network(r.imageUrl!,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) =>
+                                    _CoverFallback(isDark: isDark))
+                            : _CoverFallback(isDark: isDark),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            r.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(
+                              color: isDark
+                                  ? AppColors.textDarkPrimary
+                                  : AppColors.textPrimary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            Icons.more_vert,
+                            color: isDark
+                                ? AppColors.textDarkTertiary
+                                : AppColors.textTertiary,
+                            size: 18,
+                          ),
+                          splashRadius: 18,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: 28,
+                            minHeight: 28,
+                          ),
+                          onPressed: () => _openSearchPlaylistOptions(
+                            ctx,
+                            playlistId: r.id,
+                            playlistTitle: r.title,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      r.subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        color: isDark
+                            ? AppColors.textDarkTertiary
+                            : AppColors.textTertiary,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+class _CoverFallback extends StatelessWidget {
+  final bool isDark;
+  const _CoverFallback({required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+      child: Icon(LucideIcons.music4, size: 48, color: Colors.grey.shade400),
+    );
+  }
+}
+
+// ===========================================================================
+// Song list sliver (vertical list using SongListTile)
+// ===========================================================================
+class _SongListSliver extends StatelessWidget {
+  final List<SearchResult> results;
+  final bool isDark;
+  const _SongListSliver({required this.results, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverPadding(
+      padding: EdgeInsets.zero,
+      sliver: SliverList(
+        delegate: SliverChildListDelegate([
+          Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: AppDimensions.spacingMd),
+            child: Text(
+              'Songs',
+              style: AppTypography.titleMedium.copyWith(
+                color:
+                    isDark ? AppColors.textDarkPrimary : AppColors.textPrimary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          const SizedBox(height: AppDimensions.spacingSm),
+          ...results.map((r) {
+            final song = SongEntity(
+              id: r.id,
+              title: r.title,
+              artist: r.subtitle,
+              duration: r.durationSeconds ?? 0,
+              coverUrl: r.imageUrl,
+              streamUrl: r.streamUrl,
+            );
+            return SongListTile(
+              song: song,
+              onTap: () => _playSearchSongOrShowMessage(context, r),
+              showPlayNext: true,
+              enableAddToQueue: true,
+              addToQueueLabel: 'Add to space queue',
+              forwardPlayNowToOptionHandler: true,
+              onOptionSelected: (option) =>
+                  _handleSearchSongOption(context, r, option),
+            );
+          }),
+        ]),
+      ),
+    );
+  }
+}
+
+// ===========================================================================
+// Album grid sliver (2 columns with cover, title, artist)
+// ===========================================================================
+class _AlbumGridSliver extends StatelessWidget {
+  final List<SearchResult> results;
+  final bool isDark;
+  const _AlbumGridSliver({required this.results, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spacingMd),
+      sliver: SliverList(
+        delegate: SliverChildListDelegate([
+          Text(
+            'Albums',
+            style: AppTypography.titleMedium.copyWith(
+              color: isDark ? AppColors.textDarkPrimary : AppColors.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: AppDimensions.spacingMd),
+          GridView.builder(
+            physics: const NeverScrollableScrollPhysics(),
+            shrinkWrap: true,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: AppDimensions.spacingSm,
+              mainAxisSpacing: AppDimensions.spacingMd,
+              childAspectRatio: 0.75,
+            ),
+            itemCount: results.length,
+            itemBuilder: (ctx, i) {
+              final r = results[i];
+              return GestureDetector(
+                onTap: () => ctx.push('/search/album/${r.id}'),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius:
+                            BorderRadius.circular(AppDimensions.radiusMd),
+                        child: r.imageUrl != null
+                            ? Image.network(r.imageUrl!,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) =>
+                                    _CoverFallback(isDark: isDark))
+                            : _CoverFallback(isDark: isDark),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      r.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        color: isDark
+                            ? AppColors.textDarkPrimary
+                            : AppColors.textPrimary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      r.subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        color: isDark
+                            ? AppColors.textDarkTertiary
+                            : AppColors.textTertiary,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+// ===========================================================================
+// Category list sliver (list tiles with colour + arrow)
+// ===========================================================================
+class _CategoryListSliver extends StatelessWidget {
+  final List<SearchResult> results;
+  final bool isDark;
+  const _CategoryListSliver({required this.results, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spacingMd),
+      sliver: SliverList(
+        delegate: SliverChildListDelegate([
+          Text(
+            'Categories',
+            style: AppTypography.titleMedium.copyWith(
+              color: isDark ? AppColors.textDarkPrimary : AppColors.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: AppDimensions.spacingSm),
+          ...results.map((r) => ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: r.imageUrl != null
+                        ? Image.network(r.imageUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                                  color: Colors.grey.shade700,
+                                  child: const Icon(Icons.category,
+                                      color: Colors.white54),
+                                ))
+                        : Container(
+                            color: Colors.grey.shade700,
+                            child: const Icon(Icons.category,
+                                color: Colors.white54),
+                          ),
+                  ),
+                ),
+                title: Text(
+                  r.title,
+                  style: TextStyle(
+                    color: isDark
+                        ? AppColors.textDarkPrimary
+                        : AppColors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                trailing: Icon(Icons.chevron_right,
+                    color: isDark
+                        ? AppColors.textDarkTertiary
+                        : AppColors.textTertiary),
+                onTap: () => context.push(
+                  '/search/category/${r.id}',
+                  extra: r.title,
+                ),
+              )),
+        ]),
+      ),
+    );
+  }
+}
+
+// ===========================================================================
+// Featured playlists sliver (grid when no search query, "Featuring" tab)
+// ===========================================================================
+class _FeaturedPlaylistsSliver extends StatelessWidget {
+  final List<PlaylistEntity> playlists;
+  final bool isDark;
+  const _FeaturedPlaylistsSliver(
+      {required this.playlists, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    if (playlists.isEmpty) {
+      return const SliverFillRemaining(
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spacingMd),
+      sliver: SliverList(
+        delegate: SliverChildListDelegate([
+          Text(
+            'Featured Playlists',
+            style: AppTypography.titleMedium.copyWith(
+              color: isDark ? AppColors.textDarkPrimary : AppColors.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: AppDimensions.spacingMd),
+          GridView.builder(
+            physics: const NeverScrollableScrollPhysics(),
+            shrinkWrap: true,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: AppDimensions.spacingSm,
+              mainAxisSpacing: AppDimensions.spacingMd,
+              childAspectRatio: 0.75,
+            ),
+            itemCount: playlists.length,
+            itemBuilder: (ctx, i) =>
+                _PlaylistCard(playlist: playlists[i], isDark: isDark),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+// ===========================================================================
+// Shared playlist card widget
+// ===========================================================================
+class _PlaylistCard extends StatelessWidget {
+  final PlaylistEntity playlist;
+  final bool isDark;
+  const _PlaylistCard({required this.playlist, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => context.push('/search/playlist/${playlist.id}'),
+      child: SizedBox(
+        width: 160,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: ClipRRect(
+                      borderRadius:
+                          BorderRadius.circular(AppDimensions.radiusMd),
+                      child: playlist.coverUrl != null
+                          ? Image.network(
+                              playlist.coverUrl!,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) =>
+                                  _CoverFallback(isDark: isDark),
+                            )
+                          : _CoverFallback(isDark: isDark),
+                    ),
+                  ),
+                  Positioned(
+                    top: 6,
+                    right: 6,
+                    child: Material(
+                      color: Colors.black.withValues(alpha: 0.36),
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: () => _openSearchPlaylistOptions(
+                          context,
+                          playlistId: playlist.id,
+                          playlistTitle: playlist.title,
+                          source: 'Search featuring',
+                        ),
+                        child: const Padding(
+                          padding: EdgeInsets.all(6),
+                          child: Icon(
+                            Icons.more_vert,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              playlist.title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.inter(
+                color:
+                    isDark ? AppColors.textDarkPrimary : AppColors.textPrimary,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            if (playlist.description != null)
+              Text(
+                playlist.description!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.inter(
+                  color: isDark
+                      ? AppColors.textDarkTertiary
+                      : AppColors.textTertiary,
+                  fontSize: 11,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ===========================================================================
+// Section header with optional "See all" link
+// ===========================================================================
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  final bool isDark;
+  const _SectionHeader({required this.title, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: AppTypography.titleMedium.copyWith(
+            color: isDark ? AppColors.textDarkPrimary : AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
     );
   }
 }
