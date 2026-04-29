@@ -51,6 +51,8 @@ docs/
 docs copy 2/
 analyze*.txt
 src/
+CAMS_MOBILE_PLAYBACK_DEVICE_CONFIGURATION_AND_WEB_ACTIVATION_WORKFLOW.drawio
+Report5_Test Report.xlsx
 
 # Environment files
 .env
