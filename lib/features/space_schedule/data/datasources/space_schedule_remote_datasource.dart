@@ -371,10 +371,15 @@ class SpaceScheduleRemoteDataSourceImpl
 
   SpaceScheduleBootstrap _parseBootstrap(Map<String, dynamic> json) {
     final draftJson = json['draftSchedule'];
-    final librarySources = _parseSourceList(json['librarySources'])
+    final rawLibrarySources = _parseSourceList(json['librarySources']);
+    final rawTemplateSources = _parseSourceList(json['templateSources']);
+    final librarySources = rawLibrarySources
         .where((source) => source.type != ScheduleSourceType.template)
         .toList(growable: false);
-    const templateSources = <ScheduleTemplate>[];
+    final templateSources = _uniqueSources([
+      ...rawTemplateSources,
+      ...rawLibrarySources,
+    ].where((source) => source.type == ScheduleSourceType.template));
     final musicCatalog = (json['musicCatalog'] as List<dynamic>? ?? const [])
         .whereType<Map>()
         .map(
@@ -402,6 +407,17 @@ class SpaceScheduleRemoteDataSourceImpl
           ),
         )
         .toList(growable: false);
+  }
+
+  List<ScheduleSourceModel> _uniqueSources(
+    Iterable<ScheduleSourceModel> sources,
+  ) {
+    final seen = <String>{};
+    final unique = <ScheduleSourceModel>[];
+    for (final source in sources) {
+      if (seen.add(source.id)) unique.add(source);
+    }
+    return List<ScheduleSourceModel>.unmodifiable(unique);
   }
 
   Future<String> _sendResult(

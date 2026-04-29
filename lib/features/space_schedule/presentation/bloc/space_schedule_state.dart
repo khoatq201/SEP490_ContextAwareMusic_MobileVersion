@@ -18,7 +18,7 @@ class SpaceScheduleState extends Equatable {
   final int selectedDay;
   final SpaceSchedule? draftSchedule;
   final List<ScheduleSource> librarySources;
-  final List<ScheduleTemplate> templateSources;
+  final List<ScheduleSource> templateSources;
   final List<ScheduleMusicItem> musicCatalog;
   final ScheduleSourceType sourcePickerTab;
   final StoreGovernanceMode? storeGovernanceMode;
@@ -54,7 +54,7 @@ class SpaceScheduleState extends Equatable {
     int? selectedDay,
     SpaceSchedule? draftSchedule,
     List<ScheduleSource>? librarySources,
-    List<ScheduleTemplate>? templateSources,
+    List<ScheduleSource>? templateSources,
     List<ScheduleMusicItem>? musicCatalog,
     ScheduleSourceType? sourcePickerTab,
     StoreGovernanceMode? storeGovernanceMode,

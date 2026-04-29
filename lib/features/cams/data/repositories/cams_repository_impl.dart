@@ -500,6 +500,8 @@ class CamsRepositoryImpl implements CamsRepository {
           fallback.restrictedToAllowedPlaylists,
       allowedPlaylistCount:
           primary.allowedPlaylistCount ?? fallback.allowedPlaylistCount,
+      confidence: primary.confidence ?? fallback.confidence,
+      scoreBreakdown: primary.scoreBreakdown ?? fallback.scoreBreakdown,
     );
   }
 

@@ -738,46 +738,104 @@ class StoreDashboardPage extends StatelessWidget {
     final currentMode = await _loadCurrentGovernanceMode(context, store);
     if (currentMode == null || !context.mounted) return;
 
+    List<ScheduleSource> templates = const <ScheduleSource>[];
+    String? templateError;
+    try {
+      templates = await sl<SpaceScheduleRemoteDataSource>().getBrandTemplates(
+        store.brandId,
+      );
+    } catch (error) {
+      templateError = error.toString();
+    }
+    if (!context.mounted) return;
+
     var selectedMode = currentMode;
-    final selectedResult = await showDialog<StoreGovernanceMode>(
+    String? selectedSourceId;
+    final selectedResult = await showDialog<_GovernanceModeSelection>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
           title: const Text('Store governance mode'),
           content: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 420),
-            child: RadioGroup<StoreGovernanceMode>(
-              groupValue: selectedMode,
-              onChanged: (value) {
-                if (value == null) return;
-                setState(() => selectedMode = value);
-              },
+            child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                children: StoreGovernanceMode.values
-                    .map(
-                      (mode) => RadioListTile<StoreGovernanceMode>(
-                        value: mode,
-                        title: Text(mode.label),
-                        subtitle: Text(mode.description),
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                    )
-                    .toList(growable: false),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  RadioGroup<StoreGovernanceMode>(
+                    groupValue: selectedMode,
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() {
+                        selectedMode = value;
+                        if (selectedMode != StoreGovernanceMode.strictSync) {
+                          selectedSourceId = null;
+                        }
+                      });
+                    },
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: StoreGovernanceMode.values
+                          .map(
+                            (mode) => RadioListTile<StoreGovernanceMode>(
+                              value: mode,
+                              title: Text(mode.label),
+                              subtitle: Text(mode.description),
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                          )
+                          .toList(growable: false),
+                    ),
+                  ),
+                  if (selectedMode == StoreGovernanceMode.strictSync) ...[
+                    const SizedBox(height: 12),
+                    _StrictSyncTemplatePicker(
+                      templates: templates,
+                      selectedSourceId: selectedSourceId,
+                      isLoading: false,
+                      errorMessage: templateError,
+                      onRefresh: () async {
+                        setState(() => templateError = null);
+                        try {
+                          final freshTemplates =
+                              await sl<SpaceScheduleRemoteDataSource>()
+                                  .getBrandTemplates(store.brandId);
+                          if (!context.mounted) return;
+                          setState(() {
+                            templates = freshTemplates;
+                            selectedSourceId = null;
+                            templateError = null;
+                          });
+                        } catch (error) {
+                          if (!context.mounted) return;
+                          setState(() => templateError = error.toString());
+                        }
+                      },
+                      onChanged: (value) =>
+                          setState(() => selectedSourceId = value),
+                    ),
+                  ],
+                ],
               ),
             ),
           ),
           actions: [
             TextButton(
-              onPressed: () => _unfocusAndPop<StoreGovernanceMode>(
+              onPressed: () => _unfocusAndPop<_GovernanceModeSelection>(
                 dialogContext,
               ),
               child: const Text('Cancel'),
             ),
             FilledButton(
-              onPressed: () => _unfocusAndPop<StoreGovernanceMode>(
+              onPressed: () => _unfocusAndPop<_GovernanceModeSelection>(
                 dialogContext,
-                selectedMode,
+                _GovernanceModeSelection(
+                  mode: selectedMode,
+                  sourceId: selectedMode == StoreGovernanceMode.strictSync
+                      ? selectedSourceId
+                      : null,
+                ),
               ),
               child: const Text('Save'),
             ),
@@ -791,7 +849,8 @@ class StoreDashboardPage extends StatelessWidget {
     final result = await sl<SetStoreGovernanceMode>()(
       request: SetStoreGovernanceModeRequest(
         storeIds: [store.id],
-        mode: selectedResult,
+        mode: selectedResult.mode,
+        sourceId: selectedResult.sourceId,
       ),
     );
     if (!context.mounted) return;
@@ -1272,6 +1331,16 @@ class _StrictSyncSelection {
   final String? sourceId;
 }
 
+class _GovernanceModeSelection {
+  const _GovernanceModeSelection({
+    required this.mode,
+    this.sourceId,
+  });
+
+  final StoreGovernanceMode mode;
+  final String? sourceId;
+}
+
 class _StrictSyncStoresSheet extends StatefulWidget {
   const _StrictSyncStoresSheet({
     required this.brandId,
@@ -1322,7 +1391,7 @@ class _StrictSyncStoresSheetState extends State<_StrictSyncStoresSheet> {
       if (!mounted) return;
       setState(() {
         _templates = templates;
-        _selectedSourceId = templates.isNotEmpty ? templates.first.id : null;
+        _selectedSourceId = null;
         _isLoadingTemplates = false;
       });
     } catch (error) {

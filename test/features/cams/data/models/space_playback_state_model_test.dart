@@ -17,6 +17,7 @@ void main() {
         'pendingQueueItemId': 'pending-new',
         'pendingPlaylistId': 'pending-legacy',
         'volumePercent': 65,
+        'isIotDeviceAssigned': true,
         'isIotDeviceOffline': true,
         'isMuted': true,
         'queueEndBehavior': 2,
@@ -40,7 +41,9 @@ void main() {
       expect(model.pendingQueueItemId, 'pending-new');
       expect(model.currentPlaylistId, 'playlist-legacy');
       expect(model.volumePercent, 65);
+      expect(model.isIotDeviceAssigned, true);
       expect(model.isIotDeviceOffline, true);
+      expect(model.iotStatusLabel, 'IoT Offline');
       expect(model.isMuted, true);
       expect(model.queueEndBehavior, 2);
       expect(model.spaceQueueItems, hasLength(1));
@@ -62,6 +65,7 @@ void main() {
       expect(model.currentTrackName, 'Legacy Playlist');
       expect(model.pendingQueueItemId, 'playlist-pending');
       expect(model.volumePercent, 100);
+      expect(model.isIotDeviceAssigned, isNull);
       expect(model.isIotDeviceOffline, false);
       expect(model.isMuted, false);
       expect(model.queueEndBehavior, 0);
@@ -93,6 +97,24 @@ void main() {
       expect(model.explainability!.usedMoodOnlyFallback, isTrue);
       expect(model.explainability!.moodOnlyCount, 12);
       expect(model.explainability!.bpmFilteredCount, 6);
+    });
+
+    test('parses IoT assignment state labels', () {
+      final unassigned = SpacePlaybackStateModel.fromJson(const {
+        'spaceId': 'space-iot-unassigned',
+        'isIotDeviceAssigned': false,
+        'isIotDeviceOffline': false,
+      });
+      final online = SpacePlaybackStateModel.fromJson(const {
+        'spaceId': 'space-iot-online',
+        'isIotDeviceAssigned': true,
+        'isIotDeviceOffline': false,
+      });
+
+      expect(unassigned.iotStatusLabel, 'IoT Unassigned');
+      expect(unassigned.hasIotWarning, isTrue);
+      expect(online.iotStatusLabel, 'IoT Online');
+      expect(online.hasIotWarning, isFalse);
     });
 
     test('parses manual override, scheduling, and AI trace aliases', () {
@@ -133,6 +155,93 @@ void main() {
       expect(model.explainability!.recommendedBpmMax, 110);
       expect(model.explainability!.recommendedBpmTarget, 100);
       expect(model.explainability!.usedMoodOnlyFallback, isFalse);
+    });
+
+    test('parses fuzzy confidence and score breakdown with signal impacts', () {
+      final model = SpacePlaybackStateModel.fromJson(const {
+        'spaceId': 'space-ai-score',
+        'fuzzyConfidence': 0.17,
+        'fuzzyScoreBreakdown': {
+          'chillScore': 0.33,
+          'focusScore': 0.40,
+          'energeticScore': 0.28,
+          'signalContributions': [
+            {
+              'signal': 'crowdPressure(people=1, level=Low)',
+              'chillDelta': 0.04,
+              'focusDelta': 0.18,
+              'energeticDelta': -0.06,
+            },
+          ],
+        },
+      });
+
+      final explainability = model.explainability;
+      expect(explainability, isNotNull);
+      expect(explainability!.confidence, 0.17);
+      expect(explainability.scoreBreakdown, isNotNull);
+      expect(explainability.scoreBreakdown!.chillScore, 0.33);
+      expect(explainability.scoreBreakdown!.focusScore, 0.40);
+      expect(explainability.scoreBreakdown!.energeticScore, 0.28);
+      expect(explainability.signalContributions, hasLength(1));
+      expect(
+        explainability.signalContributions.single.signal,
+        'crowdPressure(people=1, level=Low)',
+      );
+      expect(explainability.signalContributions.single.focusDelta, 0.18);
+      expect(explainability.signalContributions.single.energeticDelta, -0.06);
+    });
+
+    test('parses snake case fuzzy score aliases', () {
+      final model = SpacePlaybackStateModel.fromJson(const {
+        'spaceId': 'space-ai-snake',
+        'fuzzy_confidence': 62,
+        'fuzzy_score_breakdown': {
+          'chill_score': 33,
+          'focus_score': 40,
+          'energetic_score': 28,
+          'signal_contributions': [
+            {
+              'signal': 'ambientNoise(dB=60.0, level=Moderate)',
+              'chill_delta': 0.03,
+              'focus_delta': 0.06,
+              'energetic_delta': 0.01,
+            },
+          ],
+        },
+      });
+
+      final explainability = model.explainability;
+      expect(explainability, isNotNull);
+      expect(explainability!.confidence, 62);
+      expect(explainability.scoreBreakdown!.chillScore, 33);
+      expect(explainability.scoreBreakdown!.focusScore, 40);
+      expect(explainability.scoreBreakdown!.energeticScore, 28);
+      expect(explainability.signalContributions.single.signal,
+          'ambientNoise(dB=60.0, level=Moderate)');
+      expect(explainability.signalContributions.single.chillDelta, 0.03);
+    });
+
+    test('parses fuzzy score JSON string and ignores invalid JSON safely', () {
+      final jsonBacked = SpacePlaybackStateModel.fromJson(const {
+        'spaceId': 'space-ai-json',
+        'fuzzyScoreJson':
+            '{"chill_score":0.2,"focus_score":0.7,"energetic_score":0.1,"signals":["timeOfDay(local=18:31)"]}',
+      });
+
+      expect(jsonBacked.explainability, isNotNull);
+      expect(jsonBacked.explainability!.scoreBreakdown!.focusScore, 0.7);
+      expect(
+        jsonBacked.explainability!.signalContributions.single.signal,
+        'timeOfDay(local=18:31)',
+      );
+
+      final invalid = SpacePlaybackStateModel.fromJson(const {
+        'spaceId': 'space-ai-invalid-json',
+        'fuzzyScoreJson': '{not-json',
+      });
+
+      expect(invalid.explainability, isNull);
     });
 
     test('does not create explainability from legacy mood-only state', () {

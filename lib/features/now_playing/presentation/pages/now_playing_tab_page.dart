@@ -380,6 +380,10 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
     final effectiveVolume =
         resolvedIsMuted ? 0.0 : (resolvedVolumePercent / 100.0);
     final showLocalPreviewBanner = isPlayback && playerState.isLocalPreview;
+    final playbackState = camsState.playbackState;
+    final showAiInsightButton =
+        playbackState?.explainability?.hasAnyData == true ||
+            playbackState?.isManualOverride == true;
 
     final spaceName =
         spaceState.space?.name ?? playerState.activeSpaceName ?? 'No Space';
@@ -493,13 +497,28 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
                     ),
                   ),
                 ],
+                if (showAiInsightButton && playbackState != null) ...[
+                  const SizedBox(height: 12),
+                  _AiInsightButton(
+                    palette: palette,
+                    onTap: () => _showAiExplainabilitySheet(
+                      context,
+                      palette: palette,
+                      playbackState: playbackState,
+                      fallbackMoodName: mood,
+                    ),
+                  ),
+                ],
                 if (showLocalPreviewBanner) ...[
                   const SizedBox(height: 12),
                   _LocalPreviewBanner(palette: palette),
                 ],
-                if (camsState.playbackState?.isIotDeviceOffline == true) ...[
+                if (camsState.playbackState?.iotStatusLabel != null) ...[
                   const SizedBox(height: 12),
-                  _IotOfflineBanner(palette: palette),
+                  _IotStatusNotice(
+                    palette: palette,
+                    playbackState: camsState.playbackState!,
+                  ),
                 ],
 
                 const SizedBox(height: 24),
@@ -590,20 +609,6 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
                 const SizedBox(height: 24),
 
                 // â”€â”€ Override Mood CTA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-                if (effectiveSpaceId != null &&
-                    (camsState.hasActiveOverride ||
-                        camsState.explainability?.hasAnyData == true))
-                  _AiExplainabilityPanel(
-                    explainability: camsState.explainability,
-                    hasActiveOverride: camsState.hasActiveOverride,
-                    palette: palette,
-                  ).animate().fadeIn(duration: 420.ms).slideY(begin: 0.10),
-
-                if (effectiveSpaceId != null &&
-                    (camsState.hasActiveOverride ||
-                        camsState.explainability?.hasAnyData == true))
-                  const SizedBox(height: 16),
-
                 if (effectiveSpaceId != null)
                   _OverrideMoodCTA(
                     spaceId: effectiveSpaceId,
@@ -663,6 +668,35 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
   }
 
   // â”€â”€ Song Options Bottom Sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  void _showAiExplainabilitySheet(
+    BuildContext context, {
+    required _NPPalette palette,
+    required SpacePlaybackState playbackState,
+    required String? fallbackMoodName,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      useRootNavigator: true,
+      isScrollControlled: true,
+      backgroundColor: palette.isDark ? palette.card : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (_) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.72,
+        minChildSize: 0.42,
+        maxChildSize: 0.9,
+        builder: (_, controller) => _AiExplainabilitySheet(
+          palette: palette,
+          playbackState: playbackState,
+          fallbackMoodName: fallbackMoodName,
+          controller: controller,
+        ),
+      ),
+    );
+  }
+
   void _showSongOptionsSheet(
       BuildContext ctx, ps.PlayerState state, _NPPalette palette) {
     final track = state.currentTrack;
@@ -871,7 +905,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
   }
 }
 
-class _QueueSheet extends StatelessWidget {
+class _QueueSheet extends StatefulWidget {
   static const int _defaultRemoteVolumePercent = 60;
   static const int _minimumRemoteVolumePercent = 30;
 
@@ -885,11 +919,20 @@ class _QueueSheet extends StatelessWidget {
   final ScrollController controller;
   final VoidCallback onOpenAddToQueue;
 
+  @override
+  State<_QueueSheet> createState() => _QueueSheetState();
+}
+
+class _QueueSheetState extends State<_QueueSheet> {
+  _NPPalette get palette => widget.palette;
+  ScrollController get controller => widget.controller;
+  VoidCallback get onOpenAddToQueue => widget.onOpenAddToQueue;
+
   int _normalizeAudibleVolumePercent(int requestedVolumePercent) {
     final boundedVolume = requestedVolumePercent.clamp(0, 100).toInt();
     if (boundedVolume <= 0) return 0;
-    if (boundedVolume < _minimumRemoteVolumePercent) {
-      return _minimumRemoteVolumePercent;
+    if (boundedVolume < _QueueSheet._minimumRemoteVolumePercent) {
+      return _QueueSheet._minimumRemoteVolumePercent;
     }
     return boundedVolume;
   }
@@ -900,7 +943,7 @@ class _QueueSheet extends StatelessWidget {
     if (playbackVolume != null && playbackVolume > 0) {
       return _normalizeAudibleVolumePercent(playbackVolume);
     }
-    return _defaultRemoteVolumePercent;
+    return _QueueSheet._defaultRemoteVolumePercent;
   }
 
   void _previewLocalVolume(
@@ -960,27 +1003,12 @@ class _QueueSheet extends StatelessWidget {
     );
   }
 
-  void _dispatchQueueReorder(
+  void _dispatchQueueReorderIds(
     BuildContext context,
-    QueueSheetViewData data,
-    int fromIndex,
-    int toIndex,
+    List<String> queueItemIds,
   ) {
-    final reorderableItems = data.reorderablePendingItems;
-    if (!data.isFromCams ||
-        fromIndex < 0 ||
-        toIndex < 0 ||
-        fromIndex >= reorderableItems.length ||
-        toIndex >= reorderableItems.length ||
-        fromIndex == toIndex) {
-      return;
-    }
-
-    final queueItemIds = reorderableItems
-        .map((item) => item.queueItemId)
-        .whereType<String>()
-        .toList(growable: true);
-    if (queueItemIds.length != reorderableItems.length) {
+    if (queueItemIds.length < 2) return;
+    if (queueItemIds.any((id) => id.isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
@@ -992,10 +1020,22 @@ class _QueueSheet extends StatelessWidget {
       return;
     }
 
-    final movedQueueItemId = queueItemIds.removeAt(fromIndex);
-    queueItemIds.insert(toIndex, movedQueueItemId);
     context.read<CamsPlaybackBloc>().add(
           CamsReorderQueue(queueItemIds: queueItemIds),
+        );
+  }
+
+  void _dispatchPlayQueueItem(BuildContext context, QueueSheetItem item) {
+    if (item.isCurrent) return;
+    final queueItemId = item.queueItemId;
+    if (queueItemId == null || queueItemId.isEmpty) return;
+
+    context.read<CamsPlaybackBloc>().add(
+          CamsSendCommand(
+            command: PlaybackCommandEnum.skipToTrack,
+            targetQueueItemId: queueItemId,
+            targetTrackId: item.trackId,
+          ),
         );
   }
 
@@ -1388,6 +1428,22 @@ class _QueueSheet extends StatelessWidget {
       return slivers;
     }
 
+    if (queueData.isFromCams &&
+        items.any((item) => item.isUpNext) &&
+        queueData.reorderablePendingItems.length > 1) {
+      slivers.add(
+        _QueueReorderableTrackSliver(
+          items: items,
+          palette: palette,
+          onPlay: (item) => _dispatchPlayQueueItem(context, item),
+          onRemove: (item) => _dispatchRemoveQueueItem(context, item),
+          onReorderPendingIds: (queueItemIds) =>
+              _dispatchQueueReorderIds(context, queueItemIds),
+        ),
+      );
+      return slivers;
+    }
+
     slivers.add(
       SliverPadding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -1399,55 +1455,6 @@ class _QueueSheet extends StatelessWidget {
                   queuedTrack.queueItemId != null &&
                   queuedTrack.queueItemId!.isNotEmpty;
 
-              Widget? trailing;
-              if (canManageQueue && queuedTrack.isUpNext) {
-                final reorderableItems = queueData.reorderablePendingItems;
-                final reorderableIndex = reorderableItems.indexWhere(
-                  (item) => item.queueItemId == queuedTrack.queueItemId,
-                );
-                final canMoveUp = reorderableIndex > 0;
-                final canMoveDown = reorderableIndex >= 0 &&
-                    reorderableIndex < reorderableItems.length - 1;
-                trailing = _QueueTrackActions(
-                  palette: palette,
-                  canMoveUp: canMoveUp,
-                  canMoveDown: canMoveDown,
-                  onMoveUp: canMoveUp
-                      ? () => _dispatchQueueReorder(
-                            context,
-                            queueData,
-                            reorderableIndex,
-                            reorderableIndex - 1,
-                          )
-                      : null,
-                  onMoveDown: canMoveDown
-                      ? () => _dispatchQueueReorder(
-                            context,
-                            queueData,
-                            reorderableIndex,
-                            reorderableIndex + 1,
-                          )
-                      : null,
-                  onRemove: () => _dispatchRemoveQueueItem(
-                    context,
-                    queuedTrack,
-                  ),
-                );
-              } else if (canManageQueue && queuedTrack.isPlayed) {
-                trailing = _QueueTrackActions(
-                  palette: palette,
-                  canMoveUp: false,
-                  canMoveDown: false,
-                  onMoveUp: null,
-                  onMoveDown: null,
-                  onRemove: () => _dispatchRemoveQueueItem(
-                    context,
-                    queuedTrack,
-                  ),
-                  showReorderButtons: false,
-                );
-              }
-
               return _QueueTrackTile(
                 title: queuedTrack.title,
                 artist: queuedTrack.artist,
@@ -1455,8 +1462,20 @@ class _QueueSheet extends StatelessWidget {
                 isPlaying: queuedTrack.isCurrent,
                 isPending: queuedTrack.isPending,
                 meta: queuedTrack.metaLabel,
+                sourceLabel: queuedTrack.sourceLabel,
                 palette: palette,
-                trailing: trailing,
+                onTap: canManageQueue && !queuedTrack.isCurrent
+                    ? () => _dispatchPlayQueueItem(context, queuedTrack)
+                    : null,
+                trailing: canManageQueue && !queuedTrack.isCurrent
+                    ? _QueueTrackActions(
+                        palette: palette,
+                        onPlay: () =>
+                            _dispatchPlayQueueItem(context, queuedTrack),
+                        onRemove: () =>
+                            _dispatchRemoveQueueItem(context, queuedTrack),
+                      )
+                    : null,
               );
             },
             childCount: items.length,
@@ -1805,38 +1824,70 @@ class _LocalPreviewBanner extends StatelessWidget {
   }
 }
 
-class _IotOfflineBanner extends StatelessWidget {
-  const _IotOfflineBanner({required this.palette});
+class _IotStatusNotice extends StatelessWidget {
+  const _IotStatusNotice({
+    required this.palette,
+    required this.playbackState,
+  });
 
   final _NPPalette palette;
+  final SpacePlaybackState playbackState;
 
   @override
   Widget build(BuildContext context) {
+    final label = playbackState.iotStatusLabel ?? 'IoT status';
+    final isWarning = playbackState.hasIotWarning;
+    final icon = playbackState.isIotDeviceAssigned == false
+        ? LucideIcons.radioReceiver
+        : playbackState.isIotDeviceOffline
+            ? LucideIcons.wifiOff
+            : LucideIcons.wifi;
+    final color = isWarning ? AppColors.warning : AppColors.success;
+    final message = playbackState.isIotDeviceAssigned == false
+        ? 'No IoT device is assigned to this space. Schedule and AI telemetry may be limited.'
+        : playbackState.isIotDeviceOffline
+            ? 'IoT device is offline. Manual override remains available while CAMS waits for fresh telemetry.'
+            : 'IoT telemetry is online.';
+
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(isWarning ? 14 : 10),
       decoration: BoxDecoration(
         color: palette.overlay,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: palette.border),
+        border: Border.all(
+          color: isWarning ? color.withValues(alpha: 0.42) : palette.border,
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
-            LucideIcons.wifiOff,
-            color: AppColors.warning,
-            size: 18,
-          ),
+          Icon(icon, color: color, size: 18),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
-              'IoT device is offline. Manual override remains available while CAMS waits for fresh telemetry.',
-              style: GoogleFonts.inter(
-                color: palette.textMuted,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                height: 1.35,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: GoogleFonts.inter(
+                    color: palette.textPrimary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                if (isWarning) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    message,
+                    style: GoogleFonts.inter(
+                      color: palette.textMuted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
         ],
@@ -2349,6 +2400,9 @@ class _QueueTrackTile extends StatelessWidget {
     required this.isPlaying,
     this.isPending = false,
     this.meta,
+    this.sourceLabel,
+    this.onTap,
+    this.leading,
     this.trailing,
     required this.palette,
   });
@@ -2357,6 +2411,9 @@ class _QueueTrackTile extends StatelessWidget {
   final bool isPlaying;
   final bool isPending;
   final String? meta;
+  final String? sourceLabel;
+  final VoidCallback? onTap;
+  final Widget? leading;
   final Widget? trailing;
   final _NPPalette palette;
 
@@ -2379,6 +2436,10 @@ class _QueueTrackTile extends StatelessWidget {
       ),
       child: Row(
         children: [
+          if (leading != null) ...[
+            leading!,
+            const SizedBox(width: 8),
+          ],
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: SizedBox(
@@ -2417,15 +2478,34 @@ class _QueueTrackTile extends StatelessWidget {
                 ),
                 if (meta != null && meta!.isNotEmpty) ...[
                   const SizedBox(height: 2),
-                  Text(
-                    meta!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                      color: isPending ? palette.accent : palette.textMuted,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Text(
+                        meta!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.inter(
+                          color:
+                              isPending ? palette.accent : palette.textMuted,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (sourceLabel != null && sourceLabel!.isNotEmpty)
+                        _QueueSourceBadge(
+                          label: sourceLabel!,
+                          palette: palette,
+                        ),
+                    ],
+                  ),
+                ] else if (sourceLabel != null && sourceLabel!.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  _QueueSourceBadge(
+                    label: sourceLabel!,
+                    palette: palette,
                   ),
                 ],
               ],
@@ -2452,58 +2532,79 @@ class _QueueTrackTile extends StatelessWidget {
       ),
     );
 
-    return child;
+    if (onTap == null) return child;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: child,
+    );
+  }
+}
+
+class _QueueDragHandle extends StatelessWidget {
+  const _QueueDragHandle({
+    required this.palette,
+    this.size = 28,
+  });
+
+  final _NPPalette palette;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: 'Drag to reorder',
+      child: Container(
+        width: size,
+        height: size,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: palette.overlay,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: palette.border),
+        ),
+        child: Icon(
+          LucideIcons.gripVertical,
+          size: 17,
+          color: palette.textMuted,
+        ),
+      ),
+    );
   }
 }
 
 class _QueueTrackActions extends StatelessWidget {
   const _QueueTrackActions({
     required this.palette,
-    required this.canMoveUp,
-    required this.canMoveDown,
-    required this.onMoveUp,
-    required this.onMoveDown,
+    this.onPlay,
     required this.onRemove,
-    this.showReorderButtons = true,
+    this.dragHandle,
   });
 
   final _NPPalette palette;
-  final bool canMoveUp;
-  final bool canMoveDown;
-  final VoidCallback? onMoveUp;
-  final VoidCallback? onMoveDown;
+  final VoidCallback? onPlay;
   final VoidCallback onRemove;
-  final bool showReorderButtons;
+  final Widget? dragHandle;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (showReorderButtons) ...[
+        if (onPlay != null)
           IconButton(
-            tooltip: 'Move up',
+            tooltip: 'Play this track',
             constraints: const BoxConstraints.tightFor(width: 28, height: 28),
             padding: EdgeInsets.zero,
-            onPressed: canMoveUp ? onMoveUp : null,
+            onPressed: onPlay,
             icon: Icon(
-              LucideIcons.chevronUp,
+              LucideIcons.playCircle,
               size: 16,
-              color: canMoveUp ? palette.textMuted : palette.border,
+              color: palette.textMuted,
             ),
           ),
-          IconButton(
-            tooltip: 'Move down',
-            constraints: const BoxConstraints.tightFor(width: 28, height: 28),
-            padding: EdgeInsets.zero,
-            onPressed: canMoveDown ? onMoveDown : null,
-            icon: Icon(
-              LucideIcons.chevronDown,
-              size: 16,
-              color: canMoveDown ? palette.textMuted : palette.border,
-            ),
-          ),
-        ],
+        if (dragHandle != null) dragHandle!,
         IconButton(
           tooltip: 'Remove',
           constraints: const BoxConstraints.tightFor(width: 28, height: 28),
@@ -2522,6 +2623,194 @@ class _QueueTrackActions extends StatelessWidget {
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+class _QueueSourceBadge extends StatelessWidget {
+  const _QueueSourceBadge({
+    required this.label,
+    required this.palette,
+  });
+
+  final String label;
+  final _NPPalette palette;
+
+  Color get _color {
+    switch (label.toLowerCase()) {
+      case 'ai':
+        return const Color(0xFF8B5CF6);
+      case 'schedule':
+        return const Color(0xFF16A34A);
+      case 'manager':
+        return const Color(0xFF2563EB);
+      default:
+        return palette.textMuted;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _color;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.24)),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.inter(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _QueueReorderableTrackSliver extends StatefulWidget {
+  const _QueueReorderableTrackSliver({
+    required this.items,
+    required this.palette,
+    required this.onPlay,
+    required this.onRemove,
+    required this.onReorderPendingIds,
+  });
+
+  final List<QueueSheetItem> items;
+  final _NPPalette palette;
+  final ValueChanged<QueueSheetItem> onPlay;
+  final ValueChanged<QueueSheetItem> onRemove;
+  final ValueChanged<List<String>> onReorderPendingIds;
+
+  @override
+  State<_QueueReorderableTrackSliver> createState() =>
+      _QueueReorderableTrackSliverState();
+}
+
+class _QueueReorderableTrackSliverState
+    extends State<_QueueReorderableTrackSliver> {
+  late List<QueueSheetItem> _items;
+
+  @override
+  void initState() {
+    super.initState();
+    _items = List<QueueSheetItem>.of(widget.items);
+  }
+
+  @override
+  void didUpdateWidget(covariant _QueueReorderableTrackSliver oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_signature(oldWidget.items) != _signature(widget.items)) {
+      _items = List<QueueSheetItem>.of(widget.items);
+    }
+  }
+
+  String _signature(List<QueueSheetItem> items) {
+    return items
+        .map(
+          (item) =>
+              '${item.queueItemId ?? item.trackId}:'
+              '${item.queueStatus}:${item.queuePosition}:${item.source}',
+        )
+        .join('|');
+  }
+
+  bool _isPending(QueueSheetItem item) {
+    return item.queueStatus == SpacePlaybackState.queueStatusPending &&
+        item.queueItemId != null &&
+        item.queueItemId!.isNotEmpty;
+  }
+
+  void _handleReorder(int oldIndex, int newIndex) {
+    if (oldIndex < 0 || oldIndex >= _items.length) return;
+    final movedItem = _items[oldIndex];
+    if (!_isPending(movedItem)) return;
+
+    var targetIndex = newIndex;
+    if (targetIndex > oldIndex) targetIndex -= 1;
+    if (targetIndex < 0 || targetIndex >= _items.length) return;
+
+    setState(() {
+      final reordered = List<QueueSheetItem>.of(_items);
+      final item = reordered.removeAt(oldIndex);
+      reordered.insert(targetIndex, item);
+      _items = reordered;
+    });
+
+    final pendingOrderedIds = _items
+        .where(_isPending)
+        .map((item) => item.queueItemId!)
+        .toList(growable: false);
+    widget.onReorderPendingIds(pendingOrderedIds);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      sliver: SliverReorderableList(
+        itemCount: _items.length,
+        onReorder: _handleReorder,
+        proxyDecorator: (child, index, animation) {
+          return Material(
+            color: Colors.transparent,
+            child: ScaleTransition(
+              scale: Tween<double>(begin: 1, end: 1.02).animate(animation),
+              child: child,
+            ),
+          );
+        },
+        itemBuilder: (context, index) {
+          final item = _items[index];
+          final canDrag = _isPending(item);
+          final key = ValueKey(item.queueItemId ?? '${item.trackId}-$index');
+          final tile = _QueueTrackTile(
+            title: item.title,
+            artist: item.artist,
+            artUrl: item.artUrl,
+            isPlaying: item.isCurrent,
+            isPending: item.isPending,
+            meta: item.metaLabel,
+            sourceLabel: item.sourceLabel,
+            palette: widget.palette,
+            onTap: item.isCurrent ? null : () => widget.onPlay(item),
+            leading: canDrag
+                ? ReorderableDragStartListener(
+                    index: index,
+                    child: _QueueDragHandle(
+                      palette: widget.palette,
+                      size: 34,
+                    ),
+                  )
+                : null,
+            trailing: _QueueTrackActions(
+              palette: widget.palette,
+              onPlay: item.isCurrent ? null : () => widget.onPlay(item),
+              onRemove: () => widget.onRemove(item),
+              dragHandle: canDrag
+                  ? ReorderableDragStartListener(
+                      index: index,
+                      child: _QueueDragHandle(palette: widget.palette),
+                    )
+                  : null,
+            ),
+          );
+
+          return KeyedSubtree(
+            key: key,
+            child: canDrag
+                ? ReorderableDelayedDragStartListener(
+                    index: index,
+                    child: tile,
+                  )
+                : tile,
+          );
+        },
+      ),
+    );
+  }
+}
+
 // ============================================================================
 // Manual / Auto Override panel (same behavior as Home)
 // ============================================================================
@@ -2763,216 +3052,621 @@ class _RuntimePill extends StatelessWidget {
   }
 }
 
-class _AiExplainabilityPanel extends StatelessWidget {
-  const _AiExplainabilityPanel({
-    required this.explainability,
-    required this.hasActiveOverride,
+class _AiInsightButton extends StatelessWidget {
+  const _AiInsightButton({
     required this.palette,
+    required this.onTap,
   });
 
-  final SpacePlaybackExplainability? explainability;
-  final bool hasActiveOverride;
   final _NPPalette palette;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final showManualState = hasActiveOverride;
-    final data = explainability;
-    final stats = <MapEntry<String, String>>[];
-
-    if (!showManualState && data != null) {
-      if (data.moodName?.trim().isNotEmpty ?? false) {
-        stats.add(MapEntry('Current Mood', data.moodName!.trim()));
-      }
-      if (data.bpmBandLabel != null) {
-        stats.add(MapEntry('BPM Range', data.bpmBandLabel!));
-      }
-      if (data.bpmTargetLabel != null) {
-        stats.add(MapEntry('Target', data.bpmTargetLabel!));
-      }
-      if (data.aiGenerationMode != null) {
-        stats.add(MapEntry('Mode', data.aiGenerationMode!.displayName));
-      }
-      if (data.fuzzyProfileName?.trim().isNotEmpty ?? false) {
-        stats.add(MapEntry('Profile', data.fuzzyProfileName!.trim()));
-      }
-      if (data.fuzzyProfileTemplate?.trim().isNotEmpty ?? false) {
-        stats.add(MapEntry('Template', data.fuzzyProfileTemplate!.trim()));
-      }
-      if (data.playlistRestrictionLabel?.trim().isNotEmpty ?? false) {
-        stats.add(MapEntry('Playlists', data.playlistRestrictionLabel!.trim()));
-      }
-      if (data.usedMoodOnlyFallback != null) {
-        stats.add(
-          MapEntry(
-            'Fallback',
-            data.usedMoodOnlyFallback!
-                ? 'Mood-only fallback used'
-                : 'BPM-filtered queue retained',
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(999),
+          child: Ink(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: palette.accent.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: palette.accent.withValues(alpha: 0.28)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.auto_awesome_rounded,
+                  color: palette.accent,
+                  size: 16,
+                ),
+                const SizedBox(width: 7),
+                Text(
+                  'AI insight',
+                  style: GoogleFonts.inter(
+                    color: palette.accent,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
           ),
-        );
-      }
-      if (data.moodOnlyCount != null) {
-        stats.add(MapEntry('Mood-only pool', '${data.moodOnlyCount} tracks'));
-      }
-      if (data.bpmFilteredCount != null) {
-        stats.add(
-          MapEntry('BPM-filtered pool', '${data.bpmFilteredCount} tracks'),
-        );
-      }
-    }
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
-      decoration: BoxDecoration(
-        color: palette.card,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: palette.border),
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    );
+  }
+}
+
+class _AiExplainabilitySheet extends StatelessWidget {
+  const _AiExplainabilitySheet({
+    required this.palette,
+    required this.playbackState,
+    required this.fallbackMoodName,
+    required this.controller,
+  });
+
+  final _NPPalette palette;
+  final SpacePlaybackState playbackState;
+  final String? fallbackMoodName;
+  final ScrollController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final data = playbackState.explainability;
+    final moodName = _firstText(data?.moodName, playbackState.moodName,
+        fallbackMoodName);
+    final confidencePercent = _toPercent(data?.confidence);
+    final scoreBreakdown = data?.scoreBreakdown;
+    final signalRows = data?.signalContributions ?? const [];
+    final bpmBandLabel = data?.bpmBandLabel;
+    final bpmTargetLabel = data?.bpmTargetLabel;
+    final ruleName = data?.triggeredRule?.trim();
+    final reason = data?.reason?.trim();
+    final summary = <_AiSummaryChipData>[
+      if (moodName != null)
+        _AiSummaryChipData(
+          label: 'Current Mood',
+          value: moodName,
+          icon: Icons.visibility_rounded,
+        ),
+      if (bpmBandLabel != null)
+        _AiSummaryChipData(
+          label: 'BPM Range',
+          value: bpmBandLabel,
+          icon: Icons.speed_rounded,
+        ),
+      if (bpmTargetLabel != null)
+        _AiSummaryChipData(
+          label: 'Target',
+          value: bpmTargetLabel,
+          icon: Icons.flag_rounded,
+        ),
+      if (ruleName != null && ruleName.isNotEmpty)
+        _AiSummaryChipData(
+          label: 'Context Rule',
+          value: _formatRuleName(ruleName),
+          icon: Icons.rule_rounded,
+        ),
+    ];
+
+    return SafeArea(
+      child: ListView(
+        controller: controller,
+        padding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
         children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: palette.border,
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
+          ),
+          const SizedBox(height: 18),
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: palette.overlay,
+                  color: palette.accent.withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(
-                  showManualState
-                      ? Icons.pause_circle_outline_rounded
-                      : Icons.auto_graph_rounded,
-                  color: showManualState ? palette.textMuted : palette.accent,
+                  Icons.auto_awesome_rounded,
+                  color: palette.accent,
                   size: 20,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      showManualState
-                          ? 'AI explainability paused'
-                          : 'CAMS explainability',
-                      style: GoogleFonts.poppins(
-                        color: palette.textPrimary,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      showManualState
-                          ? 'Manual override is active, so the latest AI rule details are intentionally hidden until Auto Mode resumes.'
-                          : 'Review the fuzzy rule, BPM guidance, and fallback signals behind the current auto-selection.',
-                      style: GoogleFonts.inter(
-                        color: palette.textMuted,
-                        fontSize: 12,
-                        height: 1.35,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  'AI Music Selection',
+                  style: GoogleFonts.poppins(
+                    color: palette.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
+              ),
+              IconButton(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: Icon(Icons.close_rounded, color: palette.textMuted),
+                tooltip: 'Close',
               ),
             ],
           ),
-          if (!showManualState && stats.isNotEmpty) ...[
-            const SizedBox(height: 14),
+          if (summary.isNotEmpty) ...[
+            const SizedBox(height: 18),
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: stats
-                  .map(
-                    (entry) => Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: palette.overlay,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: palette.border),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            entry.key,
-                            style: GoogleFonts.inter(
-                              color: palette.textMuted,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            entry.value,
-                            style: GoogleFonts.inter(
-                              color: palette.textPrimary,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
+              children: summary
+                  .map((item) => _AiSummaryChip(item: item, palette: palette))
                   .toList(),
             ),
           ],
-          if (!showManualState &&
-              data?.triggeredRule?.trim().isNotEmpty == true) ...[
-            const SizedBox(height: 14),
-            Text(
-              'Rule fired',
-              style: GoogleFonts.inter(
-                color: palette.textMuted,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-              ),
+          if (reason != null && reason.isNotEmpty) ...[
+            const SizedBox(height: 18),
+            _AiInfoNotice(
+              palette: palette,
+              icon: Icons.info_outline_rounded,
+              title: 'Reason',
+              message: reason,
             ),
-            const SizedBox(height: 4),
-            Text(
-              data!.triggeredRule!.trim(),
-              style: GoogleFonts.inter(
-                color: palette.textPrimary,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
+          ],
+          if (confidencePercent != null) ...[
+            const SizedBox(height: 22),
+            _AiSectionTitle('Confidence', palette: palette),
+            const SizedBox(height: 10),
+            _AiProgressRow(
+              label: 'Selection confidence',
+              valuePercent: confidencePercent,
+              palette: palette,
+            ),
+          ],
+          if (scoreBreakdown != null && scoreBreakdown.hasAnyData) ...[
+            const SizedBox(height: 24),
+            _AiSectionTitle('Mood score breakdown', palette: palette),
+            const SizedBox(height: 10),
+            if (scoreBreakdown.chillScore != null)
+              _AiProgressRow(
+                label: 'Chill',
+                valuePercent: _scoreToPercent(scoreBreakdown.chillScore),
+                palette: palette,
+              ),
+            if (scoreBreakdown.focusScore != null)
+              _AiProgressRow(
+                label: 'Focus',
+                valuePercent: _scoreToPercent(scoreBreakdown.focusScore),
+                palette: palette,
+              ),
+            if (scoreBreakdown.energeticScore != null)
+              _AiProgressRow(
+                label: 'Energetic',
+                valuePercent: _scoreToPercent(scoreBreakdown.energeticScore),
+                palette: palette,
+              ),
+          ],
+          if (signalRows.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            _AiSectionTitle('Signal contributions', palette: palette),
+            const SizedBox(height: 10),
+            ...signalRows.map(
+              (row) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _AiSignalContributionTile(
+                  contribution: row,
+                  palette: palette,
+                ),
               ),
             ),
           ],
-          if (!showManualState && data?.reason?.trim().isNotEmpty == true) ...[
-            const SizedBox(height: 12),
-            Text(
-              'Reason',
-              style: GoogleFonts.inter(
-                color: palette.textMuted,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-              ),
+          if (data?.usedMoodOnlyFallback == true) ...[
+            const SizedBox(height: 14),
+            _AiInfoNotice(
+              palette: palette,
+              icon: Icons.manage_search_rounded,
+              title: 'Using mood-only selection',
+              message:
+                  'Not enough tracks with BPM metadata matched the selected range.',
             ),
-            const SizedBox(height: 4),
-            Text(
-              data!.reason!.trim(),
-              style: GoogleFonts.inter(
-                color: palette.textPrimary,
-                fontSize: 12,
-                height: 1.35,
-                fontWeight: FontWeight.w500,
-              ),
+          ],
+          if (playbackState.isManualOverride) ...[
+            const SizedBox(height: 14),
+            _AiInfoNotice(
+              palette: palette,
+              icon: Icons.pan_tool_alt_rounded,
+              title: 'Manual Override Active',
+              message:
+                  'Manager-selected music is playing. AI recommendations are paused.',
+              isWarning: true,
             ),
           ],
         ],
       ),
     );
   }
+}
+
+class _AiSummaryChipData {
+  const _AiSummaryChipData({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+}
+
+class _AiSummaryChip extends StatelessWidget {
+  const _AiSummaryChip({
+    required this.item,
+    required this.palette,
+  });
+
+  final _AiSummaryChipData item;
+  final _NPPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+      decoration: BoxDecoration(
+        color: palette.overlay,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: palette.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(item.icon, size: 14, color: palette.accent),
+          const SizedBox(width: 7),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 220),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    color: palette.textMuted,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  item.value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    color: palette.textPrimary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AiSectionTitle extends StatelessWidget {
+  const _AiSectionTitle(this.title, {required this.palette});
+
+  final String title;
+  final _NPPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: GoogleFonts.poppins(
+        color: palette.textPrimary,
+        fontSize: 15,
+        fontWeight: FontWeight.w800,
+      ),
+    );
+  }
+}
+
+class _AiProgressRow extends StatelessWidget {
+  const _AiProgressRow({
+    required this.label,
+    required this.valuePercent,
+    required this.palette,
+  });
+
+  final String label;
+  final int valuePercent;
+  final _NPPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    final bounded = valuePercent.clamp(0, 100).toInt();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: GoogleFonts.inter(
+                    color: palette.textMuted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Text(
+                '$bounded%',
+                style: GoogleFonts.inter(
+                  color: palette.textPrimary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 7),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: bounded / 100,
+              minHeight: 7,
+              backgroundColor: palette.overlay,
+              valueColor: AlwaysStoppedAnimation<Color>(palette.accent),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AiSignalContributionTile extends StatelessWidget {
+  const _AiSignalContributionTile({
+    required this.contribution,
+    required this.palette,
+  });
+
+  final FuzzySignalContribution contribution;
+  final _NPPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    final parsed = _parseSignal(contribution.signal);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: palette.overlay,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: palette.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _prettifySignalName(parsed.key),
+            style: GoogleFonts.inter(
+              color: palette.textPrimary,
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          if (parsed.value != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              parsed.value!,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.inter(
+                color: palette.textMuted,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+          if (contribution.hasAnyDelta) ...[
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                if (contribution.chillDelta != null)
+                  _AiImpactChip(
+                    label: 'Chill',
+                    value: contribution.chillDelta!,
+                    color: const Color(0xFF2563EB),
+                  ),
+                if (contribution.focusDelta != null)
+                  _AiImpactChip(
+                    label: 'Focus',
+                    value: contribution.focusDelta!,
+                    color: const Color(0xFF7C3AED),
+                  ),
+                if (contribution.energeticDelta != null)
+                  _AiImpactChip(
+                    label: 'Energetic',
+                    value: contribution.energeticDelta!,
+                    color: const Color(0xFFEA580C),
+                  ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _AiImpactChip extends StatelessWidget {
+  const _AiImpactChip({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final double value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final formatted = '${value >= 0 ? '+' : ''}${value.toStringAsFixed(2)}';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        '$label $formatted',
+        style: GoogleFonts.inter(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
+class _AiInfoNotice extends StatelessWidget {
+  const _AiInfoNotice({
+    required this.palette,
+    required this.icon,
+    required this.title,
+    required this.message,
+    this.isWarning = false,
+  });
+
+  final _NPPalette palette;
+  final IconData icon;
+  final String title;
+  final String message;
+  final bool isWarning;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isWarning ? const Color(0xFFF59E0B) : palette.accent;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: 0.20)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: color),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.inter(
+                    color: palette.textPrimary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  message,
+                  style: GoogleFonts.inter(
+                    color: palette.textMuted,
+                    fontSize: 12,
+                    height: 1.35,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ParsedSignal {
+  const _ParsedSignal(this.key, this.value);
+
+  final String key;
+  final String? value;
+}
+
+String? _firstText(String? first, String? second, String? third) {
+  for (final value in [first, second, third]) {
+    final trimmed = value?.trim();
+    if (trimmed != null && trimmed.isNotEmpty) return trimmed;
+  }
+  return null;
+}
+
+int? _toPercent(double? value) {
+  if (value == null || value.isNaN) return null;
+  final normalized = value <= 1 ? value * 100 : value;
+  return normalized.round().clamp(0, 100).toInt();
+}
+
+int _scoreToPercent(double? value) => _toPercent(value) ?? 0;
+
+String _formatRuleName(String raw) {
+  final cleaned = raw.trim().replaceFirst(RegExp(r'^RULE_\d+_'), '');
+  if (cleaned.isEmpty) return raw.trim();
+  return cleaned
+      .split('_')
+      .where((part) => part.isNotEmpty)
+      .map((part) =>
+          '${part[0].toUpperCase()}${part.substring(1).toLowerCase()}')
+      .join(' ');
+}
+
+_ParsedSignal _parseSignal(String raw) {
+  final trimmed = raw.trim();
+  final matched = RegExp(r'^([^(]+)\((.*)\)$').firstMatch(trimmed);
+  if (matched == null) return _ParsedSignal(trimmed, null);
+  return _ParsedSignal(
+    matched.group(1)?.trim() ?? trimmed,
+    matched.group(2)?.trim(),
+  );
+}
+
+String _prettifySignalName(String raw) {
+  const mapped = {
+    'crowdPressure': 'Crowd pressure',
+    'ambientNoise': 'Ambient noise',
+    'timeOfDay': 'Time of day',
+    'dayOfWeek': 'Day of week',
+    'businessPhase': 'Business phase',
+  };
+  return mapped[raw] ?? raw;
 }
 
 class _OverrideMoodCTA extends StatelessWidget {

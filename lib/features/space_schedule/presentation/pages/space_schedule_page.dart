@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../cams/domain/entities/space_playback_state.dart';
 import '../../../cams/presentation/bloc/cams_playback_bloc.dart';
 import '../../../cams/presentation/bloc/cams_playback_event.dart';
 import '../../../cams/presentation/bloc/cams_playback_state.dart';
@@ -656,12 +657,8 @@ class _ScheduleSourcePickerView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasTemplates = state.templateSources.isNotEmpty;
-    final isLibrary =
-        state.sourcePickerTab == ScheduleSourceType.library || !hasTemplates;
-    final items = isLibrary
-        ? state.librarySources
-        : state.templateSources.cast<ScheduleSource>();
+    const isLibrary = true;
+    final items = state.librarySources;
 
     return Column(
       children: [
@@ -717,18 +714,6 @@ class _ScheduleSourcePickerView extends StatelessWidget {
                           ScheduleSourceType.library),
                     ),
               ),
-              if (hasTemplates) ...[
-                const SizedBox(width: 10),
-                _SourceFilterChip(
-                  palette: palette,
-                  label: 'Templates',
-                  selected: !isLibrary,
-                  onTap: () => context.read<SpaceScheduleBloc>().add(
-                        const SpaceScheduleSourceTabChanged(
-                            ScheduleSourceType.template),
-                      ),
-                ),
-              ],
             ],
           ),
         ),
@@ -737,7 +722,7 @@ class _ScheduleSourcePickerView extends StatelessWidget {
           child: items.isEmpty
               ? Center(
                   child: Text(
-                    'No schedule sources available yet.',
+                    'No library schedules available yet.',
                     style: GoogleFonts.inter(
                       color: palette.textMuted,
                       fontSize: 14,
@@ -1211,6 +1196,7 @@ class _ScheduleModeControlsState extends State<_ScheduleModeControls> {
       if (runtimeEnabled && playback?.schedulingEndsAtUtc != null)
         'Ends: ${_formatDateTime(playback!.schedulingEndsAtUtc!)}',
     ];
+    final iotStatusLabel = playback?.iotStatusLabel;
 
     return Container(
       width: double.infinity,
@@ -1256,8 +1242,82 @@ class _ScheduleModeControlsState extends State<_ScheduleModeControls> {
                 widget.onRuntimeChanged != null,
             onChanged: widget.onRuntimeChanged,
           ),
+          if (iotStatusLabel != null) ...[
+            Divider(height: 18, color: palette.line),
+            _ScheduleIotStatusRow(
+              palette: palette,
+              playback: playback!,
+            ),
+          ],
         ],
       ),
+    );
+  }
+}
+
+class _ScheduleIotStatusRow extends StatelessWidget {
+  const _ScheduleIotStatusRow({
+    required this.palette,
+    required this.playback,
+  });
+
+  final _SchedulePalette palette;
+  final SpacePlaybackState playback;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = playback.iotStatusLabel ?? 'IoT status';
+    final isWarning = playback.hasIotWarning;
+    final icon = playback.isIotDeviceAssigned == false
+        ? LucideIcons.radioReceiver
+        : playback.isIotDeviceOffline
+            ? LucideIcons.wifiOff
+            : LucideIcons.wifi;
+    final color = isWarning ? AppColors.warning : AppColors.success;
+    final subtitle = playback.isIotDeviceAssigned == false
+        ? 'Assign a device before relying on live telemetry.'
+        : playback.isIotDeviceOffline
+            ? 'Runtime can continue, but telemetry is stale.'
+            : 'Live telemetry is available for scheduling context.';
+
+    return Row(
+      children: [
+        Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.12),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: color, size: 18),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: GoogleFonts.inter(
+                  color: palette.textPrimary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: GoogleFonts.inter(
+                  color: palette.textMuted,
+                  fontSize: 11,
+                  height: 1.3,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

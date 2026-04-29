@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import '../../../../core/enums/override_mode_enum.dart';
 import '../../../../core/enums/ai_generation_mode_enum.dart';
 import '../../../../core/enums/scheduling_slot_origin_enum.dart';
@@ -37,6 +39,7 @@ class SpacePlaybackStateModel extends SpacePlaybackState {
     super.pendingPlaylistId,
     super.pendingOverrideReason,
     super.volumePercent,
+    super.isIotDeviceAssigned,
     super.isIotDeviceOffline,
     super.isMuted,
     super.queueEndBehavior,
@@ -94,6 +97,7 @@ class SpacePlaybackStateModel extends SpacePlaybackState {
       pendingPlaylistId: pendingPlaylistId,
       pendingOverrideReason: _readString(json, 'pendingOverrideReason'),
       volumePercent: _readNum(json, 'volumePercent')?.toInt() ?? 100,
+      isIotDeviceAssigned: _readBool(json, 'isIotDeviceAssigned'),
       isIotDeviceOffline: _readBool(json, 'isIotDeviceOffline') ?? false,
       isMuted: _readBool(json, 'isMuted') ?? false,
       queueEndBehavior: _readNum(json, 'queueEndBehavior')?.toInt() ?? 0,
@@ -153,6 +157,21 @@ class SpacePlaybackStateModel extends SpacePlaybackState {
     return null;
   }
 
+  static dynamic _readFirstValue(Map<String, dynamic> json, List<String> keys) {
+    for (final key in keys) {
+      final value = _readValue(json, key);
+      if (value != null) return value;
+    }
+    return null;
+  }
+
+  static num? _readFirstNum(Map<String, dynamic> json, List<String> keys) {
+    final value = _readFirstValue(json, keys);
+    if (value is num) return value;
+    if (value is String) return num.tryParse(value);
+    return null;
+  }
+
   static SpacePlaybackExplainability? _readExplainability(
     Map<String, dynamic> json,
   ) {
@@ -201,9 +220,110 @@ class SpacePlaybackStateModel extends SpacePlaybackState {
       allowedPlaylistCount:
           _readNum(mergedSource, 'allowedPlaylistCount')?.toInt() ??
               _readNum(mergedSource, 'restrictedPlaylistCount')?.toInt(),
+      confidence: _readFirstNum(
+        mergedSource,
+        const ['fuzzyConfidence', 'fuzzy_confidence', 'confidence'],
+      )?.toDouble(),
+      scoreBreakdown: _readScoreBreakdown(mergedSource),
     );
 
     return explainability.hasAnyData ? explainability : null;
+  }
+
+  static FuzzyScoreBreakdown? _readScoreBreakdown(
+    Map<String, dynamic> json,
+  ) {
+    final raw = _readFirstValue(json, const [
+      'fuzzyScoreBreakdown',
+      'fuzzy_score_breakdown',
+      'scoreBreakdown',
+      'score_breakdown',
+      'fuzzyScoreJson',
+      'fuzzy_score_json',
+    ]);
+    final scoreMap = _coerceMap(raw);
+    final rootSignals = _readSignalContributions(json);
+    if (scoreMap == null) {
+      if (rootSignals.isEmpty) return null;
+      return FuzzyScoreBreakdown(signalContributions: rootSignals);
+    }
+
+    final signals = _readSignalContributions(scoreMap);
+    final breakdown = FuzzyScoreBreakdown(
+      chillScore: _readFirstNum(
+        scoreMap,
+        const ['chillScore', 'chill_score'],
+      )?.toDouble(),
+      focusScore: _readFirstNum(
+        scoreMap,
+        const ['focusScore', 'focus_score'],
+      )?.toDouble(),
+      energeticScore: _readFirstNum(
+        scoreMap,
+        const ['energeticScore', 'energetic_score'],
+      )?.toDouble(),
+      signalContributions: signals.isNotEmpty ? signals : rootSignals,
+    );
+
+    return breakdown.hasAnyData ? breakdown : null;
+  }
+
+  static Map<String, dynamic>? _coerceMap(dynamic value) {
+    if (value is Map) return Map<String, dynamic>.from(value);
+    if (value is String && value.trim().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(value);
+        if (decoded is Map) return Map<String, dynamic>.from(decoded);
+      } catch (_) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  static List<FuzzySignalContribution> _readSignalContributions(
+    Map<String, dynamic> json,
+  ) {
+    final raw = _readFirstValue(json, const [
+      'signalContributions',
+      'signal_contributions',
+      'contributions',
+      'signals',
+    ]);
+    if (raw is! List) return const [];
+
+    final items = <FuzzySignalContribution>[];
+    for (var index = 0; index < raw.length; index++) {
+      final item = raw[index];
+      if (item is String && item.trim().isNotEmpty) {
+        items.add(FuzzySignalContribution(signal: item.trim()));
+        continue;
+      }
+      if (item is! Map) continue;
+      final map = Map<String, dynamic>.from(item);
+      final signal = _readString(map, 'signal') ??
+          _readString(map, 'name') ??
+          _readString(map, 'key') ??
+          'Signal ${index + 1}';
+      items.add(
+        FuzzySignalContribution(
+          signal: signal,
+          chillDelta: _readFirstNum(
+            map,
+            const ['chillDelta', 'chill_delta'],
+          )?.toDouble(),
+          focusDelta: _readFirstNum(
+            map,
+            const ['focusDelta', 'focus_delta'],
+          )?.toDouble(),
+          energeticDelta: _readFirstNum(
+            map,
+            const ['energeticDelta', 'energetic_delta'],
+          )?.toDouble(),
+        ),
+      );
+    }
+    return List<FuzzySignalContribution>.unmodifiable(items);
   }
 
   static Map<String, dynamic>? _readExplainabilityPayload(
@@ -256,6 +376,19 @@ class SpacePlaybackStateModel extends SpacePlaybackState {
       'isRestricted',
       'restricted',
       'allowedPlaylistCount',
+      'fuzzyConfidence',
+      'fuzzy_confidence',
+      'confidence',
+      'fuzzyScoreBreakdown',
+      'fuzzy_score_breakdown',
+      'scoreBreakdown',
+      'score_breakdown',
+      'fuzzyScoreJson',
+      'fuzzy_score_json',
+      'signalContributions',
+      'signal_contributions',
+      'contributions',
+      'signals',
     ];
     for (final key in keys) {
       if (_readValue(json, key) != null) {

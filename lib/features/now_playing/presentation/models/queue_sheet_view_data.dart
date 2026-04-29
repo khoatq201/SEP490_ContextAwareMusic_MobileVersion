@@ -22,6 +22,7 @@ class QueueSheetItem {
     this.artUrl,
     this.queuePosition,
     this.queueStatus,
+    this.source,
     this.isPending = false,
     this.isHistoryOnly = false,
     this.metaLabel,
@@ -36,6 +37,7 @@ class QueueSheetItem {
   final int listIndex;
   final int? queuePosition;
   final int? queueStatus;
+  final int? source;
   final bool isPending;
   final bool isHistoryOnly;
   final String? metaLabel;
@@ -45,6 +47,21 @@ class QueueSheetItem {
   bool get isCurrent => section == QueueSheetSectionKind.current;
 
   bool get isUpNext => section == QueueSheetSectionKind.upNext;
+
+  String? get sourceLabel {
+    switch (source) {
+      case 0:
+        return 'AI';
+      case 1:
+        return 'Manager';
+      case 2:
+        return 'Schedule';
+      case null:
+        return null;
+      default:
+        return 'Unknown';
+    }
+  }
 }
 
 class QueueSheetViewData {
@@ -151,6 +168,7 @@ class QueueSheetViewData {
           listIndex: index,
           queuePosition: item.position,
           queueStatus: item.queueStatus,
+          source: item.source,
           isPending: isPending,
           isHistoryOnly: false,
           metaLabel: _buildCamsMetaLabel(

@@ -20,6 +20,8 @@ class SpacePlaybackExplainability extends Equatable {
   final String? fuzzyProfileTemplate;
   final bool? restrictedToAllowedPlaylists;
   final int? allowedPlaylistCount;
+  final double? confidence;
+  final FuzzyScoreBreakdown? scoreBreakdown;
 
   const SpacePlaybackExplainability({
     this.triggeredRule,
@@ -36,9 +38,14 @@ class SpacePlaybackExplainability extends Equatable {
     this.fuzzyProfileTemplate,
     this.restrictedToAllowedPlaylists,
     this.allowedPlaylistCount,
+    this.confidence,
+    this.scoreBreakdown,
   });
 
   bool get hasBpmBand => recommendedBpmMin != null && recommendedBpmMax != null;
+
+  List<FuzzySignalContribution> get signalContributions =>
+      scoreBreakdown?.signalContributions ?? const [];
 
   bool get hasAnyData =>
       (triggeredRule?.trim().isNotEmpty ?? false) ||
@@ -54,7 +61,10 @@ class SpacePlaybackExplainability extends Equatable {
       (fuzzyProfileName?.trim().isNotEmpty ?? false) ||
       (fuzzyProfileTemplate?.trim().isNotEmpty ?? false) ||
       restrictedToAllowedPlaylists != null ||
-      allowedPlaylistCount != null;
+      allowedPlaylistCount != null ||
+      confidence != null ||
+      scoreBreakdown != null ||
+      signalContributions.isNotEmpty;
 
   String? get bpmBandLabel {
     if (hasBpmBand) {
@@ -101,6 +111,61 @@ class SpacePlaybackExplainability extends Equatable {
         fuzzyProfileTemplate,
         restrictedToAllowedPlaylists,
         allowedPlaylistCount,
+        confidence,
+        scoreBreakdown,
+      ];
+}
+
+class FuzzyScoreBreakdown extends Equatable {
+  final double? chillScore;
+  final double? focusScore;
+  final double? energeticScore;
+  final List<FuzzySignalContribution> signalContributions;
+
+  const FuzzyScoreBreakdown({
+    this.chillScore,
+    this.focusScore,
+    this.energeticScore,
+    this.signalContributions = const [],
+  });
+
+  bool get hasAnyData =>
+      chillScore != null ||
+      focusScore != null ||
+      energeticScore != null ||
+      signalContributions.isNotEmpty;
+
+  @override
+  List<Object?> get props => [
+        chillScore,
+        focusScore,
+        energeticScore,
+        signalContributions,
+      ];
+}
+
+class FuzzySignalContribution extends Equatable {
+  final String signal;
+  final double? chillDelta;
+  final double? focusDelta;
+  final double? energeticDelta;
+
+  const FuzzySignalContribution({
+    required this.signal,
+    this.chillDelta,
+    this.focusDelta,
+    this.energeticDelta,
+  });
+
+  bool get hasAnyDelta =>
+      chillDelta != null || focusDelta != null || energeticDelta != null;
+
+  @override
+  List<Object?> get props => [
+        signal,
+        chillDelta,
+        focusDelta,
+        energeticDelta,
       ];
 }
 
@@ -161,6 +226,7 @@ class SpacePlaybackState extends Equatable {
 
   /// Audio mix / end behavior.
   final int volumePercent;
+  final bool? isIotDeviceAssigned;
   final bool isIotDeviceOffline;
   final bool isMuted;
   final int queueEndBehavior;
@@ -200,6 +266,7 @@ class SpacePlaybackState extends Equatable {
     this.pendingPlaylistId,
     this.pendingOverrideReason,
     this.volumePercent = 100,
+    this.isIotDeviceAssigned,
     this.isIotDeviceOffline = false,
     this.isMuted = false,
     this.queueEndBehavior = 0,
@@ -330,6 +397,16 @@ class SpacePlaybackState extends Equatable {
   String? get currentDisplayName =>
       effectiveTrackName ?? moodName ?? currentPlaylistName;
 
+  String? get iotStatusLabel {
+    if (isIotDeviceAssigned == false) return 'IoT Unassigned';
+    if (isIotDeviceOffline) return 'IoT Offline';
+    if (isIotDeviceAssigned == true) return 'IoT Online';
+    return null;
+  }
+
+  bool get hasIotWarning =>
+      isIotDeviceAssigned == false || isIotDeviceOffline;
+
   double get effectiveSeekOffset {
     if (isPaused) {
       final pausedOffset =
@@ -446,6 +523,7 @@ class SpacePlaybackState extends Equatable {
     String? pendingPlaylistId,
     String? pendingOverrideReason,
     int? volumePercent,
+    bool? isIotDeviceAssigned,
     bool? isIotDeviceOffline,
     bool? isMuted,
     int? queueEndBehavior,
@@ -476,6 +554,7 @@ class SpacePlaybackState extends Equatable {
     bool clearPendingQueueItemId = false,
     bool clearPendingPlaylistId = false,
     bool clearPendingOverrideReason = false,
+    bool clearIotDeviceAssigned = false,
     bool clearExplainability = false,
   }) {
     return SpacePlaybackState(
@@ -549,6 +628,9 @@ class SpacePlaybackState extends Equatable {
           ? null
           : (pendingOverrideReason ?? this.pendingOverrideReason),
       volumePercent: volumePercent ?? this.volumePercent,
+      isIotDeviceAssigned: clearIotDeviceAssigned
+          ? null
+          : (isIotDeviceAssigned ?? this.isIotDeviceAssigned),
       isIotDeviceOffline: isIotDeviceOffline ?? this.isIotDeviceOffline,
       isMuted: isMuted ?? this.isMuted,
       queueEndBehavior: queueEndBehavior ?? this.queueEndBehavior,
@@ -590,6 +672,7 @@ class SpacePlaybackState extends Equatable {
         pendingPlaylistId,
         pendingOverrideReason,
         volumePercent,
+        isIotDeviceAssigned,
         isIotDeviceOffline,
         isMuted,
         queueEndBehavior,

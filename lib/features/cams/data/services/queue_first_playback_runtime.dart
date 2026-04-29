@@ -787,6 +787,7 @@ class QueueFirstPlaybackRuntime {
       seekOffsetSeconds:
           incoming.seekOffsetSeconds ?? current.seekOffsetSeconds,
       volumePercent: incoming.volumePercent,
+      isIotDeviceAssigned: incoming.isIotDeviceAssigned,
       isIotDeviceOffline: incoming.isIotDeviceOffline,
       isMuted: incoming.isMuted,
       queueEndBehavior: incoming.queueEndBehavior,
@@ -868,6 +869,9 @@ class QueueFirstPlaybackRuntime {
       playbackState.seekOffsetSeconds?.toStringAsFixed(3) ?? '',
       playbackState.pausePositionSeconds?.toString() ?? '',
       playbackState.volumePercent.toString(),
+      playbackState.isIotDeviceAssigned == null
+          ? ''
+          : (playbackState.isIotDeviceAssigned! ? '1' : '0'),
       playbackState.isIotDeviceOffline ? '1' : '0',
       playbackState.isMuted ? '1' : '0',
       playbackState.queueEndBehavior.toString(),

@@ -30,15 +30,23 @@ class _BrandScheduleEditorSheetState extends State<BrandScheduleEditorSheet> {
   var _isSaving = false;
   String? _errorMessage;
   String? _selectedSourceId;
-  List<ScheduleSource> _sources = const [];
+  var _selectedType = ScheduleSourceType.template;
+  List<ScheduleSource> _templateSources = const [];
+  List<ScheduleSource> _librarySources = const [];
+
+  List<ScheduleSource> get _visibleSources =>
+      _selectedType == ScheduleSourceType.template
+          ? _templateSources
+          : _librarySources;
 
   ScheduleSource? get _selectedSource {
+    final sources = _visibleSources;
     final selectedId = _selectedSourceId;
-    if (selectedId == null) return _sources.isEmpty ? null : _sources.first;
-    for (final source in _sources) {
+    if (selectedId == null) return sources.isEmpty ? null : sources.first;
+    for (final source in sources) {
       if (source.id == selectedId) return source;
     }
-    return _sources.isEmpty ? null : _sources.first;
+    return sources.isEmpty ? null : sources.first;
   }
 
   @override
@@ -54,14 +62,17 @@ class _BrandScheduleEditorSheetState extends State<BrandScheduleEditorSheet> {
     });
 
     try {
-      final sources = await widget.remoteDataSource.getBrandLibrary(
-        widget.brandId,
-      );
+      final results = await Future.wait([
+        widget.remoteDataSource.getBrandTemplates(widget.brandId),
+        widget.remoteDataSource.getBrandLibrary(widget.brandId),
+      ]);
       if (!mounted) return;
       setState(() {
-        _sources = sources;
-        _selectedSourceId = _resolveSelectedSourceId(sources);
+        _templateSources = results[0];
+        _librarySources = results[1];
+        _selectedSourceId = _resolveSelectedSourceId(_visibleSources);
         _isLoading = false;
+        _isSaving = false;
       });
     } catch (error) {
       if (!mounted) return;
@@ -84,17 +95,24 @@ class _BrandScheduleEditorSheetState extends State<BrandScheduleEditorSheet> {
   Future<void> _createSource() async {
     final payload = await showDialog<ScheduleSourceFormPayload>(
       context: context,
-      builder: (_) => const ScheduleSourceFormDialog(
+      builder: (_) => ScheduleSourceFormDialog(
         title: 'Create brand schedule',
+        initialSourceType: _selectedType,
+        showSourceType: true,
       ),
     );
     if (!mounted || payload == null) return;
 
+    setState(() {
+      _selectedType = payload.sourceType;
+      _selectedSourceId = null;
+    });
     await _runMutation(
       () => widget.remoteDataSource.createBrandSource(
         title: payload.title,
         subtitle: payload.subtitle,
         description: payload.description,
+        isTemplate: payload.sourceType == ScheduleSourceType.template,
       ),
     );
   }
@@ -229,6 +247,8 @@ class _BrandScheduleEditorSheetState extends State<BrandScheduleEditorSheet> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final selectedSource = _selectedSource;
+    final visibleSources = _visibleSources;
+    final isTemplateTab = _selectedType == ScheduleSourceType.template;
 
     return SafeArea(
       top: false,
@@ -269,7 +289,7 @@ class _BrandScheduleEditorSheetState extends State<BrandScheduleEditorSheet> {
                           ),
                           SizedBox(height: 4),
                           Text(
-                            'Sources used by Strict Sync stores.',
+                            'Manage templates and reusable library schedules.',
                             style: TextStyle(fontSize: 13),
                           ),
                         ],
@@ -303,19 +323,54 @@ class _BrandScheduleEditorSheetState extends State<BrandScheduleEditorSheet> {
                           FilledButton.icon(
                             onPressed: _isSaving ? null : _createSource,
                             icon: const Icon(Icons.add_rounded),
-                            label: const Text('Create brand schedule'),
+                            label: Text(
+                              isTemplateTab
+                                  ? 'Create template'
+                                  : 'Create library schedule',
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          SegmentedButton<ScheduleSourceType>(
+                            segments: const [
+                              ButtonSegment(
+                                value: ScheduleSourceType.template,
+                                label: Text('Templates'),
+                                icon: Icon(Icons.library_music_outlined),
+                              ),
+                              ButtonSegment(
+                                value: ScheduleSourceType.library,
+                                label: Text('Library'),
+                                icon: Icon(Icons.folder_copy_outlined),
+                              ),
+                            ],
+                            selected: {_selectedType},
+                            onSelectionChanged: _isSaving
+                                ? null
+                                : (selection) {
+                                    setState(() {
+                                      _selectedType = selection.single;
+                                      _selectedSourceId =
+                                          _resolveSelectedSourceId(
+                                        _visibleSources,
+                                      );
+                                    });
+                                  },
                           ),
                           const SizedBox(height: 14),
-                          if (_sources.isEmpty)
-                            const _EmptyBrandScheduleState()
+                          if (visibleSources.isEmpty)
+                            _EmptyBrandScheduleState(
+                              sourceType: _selectedType,
+                            )
                           else ...[
                             Wrap(
                               spacing: 8,
                               runSpacing: 8,
-                              children: _sources
+                              children: visibleSources
                                   .map(
                                     (source) => ChoiceChip(
-                                      label: Text(source.title),
+                                      label: Text(
+                                        '${source.title} (${_sourceTypeLabel(source.type)})',
+                                      ),
                                       selected: source.id == selectedSource?.id,
                                       onSelected: (_) => setState(
                                         () => _selectedSourceId = source.id,
@@ -399,6 +454,10 @@ class _BrandSourcePanel extends StatelessWidget {
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
                         ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: _SourceTypeBadge(type: source.type),
                       ),
                       if (source.subtitle.trim().isNotEmpty)
                         Padding(
@@ -502,14 +561,46 @@ class _InlineError extends StatelessWidget {
 }
 
 class _EmptyBrandScheduleState extends StatelessWidget {
-  const _EmptyBrandScheduleState();
+  const _EmptyBrandScheduleState({required this.sourceType});
+
+  final ScheduleSourceType sourceType;
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 36),
+    final noun =
+        sourceType == ScheduleSourceType.template ? 'templates' : 'library';
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 36),
       child: Center(
-        child: Text('No brand schedules yet.'),
+        child: Text('No brand $noun schedules yet.'),
+      ),
+    );
+  }
+}
+
+class _SourceTypeBadge extends StatelessWidget {
+  const _SourceTypeBadge({required this.type});
+
+  final ScheduleSourceType type;
+
+  @override
+  Widget build(BuildContext context) {
+    final isTemplate = type == ScheduleSourceType.template;
+    final color = isTemplate ? AppColors.primaryCyan : AppColors.primaryOrange;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.34)),
+      ),
+      child: Text(
+        _sourceTypeLabel(type),
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+        ),
       ),
     );
   }
@@ -528,4 +619,8 @@ String _daysLabel(List<int> days) {
   if (days.length == 7) return 'Every day';
   final normalized = days.where((day) => day >= 0 && day <= 6).toList()..sort();
   return normalized.map((day) => _shortDayLabels[day]).join(', ');
+}
+
+String _sourceTypeLabel(ScheduleSourceType type) {
+  return type == ScheduleSourceType.template ? 'Template' : 'Library';
 }

@@ -41,7 +41,7 @@ void main() {
       expect(find.text('Create new'), findsOneWidget);
     });
 
-    testWidgets('switches between library and templates in source picker',
+    testWidgets('source picker applies library schedules only',
         (tester) async {
       final bloc = buildSpaceScheduleBloc();
       addTearDown(() => closeBloc(bloc));
@@ -71,11 +71,8 @@ void main() {
       await tester.pumpAndSettle(const Duration(milliseconds: 900));
 
       expect(find.text('Ready-made Lunch Rush'), findsOneWidget);
-
-      await tester.tap(find.text('Templates'));
-      await tester.pumpAndSettle(const Duration(milliseconds: 400));
-
-      expect(find.text('Feelgood Restaurant'), findsOneWidget);
+      expect(find.text('Templates'), findsNothing);
+      expect(find.text('Feelgood Restaurant'), findsNothing);
     });
 
     testWidgets('adds a slot from the editor and renders it on the timeline',

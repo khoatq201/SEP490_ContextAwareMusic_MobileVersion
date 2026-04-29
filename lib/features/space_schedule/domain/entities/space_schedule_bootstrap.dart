@@ -7,7 +7,7 @@ import 'space_schedule.dart';
 class SpaceScheduleBootstrap extends Equatable {
   final SpaceSchedule? draftSchedule;
   final List<ScheduleSource> librarySources;
-  final List<ScheduleTemplate> templateSources;
+  final List<ScheduleSource> templateSources;
   final List<ScheduleMusicItem> musicCatalog;
 
   const SpaceScheduleBootstrap({

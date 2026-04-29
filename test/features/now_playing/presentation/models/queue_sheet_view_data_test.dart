@@ -310,6 +310,53 @@ void main() {
       );
     });
 
+    test('maps CAMS queue item sources to display labels', () {
+      const playerState = ps.PlayerState();
+      const camsState = CamsPlaybackState(
+        playbackState: SpacePlaybackState(
+          spaceId: 'space-1',
+          currentQueueItemId: 'queue-manager',
+          spaceQueueItems: [
+            SpaceQueueStateItem(
+              queueItemId: 'queue-ai',
+              trackId: 'track-ai',
+              trackName: 'AI Track',
+              position: 1,
+              queueStatus: SpacePlaybackState.queueStatusPlayed,
+              source: 0,
+            ),
+            SpaceQueueStateItem(
+              queueItemId: 'queue-manager',
+              trackId: 'track-manager',
+              trackName: 'Manager Track',
+              position: 2,
+              queueStatus: SpacePlaybackState.queueStatusPlaying,
+              source: 1,
+            ),
+            SpaceQueueStateItem(
+              queueItemId: 'queue-schedule',
+              trackId: 'track-schedule',
+              trackName: 'Schedule Track',
+              position: 3,
+              queueStatus: SpacePlaybackState.queueStatusPending,
+              source: 2,
+            ),
+          ],
+        ),
+      );
+
+      final viewData = QueueSheetViewData.resolve(
+        playerState: playerState,
+        camsState: camsState,
+      );
+
+      expect(viewData.items.map((item) => item.sourceLabel).toList(), [
+        'AI',
+        'Manager',
+        'Schedule',
+      ]);
+    });
+
     test('exposes pending label even when pending item is not in queue list',
         () {
       const playerState = ps.PlayerState();

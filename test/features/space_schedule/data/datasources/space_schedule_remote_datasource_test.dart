@@ -70,7 +70,8 @@ void main() {
       expect(result.draftSchedule?.slots.single.musicId, 'playlist-1');
       expect(result.draftSchedule?.slots.single.daysOfWeek, [0, 1]);
       expect(result.librarySources.single.id, 'library-1');
-      expect(result.templateSources, isEmpty);
+      expect(result.templateSources.single.id, 'template-1');
+      expect(result.templateSources.single.type.name, 'template');
       expect(result.musicCatalog.single.title, 'Lunch Mix');
     });
 
@@ -152,6 +153,13 @@ void main() {
       expect(adapter.lastPath, '/api/cms/schedule/brands/brand-1/library');
       expect(sources.single.title, 'Brand dayparts');
 
+      adapter.responsePayload = _brandTemplatesPayload();
+      final templates = await dataSource.getBrandTemplates('brand-1');
+      expect(adapter.lastMethod, 'GET');
+      expect(adapter.lastPath, '/api/cms/schedule/brands/brand-1/templates');
+      expect(templates.single.title, 'Strict Sync dayparts');
+      expect(templates.single.type.name, 'template');
+
       adapter.responsePayload = _successPayload('source-1');
       await dataSource.createBrandSource(
         title: 'Brand dayparts',
@@ -163,6 +171,19 @@ void main() {
         'title': 'Brand dayparts',
         'subtitle': 'Required schedule',
         'isTemplate': false,
+      });
+
+      await dataSource.createBrandSource(
+        title: 'Strict Sync dayparts',
+        subtitle: 'Brand template',
+        isTemplate: true,
+      );
+      expect(adapter.lastMethod, 'POST');
+      expect(adapter.lastPath, '/api/cms/schedule/brands/sources');
+      expect(adapter.lastBody, {
+        'title': 'Strict Sync dayparts',
+        'subtitle': 'Brand template',
+        'isTemplate': true,
       });
 
       await dataSource.updateBrandSource(
@@ -301,6 +322,39 @@ Map<String, dynamic> _brandLibraryPayload() {
         'type': 'library',
         'schedule': schedule,
         'isUserCreated': true,
+      },
+    ],
+  };
+}
+
+Map<String, dynamic> _brandTemplatesPayload() {
+  final schedule = {
+    'id': 'schedule-template-1',
+    'name': 'Strict Sync dayparts',
+    'spaceId': null,
+    'enabled': true,
+    'updatedAt': '2026-04-17T08:00:00Z',
+    'slots': [
+      {
+        'id': 'slot-template-1',
+        'daysOfWeek': [0, 1],
+        'startTime': '09:00',
+        'endTime': '12:00',
+        'playlistId': 'playlist-1',
+      },
+    ],
+  };
+
+  return {
+    'isSuccess': true,
+    'data': [
+      {
+        'id': 'template-source-1',
+        'title': 'Strict Sync dayparts',
+        'subtitle': 'Brand template',
+        'type': 'template',
+        'schedule': schedule,
+        'isUserCreated': false,
       },
     ],
   };

@@ -578,6 +578,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
       pendingPlaylistId: null,
       pendingOverrideReason: null,
       volumePercent: currentPlayback?.volumePercent ?? 100,
+      isIotDeviceAssigned: currentPlayback?.isIotDeviceAssigned,
       isIotDeviceOffline: currentPlayback?.isIotDeviceOffline ?? false,
       isMuted: currentPlayback?.isMuted ?? false,
       queueEndBehavior: currentPlayback?.queueEndBehavior ?? 0,
