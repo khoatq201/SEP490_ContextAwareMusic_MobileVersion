@@ -19,6 +19,7 @@ import '../../../../core/player/space_info.dart';
 import '../../../../core/presentation/app_feedback.dart';
 import '../../../../core/presentation/playback_mood_label.dart';
 import '../../../../core/widgets/app_feedback_presenter.dart';
+import '../../../../core/widgets/cams_skeleton.dart';
 import '../../../../features/cams/data/models/override_response_model.dart';
 import '../../../../features/cams/domain/entities/space_playback_state.dart';
 import '../../../../features/cams/presentation/bloc/cams_playback_bloc.dart';
@@ -384,6 +385,13 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
     final showAiInsightButton =
         playbackState?.explainability?.hasAnyData == true ||
             playbackState?.isManualOverride == true;
+
+    if (isPlayback && _isCamsPlaybackLoading(camsState) && !hasPlayableTrack) {
+      return _NowPlayingSkeleton(
+        palette: palette,
+        showTopBar: widget.showTopBar,
+      );
+    }
 
     final spaceName =
         spaceState.space?.name ?? playerState.activeSpaceName ?? 'No Space';
@@ -901,6 +909,89 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
           ),
         ),
       ),
+    );
+  }
+}
+
+class _NowPlayingSkeleton extends StatelessWidget {
+  const _NowPlayingSkeleton({
+    required this.palette,
+    required this.showTopBar,
+  });
+
+  final _NPPalette palette;
+  final bool showTopBar;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        if (showTopBar)
+          const Padding(
+            padding: EdgeInsets.fromLTRB(20, 8, 20, 12),
+            child: Row(
+              children: [
+                CamsSkeletonCircle(size: 36),
+                Spacer(),
+                CamsSkeletonLine(width: 120, height: 14),
+                Spacer(),
+                CamsSkeletonCircle(size: 36),
+              ],
+            ),
+          ),
+        const Expanded(
+          child: SingleChildScrollView(
+            physics: NeverScrollableScrollPhysics(),
+            padding: EdgeInsets.fromLTRB(24, 8, 24, 100),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(child: CamsSkeletonCircle(size: 280)),
+                SizedBox(height: 28),
+                CamsSkeletonLine(width: 240, height: 24),
+                SizedBox(height: 10),
+                CamsSkeletonLine(width: 140, height: 14),
+                SizedBox(height: 28),
+                CamsSkeletonLine(height: 8),
+                SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    CamsSkeletonCircle(size: 36),
+                    CamsSkeletonCircle(size: 44),
+                    CamsSkeletonCircle(size: 64),
+                    CamsSkeletonCircle(size: 44),
+                    CamsSkeletonCircle(size: 36),
+                  ],
+                ),
+                SizedBox(height: 28),
+                CamsSkeletonBox(height: 72, radius: 18),
+                SizedBox(height: 16),
+                CamsSkeletonList(
+                  itemCount: 3,
+                  padding: EdgeInsets.zero,
+                  showTrailing: true,
+                ),
+              ],
+            ),
+          ),
+        ),
+        Container(
+          height: 72,
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          decoration: BoxDecoration(
+            color: palette.card,
+            border: Border(top: BorderSide(color: palette.border)),
+          ),
+          child: const Row(
+            children: [
+              Expanded(child: CamsSkeletonLine(height: 14)),
+              SizedBox(width: 16),
+              CamsSkeletonCircle(size: 40),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -2461,7 +2552,7 @@ class _QueueTrackTile extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.poppins(
                     color: isPlaying ? palette.accent : palette.textPrimary,
@@ -2488,8 +2579,7 @@ class _QueueTrackTile extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.inter(
-                          color:
-                              isPending ? palette.accent : palette.textMuted,
+                          color: isPending ? palette.accent : palette.textMuted,
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                         ),
@@ -2545,19 +2635,17 @@ class _QueueTrackTile extends StatelessWidget {
 class _QueueDragHandle extends StatelessWidget {
   const _QueueDragHandle({
     required this.palette,
-    this.size = 28,
   });
 
   final _NPPalette palette;
-  final double size;
 
   @override
   Widget build(BuildContext context) {
     return Tooltip(
       message: 'Drag to reorder',
       child: Container(
-        width: size,
-        height: size,
+        width: 28,
+        height: 28,
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: palette.overlay,
@@ -2579,13 +2667,11 @@ class _QueueTrackActions extends StatelessWidget {
     required this.palette,
     this.onPlay,
     required this.onRemove,
-    this.dragHandle,
   });
 
   final _NPPalette palette;
   final VoidCallback? onPlay;
   final VoidCallback onRemove;
-  final Widget? dragHandle;
 
   @override
   Widget build(BuildContext context) {
@@ -2604,7 +2690,6 @@ class _QueueTrackActions extends StatelessWidget {
               color: palette.textMuted,
             ),
           ),
-        if (dragHandle != null) dragHandle!,
         IconButton(
           tooltip: 'Remove',
           constraints: const BoxConstraints.tightFor(width: 28, height: 28),
@@ -2690,6 +2775,8 @@ class _QueueReorderableTrackSliver extends StatefulWidget {
 class _QueueReorderableTrackSliverState
     extends State<_QueueReorderableTrackSliver> {
   late List<QueueSheetItem> _items;
+  bool _isReordering = false;
+  List<QueueSheetItem>? _deferredItems;
 
   @override
   void initState() {
@@ -2701,15 +2788,19 @@ class _QueueReorderableTrackSliverState
   void didUpdateWidget(covariant _QueueReorderableTrackSliver oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (_signature(oldWidget.items) != _signature(widget.items)) {
-      _items = List<QueueSheetItem>.of(widget.items);
+      final nextItems = List<QueueSheetItem>.of(widget.items);
+      if (_isReordering) {
+        _deferredItems = nextItems;
+      } else {
+        _items = nextItems;
+      }
     }
   }
 
   String _signature(List<QueueSheetItem> items) {
     return items
         .map(
-          (item) =>
-              '${item.queueItemId ?? item.trackId}:'
+          (item) => '${item.queueItemId ?? item.trackId}:'
               '${item.queueStatus}:${item.queuePosition}:${item.source}',
         )
         .join('|');
@@ -2744,6 +2835,25 @@ class _QueueReorderableTrackSliverState
     widget.onReorderPendingIds(pendingOrderedIds);
   }
 
+  void _handleReorderStart(int index) {
+    _isReordering = true;
+    _deferredItems = null;
+  }
+
+  void _handleReorderEnd(int index) {
+    _isReordering = false;
+    final deferredItems = _deferredItems;
+    _deferredItems = null;
+    if (deferredItems == null || !mounted) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _isReordering) return;
+      setState(() {
+        _items = deferredItems;
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return SliverPadding(
@@ -2751,6 +2861,8 @@ class _QueueReorderableTrackSliverState
       sliver: SliverReorderableList(
         itemCount: _items.length,
         onReorder: _handleReorder,
+        onReorderStart: _handleReorderStart,
+        onReorderEnd: _handleReorderEnd,
         proxyDecorator: (child, index, animation) {
           return Material(
             color: Colors.transparent,
@@ -2777,22 +2889,13 @@ class _QueueReorderableTrackSliverState
             leading: canDrag
                 ? ReorderableDragStartListener(
                     index: index,
-                    child: _QueueDragHandle(
-                      palette: widget.palette,
-                      size: 34,
-                    ),
+                    child: _QueueDragHandle(palette: widget.palette),
                   )
                 : null,
             trailing: _QueueTrackActions(
               palette: widget.palette,
               onPlay: item.isCurrent ? null : () => widget.onPlay(item),
               onRemove: () => widget.onRemove(item),
-              dragHandle: canDrag
-                  ? ReorderableDragStartListener(
-                      index: index,
-                      child: _QueueDragHandle(palette: widget.palette),
-                    )
-                  : null,
             ),
           );
 
@@ -3119,8 +3222,8 @@ class _AiExplainabilitySheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final data = playbackState.explainability;
-    final moodName = _firstText(data?.moodName, playbackState.moodName,
-        fallbackMoodName);
+    final moodName =
+        _firstText(data?.moodName, playbackState.moodName, fallbackMoodName);
     final confidencePercent = _toPercent(data?.confidence);
     final scoreBreakdown = data?.scoreBreakdown;
     final signalRows = data?.signalContributions ?? const [];

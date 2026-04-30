@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_dimensions.dart';
 import '../../enums/playback_command_enum.dart';
+import '../../theme/cams_theme_tokens.dart';
 import '../../../features/cams/presentation/bloc/cams_playback_bloc.dart';
 import '../../../features/cams/presentation/bloc/cams_playback_event.dart';
 import '../../../features/cams/presentation/bloc/cams_playback_state.dart';
@@ -25,6 +26,7 @@ class MiniPlayerWidget extends StatelessWidget {
 
         final camsState = context.watch<CamsPlaybackBloc>().state;
         final isDark = Theme.of(context).brightness == Brightness.dark;
+        final tokens = context.camsTokens;
         final track = state.currentTrack!;
         final colorScheme = Theme.of(context).colorScheme;
         final useRemoteControls =
@@ -46,11 +48,11 @@ class MiniPlayerWidget extends StatelessWidget {
               vertical: AppDimensions.spacingXs,
             ),
             decoration: BoxDecoration(
-              color: isDark ? AppColors.surfaceDarkElevated : Colors.white,
+              color: tokens.bgElevated,
               borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.08),
+                  color: tokens.shadow.withValues(alpha: isDark ? 0.55 : 1),
                   blurRadius: 8,
                   offset: const Offset(0, -1),
                 ),

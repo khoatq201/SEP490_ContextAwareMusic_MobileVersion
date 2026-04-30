@@ -16,6 +16,7 @@ import '../../../../core/error/exceptions.dart';
 import '../../../../core/player/player_bloc.dart';
 import '../../../../core/session/session_cubit.dart';
 import '../../../../core/utils/cams_queue_actions.dart';
+import '../../../../core/widgets/cams_skeleton.dart';
 import '../../../../core/widgets/queue_mode_picker_bottom_sheet.dart';
 import '../../../../core/widgets/select_playlist_bottom_sheet.dart';
 import '../../../../core/widgets/song_options_bottom_sheet.dart';
@@ -1022,8 +1023,12 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
 
               // ── Body ───────────────────────────────────────────────────────
               if (_loading)
-                const SliverFillRemaining(
-                  child: Center(child: CircularProgressIndicator()),
+                const SliverToBoxAdapter(
+                  child: CamsSkeletonList(
+                    itemCount: 8,
+                    showTrailing: true,
+                    padding: EdgeInsets.fromLTRB(20, 20, 20, 164),
+                  ),
                 )
               else if (_filter == _LibraryFilter.playlists)
                 _savedPlaylists.isEmpty

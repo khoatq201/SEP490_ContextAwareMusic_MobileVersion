@@ -15,6 +15,7 @@ import '../../../../core/player/space_info.dart';
 import '../../../../core/presentation/app_feedback.dart';
 import '../../../../core/widgets/app_error_view.dart';
 import '../../../../core/widgets/app_feedback_presenter.dart';
+import '../../../../core/widgets/cams_skeleton.dart';
 import '../../../../injection_container.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
@@ -1159,8 +1160,8 @@ class StoreDashboardPage extends StatelessWidget {
           },
           builder: (context, state) {
             if (state.status == StoreDashboardStatus.loading) {
-              return const Center(
-                child: CircularProgressIndicator(),
+              return const CamsSkeletonDashboard(
+                padding: EdgeInsets.fromLTRB(20, 24, 20, 32),
               );
             }
 

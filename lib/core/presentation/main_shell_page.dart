@@ -19,7 +19,7 @@ class MainShellPage extends StatelessWidget {
   static const List<String> _tabRoutes = [
     '/home',
     '/search',
-    '/create',
+    '/now-playing',
     '/library',
     '/locations',
   ];
@@ -282,14 +282,14 @@ class _NavItemCenter extends StatelessWidget {
                     : null,
               ),
               child: Icon(
-                LucideIcons.plus,
+                LucideIcons.playCircle,
                 color: isActive ? Colors.white : activeColor,
                 size: 24,
               ),
             ),
             const SizedBox(height: 2),
             Text(
-              'Create',
+              'Play Now',
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,

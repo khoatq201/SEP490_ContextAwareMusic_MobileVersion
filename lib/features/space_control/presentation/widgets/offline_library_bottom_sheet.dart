@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+import '../../../../core/constants/app_colors.dart';
 import '../../domain/entities/offline_playlist.dart';
 import '../bloc/offline_library_bloc.dart';
 import '../bloc/offline_library_event.dart';
@@ -123,7 +124,7 @@ class OfflineLibraryBottomSheet extends StatelessWidget {
                           return Center(
                             child: CircularProgressIndicator(
                               color: isDarkMode
-                                  ? const Color(0xFF00E5FF)
+                                  ? AppColors.primaryCyan
                                   : const Color(0xFF2196F3),
                             ),
                           );

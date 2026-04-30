@@ -7,6 +7,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/theme/cams_theme_tokens.dart';
+import '../../../../core/widgets/cams_skeleton.dart';
 import '../../../cams/domain/entities/space_playback_state.dart';
 import '../../../cams/presentation/bloc/cams_playback_bloc.dart';
 import '../../../cams/presentation/bloc/cams_playback_event.dart';
@@ -103,7 +105,7 @@ class SpaceSchedulePage extends StatelessWidget {
                   state.draftSchedule == null &&
                   state.librarySources.isEmpty &&
                   state.templateSources.isEmpty) {
-                return _ScheduleLoadingView(palette: palette);
+                return const _ScheduleLoadingView();
               }
 
               if (state.status == SpaceScheduleStatus.error &&
@@ -307,28 +309,12 @@ class SpaceSchedulePage extends StatelessWidget {
 }
 
 class _ScheduleLoadingView extends StatelessWidget {
-  const _ScheduleLoadingView({required this.palette});
-
-  final _SchedulePalette palette;
+  const _ScheduleLoadingView();
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          CircularProgressIndicator(color: palette.accent),
-          const SizedBox(height: 16),
-          Text(
-            'Loading schedule...',
-            style: GoogleFonts.inter(
-              color: palette.textMuted,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
+    return const CamsSkeletonDashboard(
+      padding: EdgeInsets.fromLTRB(20, 24, 20, 32),
     );
   }
 }
@@ -2034,32 +2020,18 @@ class _SchedulePalette {
   });
 
   factory _SchedulePalette.of(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    if (isDark) {
-      return const _SchedulePalette(
-        background: Color(0xFF101010),
-        card: Color(0xFFF7F7F7),
-        cardSoft: Color(0xFF171717),
-        cardMuted: Color(0xFF2A2A2A),
-        line: Color(0xFF313131),
-        textPrimary: Colors.white,
-        textMuted: Color(0xFFB1B1B1),
-        accent: AppColors.primaryCyan,
-        textOnCard: Color(0xFF181818),
-        textMutedOnCard: Color(0xFF676767),
-      );
-    }
-    return const _SchedulePalette(
-      background: Color(0xFFF5F5F5),
-      card: Colors.white,
-      cardSoft: Colors.white,
-      cardMuted: Color(0xFFEAEAEA),
-      line: Color(0xFFD6D6D6),
-      textPrimary: Color(0xFF151515),
-      textMuted: Color(0xFF666666),
-      accent: AppColors.primaryOrange,
-      textOnCard: Color(0xFF181818),
-      textMutedOnCard: Color(0xFF676767),
+    final tokens = context.camsTokens;
+    return _SchedulePalette(
+      background: tokens.bgBase,
+      card: tokens.bgContainer,
+      cardSoft: tokens.bgElevated,
+      cardMuted: tokens.bgLayout,
+      line: tokens.borderSecondary,
+      textPrimary: tokens.textPrimary,
+      textMuted: tokens.textSecondary,
+      accent: tokens.brandPrimary,
+      textOnCard: tokens.textPrimary,
+      textMutedOnCard: tokens.textSecondary,
     );
   }
 }

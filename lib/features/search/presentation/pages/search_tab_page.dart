@@ -16,6 +16,7 @@ import '../../../../core/session/session_cubit.dart';
 import '../../../../core/utils/cams_queue_actions.dart';
 import '../../../../core/widgets/app_error_view.dart';
 import '../../../../core/widgets/app_inline_error_card.dart';
+import '../../../../core/widgets/cams_skeleton.dart';
 import '../../../../core/widgets/queue_mode_picker_bottom_sheet.dart';
 import '../../../../core/widgets/select_playlist_bottom_sheet.dart';
 import '../../../../core/widgets/song_list_tile.dart';
@@ -366,8 +367,12 @@ class _SearchViewState extends State<_SearchView> {
   Widget _buildSearchResults(
       BuildContext context, SearchState state, bool isDark) {
     if (state.status == SearchStatus.loading) {
-      return const SliverFillRemaining(
-        child: Center(child: CircularProgressIndicator()),
+      return const SliverToBoxAdapter(
+        child: CamsSkeletonList(
+          itemCount: 8,
+          showTrailing: true,
+          padding: EdgeInsets.fromLTRB(16, 12, 16, 160),
+        ),
       );
     }
 
@@ -692,22 +697,10 @@ class _CategoryGridSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GridView.builder(
-      physics: const NeverScrollableScrollPhysics(),
-      shrinkWrap: true,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: AppDimensions.spacingSm,
-        mainAxisSpacing: AppDimensions.spacingSm,
-        childAspectRatio: 1.7,
-      ),
+    return const CamsSkeletonCardGrid(
       itemCount: 8,
-      itemBuilder: (_, __) => Container(
-        decoration: BoxDecoration(
-          color: Colors.grey.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-        ),
-      ),
+      childAspectRatio: 1.7,
+      padding: EdgeInsets.zero,
     );
   }
 }
@@ -1369,8 +1362,12 @@ class _FeaturedPlaylistsSliver extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (playlists.isEmpty) {
-      return const SliverFillRemaining(
-        child: Center(child: CircularProgressIndicator()),
+      return const SliverToBoxAdapter(
+        child: CamsSkeletonCardGrid(
+          itemCount: 6,
+          childAspectRatio: 0.8,
+          padding: EdgeInsets.fromLTRB(16, 12, 16, 160),
+        ),
       );
     }
 

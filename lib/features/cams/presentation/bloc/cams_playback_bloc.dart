@@ -41,6 +41,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     on<CamsApplyOverride>(_onApplyOverride);
     on<CamsPlayPlaylist>(_onPlayPlaylist);
     on<CamsPlayTrack>(_onPlayTrack);
+    on<CamsPlayTracks>(_onPlayTracks);
     on<CamsReorderQueue>(_onReorderQueue);
     on<CamsRemoveQueueItems>(_onRemoveQueueItems);
     on<CamsClearQueue>(_onClearQueue);
@@ -263,24 +264,57 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     CamsPlayTrack event,
     Emitter<CamsPlaybackState> emit,
   ) async {
+    await _submitTracks(
+      emit,
+      trackIds: [event.trackId],
+      requestedMode: event.requestedMode,
+      clearExistingQueue: event.clearExistingQueue,
+      reason: event.reason,
+    );
+  }
+
+  Future<void> _onPlayTracks(
+    CamsPlayTracks event,
+    Emitter<CamsPlaybackState> emit,
+  ) async {
+    await _submitTracks(
+      emit,
+      trackIds: event.trackIds,
+      requestedMode: event.requestedMode,
+      clearExistingQueue: event.clearExistingQueue,
+      reason: event.reason,
+    );
+  }
+
+  Future<void> _submitTracks(
+    Emitter<CamsPlaybackState> emit, {
+    required List<String> trackIds,
+    required QueueInsertModeEnum requestedMode,
+    required bool clearExistingQueue,
+    String? reason,
+  }) async {
     if (!_hasActiveSessionScope('playTrack')) return;
     final resolvedClearExistingQueue = _resolveClearExistingQueue(
-      resolvedMode: event.requestedMode,
-      requestedClearExistingQueue: event.clearExistingQueue,
+      resolvedMode: requestedMode,
+      requestedClearExistingQueue: clearExistingQueue,
     );
-    final resolvedReason =
-        event.reason ?? _trackActionReason(event.requestedMode);
+    final resolvedReason = reason ?? _trackActionReason(requestedMode);
+    final normalizedTrackIds = trackIds
+        .map((trackId) => trackId.trim())
+        .where((trackId) => trackId.isNotEmpty)
+        .toList(growable: false);
+    if (normalizedTrackIds.isEmpty) return;
     _debugLog(
-      'playTrack intent '
-      'spaceId=${state.spaceId} trackId=${event.trackId} '
-      'mode=${event.requestedMode.name} clear=$resolvedClearExistingQueue '
+      'playTracks intent '
+      'spaceId=${state.spaceId} trackIds=$normalizedTrackIds '
+      'mode=${requestedMode.name} clear=$resolvedClearExistingQueue '
       'reason="$resolvedReason"',
     );
     emit(state.copyWith(isOverriding: true, clearError: true));
 
-    final result = await runtime.playTrack(
-      trackId: event.trackId,
-      requestedMode: _resolveManualQueueMode(event.requestedMode),
+    final result = await runtime.playTracks(
+      trackIds: normalizedTrackIds,
+      requestedMode: _resolveManualQueueMode(requestedMode),
       clearExistingQueue: resolvedClearExistingQueue,
       reason: resolvedReason,
     );
@@ -295,7 +329,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
         ));
       },
       (_) {
-        _debugLog('playTrack ACK received from runtime');
+        _debugLog('playTracks ACK received from runtime');
         emit(state.copyWith(
           isOverriding: false,
           clearPendingTrackJump: true,

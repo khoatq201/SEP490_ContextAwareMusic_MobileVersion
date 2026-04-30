@@ -15,6 +15,7 @@ import '../../../../core/player/local_preview_feedback.dart';
 import '../../../../core/session/session_cubit.dart';
 import '../../../../core/utils/cams_queue_actions.dart';
 import '../../../../core/widgets/app_error_view.dart';
+import '../../../../core/widgets/cams_skeleton.dart';
 import '../../../../injection_container.dart';
 import '../../../space_control/domain/entities/track.dart';
 import '../../domain/entities/album_entity.dart';
@@ -49,7 +50,9 @@ class _AlbumDetailView extends StatelessWidget {
         builder: (context, state) {
           if (state.status == AlbumDetailStatus.loading ||
               state.status == AlbumDetailStatus.initial) {
-            return const Center(child: CircularProgressIndicator());
+            return const CamsSkeletonDetailPage(
+              padding: EdgeInsets.fromLTRB(20, 72, 20, 32),
+            );
           }
           if (state.status == AlbumDetailStatus.error) {
             return AppErrorView(

@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+import '../../../../core/constants/app_colors.dart';
 import '../../domain/entities/offline_playlist.dart';
 import '../bloc/offline_library_bloc.dart';
 import '../bloc/offline_library_event.dart';
@@ -26,9 +27,8 @@ class SpaceOfflineTab extends StatelessWidget {
         if (state.status == OfflineLibraryStatus.loading) {
           return Center(
             child: CircularProgressIndicator(
-              color: isDarkMode
-                  ? const Color(0xFF00E5FF)
-                  : const Color(0xFF2196F3),
+              color:
+                  isDarkMode ? AppColors.primaryCyan : const Color(0xFF2196F3),
             ),
           );
         }
@@ -217,14 +217,14 @@ class _StorageStatusCard extends StatelessWidget {
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: isDarkMode
-                          ? const Color(0xFF00E5FF).withValues(alpha: 0.15)
+                          ? AppColors.primaryCyan.withValues(alpha: 0.15)
                           : const Color(0xFF2196F3).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
                       LucideIcons.database,
                       color: isDarkMode
-                          ? const Color(0xFF00E5FF)
+                          ? AppColors.primaryCyan
                           : const Color(0xFF2196F3),
                       size: 24,
                     ),
@@ -289,7 +289,7 @@ class _StorageStatusCard extends StatelessWidget {
                       : Colors.black.withValues(alpha: 0.08),
                   valueColor: AlwaysStoppedAnimation<Color>(
                     isDarkMode
-                        ? const Color(0xFF00E5FF)
+                        ? AppColors.primaryCyan
                         : const Color(0xFF2196F3),
                   ),
                 ),

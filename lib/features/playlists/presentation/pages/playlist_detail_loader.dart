@@ -11,6 +11,7 @@ import '../../../../core/player/player_event.dart';
 import '../../../../core/player/playlist_queue_builder.dart';
 import '../../../../core/session/session_cubit.dart';
 import '../../../../core/widgets/app_error_view.dart';
+import '../../../../core/widgets/cams_skeleton.dart';
 import '../../../../injection_container.dart';
 import '../../data/datasources/playlist_remote_datasource.dart';
 import '../../domain/entities/api_playlist.dart';
@@ -103,7 +104,9 @@ class _PlaylistDetailLoaderState extends State<PlaylistDetailLoader> {
           return Scaffold(
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             appBar: appBar,
-            body: const Center(child: CircularProgressIndicator()),
+            body: const CamsSkeletonDetailPage(
+              padding: EdgeInsets.fromLTRB(20, 20, 20, 32),
+            ),
           );
         }
 

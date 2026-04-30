@@ -5,6 +5,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_typography.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/widgets/app_error_view.dart';
+import '../../../../core/widgets/cams_skeleton.dart';
 import '../../../../injection_container.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
@@ -144,7 +145,11 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
 
             // ── BrandManager / SystemAdmin: full store selection UI ──
             if (state is StoreSelectionLoading) {
-              return const Center(child: CircularProgressIndicator());
+              return const CamsSkeletonCardGrid(
+                itemCount: 6,
+                childAspectRatio: 0.95,
+                padding: EdgeInsets.all(16),
+              );
             }
 
             if (state is StoreSelectionError) {
@@ -182,21 +187,8 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
 
   /// Loading screen shown to StoreManager while fetching their store.
   Widget _buildStoreManagerLoading() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const CircularProgressIndicator(),
-          const SizedBox(height: 24),
-          Text(
-            'Loading your store...',
-            style: AppTypography.titleMedium.copyWith(
-              color: isDark ? AppColors.textDarkSecondary : Colors.grey[600],
-            ),
-          ),
-        ],
-      ),
+    return const CamsSkeletonDashboard(
+      padding: EdgeInsets.fromLTRB(20, 96, 20, 32),
     );
   }
 

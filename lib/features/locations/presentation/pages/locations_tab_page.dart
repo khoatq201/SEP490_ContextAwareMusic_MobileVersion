@@ -6,6 +6,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/enums/space_type_enum.dart';
 import '../../../../core/enums/user_role.dart';
 import '../../../../core/session/session_cubit.dart';
+import '../../../../core/widgets/cams_skeleton.dart';
 import '../../../../injection_container.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../data/datasources/location_remote_datasource.dart';
@@ -246,11 +247,8 @@ class LocationsTabPage extends StatelessWidget {
           builder: (context, state) {
             if (state.status == LocationStatus.loading ||
                 state.status == LocationStatus.initial) {
-              return Center(
-                child: CircularProgressIndicator(
-                  color:
-                      isDark ? AppColors.primaryCyan : AppColors.primaryOrange,
-                ),
+              return const CamsSkeletonDashboard(
+                padding: EdgeInsets.fromLTRB(20, 24, 20, 164),
               );
             }
 

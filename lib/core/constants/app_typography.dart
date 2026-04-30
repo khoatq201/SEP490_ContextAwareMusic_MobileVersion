@@ -157,10 +157,10 @@ class AppTypography {
     fontSize: 32,
     fontWeight: FontWeight.w800,
     letterSpacing: 2.0,
-    color: AppColors.primaryOrange,
+    color: AppColors.brandPrimary,
     shadows: [
       Shadow(
-        color: AppColors.primaryOrange.withValues(alpha: 0.18),
+        color: AppColors.brandPrimary.withValues(alpha: 0.18),
         blurRadius: 10,
         offset: const Offset(0, 2),
       ),
@@ -186,32 +186,32 @@ class AppTypography {
   );
 
   /// Sensor value display (large numbers)
-  static TextStyle sensorValue = const TextStyle(
+  static const TextStyle sensorValue = TextStyle(
     fontFamily: displayFont,
     fontSize: 48,
     fontWeight: FontWeight.w700,
     letterSpacing: -1.0,
-    color: AppColors.primaryOrange,
+    color: AppColors.brandPrimary,
     height: 1.0,
   );
 
   /// Small caption with opacity
-  static TextStyle caption = TextStyle(
+  static const TextStyle caption = TextStyle(
     fontFamily: primaryFont,
     fontSize: 12,
     fontWeight: FontWeight.w400,
     letterSpacing: 0.4,
-    color: Colors.grey.shade600,
+    color: AppColors.textTertiary,
     height: 1.33,
   );
 
   /// Emphasized text for important info
-  static TextStyle emphasized = const TextStyle(
+  static const TextStyle emphasized = TextStyle(
     fontFamily: primaryFont,
     fontSize: 16,
     fontWeight: FontWeight.w700,
     letterSpacing: 0.5,
-    color: AppColors.primaryOrange,
+    color: AppColors.brandPrimary,
     height: 1.5,
   );
 
@@ -239,8 +239,7 @@ class AppTypography {
     return baseStyle.copyWith(
       shadows: [
         Shadow(
-          color:
-              (shadowColor ?? AppColors.primaryOrange).withValues(alpha: 0.3),
+          color: (shadowColor ?? AppColors.brandPrimary).withValues(alpha: 0.3),
           blurRadius: blurRadius,
           offset: offset,
         ),

@@ -11,6 +11,7 @@ import '../../../../core/presentation/shell_layout_metrics.dart';
 import '../../../../core/session/session_cubit.dart';
 import '../../../../core/services/local_storage_service.dart';
 import '../../../../core/theme/theme_provider.dart';
+import '../../../../core/widgets/cams_skeleton.dart';
 import '../../../../injection_container.dart';
 import '../../../auth/domain/entities/user.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
@@ -88,10 +89,11 @@ class SettingsPage extends StatelessWidget {
           builder: (context, state) {
             if (state.status == SettingsStatus.initial ||
                 state.status == SettingsStatus.loading) {
-              return Center(
-                child: CircularProgressIndicator(
-                  color: Theme.of(context).colorScheme.primary,
-                ),
+              return CamsSkeletonList(
+                itemCount: 8,
+                showLeading: true,
+                showTrailing: true,
+                padding: EdgeInsets.fromLTRB(20, 16, 20, bottomPadding),
               );
             }
 

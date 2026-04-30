@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../features/home/domain/entities/song_entity.dart';
+import '../theme/cams_theme_tokens.dart';
 import 'select_playlist_bottom_sheet.dart';
 import 'song_options_bottom_sheet.dart';
 
@@ -96,9 +97,10 @@ class SongListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final mutedColor = isDark ? Colors.white54 : Colors.black45;
-    final primaryColor = isDark ? Colors.white : Colors.black87;
+    final mutedColor = tokens.textSecondary;
+    final primaryColor = tokens.textPrimary;
 
     return InkWell(
       onTap: onTap,

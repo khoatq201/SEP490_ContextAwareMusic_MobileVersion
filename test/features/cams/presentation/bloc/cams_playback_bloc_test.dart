@@ -135,6 +135,24 @@ void main() {
       expect(bloc.state.isOverriding, isFalse);
     });
 
+    test('uses queue/tracks add-to-queue flow for multiple tracks', () async {
+      await _initBloc(bloc);
+
+      bloc.add(const CamsPlayTracks(
+        trackIds: ['track-1', 'track-2'],
+      ));
+
+      await _waitUntil(() => repository.lastQueueTracksRequest != null);
+
+      final request = repository.lastQueueTracksRequest!;
+      expect(request.spaceId, 'space-1');
+      expect(request.trackIds, ['track-1', 'track-2']);
+      expect(request.mode, QueueInsertModeEnum.addToQueue);
+      expect(request.isClearExistingQueue, isFalse);
+      expect(request.reason, 'Manual track add-to-queue request');
+      expect(bloc.state.isOverriding, isFalse);
+    });
+
     test('does not carry playback state across space switches', () async {
       await _initBloc(bloc);
 
@@ -748,6 +766,77 @@ void main() {
 
       expect(bloc.state.playbackState?.currentQueueItemId, 'queue-2');
       expect(bloc.state.playbackState?.currentTrackName, 'Track Two');
+    });
+
+    test('preserves full queue when post-next refresh returns partial queue',
+        () async {
+      const initialState = SpacePlaybackState(
+        spaceId: 'space-1',
+        currentQueueItemId: 'queue-1',
+        currentTrackName: 'Track One',
+        hlsUrl: 'https://stream.example.com/t1.m3u8',
+        spaceQueueItems: [
+          SpaceQueueStateItem(
+            queueItemId: 'queue-1',
+            trackId: 'track-1',
+            trackName: 'Track One',
+            position: 1,
+            queueStatus: SpacePlaybackState.queueStatusPlaying,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/t1.m3u8',
+            isReadyToStream: true,
+          ),
+          SpaceQueueStateItem(
+            queueItemId: 'queue-2',
+            trackId: 'track-2',
+            trackName: 'Track Two',
+            position: 2,
+            queueStatus: SpacePlaybackState.queueStatusPending,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/t2.m3u8',
+            isReadyToStream: true,
+          ),
+          SpaceQueueStateItem(
+            queueItemId: 'queue-3',
+            trackId: 'track-3',
+            trackName: 'Track Three',
+            position: 3,
+            queueStatus: SpacePlaybackState.queueStatusPending,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/t3.m3u8',
+            isReadyToStream: true,
+          ),
+        ],
+      );
+
+      repository.getSpaceStateResult = const Right(initialState);
+      await _initBloc(bloc);
+      await _waitUntil(
+        () => bloc.state.playbackState?.spaceQueueItems.length == 3,
+      );
+
+      repository.getSpaceStateResult = const Right(
+        SpacePlaybackState(
+          spaceId: 'space-1',
+          currentQueueItemId: 'queue-2',
+          currentTrackName: 'Track Two',
+          hlsUrl: 'https://stream.example.com/t2.m3u8',
+        ),
+      );
+      repository.getQueueResult = const Right([]);
+
+      bloc.add(const CamsRefreshState());
+      await _waitUntil(
+        () => bloc.state.playbackState?.currentQueueItemId == 'queue-2',
+      );
+
+      expect(repository.getQueueCallCount, greaterThanOrEqualTo(1));
+      expect(
+        bloc.state.playbackState?.spaceQueueItems
+            .map((item) => item.queueItemId)
+            .toList(),
+        ['queue-1', 'queue-2', 'queue-3'],
+      );
     });
 
     test(

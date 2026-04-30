@@ -127,6 +127,25 @@ class CamsPlayTrack extends CamsPlaybackEvent {
       [trackId, playlistId, reason, clearExistingQueue, requestedMode];
 }
 
+/// Queue-native multi-track request.
+class CamsPlayTracks extends CamsPlaybackEvent {
+  final List<String> trackIds;
+  final String? reason;
+  final bool clearExistingQueue;
+  final QueueInsertModeEnum requestedMode;
+
+  const CamsPlayTracks({
+    required this.trackIds,
+    this.reason,
+    this.clearExistingQueue = false,
+    this.requestedMode = QueueInsertModeEnum.addToQueue,
+  });
+
+  @override
+  List<Object?> get props =>
+      [trackIds, reason, clearExistingQueue, requestedMode];
+}
+
 /// Backward-compatible alias for old UI dispatchers.
 class CamsOverridePlaylist extends CamsPlayPlaylist {
   const CamsOverridePlaylist({required super.playlistId, super.reason})

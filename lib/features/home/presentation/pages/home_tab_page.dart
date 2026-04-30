@@ -14,6 +14,7 @@ import '../../../../core/presentation/playback_mood_label.dart';
 import '../../../../core/presentation/shell_layout_metrics.dart';
 import '../../../../core/session/session_cubit.dart';
 import '../../../../core/session/session_state.dart';
+import '../../../../core/widgets/cams_skeleton.dart';
 import '../../../../injection_container.dart';
 import '../../../cams/domain/entities/space_playback_state.dart';
 import '../../../cams/presentation/bloc/cams_playback_bloc.dart';
@@ -158,8 +159,8 @@ class _HomeDashboardView extends StatelessWidget {
           builder: (context, state) {
             if (state.status == HomeStatus.loading ||
                 state.status == HomeStatus.initial) {
-              return Center(
-                child: CircularProgressIndicator(color: palette.accent),
+              return const CamsSkeletonDashboard(
+                padding: EdgeInsets.fromLTRB(20, 72, 20, 164),
               );
             }
 

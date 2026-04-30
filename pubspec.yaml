@@ -90,15 +90,15 @@ dependency_overrides:
 
 # Flutter Native Splash Configuration (Optional - uncomment when you have logo PNG)
 # flutter_native_splash:
-#   color: "#1976D2"
+#   color: "#dc2626"
 #   image: assets/images/splash_logo.png
 #
-#   color_dark: "#0D47A1"
+#   color_dark: "#0f0f11"
 #   image_dark: assets/images/splash_logo.png
 #
 #   android_12:
 #     image: assets/images/splash_logo.png
-#     icon_background_color: "#1976D2"
+#     icon_background_color: "#dc2626"
 #
 #   android: true
 #   ios: true

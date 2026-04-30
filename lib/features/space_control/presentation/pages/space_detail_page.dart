@@ -6,6 +6,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/player/player_bloc.dart';
 import '../../../../core/player/player_event.dart';
+import '../../../../core/widgets/cams_skeleton.dart';
 import '../../../cams/presentation/bloc/cams_playback_bloc.dart';
 import '../../../cams/presentation/bloc/cams_playback_event.dart';
 import '../../../now_playing/presentation/pages/now_playing_tab_page.dart';
@@ -168,8 +169,7 @@ class _SpaceDetailPageState extends State<SpaceDetailPage>
             ),
           ),
           body: switch (state.status) {
-            SpaceMonitoringStatus.loading =>
-              _SpaceLoadingView(palette: palette),
+            SpaceMonitoringStatus.loading => const _SpaceLoadingView(),
             SpaceMonitoringStatus.error => _SpaceErrorView(
                 palette: palette,
                 message: state.errorMessage,
@@ -198,28 +198,13 @@ class _SpaceDetailPageState extends State<SpaceDetailPage>
 }
 
 class _SpaceLoadingView extends StatelessWidget {
-  const _SpaceLoadingView({required this.palette});
-
-  final _SpaceDetailPalette palette;
+  const _SpaceLoadingView();
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(color: palette.accent),
-          const SizedBox(height: 16),
-          Text(
-            'Connecting to your space...',
-            style: GoogleFonts.inter(
-              color: palette.textMuted,
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
+    return const CamsSkeletonDetailPage(
+      padding: EdgeInsets.fromLTRB(20, 24, 20, 32),
+      showLargeArt: false,
     );
   }
 }

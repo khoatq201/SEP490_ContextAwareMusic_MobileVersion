@@ -68,6 +68,34 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Disabled for Add to queue.'), findsOneWidget);
+      expect(
+        tester
+            .widget<CheckboxListTile>(
+              find.widgetWithText(CheckboxListTile, 'Track Alpha'),
+            )
+            .value,
+        isTrue,
+      );
+
+      await tester.tap(find.text('Track Beta'));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester
+            .widget<CheckboxListTile>(
+              find.widgetWithText(CheckboxListTile, 'Track Alpha'),
+            )
+            .value,
+        isTrue,
+      );
+      expect(
+        tester
+            .widget<CheckboxListTile>(
+              find.widgetWithText(CheckboxListTile, 'Track Beta'),
+            )
+            .value,
+        isTrue,
+      );
 
       await tester.tap(find.text('Play now'));
       await tester.pumpAndSettle();
@@ -154,6 +182,11 @@ void main() {
       expect(button().onPressed, isNotNull);
 
       await tester.tap(find.text('ENERGETIC'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Override TTL seconds *'),
+        '1800',
+      );
       await tester.pumpAndSettle();
       expect(button().onPressed, isNotNull);
     },

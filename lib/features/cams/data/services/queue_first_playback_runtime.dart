@@ -229,14 +229,35 @@ class QueueFirstPlaybackRuntime {
     required bool clearExistingQueue,
     String? reason,
   }) async {
+    return playTracks(
+      trackIds: [trackId],
+      requestedMode: requestedMode,
+      clearExistingQueue: clearExistingQueue,
+      reason: reason,
+    );
+  }
+
+  Future<Either<Failure, void>> playTracks({
+    required List<String> trackIds,
+    required QueueInsertModeEnum requestedMode,
+    required bool clearExistingQueue,
+    String? reason,
+  }) async {
     final activeSpaceId = _activeSpaceId;
     if (activeSpaceId == null || activeSpaceId.isEmpty) {
       return const Left(
           ServerFailure('No active space is attached to runtime.'));
     }
+    final normalizedTrackIds = trackIds
+        .map((trackId) => trackId.trim())
+        .where((trackId) => trackId.isNotEmpty)
+        .toList(growable: false);
+    if (normalizedTrackIds.isEmpty) {
+      return const Left(ServerFailure('No tracks selected for queueing.'));
+    }
 
     _debugLog(
-      'playTrack request spaceId=$activeSpaceId trackId=$trackId '
+      'playTracks request spaceId=$activeSpaceId trackIds=$normalizedTrackIds '
       'mode=${requestedMode.name} clear=$clearExistingQueue '
       'reason="${reason ?? '-'}"',
     );
@@ -245,7 +266,7 @@ class QueueFirstPlaybackRuntime {
     final result = await queueTracks(
       QueueTracksParams(
         spaceId: activeSpaceId,
-        trackIds: [trackId],
+        trackIds: normalizedTrackIds,
         mode: requestedMode,
         isClearExistingQueue: clearExistingQueue,
         reason: reason,
@@ -256,7 +277,7 @@ class QueueFirstPlaybackRuntime {
     return result.fold(
       Left.new,
       (_) async {
-        _debugLog('playTrack ACK received');
+        _debugLog('playTracks ACK received');
         unawaited(
             _refreshAfterMutation(baselineFingerprint: baselineFingerprint));
         return const Right(null);
@@ -721,7 +742,58 @@ class QueueFirstPlaybackRuntime {
       );
     }
 
+    normalizedState = _preserveQueueSnapshotFallback(
+      incoming: normalizedState,
+      current: _currentState,
+    );
+
     return normalizedState;
+  }
+
+  SpacePlaybackState _preserveQueueSnapshotFallback({
+    required SpacePlaybackState incoming,
+    required SpacePlaybackState? current,
+  }) {
+    if (current == null || current.spaceQueueItems.isEmpty) return incoming;
+    if (incoming.spaceId.toLowerCase() != current.spaceId.toLowerCase()) {
+      return incoming;
+    }
+    if (!incoming.hasPlayableHls &&
+        !(incoming.currentQueueItemId?.isNotEmpty ?? false) &&
+        !(incoming.pendingQueueItemId?.isNotEmpty ?? false)) {
+      return incoming;
+    }
+    if (incoming.spaceQueueItems.length >= current.spaceQueueItems.length) {
+      return incoming;
+    }
+
+    final incomingQueueIds = incoming.spaceQueueItems
+        .map((item) => item.queueItemId)
+        .whereType<String>()
+        .where((id) => id.isNotEmpty)
+        .toSet();
+    final currentQueueIds = current.spaceQueueItems
+        .map((item) => item.queueItemId)
+        .whereType<String>()
+        .where((id) => id.isNotEmpty)
+        .toSet();
+
+    final focusedQueueItemId = incoming.currentQueueItemId;
+    final focusedIsKnown = focusedQueueItemId != null &&
+        focusedQueueItemId.isNotEmpty &&
+        currentQueueIds.contains(focusedQueueItemId);
+    final incomingLooksPartial = incoming.spaceQueueItems.isEmpty ||
+        incomingQueueIds.every(currentQueueIds.contains);
+
+    if (!focusedIsKnown && !incomingLooksPartial) return incoming;
+
+    _debugLog(
+      'preserve previous queue snapshot while refreshed queue is partial '
+      'incomingCount=${incoming.spaceQueueItems.length} '
+      'currentCount=${current.spaceQueueItems.length} '
+      'currentQueueItemId=${incoming.currentQueueItemId ?? '-'}',
+    );
+    return incoming.copyWith(spaceQueueItems: current.spaceQueueItems);
   }
 
   SpacePlaybackState _preserveExplainabilityFallback({

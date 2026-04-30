@@ -11,6 +11,7 @@ import '../../features/home/domain/entities/playlist_entity.dart';
 import '../../features/home/domain/entities/song_entity.dart';
 import '../../features/playlists/data/datasources/playlist_remote_datasource.dart';
 import '../../injection_container.dart';
+import '../theme/cams_theme_tokens.dart';
 
 class SelectPlaylistBottomSheet extends StatefulWidget {
   const SelectPlaylistBottomSheet({super.key, required this.song});
@@ -130,13 +131,12 @@ class _SelectPlaylistBottomSheetState extends State<SelectPlaylistBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF1C1C1E) : Colors.white;
-    final textPrimary = isDark ? Colors.white : Colors.black87;
-    final textMuted = isDark ? Colors.white60 : Colors.black45;
-    final dividerColor = isDark ? Colors.white12 : Colors.black12;
-    final chipBg = isDark
-        ? Colors.white.withValues(alpha: 0.06)
-        : Colors.black.withValues(alpha: 0.04);
+    final tokens = context.camsTokens;
+    final bgColor = tokens.bgElevated;
+    final textPrimary = tokens.textPrimary;
+    final textMuted = tokens.textSecondary;
+    final dividerColor = tokens.divider;
+    final chipBg = tokens.bgLayout;
 
     return SafeArea(
       bottom: true,
@@ -154,7 +154,7 @@ class _SelectPlaylistBottomSheetState extends State<SelectPlaylistBottomSheet> {
                 width: 38,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.white24 : Colors.black26,
+                  color: tokens.border,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),

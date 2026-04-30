@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/app_error_view.dart';
+import '../../../../core/widgets/cams_skeleton.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../bloc/settings_cubit.dart';
@@ -54,10 +55,10 @@ class SettingsCompanyPage extends StatelessWidget {
           builder: (context, state) {
             if (state.status == SettingsStatus.initial ||
                 state.status == SettingsStatus.loading) {
-              return Center(
-                child: CircularProgressIndicator(
-                  color: Theme.of(context).colorScheme.primary,
-                ),
+              return const CamsSkeletonList(
+                itemCount: 5,
+                showLeading: false,
+                padding: EdgeInsets.fromLTRB(20, 16, 20, 32),
               );
             }
 

@@ -6,6 +6,7 @@ import '../../features/home/domain/entities/song_entity.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/session/session_cubit.dart';
 import '../../core/enums/user_role.dart';
+import '../theme/cams_theme_tokens.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Enum: the set of actions the user can pick from the bottom sheet
@@ -64,13 +65,12 @@ class SongOptionsBottomSheet extends StatelessWidget {
         (session.currentRole == UserRole.brandManager ||
             session.currentRole == UserRole.storeManager);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF1C1C1E) : Colors.white;
-    final cardColor = isDark
-        ? Colors.white.withValues(alpha: 0.06)
-        : Colors.black.withValues(alpha: 0.04);
-    final textPrimary = isDark ? Colors.white : Colors.black87;
-    final textMuted = isDark ? Colors.white60 : Colors.black45;
-    final dividerColor = isDark ? Colors.white12 : Colors.black12;
+    final tokens = context.camsTokens;
+    final bgColor = tokens.bgElevated;
+    final cardColor = tokens.bgLayout;
+    final textPrimary = tokens.textPrimary;
+    final textMuted = tokens.textSecondary;
+    final dividerColor = tokens.divider;
 
     return SafeArea(
       bottom: true,
@@ -89,7 +89,7 @@ class SongOptionsBottomSheet extends StatelessWidget {
                 width: 38,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.white24 : Colors.black26,
+                  color: tokens.border,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),

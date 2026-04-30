@@ -91,13 +91,16 @@ class _NowPlayingAddToQueueSheetState extends State<NowPlayingAddToQueueSheet> {
   bool _isLoadingPlaylists = true;
   String? _tracksError;
   String? _playlistsError;
-  String? _selectedTrackId;
+  final Set<String> _selectedTrackIds = <String>{};
   String? _selectedPlaylistId;
 
   @override
   void initState() {
     super.initState();
-    _selectedTrackId = widget.initialTrackId;
+    final initialTrackId = widget.initialTrackId?.trim();
+    if (initialTrackId != null && initialTrackId.isNotEmpty) {
+      _selectedTrackIds.add(initialTrackId);
+    }
     _loadTracks();
     _loadPlaylists();
   }
@@ -111,7 +114,7 @@ class _NowPlayingAddToQueueSheetState extends State<NowPlayingAddToQueueSheet> {
 
   bool get _canSubmit {
     if (_sourceTab == _MusicSourceTab.tracks) {
-      return _selectedTrackId != null && _selectedTrackId!.isNotEmpty;
+      return _selectedTrackIds.isNotEmpty;
     }
     return _selectedPlaylistId != null && _selectedPlaylistId!.isNotEmpty;
   }
@@ -208,6 +211,16 @@ class _NowPlayingAddToQueueSheetState extends State<NowPlayingAddToQueueSheet> {
     });
   }
 
+  void _toggleTrack(String trackId) {
+    setState(() {
+      if (_selectedTrackIds.contains(trackId)) {
+        _selectedTrackIds.remove(trackId);
+      } else {
+        _selectedTrackIds.add(trackId);
+      }
+    });
+  }
+
   void _submit() {
     if (!_canSubmit) return;
 
@@ -221,8 +234,8 @@ class _NowPlayingAddToQueueSheetState extends State<NowPlayingAddToQueueSheet> {
     final bloc = context.read<CamsPlaybackBloc>();
     if (_sourceTab == _MusicSourceTab.tracks) {
       bloc.add(
-        CamsPlayTrack(
-          trackId: _selectedTrackId!,
+        CamsPlayTracks(
+          trackIds: _selectedTrackIds.toList(growable: false),
           requestedMode: _queueMode,
           clearExistingQueue: resolvedClearExistingQueue,
           reason: normalizedReason,
@@ -386,15 +399,13 @@ class _NowPlayingAddToQueueSheetState extends State<NowPlayingAddToQueueSheet> {
         separatorBuilder: (_, __) => Divider(color: palette.border),
         itemBuilder: (context, index) {
           final track = tracks[index];
-          final selected = _selectedTrackId == track.id;
-          return ListTile(
+          final selected = _selectedTrackIds.contains(track.id);
+          return CheckboxListTile(
+            value: selected,
+            onChanged: (_) => _toggleTrack(track.id),
             contentPadding: EdgeInsets.zero,
-            leading: Icon(
-              selected
-                  ? Icons.radio_button_checked
-                  : Icons.radio_button_unchecked,
-              color: selected ? palette.accent : palette.textMuted,
-            ),
+            controlAffinity: ListTileControlAffinity.leading,
+            activeColor: palette.accent,
             title: Text(
               track.title,
               maxLines: 1,
@@ -416,10 +427,6 @@ class _NowPlayingAddToQueueSheetState extends State<NowPlayingAddToQueueSheet> {
                 fontSize: 12,
               ),
             ),
-            trailing: selected
-                ? Icon(Icons.check_circle, color: palette.accent)
-                : null,
-            onTap: () => setState(() => _selectedTrackId = track.id),
           );
         },
       ),

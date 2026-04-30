@@ -23,9 +23,12 @@ import '../models/space_playback_state_model.dart';
 class StoreHubService {
   final String Function() _accessTokenFactory;
   HubConnection? _connection;
+  Future<void>? _connectInFlight;
+  Future<void>? _disconnectInFlight;
   String? _currentSpaceId;
   String? _currentManagerStoreId;
   String? _currentManagerBrandId;
+  bool _isDisposed = false;
 
   /// Offset in milliseconds: (deviceTimeUtc - serverTimeUtc).
   /// Positive = device clock is ahead of server.
@@ -79,11 +82,34 @@ class StoreHubService {
 
   /// Connect to the StoreHub.
   Future<void> connect() async {
+    if (_isDisposed) {
+      throw StateError('StoreHubService has been disposed.');
+    }
+
+    final disconnectInFlight = _disconnectInFlight;
+    if (disconnectInFlight != null) {
+      await disconnectInFlight;
+    }
+
     if (_connection != null &&
         _connection!.state == HubConnectionState.Connected) {
       return; // Already connected
     }
 
+    final connectInFlight = _connectInFlight;
+    if (connectInFlight != null) {
+      return connectInFlight;
+    }
+
+    _connectInFlight = _connect();
+    try {
+      await _connectInFlight;
+    } finally {
+      _connectInFlight = null;
+    }
+  }
+
+  Future<void> _connect() async {
     if (_connection != null) {
       try {
         await _connection!.stop();
@@ -110,11 +136,37 @@ class StoreHubService {
     _registerListeners();
     await _connection!.start();
 
-    _connectionController.add(ConnectionStatus.connected);
+    _emitConnectionStatus(ConnectionStatus.connected);
   }
 
   /// Disconnect from the StoreHub.
   Future<void> disconnect() async {
+    if (_isDisposed) return;
+
+    final disconnectInFlight = _disconnectInFlight;
+    if (disconnectInFlight != null) {
+      return disconnectInFlight;
+    }
+
+    _disconnectInFlight = _disconnect();
+    try {
+      await _disconnectInFlight;
+    } finally {
+      _disconnectInFlight = null;
+    }
+  }
+
+  Future<void> _disconnect() async {
+    final connectInFlight = _connectInFlight;
+    if (connectInFlight != null) {
+      try {
+        await connectInFlight;
+      } catch (_) {
+        // The original connect caller will surface the failure. Disconnect is
+        // best effort during teardown.
+      }
+    }
+
     if (_currentSpaceId != null) {
       await leaveSpace(_currentSpaceId!);
     }
@@ -126,7 +178,7 @@ class StoreHubService {
     }
     await _connection?.stop();
     _connection = null;
-    _connectionController.add(ConnectionStatus.disconnected);
+    _emitConnectionStatus(ConnectionStatus.disconnected);
   }
 
   // ─── Client → Server methods ─────────────────────────────────────────────
@@ -134,12 +186,15 @@ class StoreHubService {
   /// Join a Space group to receive its events.
   Future<void> joinSpace(String spaceId) async {
     _currentSpaceId = spaceId;
+    if (!isConnected) return;
     await _connection?.invoke('JoinSpaceAsync', args: [spaceId]);
   }
 
   /// Leave a Space group.
   Future<void> leaveSpace(String spaceId) async {
-    await _connection?.invoke('LeaveSpaceAsync', args: [spaceId]);
+    if (isConnected) {
+      await _connection?.invoke('LeaveSpaceAsync', args: [spaceId]);
+    }
     if (_currentSpaceId == spaceId) {
       _currentSpaceId = null;
     }
@@ -147,12 +202,15 @@ class StoreHubService {
 
   Future<void> joinManagerRoom(String storeId) async {
     _currentManagerStoreId = storeId;
+    if (!isConnected) return;
     await _connection?.invoke('JoinManagerRoomAsync', args: [storeId]);
   }
 
   Future<void> leaveManagerRoom(String storeId) async {
     try {
-      await _connection?.invoke('LeaveManagerRoomAsync', args: [storeId]);
+      if (isConnected) {
+        await _connection?.invoke('LeaveManagerRoomAsync', args: [storeId]);
+      }
     } catch (_) {
       // Some environments may not expose LeaveManagerRoomAsync yet.
     }
@@ -163,12 +221,16 @@ class StoreHubService {
 
   Future<void> joinBrandManagerRoom(String brandId) async {
     _currentManagerBrandId = brandId;
+    if (!isConnected) return;
     await _connection?.invoke('JoinBrandManagerRoomAsync', args: [brandId]);
   }
 
   Future<void> leaveBrandManagerRoom(String brandId) async {
     try {
-      await _connection?.invoke('LeaveBrandManagerRoomAsync', args: [brandId]);
+      if (isConnected) {
+        await _connection
+            ?.invoke('LeaveBrandManagerRoomAsync', args: [brandId]);
+      }
     } catch (_) {
       // Some environments may not expose LeaveBrandManagerRoomAsync yet.
     }
@@ -202,6 +264,7 @@ class StoreHubService {
 
     // Connection confirmed after joining
     conn.on('ConnectionConfirmed', (args) {
+      if (!_isActiveConnection(conn)) return;
       final data = _asMap(args?[0]);
       if (data != null) {
         debugPrint(
@@ -224,6 +287,7 @@ class StoreHubService {
 
     // Playlist changed (AI or override)
     conn.on('PlayStream', (args) {
+      if (!_isActiveConnection(conn)) return;
       final payload = _asMap(args?[0]);
       if (payload == null) return;
 
@@ -235,7 +299,7 @@ class StoreHubService {
       // Queue-first clients still need pending PlayStream events even before
       // an HLS URL exists so they can refresh queue snapshots after remote
       // inserts from another device.
-      _playStreamController.add(PlayStreamEvent(
+      _emitPlayStream(PlayStreamEvent(
         spaceId: _readString(payload, 'spaceId') ?? '',
         hlsUrl: hlsUrl,
         playlistId: _readString(payload, 'playlistId'),
@@ -250,10 +314,11 @@ class StoreHubService {
 
     // Playback command from manager
     conn.on('PlaybackStateChanged', (args) {
+      if (!_isActiveConnection(conn)) return;
       final payload = _asMap(args?[0]);
       if (payload == null) return;
 
-      _playbackCommandController.add(PlaybackCommandEvent(
+      _emitPlaybackCommand(PlaybackCommandEvent(
         spaceId: _readString(payload, 'spaceId') ?? '',
         command: PlaybackCommandEnum.fromValue(
           _readNum(payload, 'command')?.toInt() ?? 1,
@@ -268,9 +333,10 @@ class StoreHubService {
 
     // Full state sync (after cancel override)
     conn.on('SpaceStateSync', (args) {
+      if (!_isActiveConnection(conn)) return;
       final payload = _asMap(args?[0]);
       if (payload != null) {
-        _statesSyncController.add(
+        _emitStateSync(
           SpacePlaybackStateModel.fromSignalR(_normalizeKeyCasing(payload)),
         );
       }
@@ -278,14 +344,16 @@ class StoreHubService {
 
     // Stop playback
     conn.on('StopPlayback', (_) {
-      _stopPlaybackController.add(null);
+      if (!_isActiveConnection(conn)) return;
+      _emitStopPlayback();
     });
 
     conn.on('SunoGenerationStatusChanged', (args) {
+      if (!_isActiveConnection(conn)) return;
       final payload = _asMap(args?[0]);
       if (payload == null) return;
 
-      _sunoGenerationStatusController.add(
+      _emitSunoGenerationStatus(
         SunoGenerationStatusChangedEvent(
           id: _readString(payload, 'id') ?? '',
           brandId: _readString(payload, 'brandId') ?? '',
@@ -307,13 +375,15 @@ class StoreHubService {
 
     // Reconnect lifecycle
     conn.onreconnecting(({error}) {
+      if (!_isActiveConnection(conn)) return;
       debugPrint('[StoreHub] Reconnecting... $error');
-      _connectionController.add(ConnectionStatus.reconnecting);
+      _emitConnectionStatus(ConnectionStatus.reconnecting);
     });
 
     conn.onreconnected(({connectionId}) {
+      if (!_isActiveConnection(conn)) return;
       debugPrint('[StoreHub] Reconnected: $connectionId');
-      _connectionController.add(ConnectionStatus.connected);
+      _emitConnectionStatus(ConnectionStatus.connected);
       // Re-join Space after reconnect
       if (_currentSpaceId != null) {
         unawaited(joinSpace(_currentSpaceId!));
@@ -327,21 +397,65 @@ class StoreHubService {
     });
 
     conn.onclose(({error}) {
+      if (!_isActiveConnection(conn)) return;
       debugPrint('[StoreHub] Connection closed: $error');
-      _connectionController.add(ConnectionStatus.disconnected);
+      _emitConnectionStatus(ConnectionStatus.disconnected);
     });
   }
 
   // ─── Cleanup ──────────────────────────────────────────────────────────────
 
   void dispose() {
+    if (_isDisposed) return;
+    _isDisposed = true;
     _connection?.stop();
+    _connection = null;
     _playStreamController.close();
     _playbackCommandController.close();
     _statesSyncController.close();
     _stopPlaybackController.close();
     _sunoGenerationStatusController.close();
     _connectionController.close();
+  }
+
+  bool _isActiveConnection(HubConnection conn) {
+    return !_isDisposed && identical(_connection, conn);
+  }
+
+  void _emitPlayStream(PlayStreamEvent event) {
+    if (!_playStreamController.isClosed) {
+      _playStreamController.add(event);
+    }
+  }
+
+  void _emitPlaybackCommand(PlaybackCommandEvent event) {
+    if (!_playbackCommandController.isClosed) {
+      _playbackCommandController.add(event);
+    }
+  }
+
+  void _emitStateSync(SpacePlaybackStateModel playbackState) {
+    if (!_statesSyncController.isClosed) {
+      _statesSyncController.add(playbackState);
+    }
+  }
+
+  void _emitStopPlayback() {
+    if (!_stopPlaybackController.isClosed) {
+      _stopPlaybackController.add(null);
+    }
+  }
+
+  void _emitSunoGenerationStatus(SunoGenerationStatusChangedEvent event) {
+    if (!_sunoGenerationStatusController.isClosed) {
+      _sunoGenerationStatusController.add(event);
+    }
+  }
+
+  void _emitConnectionStatus(ConnectionStatus status) {
+    if (!_connectionController.isClosed) {
+      _connectionController.add(status);
+    }
   }
 
   Map<String, dynamic>? _asMap(dynamic raw) {

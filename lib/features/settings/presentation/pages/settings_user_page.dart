@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/widgets/cams_skeleton.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
@@ -49,6 +50,14 @@ class SettingsUserPage extends StatelessWidget {
         ),
         body: BlocBuilder<AuthBloc, AuthState>(
           builder: (context, authState) {
+            if (authState.status == AuthStatus.loading) {
+              return const CamsSkeletonList(
+                itemCount: 4,
+                showLeading: false,
+                padding: EdgeInsets.fromLTRB(20, 16, 20, 32),
+              );
+            }
+
             final user = authState.user;
             final displayName = _displayName(user?.fullName, user?.username);
             final email = user?.email ?? '-';

@@ -11,7 +11,7 @@ void main() async {
   final canvas = Canvas(recorder);
 
   // Background
-  final paint = Paint()..color = const Color(0xFF1976D2);
+  final paint = Paint()..color = const Color(0xFFDC2626);
   canvas.drawCircle(const Offset(256, 256), 230, paint);
 
   // White circle border
@@ -41,7 +41,7 @@ void main() async {
     text: const TextSpan(
       text: 'Store Manager',
       style: TextStyle(
-        color: Color(0xFFBBDEFB),
+        color: Color(0xFF3B82F6),
         fontSize: 24,
       ),
     ),

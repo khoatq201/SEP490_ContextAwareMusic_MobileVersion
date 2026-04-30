@@ -7,6 +7,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/widgets/app_error_view.dart';
+import '../../../../core/widgets/cams_skeleton.dart';
 import '../../../../injection_container.dart';
 import '../../../home/domain/entities/playlist_entity.dart';
 import '../bloc/category_detail_cubit.dart';
@@ -86,7 +87,11 @@ class _CategoryDetailView extends StatelessWidget {
         builder: (context, state) {
           if (state.status == CategoryDetailStatus.loading ||
               state.status == CategoryDetailStatus.initial) {
-            return const Center(child: CircularProgressIndicator());
+            return const CamsSkeletonCardGrid(
+              itemCount: 8,
+              childAspectRatio: 0.85,
+              padding: EdgeInsets.all(AppDimensions.spacingMd),
+            );
           }
           if (state.status == CategoryDetailStatus.error) {
             return AppErrorView(
