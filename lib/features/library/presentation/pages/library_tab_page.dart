@@ -785,7 +785,7 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
           message,
           style: GoogleFonts.inter(fontWeight: FontWeight.w600),
         ),
-        backgroundColor: isError ? Colors.red.shade600 : null,
+        backgroundColor: isError ? context.camsTokens.error : null,
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -1491,8 +1491,8 @@ class _PlaylistTile extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (playlist.isDownloaded) ...[
-                    const Icon(Icons.download_done_rounded,
-                        color: Colors.green, size: 18),
+                    Icon(Icons.download_done_rounded,
+                        color: palette.success, size: 18),
                     const SizedBox(width: 6),
                   ],
                   Text(
@@ -1537,44 +1537,46 @@ enum _TrackLibraryAction {
   rejectCopyright,
 }
 
-Color _trackMetadataColor(TrackMetadataStatus status) {
+Color _trackMetadataColor(TrackMetadataStatus status, _Palette palette) {
   switch (status) {
     case TrackMetadataStatus.metadataPending:
-      return Colors.amber.shade700;
+      return palette.warning;
     case TrackMetadataStatus.metadataReady:
-      return Colors.green.shade600;
+      return palette.success;
     case TrackMetadataStatus.metadataUnknown:
-      return Colors.orange.shade800;
+      return palette.warning;
   }
 }
 
 Color _copyrightClearanceColorValue(
   TrackCopyrightClearanceStatus status,
+  _Palette palette,
 ) {
   switch (status) {
     case TrackCopyrightClearanceStatus.pending:
-      return Colors.amber.shade700;
+      return palette.warning;
     case TrackCopyrightClearanceStatus.approved:
-      return Colors.green.shade600;
+      return palette.success;
     case TrackCopyrightClearanceStatus.rejected:
-      return Colors.red.shade600;
+      return palette.error;
     case TrackCopyrightClearanceStatus.unknown:
-      return Colors.blueGrey.shade600;
+      return palette.neutral;
   }
 }
 
 Color _copyrightPolicyColorValue(
   CopyrightScanPolicyOutcome outcome,
+  _Palette palette,
 ) {
   switch (outcome) {
     case CopyrightScanPolicyOutcome.clear:
-      return Colors.green.shade600;
+      return palette.success;
     case CopyrightScanPolicyOutcome.flagged:
-      return Colors.red.shade600;
+      return palette.error;
     case CopyrightScanPolicyOutcome.manual:
-      return Colors.orange.shade700;
+      return palette.warning;
     case CopyrightScanPolicyOutcome.unknown:
-      return Colors.blueGrey.shade600;
+      return palette.neutral;
   }
 }
 
@@ -1658,8 +1660,10 @@ class _TrackLibraryTile extends StatelessWidget {
                         _TrackBadge(
                           palette: palette,
                           label: track.metadataStatus.displayName,
-                          accentColor:
-                              _trackMetadataColor(track.metadataStatus),
+                          accentColor: _trackMetadataColor(
+                            track.metadataStatus,
+                            palette,
+                          ),
                         ),
                         _TrackBadge(
                           palette: palette,
@@ -1667,8 +1671,8 @@ class _TrackLibraryTile extends StatelessWidget {
                               ? 'Stream Ready'
                               : 'Waiting HLS',
                           accentColor: track.isStreamReady
-                              ? Colors.green.shade600
-                              : Colors.blueGrey.shade600,
+                              ? palette.success
+                              : palette.neutral,
                         ),
                         if (track.isAiGenerated == true)
                           _TrackBadge(
@@ -1687,6 +1691,7 @@ class _TrackLibraryTile extends StatelessWidget {
                             label: track.copyrightClearanceStatus!.displayName,
                             accentColor: _copyrightClearanceColorValue(
                               track.copyrightClearanceStatus!,
+                              palette,
                             ),
                           ),
                         if (track.copyrightScanPolicyOutcome != null)
@@ -1696,6 +1701,7 @@ class _TrackLibraryTile extends StatelessWidget {
                                 track.copyrightScanPolicyOutcome!.displayName,
                             accentColor: _copyrightPolicyColorValue(
                               track.copyrightScanPolicyOutcome!,
+                              palette,
                             ),
                           ),
                       ],
@@ -1876,7 +1882,10 @@ class _TrackDetailBottomSheet extends StatelessWidget {
                     _TrackBadge(
                       palette: palette,
                       label: track.metadataStatus.displayName,
-                      accentColor: _trackMetadataColor(track.metadataStatus),
+                      accentColor: _trackMetadataColor(
+                        track.metadataStatus,
+                        palette,
+                      ),
                     ),
                     if (track.copyrightClearanceStatus != null)
                       _TrackBadge(
@@ -1884,6 +1893,7 @@ class _TrackDetailBottomSheet extends StatelessWidget {
                         label: track.copyrightClearanceStatus!.displayName,
                         accentColor: _copyrightClearanceColorValue(
                           track.copyrightClearanceStatus!,
+                          palette,
                         ),
                       ),
                     if (track.copyrightScanPolicyOutcome != null)
@@ -1892,6 +1902,7 @@ class _TrackDetailBottomSheet extends StatelessWidget {
                         label: track.copyrightScanPolicyOutcome!.displayName,
                         accentColor: _copyrightPolicyColorValue(
                           track.copyrightScanPolicyOutcome!,
+                          palette,
                         ),
                       ),
                   ],
@@ -2035,7 +2046,7 @@ class _TrackActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isDestructive ? Colors.red.shade600 : null;
+    final color = isDestructive ? context.camsTokens.error : null;
     return OutlinedButton.icon(
       onPressed: onTap,
       icon: Icon(icon, color: color, size: 18),
@@ -2249,17 +2260,17 @@ class _SunoGenerationPanel extends StatelessWidget {
   Color _statusColor(SunoGenerationStatus status) {
     switch (status) {
       case SunoGenerationStatus.queued:
-        return Colors.amber.shade700;
+        return palette.warning;
       case SunoGenerationStatus.generating:
-        return Colors.blue.shade600;
+        return palette.accentAlt;
       case SunoGenerationStatus.completed:
-        return Colors.green.shade600;
+        return palette.success;
       case SunoGenerationStatus.failed:
-        return Colors.red.shade600;
+        return palette.error;
       case SunoGenerationStatus.cancelled:
-        return Colors.orange.shade700;
+        return palette.warning;
       case SunoGenerationStatus.unknown:
-        return Colors.grey.shade600;
+        return palette.neutral;
     }
   }
 
@@ -2329,19 +2340,19 @@ class _BlockedSongTile extends StatelessWidget {
         padding: const EdgeInsets.only(right: 20),
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         decoration: BoxDecoration(
-          color: Colors.green.withValues(alpha: 0.15),
+          color: palette.success.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+          border: Border.all(color: palette.success.withValues(alpha: 0.3)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.lock_open_rounded, color: Colors.green, size: 18),
+            Icon(Icons.lock_open_rounded, color: palette.success, size: 18),
             const SizedBox(width: 6),
             Text(
               'Unblock',
               style: GoogleFonts.inter(
-                  color: Colors.green,
+                  color: palette.success,
                   fontSize: 12,
                   fontWeight: FontWeight.w700),
             ),
@@ -2411,7 +2422,7 @@ class _BlockedSongTile extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Icon(LucideIcons.ban, color: Colors.red.shade300, size: 16),
+                Icon(LucideIcons.ban, color: palette.error, size: 16),
                 const SizedBox(height: 3),
                 Text(
                   song.formattedDuration,
@@ -4878,6 +4889,10 @@ class _Palette {
     required this.textMuted,
     required this.accent,
     required this.accentAlt,
+    required this.success,
+    required this.warning,
+    required this.error,
+    required this.neutral,
     required this.textOnAccent,
     required this.shadow,
   });
@@ -4897,6 +4912,10 @@ class _Palette {
       textMuted: tokens.textSecondary,
       accent: colorScheme.primary,
       accentAlt: tokens.techAccent,
+      success: tokens.success,
+      warning: tokens.warning,
+      error: tokens.error,
+      neutral: tokens.textTertiary,
       textOnAccent: colorScheme.onPrimary,
       shadow: tokens.shadow,
     );
@@ -4911,6 +4930,10 @@ class _Palette {
   final Color textMuted;
   final Color accent;
   final Color accentAlt;
+  final Color success;
+  final Color warning;
+  final Color error;
+  final Color neutral;
   final Color textOnAccent;
   final Color shadow;
 }

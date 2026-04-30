@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/enums/queue_insert_mode_enum.dart';
 import '../../../../core/widgets/play_to_space_button.dart';
 import '../../../../core/widgets/song_list_tile.dart';
@@ -13,6 +12,7 @@ import '../../../../core/player/player_bloc.dart';
 import '../../../../core/player/player_event.dart';
 import '../../../../core/player/local_preview_feedback.dart';
 import '../../../../core/session/session_cubit.dart';
+import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../../../core/utils/cams_queue_actions.dart';
 import '../../../../core/widgets/app_error_view.dart';
 import '../../../../core/widgets/cams_skeleton.dart';
@@ -42,7 +42,7 @@ class _AlbumDetailView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = _Palette.fromBrightness(Theme.of(context).brightness);
+    final palette = _Palette.fromContext(context);
 
     return Scaffold(
       backgroundColor: palette.bg,
@@ -308,9 +308,9 @@ class _Fallback extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: palette.isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+      color: palette.card,
       child: Center(
-        child: Icon(Icons.album, color: Colors.grey.shade400, size: 72),
+        child: Icon(Icons.album, color: palette.textMuted, size: 72),
       ),
     );
   }
@@ -328,27 +328,17 @@ class _Palette {
     required this.accent,
   });
 
-  factory _Palette.fromBrightness(Brightness brightness) {
-    final isDark = brightness == Brightness.dark;
-    if (isDark) {
-      return const _Palette(
-        isDark: true,
-        bg: AppColors.backgroundDarkPrimary,
-        card: AppColors.surfaceDark,
-        border: AppColors.borderDarkMedium,
-        textPrimary: AppColors.textDarkPrimary,
-        textMuted: AppColors.textDarkSecondary,
-        accent: AppColors.primaryCyan,
-      );
-    }
-    return const _Palette(
-      isDark: false,
-      bg: AppColors.backgroundPrimary,
-      card: AppColors.surface,
-      border: AppColors.borderLight,
-      textPrimary: AppColors.textPrimary,
-      textMuted: AppColors.textTertiary,
-      accent: AppColors.primaryOrange,
+  factory _Palette.fromContext(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = context.camsTokens;
+    return _Palette(
+      isDark: theme.brightness == Brightness.dark,
+      bg: tokens.bgBase,
+      card: tokens.bgContainer,
+      border: tokens.border,
+      textPrimary: tokens.textPrimary,
+      textMuted: tokens.textSecondary,
+      accent: theme.colorScheme.primary,
     );
   }
 

@@ -4,8 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-import '../../constants/app_colors.dart';
 import '../../enums/playback_command_enum.dart';
+import '../../theme/cams_theme_tokens.dart';
 import '../../../features/cams/presentation/bloc/cams_playback_bloc.dart';
 import '../../../features/cams/presentation/bloc/cams_playback_event.dart';
 import '../player_bloc.dart';
@@ -29,7 +29,7 @@ class FullScreenPlayerPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = _FSPalette.fromBrightness(Theme.of(context).brightness);
+    final palette = _FSPalette.fromContext(context);
     final screenH = MediaQuery.of(context).size.height;
 
     return Container(
@@ -384,9 +384,9 @@ class FullScreenPlayerPage extends StatelessWidget {
 
   Widget _placeholder(_FSPalette palette) {
     return Container(
-      color: palette.isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+      color: palette.card,
       child: Center(
-        child: Icon(Icons.music_note, color: Colors.grey.shade400, size: 64),
+        child: Icon(Icons.music_note, color: palette.textMuted, size: 64),
       ),
     );
   }
@@ -408,35 +408,21 @@ class _FSPalette {
     required this.shadow,
   });
 
-  factory _FSPalette.fromBrightness(Brightness brightness) {
-    final isDark = brightness == Brightness.dark;
-    if (isDark) {
-      return _FSPalette(
-        isDark: true,
-        bg: AppColors.backgroundDarkPrimary,
-        card: AppColors.surfaceDark,
-        overlay: Colors.white.withValues(alpha: 0.06),
-        border: AppColors.borderDarkMedium,
-        textPrimary: AppColors.textDarkPrimary,
-        textMuted: AppColors.textDarkSecondary,
-        accent: AppColors.primaryCyan,
-        accentAlt: AppColors.secondaryLime,
-        textOnAccent: AppColors.textDarkPrimary,
-        shadow: AppColors.shadowDark,
-      );
-    }
-    return const _FSPalette(
-      isDark: false,
-      bg: AppColors.backgroundPrimary,
-      card: AppColors.surface,
-      overlay: AppColors.backgroundSecondary,
-      border: AppColors.borderLight,
-      textPrimary: AppColors.textPrimary,
-      textMuted: AppColors.textTertiary,
-      accent: AppColors.primaryOrange,
-      accentAlt: AppColors.secondaryTeal,
-      textOnAccent: AppColors.textInverse,
-      shadow: AppColors.shadow,
+  factory _FSPalette.fromContext(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = context.camsTokens;
+    return _FSPalette(
+      isDark: theme.brightness == Brightness.dark,
+      bg: tokens.bgBase,
+      card: tokens.bgContainer,
+      overlay: tokens.bgElevated,
+      border: tokens.borderSecondary,
+      textPrimary: tokens.textPrimary,
+      textMuted: tokens.textSecondary,
+      accent: theme.colorScheme.primary,
+      accentAlt: tokens.techAccent,
+      textOnAccent: tokens.textOnAccent,
+      shadow: tokens.shadow,
     );
   }
 

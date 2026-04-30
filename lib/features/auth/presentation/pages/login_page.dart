@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../../../core/widgets/app_inline_error_card.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
@@ -56,12 +56,11 @@ class _LoginPageState extends State<LoginPage> {
         listener: (_, __) {},
         builder: (context, state) {
           final isLoading = state.status == AuthStatus.loading;
-          final isDark = Theme.of(context).brightness == Brightness.dark;
+          final colorScheme = Theme.of(context).colorScheme;
+          final tokens = context.camsTokens;
 
           return Container(
-            color: isDark
-                ? AppColors.backgroundDarkPrimary
-                : AppColors.backgroundPrimary,
+            color: tokens.bgBase,
             child: SafeArea(
               child: Center(
                 child: SingleChildScrollView(
@@ -76,28 +75,29 @@ class _LoginPageState extends State<LoginPage> {
                           width: 120,
                           height: 120,
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.1),
+                            color: colorScheme.primary.withValues(alpha: 0.1),
                             shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 3),
+                            border: Border.all(
+                                color: colorScheme.primary, width: 3),
                           ),
-                          child: const Center(
+                          child: Center(
                             child: Text(
                               'CAMS',
                               style: TextStyle(
                                 fontSize: 32,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                                color: colorScheme.primary,
                                 letterSpacing: 2,
                               ),
                             ),
                           ),
                         ),
                         const SizedBox(height: 16),
-                        const Text(
+                        Text(
                           'Store Manager',
                           style: TextStyle(
                             fontSize: 18,
-                            color: Colors.white70,
+                            color: tokens.textSecondary,
                             letterSpacing: 1.5,
                           ),
                         ),
@@ -127,7 +127,7 @@ class _LoginPageState extends State<LoginPage> {
                                   'Login to manage your store',
                                   style: TextStyle(
                                     fontSize: 14,
-                                    color: Colors.grey[600],
+                                    color: tokens.textSecondary,
                                   ),
                                   textAlign: TextAlign.center,
                                 ),
@@ -153,7 +153,7 @@ class _LoginPageState extends State<LoginPage> {
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     filled: true,
-                                    fillColor: Colors.grey[50],
+                                    fillColor: tokens.bgElevated,
                                   ),
                                   validator: _validateEmail,
                                 ),
@@ -184,7 +184,7 @@ class _LoginPageState extends State<LoginPage> {
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     filled: true,
-                                    fillColor: Colors.grey[50],
+                                    fillColor: tokens.bgElevated,
                                   ),
                                   validator: (value) {
                                     if (value == null || value.isEmpty) {
@@ -202,8 +202,8 @@ class _LoginPageState extends State<LoginPage> {
                                 ElevatedButton(
                                   onPressed: isLoading ? null : _handleLogin,
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.primaryOrange,
-                                    foregroundColor: Colors.white,
+                                    backgroundColor: colorScheme.primary,
+                                    foregroundColor: colorScheme.onPrimary,
                                     padding: const EdgeInsets.symmetric(
                                       vertical: 16,
                                     ),
@@ -213,14 +213,14 @@ class _LoginPageState extends State<LoginPage> {
                                     elevation: 2,
                                   ),
                                   child: isLoading
-                                      ? const SizedBox(
+                                      ? SizedBox(
                                           height: 20,
                                           width: 20,
                                           child: CircularProgressIndicator(
                                             strokeWidth: 2,
                                             valueColor:
                                                 AlwaysStoppedAnimation<Color>(
-                                              Colors.white,
+                                              colorScheme.onPrimary,
                                             ),
                                           ),
                                         )
@@ -241,10 +241,10 @@ class _LoginPageState extends State<LoginPage> {
                                     onPressed: () {
                                       context.go('/forgot-password');
                                     },
-                                    child: const Text(
+                                    child: Text(
                                       'Forgot Password?',
                                       style: TextStyle(
-                                        color: AppColors.primaryOrange,
+                                        color: colorScheme.primary,
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
@@ -256,17 +256,17 @@ class _LoginPageState extends State<LoginPage> {
                                 Container(
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: AppColors.paleOrange,
+                                    color: tokens.brandPrimarySoft,
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Column(
                                     children: [
                                       Row(
                                         children: [
-                                          const Icon(
+                                          Icon(
                                             Icons.info_outline,
                                             size: 16,
-                                            color: AppColors.primaryOrange,
+                                            color: colorScheme.primary,
                                           ),
                                           const SizedBox(width: 8),
                                           Text(
@@ -274,7 +274,7 @@ class _LoginPageState extends State<LoginPage> {
                                             style: TextStyle(
                                               fontSize: 12,
                                               fontWeight: FontWeight.bold,
-                                              color: Colors.grey[700],
+                                              color: tokens.textPrimary,
                                             ),
                                           ),
                                         ],
@@ -284,7 +284,7 @@ class _LoginPageState extends State<LoginPage> {
                                         'Username: admin\nPassword: admin123',
                                         style: TextStyle(
                                           fontSize: 12,
-                                          color: Colors.grey[600],
+                                          color: tokens.textSecondary,
                                         ),
                                       ),
                                     ],

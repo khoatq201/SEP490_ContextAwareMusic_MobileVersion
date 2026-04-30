@@ -1,46 +1,28 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/cams_theme_tokens.dart';
+
 class MoodColorHelper {
   const MoodColorHelper._();
 
-  static LinearGradient gradientFor(String? mood) {
+  static LinearGradient gradientFor(String? mood, CamsThemeTokens tokens) {
     final key = mood?.trim().toLowerCase() ?? '';
-    switch (key) {
-      case 'energetic':
-        return const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFFFD54F), Color(0xFF00E676)],
-        );
-      case 'chill':
-        return const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF1E3A8A), Color(0xFF22D3EE)],
-        );
-      case 'focus':
-        return const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF14B8A6), Color(0xFF10B981)],
-        );
-      case 'happy':
-        return const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFF472B6), Color(0xFFF59E0B)],
-        );
-      default:
-        return const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF4B5563), Color(0xFF6B7280)],
-        );
-    }
+    final colors = switch (key) {
+      'energetic' => [tokens.moodEnergetic, tokens.success],
+      'chill' => [tokens.moodChill, tokens.techAccent],
+      'focus' => [tokens.moodFocus, tokens.techAccent],
+      'happy' => [tokens.moodDefault, tokens.moodEnergetic],
+      _ => [tokens.textTertiary, tokens.borderSecondary],
+    };
+    return LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: colors,
+    );
   }
 
-  static Color shadowColorFor(String? mood) {
-    final gradient = gradientFor(mood);
+  static Color shadowColorFor(String? mood, CamsThemeTokens tokens) {
+    final gradient = gradientFor(mood, tokens);
     return gradient.colors.first.withValues(alpha: 0.35);
   }
 }

@@ -6,6 +6,7 @@ import '../../../../core/constants/api_constants.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/constants/app_typography.dart';
+import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../../../core/widgets/app_inline_error_card.dart';
 import '../../../../core/widgets/cams_logo.dart';
 import '../bloc/auth_bloc.dart';
@@ -95,9 +96,7 @@ class _LoginPageV2State extends State<LoginPageV2>
       builder: (context, state) {
         final isLoading = state.status == AuthStatus.loading;
         final isDark = Theme.of(context).brightness == Brightness.dark;
-        final backgroundColor = isDark
-            ? AppColors.backgroundDarkPrimary
-            : AppColors.backgroundPrimary;
+        final backgroundColor = context.camsTokens.bgBase;
 
         return Scaffold(
           backgroundColor: backgroundColor,
@@ -175,7 +174,7 @@ class _LoginPageV2State extends State<LoginPageV2>
     return Container(
       padding: const EdgeInsets.all(AppDimensions.cardPaddingXl),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(28),
         border: Border.all(
           color: isDark ? AppColors.borderDarkMedium : AppColors.borderLight,
@@ -183,9 +182,7 @@ class _LoginPageV2State extends State<LoginPageV2>
         ),
         boxShadow: [
           BoxShadow(
-            color: isDark
-                ? Colors.black.withValues(alpha: 0.26)
-                : AppColors.shadow,
+            color: isDark ? context.camsTokens.shadow : AppColors.shadow,
             blurRadius: 40,
             offset: const Offset(0, 20),
           ),
@@ -357,7 +354,7 @@ class _LoginPageV2State extends State<LoginPageV2>
                     activeColor: isDark
                         ? AppColors.primaryCyan
                         : AppColors.primaryOrange,
-                    checkColor: Colors.white,
+                    checkColor: context.camsTokens.textOnAccent,
                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     visualDensity: const VisualDensity(
                       horizontal: -4,
@@ -455,12 +452,14 @@ class _LoginPageV2State extends State<LoginPageV2>
             onTap: isLoading ? null : _handleLogin,
             child: Center(
               child: isLoading
-                  ? const SizedBox(
+                  ? SizedBox(
                       height: 20,
                       width: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2.2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          context.camsTokens.textOnAccent,
+                        ),
                       ),
                     )
                   : Row(
@@ -470,14 +469,15 @@ class _LoginPageV2State extends State<LoginPageV2>
                         Icon(
                           Icons.login_rounded,
                           size: 22,
-                          color: Colors.white.withValues(alpha: 0.96),
+                          color: context.camsTokens.textOnAccent
+                              .withValues(alpha: 0.96),
                         ),
                         const SizedBox(width: 10),
                         Text(
                           'Sign In',
                           style: AppTypography.button.copyWith(
                             fontSize: 17,
-                            color: Colors.white,
+                            color: context.camsTokens.textOnAccent,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -496,8 +496,9 @@ class _LoginPageV2State extends State<LoginPageV2>
       width: double.infinity,
       child: OutlinedButton.icon(
         style: OutlinedButton.styleFrom(
-          backgroundColor:
-              isDark ? AppColors.surfaceDarkElevated : Colors.white,
+          backgroundColor: isDark
+              ? AppColors.surfaceDarkElevated
+              : context.camsTokens.bgContainer,
           foregroundColor:
               isDark ? AppColors.textDarkPrimary : AppColors.textPrimary,
           side: BorderSide(
@@ -737,7 +738,9 @@ class _LoginPageV2State extends State<LoginPageV2>
         fontWeight: FontWeight.w500,
       ),
       filled: true,
-      fillColor: isDark ? AppColors.surfaceDarkElevated : Colors.white,
+      fillColor: isDark
+          ? AppColors.surfaceDarkElevated
+          : context.camsTokens.bgContainer,
       isDense: true,
       contentPadding: const EdgeInsets.symmetric(
         horizontal: 20,

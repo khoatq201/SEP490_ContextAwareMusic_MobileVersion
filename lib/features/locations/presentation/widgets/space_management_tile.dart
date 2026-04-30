@@ -6,9 +6,9 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/player/player_bloc.dart';
 import '../../../../core/session/session_cubit.dart';
+import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../../cams/presentation/bloc/cams_playback_bloc.dart';
 import '../../../space_control/domain/entities/space.dart';
 import '../../../store_dashboard/domain/entities/store.dart';
@@ -134,10 +134,10 @@ class SpaceManagementTile extends StatelessWidget {
                             ),
                           if (isTargeted) const SizedBox(width: 8),
                           if (isTargetedLocalPreview)
-                            const _HeaderBadge(
+                            _HeaderBadge(
                               icon: LucideIcons.smartphone,
                               label: 'LOCAL',
-                              color: Color(0xFFB7791F),
+                              color: palette.warning,
                             ),
                           if (isTargetedLocalPreview) const SizedBox(width: 8),
                           _StatusBadge(isOnline: isOnline, palette: palette),
@@ -548,9 +548,9 @@ class _HubSummarySection extends StatelessWidget {
     final accent = !isConfigured
         ? palette.textMuted
         : binding.isSyncPending
-            ? const Color(0xFFB7791F)
+            ? palette.warning
             : binding.hasFailure
-                ? AppColors.error
+                ? palette.error
                 : palette.accent;
 
     return Container(
@@ -704,7 +704,7 @@ class _PairActionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accentColor = destructive ? AppColors.error : palette.accent;
+    final accentColor = destructive ? palette.error : palette.accent;
     return InkWell(
       onTap: enabled ? onTap : null,
       borderRadius: BorderRadius.circular(999),
@@ -818,7 +818,7 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isOnline ? AppColors.success : AppColors.error;
+    final color = isOnline ? palette.success : palette.error;
     final label = isOnline ? 'ONLINE' : 'OFFLINE';
 
     return Container(
@@ -1044,27 +1044,28 @@ class _SpacePalette {
     required this.textPrimary,
     required this.textMuted,
     required this.accent,
+    required this.success,
+    required this.warning,
+    required this.error,
   });
 
   factory _SpacePalette.of(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    if (isDark) {
-      return const _SpacePalette(
-        card: AppColors.surfaceDark,
-        panel: Color(0xFF121B26),
-        border: AppColors.borderDarkLight,
-        textPrimary: AppColors.textDarkPrimary,
-        textMuted: AppColors.textDarkSecondary,
-        accent: AppColors.primaryCyan,
-      );
-    }
-    return const _SpacePalette(
-      card: AppColors.surface,
-      panel: Color(0xFFF8F6F2),
-      border: AppColors.borderLight,
-      textPrimary: AppColors.textPrimary,
-      textMuted: AppColors.textTertiary,
-      accent: AppColors.primaryOrange,
+    final theme = Theme.of(context);
+    final tokens = context.camsTokens;
+    return _SpacePalette(
+      card: tokens.bgContainer,
+      panel: tokens.bgElevated,
+      border: tokens.borderSecondary,
+      textPrimary: tokens.textPrimary,
+      textMuted: tokens.textSecondary,
+      accent: theme.colorScheme.primary,
+      success: tokens.success,
+      warning: tokens.warning,
+      error: tokens.error,
     );
   }
+
+  final Color warning;
+  final Color error;
+  final Color success;
 }

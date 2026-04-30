@@ -5,11 +5,11 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/enums/queue_insert_mode_enum.dart';
 import '../../../../core/player/player_bloc.dart';
 import '../../../../core/presentation/shell_layout_metrics.dart';
 import '../../../../core/session/session_cubit.dart';
+import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../../../core/widgets/select_playlist_bottom_sheet.dart';
 import '../../../../core/widgets/song_options_bottom_sheet.dart';
 import '../../../../injection_container.dart';
@@ -30,7 +30,7 @@ class ApiPlaylistDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = _Palette.fromBrightness(Theme.of(context).brightness);
+    final palette = _Palette.fromContext(context);
     final hasMiniPlayer =
         context.select((PlayerBloc bloc) => bloc.state.hasTrack);
     final bottomSpacing = ShellLayoutMetrics.reservedBottom(
@@ -133,10 +133,9 @@ class _CoverSliverAppBar extends StatelessWidget {
           ),
         ),
         background: Container(
-          color: palette.isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+          color: palette.card,
           child: Center(
-            child:
-                Icon(Icons.music_note, color: Colors.grey.shade400, size: 72),
+            child: Icon(Icons.music_note, color: palette.textMuted, size: 72),
           ),
         ),
       ),
@@ -226,12 +225,12 @@ class _PlaylistHeader extends StatelessWidget {
             const SizedBox(height: 8),
             Row(
               children: [
-                Icon(LucideIcons.wifi, color: Colors.green.shade400, size: 14),
+                Icon(LucideIcons.wifi, color: palette.success, size: 14),
                 const SizedBox(width: 5),
                 Text(
                   'HLS stream ready',
                   style: GoogleFonts.inter(
-                    color: Colors.green.shade400,
+                    color: palette.success,
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                   ),
@@ -262,11 +261,11 @@ class _PlaylistHeader extends StatelessWidget {
                         ),
                       ),
                       icon: isOverriding
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 18,
                               height: 18,
                               child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Colors.white),
+                                  strokeWidth: 2, color: palette.textOnAccent),
                             )
                           : const Icon(LucideIcons.play, size: 18),
                       label: Text(
@@ -434,7 +433,7 @@ class _TrackTile extends StatelessWidget {
           context: context,
           playlist: playlist,
           track: track,
-          palette: _Palette.fromBrightness(Theme.of(context).brightness),
+          palette: palette,
           requestedMode: _defaultTrackTapMode(),
         );
       },
@@ -551,9 +550,7 @@ class _TrackTile extends StatelessWidget {
                       context: context,
                       playlist: playlist,
                       track: track,
-                      palette: _Palette.fromBrightness(
-                        Theme.of(context).brightness,
-                      ),
+                      palette: palette,
                       requestedMode: QueueInsertModeEnum.playNow,
                     );
                     break;
@@ -562,9 +559,7 @@ class _TrackTile extends StatelessWidget {
                       context: context,
                       playlist: playlist,
                       track: track,
-                      palette: _Palette.fromBrightness(
-                        Theme.of(context).brightness,
-                      ),
+                      palette: palette,
                       requestedMode: QueueInsertModeEnum.playNext,
                     );
                     break;
@@ -573,9 +568,7 @@ class _TrackTile extends StatelessWidget {
                       context: context,
                       playlist: playlist,
                       track: track,
-                      palette: _Palette.fromBrightness(
-                        Theme.of(context).brightness,
-                      ),
+                      palette: palette,
                       requestedMode: QueueInsertModeEnum.addToQueue,
                     );
                     break;
@@ -1120,39 +1113,27 @@ class _Palette {
     required this.textMuted,
     required this.accent,
     required this.accentAlt,
+    required this.success,
     required this.textOnAccent,
     required this.shadow,
   });
 
-  factory _Palette.fromBrightness(Brightness brightness) {
-    final isDark = brightness == Brightness.dark;
-    if (isDark) {
-      return _Palette(
-        isDark: true,
-        bg: AppColors.backgroundDarkPrimary,
-        card: AppColors.surfaceDark,
-        overlay: Colors.white.withValues(alpha: 0.06),
-        border: AppColors.borderDarkMedium,
-        textPrimary: AppColors.textDarkPrimary,
-        textMuted: AppColors.textDarkSecondary,
-        accent: AppColors.primaryCyan,
-        accentAlt: AppColors.secondaryLime,
-        textOnAccent: AppColors.textDarkPrimary,
-        shadow: AppColors.shadowDark,
-      );
-    }
-    return const _Palette(
-      isDark: false,
-      bg: AppColors.backgroundPrimary,
-      card: AppColors.surface,
-      overlay: AppColors.backgroundSecondary,
-      border: AppColors.borderLight,
-      textPrimary: AppColors.textPrimary,
-      textMuted: AppColors.textTertiary,
-      accent: AppColors.primaryOrange,
-      accentAlt: AppColors.secondaryTeal,
-      textOnAccent: AppColors.textInverse,
-      shadow: AppColors.shadow,
+  factory _Palette.fromContext(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = context.camsTokens;
+    return _Palette(
+      isDark: theme.brightness == Brightness.dark,
+      bg: tokens.bgBase,
+      card: tokens.bgContainer,
+      overlay: tokens.bgElevated,
+      border: tokens.border,
+      textPrimary: tokens.textPrimary,
+      textMuted: tokens.textSecondary,
+      accent: theme.colorScheme.primary,
+      accentAlt: tokens.techAccent,
+      success: tokens.success,
+      textOnAccent: tokens.textOnAccent,
+      shadow: tokens.shadow,
     );
   }
 
@@ -1165,6 +1146,7 @@ class _Palette {
   final Color textMuted;
   final Color accent;
   final Color accentAlt;
+  final Color success;
   final Color textOnAccent;
   final Color shadow;
 }

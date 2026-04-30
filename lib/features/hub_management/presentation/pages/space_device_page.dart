@@ -3,9 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/player/player_bloc.dart';
 import '../../../../core/player/player_state.dart' as ps;
+import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../data/repositories/mock_hub_repository.dart';
 import '../../domain/entities/hub_entity.dart';
 import '../../domain/entities/hub_sensor_entity.dart';
@@ -73,8 +73,8 @@ class _SpaceDevicePageState extends State<SpaceDevicePage> {
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: Colors.red.shade500,
-              foregroundColor: Colors.white,
+              backgroundColor: palette.error,
+              foregroundColor: palette.textOnAccent,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
             ),
@@ -108,8 +108,7 @@ class _SpaceDevicePageState extends State<SpaceDevicePage> {
 
   @override
   Widget build(BuildContext context) {
-    final palette =
-        SpaceDevicePalette.fromBrightness(Theme.of(context).brightness);
+    final palette = SpaceDevicePalette.fromContext(context);
     final hub = _space.currentHub;
 
     return BlocListener<PlayerBloc, ps.PlayerState>(
@@ -304,7 +303,7 @@ class _HubOverviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statusColor = hub.isOnline ? Colors.green : Colors.red.shade400;
+    final statusColor = hub.isOnline ? palette.success : palette.error;
     final statusLabel = hub.isOnline ? 'Online' : 'Offline';
 
     return _SectionCard(
@@ -356,7 +355,8 @@ class _HubOverviewCard extends StatelessWidget {
                         boxShadow: hub.isOnline
                             ? [
                                 BoxShadow(
-                                    color: Colors.green.withValues(alpha: 0.6),
+                                    color:
+                                        palette.success.withValues(alpha: 0.6),
                                     blurRadius: 5)
                               ]
                             : null,
@@ -399,21 +399,21 @@ class _HubOverviewCard extends StatelessWidget {
             label: 'Wi-Fi Signal Strength',
             value: hub.wifiSignalStrength,
             palette: palette,
-            valueColor: _wifiColor(hub.wifiSignalStrength),
+            valueColor: _wifiColor(hub.wifiSignalStrength, palette),
           ),
         ],
       ),
     );
   }
 
-  Color _wifiColor(String strength) {
+  Color _wifiColor(String strength, SpaceDevicePalette palette) {
     switch (strength) {
       case 'Strong':
-        return Colors.green;
+        return palette.success;
       case 'Weak':
-        return Colors.orange;
+        return palette.warning;
       default:
-        return Colors.orange.shade300;
+        return palette.warning.withValues(alpha: 0.85);
     }
   }
 }
@@ -673,10 +673,9 @@ class _SettingsButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isDestructive ? Colors.red.shade400 : palette.textPrimary;
-    final borderColor = isDestructive
-        ? Colors.red.shade300.withValues(alpha: 0.5)
-        : palette.border;
+    final color = isDestructive ? palette.error : palette.textPrimary;
+    final borderColor =
+        isDestructive ? palette.error.withValues(alpha: 0.5) : palette.border;
 
     return OutlinedButton.icon(
       onPressed: onTap,
@@ -715,7 +714,8 @@ class _SectionCard extends StatelessWidget {
         border: Border.all(color: palette.border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: palette.isDark ? 0.22 : 0.06),
+            color:
+                palette.shadow.withValues(alpha: palette.isDark ? 0.22 : 0.06),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -883,7 +883,7 @@ class _WifiConfigBottomSheetState extends State<WifiConfigBottomSheet> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Text('Wi-Fi changed successfully'),
-        backgroundColor: Colors.green.shade600,
+        backgroundColor: _p.success,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
@@ -1212,31 +1212,28 @@ class SpaceDevicePalette {
     required this.textMuted,
     required this.accent,
     required this.textOnAccent,
+    required this.success,
+    required this.warning,
+    required this.error,
+    required this.shadow,
   });
 
-  factory SpaceDevicePalette.fromBrightness(Brightness brightness) {
-    final isDark = brightness == Brightness.dark;
-    if (isDark) {
-      return const SpaceDevicePalette(
-        isDark: true,
-        bg: AppColors.backgroundDarkPrimary,
-        card: AppColors.surfaceDark,
-        border: AppColors.borderDarkMedium,
-        textPrimary: AppColors.textDarkPrimary,
-        textMuted: AppColors.textDarkSecondary,
-        accent: AppColors.primaryCyan,
-        textOnAccent: AppColors.textDarkPrimary,
-      );
-    }
-    return const SpaceDevicePalette(
-      isDark: false,
-      bg: AppColors.backgroundPrimary,
-      card: AppColors.surface,
-      border: AppColors.borderLight,
-      textPrimary: AppColors.textPrimary,
-      textMuted: AppColors.textTertiary,
-      accent: AppColors.primaryOrange,
-      textOnAccent: AppColors.textInverse,
+  factory SpaceDevicePalette.fromContext(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = context.camsTokens;
+    return SpaceDevicePalette(
+      isDark: Theme.of(context).brightness == Brightness.dark,
+      bg: tokens.bgBase,
+      card: tokens.bgContainer,
+      border: tokens.borderSecondary,
+      textPrimary: tokens.textPrimary,
+      textMuted: tokens.textSecondary,
+      accent: colorScheme.primary,
+      textOnAccent: colorScheme.onPrimary,
+      success: tokens.success,
+      warning: tokens.warning,
+      error: tokens.error,
+      shadow: tokens.shadow,
     );
   }
 
@@ -1248,4 +1245,8 @@ class SpaceDevicePalette {
   final Color textMuted;
   final Color accent;
   final Color textOnAccent;
+  final Color success;
+  final Color warning;
+  final Color error;
+  final Color shadow;
 }

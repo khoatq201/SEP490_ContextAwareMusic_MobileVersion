@@ -13,6 +13,7 @@ import '../../../../core/player/player_bloc.dart';
 import '../../../../core/player/player_event.dart';
 import '../../../../core/player/space_info.dart';
 import '../../../../core/presentation/app_feedback.dart';
+import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../../../core/widgets/app_error_view.dart';
 import '../../../../core/widgets/app_feedback_presenter.dart';
 import '../../../../core/widgets/cams_skeleton.dart';
@@ -68,12 +69,14 @@ class StoreDashboardPage extends StatelessWidget {
   void _showAccountSheet(BuildContext context) {
     final authState = context.read<AuthBloc>().state;
     final user = authState.user;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final tokens = context.camsTokens;
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
     showModalBottomSheet(
       context: context,
-      backgroundColor:
-          isDark ? AppColors.backgroundDarkSecondary : Colors.white,
+      backgroundColor: tokens.bgElevated,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -88,7 +91,7 @@ class StoreDashboardPage extends StatelessWidget {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.white24 : Colors.black26,
+                  color: tokens.textTertiary.withValues(alpha: 0.35),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -101,7 +104,12 @@ class StoreDashboardPage extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    _buildAvatar(user?.avatarUrl, user?.username, size: 52),
+                    _buildAvatar(
+                      context,
+                      user?.avatarUrl,
+                      user?.username,
+                      size: 52,
+                    ),
                     const SizedBox(width: AppDimensions.spacingMd),
                     Expanded(
                       child: Column(
@@ -135,7 +143,7 @@ class StoreDashboardPage extends StatelessWidget {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
-                                color: AppColors.primaryOrange.withValues(
+                                color: colorScheme.primary.withValues(
                                   alpha: 0.15,
                                 ),
                                 borderRadius: BorderRadius.circular(10),
@@ -143,7 +151,7 @@ class StoreDashboardPage extends StatelessWidget {
                               child: Text(
                                 user!.role.toUpperCase(),
                                 style: AppTypography.labelSmall.copyWith(
-                                  color: AppColors.primaryOrange,
+                                  color: colorScheme.primary,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -163,11 +171,11 @@ class StoreDashboardPage extends StatelessWidget {
                   leading: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withValues(alpha: 0.12),
+                      color: tokens.techAccentSoft,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.store_outlined,
-                        color: Colors.blue, size: 22),
+                    child: Icon(Icons.store_outlined,
+                        color: tokens.techAccent, size: 22),
                   ),
                   title: Text(
                     'Switch Store',
@@ -232,22 +240,29 @@ class StoreDashboardPage extends StatelessWidget {
     );
   }
 
-  Widget _buildAvatar(String? avatarUrl, String? username, {double size = 36}) {
+  Widget _buildAvatar(
+    BuildContext context,
+    String? avatarUrl,
+    String? username, {
+    double size = 36,
+  }) {
+    final tokens = context.camsTokens;
+    final colorScheme = Theme.of(context).colorScheme;
     if (avatarUrl != null && avatarUrl.isNotEmpty) {
       return CircleAvatar(
         radius: size / 2,
         backgroundImage: NetworkImage(avatarUrl),
-        backgroundColor: AppColors.primaryOrange.withValues(alpha: 0.2),
+        backgroundColor: tokens.brandPrimarySoft,
       );
     }
     final initials = _getInitials(username);
     return CircleAvatar(
       radius: size / 2,
-      backgroundColor: AppColors.primaryOrange.withValues(alpha: 0.85),
+      backgroundColor: colorScheme.primary.withValues(alpha: 0.85),
       child: Text(
         initials,
         style: TextStyle(
-          color: Colors.white,
+          color: tokens.textOnAccent,
           fontSize: size * 0.38,
           fontWeight: FontWeight.w700,
         ),
@@ -854,17 +869,15 @@ class StoreDashboardPage extends StatelessWidget {
     required bool canManageMusicPolicy,
     required bool canViewGovernanceConfig,
   }) async {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary =
-        isDark ? AppColors.textDarkPrimary : AppColors.textPrimary;
-    final textSecondary =
-        isDark ? AppColors.textDarkSecondary : AppColors.textSecondary;
+    final tokens = context.camsTokens;
+    final textPrimary = tokens.textPrimary;
+    final textSecondary = tokens.textSecondary;
 
     final selectedAction =
         await showModalBottomSheet<_StoreDashboardToolAction>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
+      backgroundColor: tokens.bgElevated,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -884,7 +897,7 @@ class StoreDashboardPage extends StatelessWidget {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.white24 : Colors.black26,
+                      color: tokens.textTertiary.withValues(alpha: 0.35),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -1102,6 +1115,7 @@ class StoreDashboardPage extends StatelessWidget {
                   child: GestureDetector(
                     onTap: () => _showAccountSheet(context),
                     child: _buildAvatar(
+                      context,
                       authState.user?.avatarUrl,
                       authState.user?.username,
                     ),

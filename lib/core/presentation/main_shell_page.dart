@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-import '../constants/app_colors.dart';
 import '../player/widgets/mini_player_widget.dart';
+import '../theme/cams_theme_tokens.dart';
 
 /// The main shell page that wraps the 5-tab bottom navigation.
 /// Rendered by ShellRoute inside go_router so that each tab branch
@@ -40,7 +40,7 @@ class MainShellPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final currentIndex = _currentIndex(context);
     final colorScheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final tokens = context.camsTokens;
     final keyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
     final shouldHideShellChromeForKeyboard =
         keyboardVisible && currentIndex == 1;
@@ -48,10 +48,10 @@ class MainShellPage extends StatelessWidget {
     // ── Bottom navigation bar ──────────────────────────────────────────
     final bottomNav = Container(
       decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : Colors.white,
+        color: tokens.bgContainer,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: tokens.shadow,
             blurRadius: 12,
             offset: const Offset(0, -2),
           ),
@@ -70,6 +70,7 @@ class MainShellPage extends StatelessWidget {
                 label: 'Home',
                 onTap: () => _onTap(context, 0),
                 activeColor: colorScheme.primary,
+                inactiveColor: tokens.textSecondary,
               ),
               _NavItem(
                 index: 1,
@@ -79,6 +80,7 @@ class MainShellPage extends StatelessWidget {
                 label: 'Search',
                 onTap: () => _onTap(context, 1),
                 activeColor: colorScheme.primary,
+                inactiveColor: tokens.textSecondary,
               ),
               // Centre "Now Playing" tab – visually prominent
               _NavItemCenter(
@@ -86,6 +88,8 @@ class MainShellPage extends StatelessWidget {
                 currentIndex: currentIndex,
                 onTap: () => _onTap(context, 2),
                 activeColor: colorScheme.primary,
+                inactiveColor: tokens.textSecondary,
+                onActiveColor: colorScheme.onPrimary,
               ),
               _NavItem(
                 index: 3,
@@ -95,6 +99,7 @@ class MainShellPage extends StatelessWidget {
                 label: 'Library',
                 onTap: () => _onTap(context, 3),
                 activeColor: colorScheme.primary,
+                inactiveColor: tokens.textSecondary,
               ),
               _NavItem(
                 index: 4,
@@ -104,6 +109,7 @@ class MainShellPage extends StatelessWidget {
                 label: 'Location',
                 onTap: () => _onTap(context, 4),
                 activeColor: colorScheme.primary,
+                inactiveColor: tokens.textSecondary,
               ),
             ],
           ),
@@ -190,6 +196,7 @@ class _NavItem extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
   final Color activeColor;
+  final Color inactiveColor;
 
   const _NavItem({
     required this.index,
@@ -199,12 +206,13 @@ class _NavItem extends StatelessWidget {
     required this.label,
     required this.onTap,
     required this.activeColor,
+    required this.inactiveColor,
   });
 
   @override
   Widget build(BuildContext context) {
     final isActive = index == currentIndex;
-    final color = isActive ? activeColor : AppColors.textSecondary;
+    final color = isActive ? activeColor : inactiveColor;
 
     return Expanded(
       child: InkWell(
@@ -237,12 +245,16 @@ class _NavItemCenter extends StatelessWidget {
   final int currentIndex;
   final VoidCallback onTap;
   final Color activeColor;
+  final Color inactiveColor;
+  final Color onActiveColor;
 
   const _NavItemCenter({
     required this.index,
     required this.currentIndex,
     required this.onTap,
     required this.activeColor,
+    required this.inactiveColor,
+    required this.onActiveColor,
   });
 
   @override
@@ -283,7 +295,7 @@ class _NavItemCenter extends StatelessWidget {
               ),
               child: Icon(
                 LucideIcons.playCircle,
-                color: isActive ? Colors.white : activeColor,
+                color: isActive ? onActiveColor : activeColor,
                 size: 24,
               ),
             ),
@@ -293,7 +305,7 @@ class _NavItemCenter extends StatelessWidget {
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                color: isActive ? activeColor : AppColors.textSecondary,
+                color: isActive ? activeColor : inactiveColor,
               ),
             ),
           ],

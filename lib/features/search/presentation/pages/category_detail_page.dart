@@ -6,6 +6,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
+import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../../../core/widgets/app_error_view.dart';
 import '../../../../core/widgets/cams_skeleton.dart';
 import '../../../../injection_container.dart';
@@ -169,10 +170,9 @@ class _PlaylistGrid extends StatelessWidget {
                           playlist.coverUrl!,
                           width: double.infinity,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
-                              _CoverFallback(isDark: isDark),
+                          errorBuilder: (_, __, ___) => const _CoverFallback(),
                         )
-                      : _CoverFallback(isDark: isDark),
+                      : const _CoverFallback(),
                 ),
               ),
               const SizedBox(height: 6),
@@ -209,15 +209,16 @@ class _PlaylistGrid extends StatelessWidget {
 }
 
 class _CoverFallback extends StatelessWidget {
-  final bool isDark;
-  const _CoverFallback({required this.isDark});
+  const _CoverFallback();
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
+
     return Container(
       width: double.infinity,
-      color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
-      child: Icon(LucideIcons.music4, size: 48, color: Colors.grey.shade400),
+      color: tokens.bgContainer,
+      child: Icon(LucideIcons.music4, size: 48, color: tokens.textTertiary),
     );
   }
 }

@@ -9,6 +9,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/presentation/app_error_presentation.dart';
+import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../../../core/widgets/app_status_banner.dart';
 import '../../data/services/esp_develop_mode_client.dart';
 import '../../domain/entities/ble_candidate.dart';
@@ -1642,7 +1643,7 @@ class _NvrPreviewPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.black.withValues(alpha: 0.08),
+      color: palette.panel,
       alignment: Alignment.center,
       child: Text(
         label,
@@ -2656,19 +2657,16 @@ class _HubPalette {
   final Color accent;
 
   factory _HubPalette.of(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final tokens = context.camsTokens;
     return _HubPalette(
-      bg: isDark
-          ? AppColors.backgroundDarkPrimary
-          : AppColors.backgroundPrimary,
-      card: isDark ? AppColors.surfaceDark : Colors.white,
-      panel: isDark
-          ? AppColors.surfaceDark.withValues(alpha: 0.78)
-          : AppColors.backgroundPrimary,
-      border: isDark ? Colors.white.withValues(alpha: 0.08) : AppColors.divider,
-      textPrimary: isDark ? AppColors.textDarkPrimary : AppColors.textPrimary,
-      textMuted: isDark ? AppColors.textDarkSecondary : AppColors.textSecondary,
-      accent: isDark ? AppColors.primaryCyan : AppColors.primaryOrange,
+      bg: tokens.bgBase,
+      card: tokens.bgContainer,
+      panel: tokens.bgElevated,
+      border: tokens.borderSecondary,
+      textPrimary: tokens.textPrimary,
+      textMuted: tokens.textSecondary,
+      accent: theme.colorScheme.primary,
     );
   }
 }

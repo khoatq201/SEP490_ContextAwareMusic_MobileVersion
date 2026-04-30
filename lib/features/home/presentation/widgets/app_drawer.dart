@@ -1,58 +1,59 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/theme/cams_theme_tokens.dart';
+
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
 
-  static const Color _headerBlue = Color(0xFF42A5F5);
-  static const Color _menuBlue = Color(0xFF1E88E5);
-  static const Color _selectedBackground = Color(0xFFE3F2FD);
-  static const Color _switchBlue = Color(0xFF4FC3F7);
-
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = context.camsTokens;
+
     return Drawer(
+      backgroundColor: tokens.bgContainer,
       child: Column(
         children: [
           Container(
             width: double.infinity,
-            color: _headerBlue,
+            color: colorScheme.primary,
             padding: const EdgeInsets.fromLTRB(20, 56, 20, 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
+                Row(
                   children: [
                     CircleAvatar(
                       radius: 26,
-                      backgroundColor: Colors.white,
+                      backgroundColor: colorScheme.onPrimary,
                       child: Icon(
                         Icons.person,
-                        color: _menuBlue,
+                        color: colorScheme.primary,
                         size: 30,
                       ),
                     ),
-                    Spacer(),
+                    const Spacer(),
                     Icon(
                       Icons.refresh,
-                      color: Colors.white70,
+                      color: colorScheme.onPrimary.withValues(alpha: 0.7),
                     ),
                   ],
                 ),
                 const SizedBox(height: 18),
-                const Text(
+                Text(
                   'Demo Administrator',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: colorScheme.onPrimary,
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
+                Text(
                   'admin@cams-demo.com',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: colorScheme.onPrimary,
                     fontSize: 13,
                   ),
                 ),
@@ -61,13 +62,13 @@ class AppDrawer extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.lightBlueAccent.withValues(alpha: 0.25),
+                    color: colorScheme.onPrimary.withValues(alpha: 0.18),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Text(
+                  child: Text(
                     'ADMIN',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: colorScheme.onPrimary,
                       fontWeight: FontWeight.w700,
                       fontSize: 10,
                       letterSpacing: 0.6,
@@ -84,10 +85,10 @@ class AppDrawer extends StatelessWidget {
                 ListTile(
                   leading: const Icon(Icons.storefront),
                   title: const Text('3 Stores'),
-                  trailing: const Text(
+                  trailing: Text(
                     'Switch',
                     style: TextStyle(
-                      color: _switchBlue,
+                      color: tokens.techAccent,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -97,13 +98,13 @@ class AppDrawer extends StatelessWidget {
                   },
                 ),
                 Container(
-                  color: _selectedBackground,
+                  color: colorScheme.primary.withValues(alpha: 0.12),
                   child: ListTile(
-                    leading: const Icon(Icons.dashboard, color: _menuBlue),
-                    title: const Text(
+                    leading: Icon(Icons.dashboard, color: colorScheme.primary),
+                    title: Text(
                       'Dashboard',
                       style: TextStyle(
-                        color: _menuBlue,
+                        color: colorScheme.primary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -143,14 +144,14 @@ class AppDrawer extends StatelessWidget {
           SafeArea(
             top: false,
             child: ListTile(
-              leading: const Icon(
+              leading: Icon(
                 Icons.logout,
-                color: Colors.red,
+                color: tokens.error,
               ),
-              title: const Text(
+              title: Text(
                 'Logout',
                 style: TextStyle(
-                  color: Colors.red,
+                  color: tokens.error,
                   fontWeight: FontWeight.w600,
                 ),
               ),

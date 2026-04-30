@@ -9,6 +9,7 @@ import '../../../../core/error/exceptions.dart';
 import '../../../../core/enums/space_type_enum.dart';
 import '../../../../core/enums/user_role.dart';
 import '../../../../core/session/session_cubit.dart';
+import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../../../core/widgets/cams_skeleton.dart';
 import '../../../../injection_container.dart';
 import '../../../hub_management/presentation/pages/space_hub_page.dart';
@@ -1167,7 +1168,7 @@ class _SpaceContextCard extends StatelessWidget {
         border: Border.all(color: palette.border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: palette.isDark ? 0.18 : 0.05),
+            color: palette.shadow,
             blurRadius: 24,
             offset: const Offset(0, 10),
           ),
@@ -1425,6 +1426,7 @@ class _SheetPalette {
     required this.textPrimary,
     required this.textMuted,
     required this.accent,
+    required this.shadow,
   });
 
   final bool isDark;
@@ -1435,21 +1437,22 @@ class _SheetPalette {
   final Color textPrimary;
   final Color textMuted;
   final Color accent;
+  final Color shadow;
 
   factory _SheetPalette.of(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final tokens = context.camsTokens;
+    final isDark = theme.brightness == Brightness.dark;
     return _SheetPalette(
       isDark: isDark,
-      bg: isDark
-          ? AppColors.backgroundDarkPrimary
-          : AppColors.backgroundPrimary,
-      card: isDark ? AppColors.surfaceDark : Colors.white,
-      panel:
-          isDark ? AppColors.surfaceDarkElevated : AppColors.backgroundPrimary,
-      border: isDark ? AppColors.borderDarkLight : AppColors.borderLight,
-      textPrimary: isDark ? AppColors.textDarkPrimary : AppColors.textPrimary,
-      textMuted: isDark ? AppColors.textDarkSecondary : AppColors.textTertiary,
-      accent: isDark ? AppColors.primaryCyan : AppColors.primaryOrange,
+      bg: tokens.bgBase,
+      card: tokens.bgContainer,
+      panel: tokens.bgElevated,
+      border: tokens.borderSecondary,
+      textPrimary: tokens.textPrimary,
+      textMuted: tokens.textSecondary,
+      accent: theme.colorScheme.primary,
+      shadow: tokens.shadow,
     );
   }
 }

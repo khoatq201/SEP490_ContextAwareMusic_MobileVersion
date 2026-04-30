@@ -740,6 +740,7 @@ class _MasterControlCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final onAccent = palette.textOnAccent;
     final modeTitle = !hasSpaceSelected
         ? 'No space selected'
         : autoModeEnabled
@@ -795,7 +796,7 @@ class _MasterControlCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
+                        color: onAccent.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Icon(
@@ -804,7 +805,7 @@ class _MasterControlCard extends StatelessWidget {
                             : manualSelectionOpen
                                 ? LucideIcons.sparkles
                                 : Icons.tune_rounded,
-                        color: Colors.white,
+                        color: onAccent,
                         size: 28,
                       ),
                     ),
@@ -816,7 +817,7 @@ class _MasterControlCard extends StatelessWidget {
                           Text(
                             modeTitle,
                             style: GoogleFonts.poppins(
-                              color: Colors.white,
+                              color: onAccent,
                               fontSize: 17,
                               fontWeight: FontWeight.w700,
                             ),
@@ -825,7 +826,7 @@ class _MasterControlCard extends StatelessWidget {
                           Text(
                             modeDescription,
                             style: GoogleFonts.inter(
-                              color: Colors.white.withValues(alpha: 0.80),
+                              color: onAccent.withValues(alpha: 0.80),
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
                             ),
@@ -835,7 +836,7 @@ class _MasterControlCard extends StatelessWidget {
                             children: [
                               Icon(
                                 LucideIcons.music2,
-                                color: Colors.white.withValues(alpha: 0.70),
+                                color: onAccent.withValues(alpha: 0.70),
                                 size: 13,
                               ),
                               const SizedBox(width: 5),
@@ -845,7 +846,7 @@ class _MasterControlCard extends StatelessWidget {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: GoogleFonts.inter(
-                                    color: Colors.white.withValues(alpha: 0.65),
+                                    color: onAccent.withValues(alpha: 0.65),
                                     fontSize: 11,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -867,6 +868,7 @@ class _MasterControlCard extends StatelessWidget {
                         icon: LucideIcons.cpu,
                         selected: autoModeEnabled,
                         enabled: hasSpaceSelected && !isApplying,
+                        onAccent: onAccent,
                         onTap: onSelectAuto,
                       ),
                     ),
@@ -877,6 +879,7 @@ class _MasterControlCard extends StatelessWidget {
                         icon: Icons.tune_rounded,
                         selected: manualModeActive,
                         enabled: hasSpaceSelected && !isApplying,
+                        onAccent: onAccent,
                         onTap: onSelectManual,
                       ),
                     ),
@@ -890,7 +893,7 @@ class _MasterControlCard extends StatelessWidget {
                       onPressed:
                           hasSpaceSelected && !isApplying ? onChangeMood : null,
                       style: TextButton.styleFrom(
-                        foregroundColor: Colors.white,
+                        foregroundColor: onAccent,
                         padding: EdgeInsets.zero,
                         minimumSize: const Size(0, 0),
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -912,7 +915,7 @@ class _MasterControlCard extends StatelessWidget {
                     children: [
                       Icon(
                         Icons.info_outline_rounded,
-                        color: Colors.white.withValues(alpha: 0.88),
+                        color: onAccent.withValues(alpha: 0.88),
                         size: 14,
                       ),
                       const SizedBox(width: 6),
@@ -920,7 +923,7 @@ class _MasterControlCard extends StatelessWidget {
                         child: Text(
                           'Mood options below only open because you explicitly entered manual setup here.',
                           style: GoogleFonts.inter(
-                            color: Colors.white.withValues(alpha: 0.90),
+                            color: onAccent.withValues(alpha: 0.90),
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                           ),
@@ -929,7 +932,7 @@ class _MasterControlCard extends StatelessWidget {
                       TextButton(
                         onPressed: isApplying ? null : onCloseManualPicker,
                         style: TextButton.styleFrom(
-                          foregroundColor: Colors.white,
+                          foregroundColor: onAccent,
                           minimumSize: const Size(0, 0),
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           padding: const EdgeInsets.symmetric(
@@ -955,12 +958,12 @@ class _MasterControlCard extends StatelessWidget {
                   Row(
                     children: [
                       if (isApplying)
-                        const SizedBox(
+                        SizedBox(
                           width: 14,
                           height: 14,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: Colors.white,
+                            color: onAccent,
                           ),
                         )
                       else
@@ -968,7 +971,7 @@ class _MasterControlCard extends StatelessWidget {
                           isPendingTranscode
                               ? LucideIcons.loader
                               : LucideIcons.info,
-                          color: Colors.white.withValues(alpha: 0.85),
+                          color: onAccent.withValues(alpha: 0.85),
                           size: 14,
                         ),
                       const SizedBox(width: 8),
@@ -981,7 +984,7 @@ class _MasterControlCard extends StatelessWidget {
                                       ? 'Accepted (202). Stream starts when transcode is ready.'
                                       : '')),
                           style: GoogleFonts.inter(
-                            color: Colors.white.withValues(alpha: 0.92),
+                            color: onAccent.withValues(alpha: 0.92),
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                           ),
@@ -1005,6 +1008,7 @@ class _ModeActionButton extends StatelessWidget {
     required this.icon,
     required this.selected,
     required this.enabled,
+    required this.onAccent,
     required this.onTap,
   });
 
@@ -1012,6 +1016,7 @@ class _ModeActionButton extends StatelessWidget {
   final IconData icon;
   final bool selected;
   final bool enabled;
+  final Color onAccent;
   final VoidCallback onTap;
 
   @override
@@ -1026,24 +1031,24 @@ class _ModeActionButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           decoration: BoxDecoration(
             color: selected
-                ? Colors.white.withValues(alpha: 0.22)
-                : Colors.white.withValues(alpha: 0.10),
+                ? onAccent.withValues(alpha: 0.22)
+                : onAccent.withValues(alpha: 0.10),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: selected
-                  ? Colors.white.withValues(alpha: 0.78)
-                  : Colors.white.withValues(alpha: 0.24),
+                  ? onAccent.withValues(alpha: 0.78)
+                  : onAccent.withValues(alpha: 0.24),
             ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: Colors.white, size: 16),
+              Icon(icon, color: onAccent, size: 16),
               const SizedBox(width: 8),
               Text(
                 label,
                 style: GoogleFonts.inter(
-                  color: Colors.white.withValues(alpha: enabled ? 0.96 : 0.55),
+                  color: onAccent.withValues(alpha: enabled ? 0.96 : 0.55),
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),

@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../../../core/widgets/cams_skeleton.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
@@ -14,7 +14,7 @@ class SettingsUserPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = _UserPalette.fromBrightness(Theme.of(context).brightness);
+    final palette = _UserPalette.fromContext(context);
 
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
@@ -264,27 +264,17 @@ class _UserPalette {
     required this.primaryButtonText,
   });
 
-  factory _UserPalette.fromBrightness(Brightness brightness) {
-    if (brightness == Brightness.dark) {
-      return const _UserPalette(
-        background: AppColors.backgroundDarkPrimary,
-        card: AppColors.surfaceDark,
-        divider: AppColors.borderDarkLight,
-        textPrimary: AppColors.textDarkPrimary,
-        textSecondary: AppColors.textDarkSecondary,
-        primaryButton: AppColors.primaryCyan,
-        primaryButtonText: AppColors.backgroundDarkPrimary,
-      );
-    }
-
-    return const _UserPalette(
-      background: AppColors.backgroundSecondary,
-      card: Colors.white,
-      divider: AppColors.divider,
-      textPrimary: AppColors.textPrimary,
-      textSecondary: AppColors.textTertiary,
-      primaryButton: Colors.black,
-      primaryButtonText: Colors.white,
+  factory _UserPalette.fromContext(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = context.camsTokens;
+    return _UserPalette(
+      background: tokens.bgBase,
+      card: tokens.bgContainer,
+      divider: tokens.divider,
+      textPrimary: tokens.textPrimary,
+      textSecondary: tokens.textSecondary,
+      primaryButton: theme.colorScheme.primary,
+      primaryButtonText: tokens.textOnAccent,
     );
   }
 }

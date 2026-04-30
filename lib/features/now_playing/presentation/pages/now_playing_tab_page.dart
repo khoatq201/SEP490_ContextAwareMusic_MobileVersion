@@ -668,9 +668,9 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
 
   Widget _artPlaceholder(_NPPalette palette) {
     return Container(
-      color: palette.isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+      color: palette.card,
       child: Center(
-        child: Icon(Icons.music_note, color: Colors.grey.shade400, size: 64),
+        child: Icon(Icons.music_note, color: palette.textMuted, size: 64),
       ),
     );
   }
@@ -686,7 +686,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
       context: context,
       useRootNavigator: true,
       isScrollControlled: true,
-      backgroundColor: palette.isDark ? palette.card : Colors.white,
+      backgroundColor: palette.card,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
       ),
@@ -711,7 +711,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
     showModalBottomSheet(
       context: ctx,
       useRootNavigator: true,
-      backgroundColor: palette.isDark ? palette.card : Colors.white,
+      backgroundColor: palette.card,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -836,7 +836,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
       context: ctx,
       useRootNavigator: true,
       isScrollControlled: true,
-      backgroundColor: palette.isDark ? palette.card : Colors.white,
+      backgroundColor: palette.card,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -865,7 +865,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
       isScrollControlled: true,
       isDismissible: true,
       enableDrag: true,
-      backgroundColor: palette.isDark ? palette.card : Colors.white,
+      backgroundColor: palette.card,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -894,7 +894,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
       isScrollControlled: true,
       isDismissible: true,
       enableDrag: true,
-      backgroundColor: palette.isDark ? palette.card : Colors.white,
+      backgroundColor: palette.card,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -2720,11 +2720,11 @@ class _QueueSourceBadge extends StatelessWidget {
   Color get _color {
     switch (label.toLowerCase()) {
       case 'ai':
-        return const Color(0xFF8B5CF6);
+        return palette.moodDefault;
       case 'schedule':
-        return const Color(0xFF16A34A);
+        return palette.success;
       case 'manager':
-        return const Color(0xFF2563EB);
+        return palette.accentAlt;
       default:
         return palette.textMuted;
     }
@@ -3600,19 +3600,19 @@ class _AiSignalContributionTile extends StatelessWidget {
                   _AiImpactChip(
                     label: 'Chill',
                     value: contribution.chillDelta!,
-                    color: const Color(0xFF2563EB),
+                    color: palette.moodChill,
                   ),
                 if (contribution.focusDelta != null)
                   _AiImpactChip(
                     label: 'Focus',
                     value: contribution.focusDelta!,
-                    color: const Color(0xFF7C3AED),
+                    color: palette.moodFocus,
                   ),
                 if (contribution.energeticDelta != null)
                   _AiImpactChip(
                     label: 'Energetic',
                     value: contribution.energeticDelta!,
-                    color: const Color(0xFFEA580C),
+                    color: palette.moodEnergetic,
                   ),
               ],
             ),
@@ -3672,7 +3672,7 @@ class _AiInfoNotice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isWarning ? const Color(0xFFF59E0B) : palette.accent;
+    final color = isWarning ? palette.warning : palette.accent;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(13),
@@ -4153,6 +4153,10 @@ class _NPPalette {
     required this.shadow,
     required this.success,
     required this.warning,
+    required this.moodChill,
+    required this.moodFocus,
+    required this.moodEnergetic,
+    required this.moodDefault,
   });
 
   factory _NPPalette.fromContext(BuildContext context) {
@@ -4173,10 +4177,15 @@ class _NPPalette {
       shadow: tokens.shadow,
       success: tokens.success,
       warning: tokens.warning,
+      moodChill: tokens.moodChill,
+      moodFocus: tokens.moodFocus,
+      moodEnergetic: tokens.moodEnergetic,
+      moodDefault: tokens.moodDefault,
     );
   }
 
   final bool isDark;
   final Color bg, card, overlay, border, textPrimary, textMuted;
   final Color accent, accentAlt, textOnAccent, shadow, success, warning;
+  final Color moodChill, moodFocus, moodEnergetic, moodDefault;
 }

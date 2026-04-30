@@ -73,6 +73,29 @@ class _WelcomePageState extends State<WelcomePage>
                 child: _CardCollage(),
               ),
 
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: MediaQuery.sizeOf(context).height * 0.46,
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          tokens.bgBase.withValues(alpha: 0.0),
+                          tokens.bgBase.withValues(alpha: 0.92),
+                          tokens.bgBase,
+                        ],
+                        stops: const [0.0, 0.28, 0.62],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
               // ── Bottom action area ────────────────────────────────────
               Positioned(
                 left: 0,
@@ -176,68 +199,52 @@ class _CardCollage extends StatelessWidget {
     final tokens = context.camsTokens;
     final screenH = MediaQuery.of(context).size.height;
     final screenW = MediaQuery.of(context).size.width;
+    final compact = screenH < 740;
 
     // Card definitions: [angle, left%, top%, colorHex, label, sublabel]
     final cards = [
       _CardDef(
           angle: -0.18,
-          leftF: 0.52,
-          topF: 0.12,
-          color: tokens.techAccent.withValues(alpha: 0.42),
+          leftF: 0.50,
+          topF: compact ? 0.10 : 0.12,
+          color: tokens.techAccent.withValues(alpha: 0.48),
           label: 'Jazz Lounge',
           sub: 'HOTEL'),
       _CardDef(
           angle: 0.08,
           leftF: 0.1,
-          topF: 0.22,
-          color: tokens.moodDefault.withValues(alpha: 0.42),
+          topF: compact ? 0.20 : 0.22,
+          color: tokens.moodDefault.withValues(alpha: 0.40),
           label: 'Night Vibes',
           sub: 'BAR'),
       _CardDef(
           angle: 0.25,
           leftF: 0.35,
-          topF: 0.30,
-          color: tokens.moodChill.withValues(alpha: 0.34),
+          topF: compact ? 0.28 : 0.30,
+          color: tokens.moodChill.withValues(alpha: 0.38),
           label: 'Chill Afternoon',
           sub: 'CAFÉ'),
       _CardDef(
           angle: -0.08,
           leftF: 0.55,
-          topF: 0.35,
-          color: tokens.brandPrimary.withValues(alpha: 0.38),
+          topF: compact ? 0.32 : 0.35,
+          color: tokens.brandPrimary.withValues(alpha: 0.48),
           label: 'Hip Bar Grooves',
           sub: 'BAR'),
       _CardDef(
-          angle: 0.12,
-          leftF: 0.0,
-          topF: 0.38,
-          color: tokens.bgElevated,
+          angle: -0.12,
+          leftF: -0.08,
+          topF: compact ? 0.34 : 0.37,
+          color: tokens.brandPrimarySoft.withValues(alpha: 0.92),
           label: 'Retail Rush',
           sub: 'STORE'),
     ];
 
     return Stack(
       children: [
-        // Gradient overlay at bottom so cards fade into the action area
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          height: screenH * 0.45,
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Colors.transparent, tokens.sidebar],
-                stops: const [0.0, 0.85],
-              ),
-            ),
-          ),
-        ),
         // Cards
         ...cards.map((c) {
-          final cardW = screenW * 0.52;
+          final cardW = screenW * (compact ? 0.46 : 0.50);
           final cardH = cardW * 1.25;
           return Positioned(
             left: screenW * c.leftF,
@@ -311,7 +318,7 @@ class _SpaceCard extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  tokens.textOnAccent.withValues(alpha: 0.04),
+                  tokens.textPrimary.withValues(alpha: 0.04),
                   Colors.transparent,
                 ],
               ),
@@ -321,7 +328,7 @@ class _SpaceCard extends StatelessWidget {
           Center(
             child: Icon(
               Icons.music_note_rounded,
-              color: tokens.textOnAccent.withValues(alpha: 0.06),
+              color: tokens.textPrimary.withValues(alpha: 0.08),
               size: width * 0.55,
             ),
           ),
@@ -336,7 +343,7 @@ class _SpaceCard extends StatelessWidget {
               children: [
                 Text(sub,
                     style: GoogleFonts.inter(
-                      color: tokens.textOnAccent.withValues(alpha: 0.54),
+                      color: tokens.textPrimary.withValues(alpha: 0.54),
                       fontSize: 9,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1.5,
@@ -344,7 +351,7 @@ class _SpaceCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(label,
                     style: GoogleFonts.poppins(
-                      color: tokens.textOnAccent,
+                      color: tokens.textPrimary,
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                     ),
@@ -367,7 +374,7 @@ class _BottomActions extends StatelessWidget {
     final tokens = context.camsTokens;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(28, 0, 28, 32),
+      padding: const EdgeInsets.fromLTRB(28, 0, 28, 34),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -376,14 +383,25 @@ class _BottomActions extends StatelessWidget {
             'Smart music,\nsmarter spaces.',
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(
-              color: tokens.textOnAccent,
-              fontSize: 26,
+              color: tokens.textPrimary,
+              fontSize: 30,
               fontWeight: FontWeight.w800,
-              height: 1.2,
+              height: 1.05,
               letterSpacing: -0.5,
             ),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 10),
+          Text(
+            'Control the right soundtrack for every space.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              color: tokens.textSecondary,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 28),
 
           // Sign up — filled primary button
           SizedBox(
@@ -423,9 +441,10 @@ class _BottomActions extends StatelessWidget {
             child: OutlinedButton(
               key: const ValueKey('welcome_login_button'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: tokens.textOnAccent,
+                foregroundColor: colorScheme.primary,
+                backgroundColor: tokens.bgContainer.withValues(alpha: 0.82),
                 side: BorderSide(
-                  color: tokens.textOnAccent.withValues(alpha: 0.38),
+                  color: colorScheme.primary.withValues(alpha: 0.42),
                   width: 1.5,
                 ),
                 shape: RoundedRectangleBorder(
@@ -448,11 +467,11 @@ class _BottomActions extends StatelessWidget {
             child: Text(
               'Set up playback device',
               style: GoogleFonts.inter(
-                color: tokens.textOnAccent.withValues(alpha: 0.6),
+                color: tokens.textSecondary,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 decoration: TextDecoration.underline,
-                decorationColor: tokens.textOnAccent.withValues(alpha: 0.38),
+                decorationColor: tokens.textTertiary,
               ),
             ),
           ),

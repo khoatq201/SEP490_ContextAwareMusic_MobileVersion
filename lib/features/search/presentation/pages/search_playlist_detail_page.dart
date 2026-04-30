@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/enums/queue_insert_mode_enum.dart';
 import '../../../../core/widgets/play_to_space_button.dart';
 import '../../../../core/widgets/song_list_tile.dart';
@@ -13,6 +12,7 @@ import '../../../../core/player/player_bloc.dart';
 import '../../../../core/player/player_event.dart';
 import '../../../../core/player/local_preview_feedback.dart';
 import '../../../../core/session/session_cubit.dart';
+import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../../../core/utils/cams_queue_actions.dart';
 import '../../../home/domain/entities/playlist_entity.dart';
 import '../../../space_control/domain/entities/track.dart';
@@ -27,7 +27,7 @@ class SearchPlaylistDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = _Palette.fromBrightness(Theme.of(context).brightness);
+    final palette = _Palette.fromContext(context);
 
     final tracks = playlist.songs
         .map((s) => Track(
@@ -271,9 +271,9 @@ class _Fallback extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: palette.isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+      color: palette.bg,
       child: Center(
-        child: Icon(Icons.music_note, color: Colors.grey.shade400, size: 72),
+        child: Icon(Icons.music_note, color: palette.textMuted, size: 72),
       ),
     );
   }
@@ -289,23 +289,15 @@ class _Palette {
     required this.textMuted,
   });
 
-  factory _Palette.fromBrightness(Brightness brightness) {
-    final isDark = brightness == Brightness.dark;
-    if (isDark) {
-      return const _Palette(
-        isDark: true,
-        bg: AppColors.backgroundDarkPrimary,
-        border: AppColors.borderDarkMedium,
-        textPrimary: AppColors.textDarkPrimary,
-        textMuted: AppColors.textDarkSecondary,
-      );
-    }
-    return const _Palette(
-      isDark: false,
-      bg: AppColors.backgroundPrimary,
-      border: AppColors.borderLight,
-      textPrimary: AppColors.textPrimary,
-      textMuted: AppColors.textTertiary,
+  factory _Palette.fromContext(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = context.camsTokens;
+    return _Palette(
+      isDark: theme.brightness == Brightness.dark,
+      bg: tokens.bgBase,
+      border: tokens.border,
+      textPrimary: tokens.textPrimary,
+      textMuted: tokens.textSecondary,
     );
   }
 

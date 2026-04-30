@@ -98,7 +98,6 @@ class SongListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.camsTokens;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final mutedColor = tokens.textSecondary;
     final primaryColor = tokens.textPrimary;
 
@@ -118,10 +117,9 @@ class SongListTile extends StatelessWidget {
                     ? Image.network(
                         song.coverUrl!,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) =>
-                            _ArtFallback(isDark: isDark),
+                        errorBuilder: (_, __, ___) => const _ArtFallback(),
                       )
-                    : _ArtFallback(isDark: isDark),
+                    : const _ArtFallback(),
               ),
             ),
 
@@ -175,19 +173,17 @@ class SongListTile extends StatelessWidget {
 
 // ── Internal fallback artwork ─────────────────────────────────────────────────
 class _ArtFallback extends StatelessWidget {
-  const _ArtFallback({required this.isDark});
-  final bool isDark;
+  const _ArtFallback();
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
     return Container(
-      color: isDark
-          ? Colors.white.withValues(alpha: 0.07)
-          : Colors.black.withValues(alpha: 0.06),
+      color: tokens.bgElevated,
       child: Icon(
         LucideIcons.music4,
         size: 22,
-        color: isDark ? Colors.white30 : Colors.black26,
+        color: tokens.textTertiary.withValues(alpha: 0.65),
       ),
     );
   }

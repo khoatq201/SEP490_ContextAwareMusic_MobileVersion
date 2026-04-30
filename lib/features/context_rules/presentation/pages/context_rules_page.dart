@@ -4,9 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/player/player_bloc.dart';
 import '../../../../core/presentation/shell_layout_metrics.dart';
+import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../domain/entities/context_rule_entity.dart';
 
 class ContextRulesPage extends StatefulWidget {
@@ -81,7 +81,7 @@ class _ContextRulesPageState extends State<ContextRulesPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final palette = _Palette.fromBrightness(Theme.of(context).brightness);
+    final palette = _Palette.fromContext(context);
     final hasMiniPlayer =
         context.select((PlayerBloc bloc) => bloc.state.hasTrack);
     final reservedBottom = ShellLayoutMetrics.reservedBottom(
@@ -204,8 +204,8 @@ class _ContextRulesPageState extends State<ContextRulesPage> {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red.shade400,
-              foregroundColor: Colors.white,
+              backgroundColor: palette.error,
+              foregroundColor: palette.textOnAccent,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
             ),
@@ -254,7 +254,7 @@ class _RuleTile extends StatelessWidget {
 
     // Border: green glow when triggered, accent-tinted when enabled, muted when off
     final borderColor = isTriggered
-        ? Colors.green
+        ? palette.success
         : isEnabled
             ? palette.accent.withValues(alpha: 0.35)
             : palette.border;
@@ -262,12 +262,12 @@ class _RuleTile extends StatelessWidget {
     final boxShadows = <BoxShadow>[
       if (isTriggered)
         BoxShadow(
-          color: Colors.green.withValues(alpha: 0.28),
+          color: palette.success.withValues(alpha: 0.28),
           blurRadius: 14,
           spreadRadius: 2,
         ),
       BoxShadow(
-        color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.06),
+        color: palette.shadow.withValues(alpha: isDark ? 0.25 : 0.06),
         blurRadius: 12,
         offset: const Offset(0, 4),
       ),
@@ -333,16 +333,16 @@ class _RuleTile extends StatelessWidget {
                             Container(
                               width: 6,
                               height: 6,
-                              decoration: const BoxDecoration(
+                              decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: Colors.green,
+                                color: palette.success,
                               ),
                             ),
                             const SizedBox(width: 5),
                             Text(
                               'Executing',
                               style: GoogleFonts.inter(
-                                color: Colors.green,
+                                color: palette.success,
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: 0.2,
@@ -415,8 +415,7 @@ class _RuleTile extends StatelessWidget {
                             child: Icon(
                               LucideIcons.trash2,
                               size: 16,
-                              color:
-                                  Colors.red.shade300.withValues(alpha: 0.85),
+                              color: palette.error.withValues(alpha: 0.85),
                             ),
                           ),
                         ),
@@ -515,37 +514,27 @@ class _Palette {
     required this.accentAlt,
     required this.textOnAccent,
     required this.shadow,
+    required this.success,
+    required this.error,
   });
 
-  factory _Palette.fromBrightness(Brightness brightness) {
-    final isDark = brightness == Brightness.dark;
-    if (isDark) {
-      return _Palette(
-        isDark: true,
-        bg: AppColors.backgroundDarkPrimary,
-        card: AppColors.surfaceDark,
-        overlay: Colors.white.withValues(alpha: 0.06),
-        border: AppColors.borderDarkMedium,
-        textPrimary: AppColors.textDarkPrimary,
-        textMuted: AppColors.textDarkSecondary,
-        accent: AppColors.primaryCyan,
-        accentAlt: AppColors.secondaryLime,
-        textOnAccent: AppColors.textDarkPrimary,
-        shadow: AppColors.shadowDark,
-      );
-    }
-    return const _Palette(
-      isDark: false,
-      bg: AppColors.backgroundPrimary,
-      card: AppColors.surface,
-      overlay: AppColors.backgroundSecondary,
-      border: AppColors.borderLight,
-      textPrimary: AppColors.textPrimary,
-      textMuted: AppColors.textTertiary,
-      accent: AppColors.primaryOrange,
-      accentAlt: AppColors.secondaryTeal,
-      textOnAccent: AppColors.textInverse,
-      shadow: AppColors.shadow,
+  factory _Palette.fromContext(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = context.camsTokens;
+    return _Palette(
+      isDark: Theme.of(context).brightness == Brightness.dark,
+      bg: tokens.bgBase,
+      card: tokens.bgContainer,
+      overlay: tokens.bgElevated,
+      border: tokens.borderSecondary,
+      textPrimary: tokens.textPrimary,
+      textMuted: tokens.textSecondary,
+      accent: colorScheme.primary,
+      accentAlt: tokens.techAccent,
+      textOnAccent: colorScheme.onPrimary,
+      shadow: tokens.shadow,
+      success: tokens.success,
+      error: tokens.error,
     );
   }
 
@@ -560,4 +549,6 @@ class _Palette {
   final Color accentAlt;
   final Color textOnAccent;
   final Color shadow;
+  final Color success;
+  final Color error;
 }

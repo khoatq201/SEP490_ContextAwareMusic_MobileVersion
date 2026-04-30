@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/enums/store_fuzzy_override_level_enum.dart';
+import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../data/models/fuzzy_override_profile_request.dart';
 import '../../domain/entities/fuzzy_override_summary.dart';
 
@@ -85,16 +85,14 @@ class _FuzzyOverrideEditorSheetState extends State<FuzzyOverrideEditorSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary =
-        isDark ? AppColors.textDarkPrimary : AppColors.textPrimary;
-    final textMuted =
-        isDark ? AppColors.textDarkSecondary : AppColors.textSecondary;
-    final sheetBackground = isDark ? AppColors.surfaceDark : AppColors.surface;
-    final panelBackground =
-        isDark ? AppColors.surfaceDarkElevated : AppColors.backgroundPrimary;
-    final borderColor =
-        isDark ? AppColors.borderDarkLight : AppColors.borderLight;
-    final accent = isDark ? AppColors.primaryCyan : AppColors.primaryOrange;
+    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = context.camsTokens;
+    final textPrimary = tokens.textPrimary;
+    final textMuted = tokens.textSecondary;
+    final sheetBackground = tokens.bgContainer;
+    final panelBackground = tokens.bgElevated;
+    final borderColor = tokens.borderSecondary;
+    final accent = colorScheme.primary;
     final allowsPlaylistOverride =
         widget.overrideLevel?.allowsPlaylistOverride ?? true;
 
@@ -477,16 +475,15 @@ class _FuzzyOverrideEditorSheetState extends State<FuzzyOverrideEditorSheet> {
     required String label,
     required bool isDark,
   }) {
+    final tokens = context.camsTokens;
     return InputDecoration(
       labelText: label,
       labelStyle: GoogleFonts.inter(
-        color: isDark ? Colors.white60 : Colors.black54,
+        color: tokens.textSecondary,
         fontSize: 12,
       ),
       filled: true,
-      fillColor: isDark
-          ? Colors.white.withValues(alpha: 0.06)
-          : Colors.black.withValues(alpha: 0.04),
+      fillColor: tokens.bgElevated,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,
@@ -508,9 +505,9 @@ class FuzzyOverrideSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary = isDark ? Colors.white : Colors.black87;
-    final textMuted = isDark ? Colors.white60 : Colors.black54;
+    final tokens = context.camsTokens;
+    final textPrimary = tokens.textPrimary;
+    final textMuted = tokens.textSecondary;
     final chips = <String>[
       if (summary.templateName?.trim().isNotEmpty ?? false)
         summary.templateName!.trim(),
@@ -524,9 +521,7 @@ class FuzzyOverrideSummaryCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : Colors.black.withValues(alpha: 0.03),
+        color: tokens.bgElevated,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -563,9 +558,7 @@ class FuzzyOverrideSummaryCard extends StatelessWidget {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: isDark
-                            ? Colors.white.withValues(alpha: 0.06)
-                            : Colors.black.withValues(alpha: 0.04),
+                        color: tokens.bgContainer,
                         borderRadius: BorderRadius.circular(999),
                       ),
                       child: Text(
@@ -600,16 +593,14 @@ class _SectionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary = isDark ? Colors.white : Colors.black87;
-    final textMuted = isDark ? Colors.white60 : Colors.black54;
+    final tokens = context.camsTokens;
+    final textPrimary = tokens.textPrimary;
+    final textMuted = tokens.textSecondary;
 
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.04)
-            : Colors.black.withValues(alpha: 0.03),
+        color: tokens.bgElevated,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -653,8 +644,7 @@ class _AllowedPlaylistPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textMuted = isDark ? Colors.white60 : Colors.black54;
+    final textMuted = context.camsTokens.textSecondary;
     if (options.isEmpty) {
       return Text(
         'No playlists available for this store yet.',

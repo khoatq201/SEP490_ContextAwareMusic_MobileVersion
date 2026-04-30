@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
+import '../theme/cams_theme_tokens.dart';
 
 class CamsSkeleton extends StatefulWidget {
   const CamsSkeleton({
@@ -101,13 +102,14 @@ class CamsSkeletonBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
     return CamsSkeleton(
       child: Container(
         width: width,
         height: height,
         margin: margin,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: tokens.bgContainer,
           borderRadius: BorderRadius.circular(radius),
         ),
       ),
@@ -150,13 +152,14 @@ class CamsSkeletonCircle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
     return CamsSkeleton(
       child: Container(
         width: size,
         height: size,
         margin: margin,
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: tokens.bgContainer,
           shape: BoxShape.circle,
         ),
       ),

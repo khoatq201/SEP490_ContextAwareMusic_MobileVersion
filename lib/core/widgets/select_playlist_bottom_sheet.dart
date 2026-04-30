@@ -288,10 +288,9 @@ class _SelectPlaylistBottomSheetState extends State<SelectPlaylistBottomSheet> {
                   ? Image.network(
                       playlist.coverUrl!,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) =>
-                          _CoverFallback(isDark: isDark),
+                      errorBuilder: (_, __, ___) => const _CoverFallback(),
                     )
-                  : _CoverFallback(isDark: isDark),
+                  : const _CoverFallback(),
             ),
           ),
           title: Text(
@@ -318,7 +317,7 @@ class _SelectPlaylistBottomSheetState extends State<SelectPlaylistBottomSheet> {
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: isDark ? Colors.white70 : Colors.black54,
+                    color: context.camsTokens.textSecondary,
                   ),
                 )
               : Icon(Icons.add_rounded, color: textMuted, size: 22),
@@ -330,19 +329,18 @@ class _SelectPlaylistBottomSheetState extends State<SelectPlaylistBottomSheet> {
 }
 
 class _CoverFallback extends StatelessWidget {
-  const _CoverFallback({required this.isDark});
-  final bool isDark;
+  const _CoverFallback();
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
+
     return Container(
-      color: isDark
-          ? Colors.white.withValues(alpha: 0.07)
-          : Colors.black.withValues(alpha: 0.06),
+      color: tokens.bgElevated,
       child: Icon(
         LucideIcons.music4,
         size: 18,
-        color: isDark ? Colors.white30 : Colors.black26,
+        color: tokens.textTertiary.withValues(alpha: 0.65),
       ),
     );
   }

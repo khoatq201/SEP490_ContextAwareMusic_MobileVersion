@@ -306,8 +306,14 @@ class _OfflinePlaylistCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.camsTokens;
-    final moodGradient = MoodColorHelper.gradientFor(playlist.moodName);
-    final shadowColor = MoodColorHelper.shadowColorFor(playlist.moodName);
+    final moodGradient = MoodColorHelper.gradientFor(
+      playlist.moodName,
+      tokens,
+    );
+    final shadowColor = MoodColorHelper.shadowColorFor(
+      playlist.moodName,
+      tokens,
+    );
 
     return Container(
       decoration: BoxDecoration(

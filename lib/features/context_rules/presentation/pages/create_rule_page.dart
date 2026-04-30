@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/theme/cams_theme_tokens.dart';
 
 //
 // Page
@@ -49,7 +49,7 @@ class _CreateRulePageState extends State<CreateRulePage> {
 
   @override
   Widget build(BuildContext context) {
-    final palette = _Palette.fromBrightness(Theme.of(context).brightness);
+    final palette = _Palette.fromContext(context);
 
     return Scaffold(
       backgroundColor: palette.bg,
@@ -105,13 +105,13 @@ class _CreateRulePageState extends State<CreateRulePage> {
                         ),
                         errorBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                              color: Colors.redAccent, width: 1.5),
+                          borderSide:
+                              BorderSide(color: palette.error, width: 1.5),
                         ),
                         focusedErrorBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                              color: Colors.redAccent, width: 1.5),
+                          borderSide:
+                              BorderSide(color: palette.error, width: 1.5),
                         ),
                       ),
                     ),
@@ -179,13 +179,13 @@ class _CreateRulePageState extends State<CreateRulePage> {
                         ),
                         errorBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                              color: Colors.redAccent, width: 1.5),
+                          borderSide:
+                              BorderSide(color: palette.error, width: 1.5),
                         ),
                         focusedErrorBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                              color: Colors.redAccent, width: 1.5),
+                          borderSide:
+                              BorderSide(color: palette.error, width: 1.5),
                         ),
                       ),
                       items: const [
@@ -595,39 +595,44 @@ class _Palette {
     required this.textMuted,
     required this.accent,
     required this.accentAlt,
+    required this.error,
     required this.textOnAccent,
     required this.shadow,
   });
 
-  factory _Palette.fromBrightness(Brightness brightness) {
-    final isDark = brightness == Brightness.dark;
+  factory _Palette.fromContext(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = context.camsTokens;
+    final isDark = theme.brightness == Brightness.dark;
     if (isDark) {
       return _Palette(
         isDark: true,
-        bg: AppColors.backgroundDarkPrimary,
-        card: AppColors.surfaceDark,
-        overlay: Colors.white.withValues(alpha: 0.06),
-        border: AppColors.borderDarkMedium,
-        textPrimary: AppColors.textDarkPrimary,
-        textMuted: AppColors.textDarkSecondary,
-        accent: AppColors.primaryCyan,
-        accentAlt: AppColors.secondaryLime,
-        textOnAccent: AppColors.textDarkPrimary,
-        shadow: AppColors.shadowDark,
+        bg: tokens.bgBase,
+        card: tokens.bgContainer,
+        overlay: tokens.bgElevated,
+        border: tokens.borderSecondary,
+        textPrimary: tokens.textPrimary,
+        textMuted: tokens.textSecondary,
+        accent: tokens.brandPrimary,
+        accentAlt: tokens.techAccent,
+        error: tokens.error,
+        textOnAccent: tokens.textOnAccent,
+        shadow: tokens.shadow,
       );
     }
-    return const _Palette(
+    return _Palette(
       isDark: false,
-      bg: AppColors.backgroundPrimary,
-      card: AppColors.surface,
-      overlay: AppColors.backgroundSecondary,
-      border: AppColors.borderLight,
-      textPrimary: AppColors.textPrimary,
-      textMuted: AppColors.textTertiary,
-      accent: AppColors.primaryOrange,
-      accentAlt: AppColors.secondaryTeal,
-      textOnAccent: AppColors.textInverse,
-      shadow: AppColors.shadow,
+      bg: tokens.bgBase,
+      card: tokens.bgContainer,
+      overlay: tokens.bgLayout,
+      border: tokens.border,
+      textPrimary: tokens.textPrimary,
+      textMuted: tokens.textTertiary,
+      accent: theme.colorScheme.primary,
+      accentAlt: tokens.techAccent,
+      error: tokens.error,
+      textOnAccent: tokens.textOnAccent,
+      shadow: tokens.shadow,
     );
   }
 
@@ -640,6 +645,7 @@ class _Palette {
   final Color textMuted;
   final Color accent;
   final Color accentAlt;
+  final Color error;
   final Color textOnAccent;
   final Color shadow;
 }

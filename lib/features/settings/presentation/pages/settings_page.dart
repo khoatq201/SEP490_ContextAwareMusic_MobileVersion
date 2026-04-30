@@ -4,12 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/enums/user_role.dart';
 import '../../../../core/player/player_bloc.dart';
 import '../../../../core/presentation/shell_layout_metrics.dart';
 import '../../../../core/session/session_cubit.dart';
 import '../../../../core/services/local_storage_service.dart';
+import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../../../core/theme/theme_provider.dart';
 import '../../../../core/widgets/cams_skeleton.dart';
 import '../../../../injection_container.dart';
@@ -28,9 +28,7 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = _SettingsPalette.fromBrightness(
-      Theme.of(context).brightness,
-    );
+    final palette = _SettingsPalette.fromContext(context);
     final hasMiniPlayer =
         context.select((PlayerBloc bloc) => bloc.state.hasTrack);
     final bottomPadding = ShellLayoutMetrics.reservedBottom(
@@ -1564,41 +1562,24 @@ class _SettingsPalette {
   final Color dangerBorder;
   final Color dangerForeground;
 
-  factory _SettingsPalette.fromBrightness(Brightness brightness) {
-    if (brightness == Brightness.dark) {
-      return const _SettingsPalette(
-        background: AppColors.backgroundDarkPrimary,
-        card: AppColors.surfaceDark,
-        panel: AppColors.surfaceDarkElevated,
-        border: AppColors.borderDarkLight,
-        textPrimary: AppColors.textDarkPrimary,
-        textSecondary: AppColors.textDarkSecondary,
-        textMuted: AppColors.textDarkTertiary,
-        accent: AppColors.primaryCyan,
-        shadow: AppColors.shadowDark,
-        success: AppColors.successNeon,
-        warning: AppColors.warningNeon,
-        dangerBackground: Color(0x33FF1744),
-        dangerBorder: Color(0x66FF1744),
-        dangerForeground: AppColors.errorNeon,
-      );
-    }
-
-    return const _SettingsPalette(
-      background: AppColors.backgroundPrimary,
-      card: AppColors.surface,
-      panel: AppColors.backgroundSecondary,
-      border: AppColors.borderLight,
-      textPrimary: AppColors.textPrimary,
-      textSecondary: AppColors.textSecondary,
-      textMuted: AppColors.textTertiary,
-      accent: AppColors.primaryOrange,
-      shadow: AppColors.shadow,
-      success: AppColors.successDark,
-      warning: AppColors.warningDark,
-      dangerBackground: AppColors.errorPale,
-      dangerBorder: AppColors.errorLight,
-      dangerForeground: AppColors.errorDark,
+  factory _SettingsPalette.fromContext(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = context.camsTokens;
+    return _SettingsPalette(
+      background: tokens.bgBase,
+      card: tokens.bgContainer,
+      panel: tokens.bgElevated,
+      border: tokens.borderSecondary,
+      textPrimary: tokens.textPrimary,
+      textSecondary: tokens.textSecondary,
+      textMuted: tokens.textTertiary,
+      accent: theme.colorScheme.primary,
+      shadow: tokens.shadow,
+      success: tokens.success,
+      warning: tokens.warning,
+      dangerBackground: tokens.alertErrorBg,
+      dangerBorder: tokens.error.withValues(alpha: 0.4),
+      dangerForeground: tokens.error,
     );
   }
 }

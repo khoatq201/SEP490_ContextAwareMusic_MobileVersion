@@ -118,9 +118,9 @@ class SongOptionsBottomSheet extends StatelessWidget {
                                 song.coverUrl!,
                                 fit: BoxFit.cover,
                                 errorBuilder: (_, __, ___) =>
-                                    _ArtFallback(isDark: isDark),
+                                    const _ArtFallback(),
                               )
-                            : _ArtFallback(isDark: isDark),
+                            : const _ArtFallback(),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -243,19 +243,18 @@ class SongOptionsBottomSheet extends StatelessWidget {
 } // ── Art fallback ──────────────────────────────────────────────────────────────
 
 class _ArtFallback extends StatelessWidget {
-  const _ArtFallback({required this.isDark});
-  final bool isDark;
+  const _ArtFallback();
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
+
     return Container(
-      color: isDark
-          ? Colors.white.withValues(alpha: 0.07)
-          : Colors.black.withValues(alpha: 0.06),
+      color: tokens.bgElevated,
       child: Icon(
         LucideIcons.music4,
         size: 22,
-        color: isDark ? Colors.white30 : Colors.black26,
+        color: tokens.textTertiary.withValues(alpha: 0.65),
       ),
     );
   }
@@ -282,9 +281,10 @@ class _OptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
     final iconColor = enabled
-        ? (isDark ? Colors.white70 : Colors.black54)
-        : (isDark ? Colors.white24 : Colors.black26);
+        ? tokens.textSecondary
+        : tokens.textTertiary.withValues(alpha: 0.55);
     final textColor = enabled ? textPrimary : textMuted;
 
     return ListTile(
