@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_typography.dart';
 import '../../../../core/error/failures.dart';
+import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../../../core/widgets/app_error_view.dart';
 import '../../../../core/widgets/cams_skeleton.dart';
 import '../../../../injection_container.dart';
@@ -51,7 +51,7 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final tokens = context.camsTokens;
     final authUser = context.watch<AuthBloc>().state.user;
     final isStoreManager = authUser?.isStoreManager == true;
     final canUseBulkGovernance = authUser?.isBrandManager == true;
@@ -69,9 +69,7 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
         _showLogoutDialog(context);
       },
       child: Scaffold(
-        backgroundColor: isDark
-            ? AppColors.backgroundDarkPrimary
-            : AppColors.backgroundPrimary,
+        backgroundColor: tokens.bgBase,
         appBar: isStoreManager
             ? null // StoreManager sees a loading screen, no app bar
             : AppBar(
@@ -205,7 +203,6 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
   }
 
   Widget _buildSearchBar() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: TextField(
@@ -228,7 +225,7 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
             borderRadius: BorderRadius.circular(12),
           ),
           filled: true,
-          fillColor: isDark ? AppColors.surfaceDark : Colors.grey[100],
+          fillColor: context.camsTokens.bgContainer,
         ),
         onChanged: (value) {
           context.read<StoreSelectionBloc>().add(SearchStores(value));
@@ -238,7 +235,7 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
   }
 
   Widget _buildEmptyState() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final tokens = context.camsTokens;
     return Expanded(
       child: Center(
         child: Column(
@@ -247,20 +244,20 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
             Icon(
               Icons.search_off,
               size: 64,
-              color: isDark ? Colors.grey[600] : Colors.grey[400],
+              color: tokens.textTertiary,
             ),
             const SizedBox(height: 16),
             Text(
               'No stores found',
               style: AppTypography.titleLarge.copyWith(
-                color: isDark ? AppColors.textDarkSecondary : Colors.grey[600],
+                color: tokens.textSecondary,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'Try adjusting your search',
               style: AppTypography.bodyMedium.copyWith(
-                color: isDark ? AppColors.textDarkTertiary : Colors.grey[500],
+                color: tokens.textTertiary,
               ),
             ),
           ],
@@ -270,11 +267,10 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
   }
 
   Widget _buildBulkGovernanceBar(List<StoreSummary> filteredStores) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary =
-        isDark ? AppColors.textDarkPrimary : AppColors.textPrimary;
-    final textSecondary =
-        isDark ? AppColors.textDarkSecondary : AppColors.textSecondary;
+    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = context.camsTokens;
+    final textPrimary = tokens.textPrimary;
+    final textSecondary = tokens.textSecondary;
     final filteredIds = filteredStores.map((store) => store.id).toSet();
     final selectedVisibleCount =
         _selectedStoreIds.where(filteredIds.contains).length;
@@ -283,10 +279,10 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: isDark ? AppColors.surfaceDark : Colors.white,
+          color: tokens.bgContainer,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: AppColors.primaryOrange.withValues(alpha: 0.12),
+            color: colorScheme.primary.withValues(alpha: 0.12),
           ),
         ),
         child: Padding(
@@ -417,18 +413,19 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
     StoreSummary store, {
     required bool isCompactTile,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = context.camsTokens;
     final canUseBulkGovernance =
         context.read<AuthBloc>().state.user?.isBrandManager == true;
     final isSelected = _selectedStoreIds.contains(store.id);
     final topSectionHeight = isCompactTile ? 52.0 : 60.0;
     return Card(
       elevation: isSelected ? 0 : 2,
-      color: isDark ? AppColors.surfaceDark : null,
+      color: tokens.bgContainer,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: isSelected ? AppColors.primaryOrange : Colors.transparent,
+          color: isSelected ? colorScheme.primary : Colors.transparent,
           width: 1.5,
         ),
       ),
@@ -457,14 +454,14 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                   Container(
                     height: topSectionHeight,
                     decoration: BoxDecoration(
-                      color: AppColors.primaryOrange.withValues(alpha: 0.1),
+                      color: colorScheme.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Icon(
                         Icons.store,
                         size: 36,
-                        color: AppColors.primaryOrange,
+                        color: colorScheme.primary,
                       ),
                     ),
                   ),
@@ -479,7 +476,7 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                             : (_) => _toggleStoreSelection(store.id),
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         visualDensity: VisualDensity.compact,
-                        activeColor: AppColors.primaryOrange,
+                        activeColor: colorScheme.primary,
                       ),
                     ),
                 ],
@@ -510,9 +507,7 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                           store.name,
                           style: AppTypography.titleLarge.copyWith(
                             fontSize: 14,
-                            color: isDark
-                                ? AppColors.textDarkPrimary
-                                : AppColors.textPrimary,
+                            color: tokens.textPrimary,
                           ),
                           maxLines: titleMaxLines,
                           overflow: TextOverflow.ellipsis,
@@ -525,18 +520,14 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                               Icon(
                                 Icons.location_on,
                                 size: 14,
-                                color: isDark
-                                    ? Colors.grey[400]
-                                    : Colors.grey[600],
+                                color: tokens.textTertiary,
                               ),
                               const SizedBox(width: 4),
                               Expanded(
                                 child: Text(
                                   store.fullAddress,
                                   style: AppTypography.labelSmall.copyWith(
-                                    color: isDark
-                                        ? Colors.grey[400]
-                                        : Colors.grey[600],
+                                    color: tokens.textTertiary,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -550,8 +541,8 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                           padding: statusPadding,
                           decoration: BoxDecoration(
                             color: store.status.isActive
-                                ? AppColors.secondaryTeal.withValues(alpha: 0.1)
-                                : Colors.orange.withValues(alpha: 0.1),
+                                ? tokens.success.withValues(alpha: 0.1)
+                                : tokens.warning.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Row(
@@ -563,8 +554,8 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                                     : Icons.pending_outlined,
                                 size: 14,
                                 color: store.status.isActive
-                                    ? AppColors.secondaryTeal
-                                    : Colors.orange,
+                                    ? tokens.success
+                                    : tokens.warning,
                               ),
                               const SizedBox(width: 4),
                               Flexible(
@@ -572,8 +563,8 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                                   store.status.displayName,
                                   style: AppTypography.labelSmall.copyWith(
                                     color: store.status.isActive
-                                        ? AppColors.secondaryTeal
-                                        : Colors.orange,
+                                        ? tokens.success
+                                        : tokens.warning,
                                     fontWeight: FontWeight.w600,
                                   ),
                                   maxLines: 1,
@@ -592,19 +583,16 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                             ),
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? AppColors.primaryOrange
-                                      .withValues(alpha: 0.12)
-                                  : Colors.grey.withValues(alpha: 0.1),
+                                  ? colorScheme.primary.withValues(alpha: 0.12)
+                                  : tokens.bgElevated,
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
                               selectionLabel,
                               style: AppTypography.labelSmall.copyWith(
                                 color: isSelected
-                                    ? AppColors.primaryOrange
-                                    : (isDark
-                                        ? Colors.grey[400]
-                                        : Colors.grey[600]),
+                                    ? colorScheme.primary
+                                    : tokens.textTertiary,
                                 fontWeight: FontWeight.w600,
                               ),
                               maxLines: 1,
@@ -796,29 +784,14 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
     BuildContext context,
     String brandId,
   ) async {
-    List<ScheduleMusicItem> musicCatalog;
-    try {
-      musicCatalog = await _loadBrandScheduleMusicCatalog(brandId);
-    } catch (error) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to load playlists for brand schedule: $error'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return;
-    }
-    if (!context.mounted) return;
-
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => BrandScheduleEditorSheet(
+      builder: (_) => BrandScheduleEditorSheetLoader(
         brandId: brandId,
-        musicCatalog: musicCatalog,
+        loadMusicCatalog: () => _loadBrandScheduleMusicCatalog(brandId),
         remoteDataSource: sl<SpaceScheduleRemoteDataSource>(),
       ),
     );
@@ -829,6 +802,7 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
 
   Future<void> _showBulkGovernanceModeDialog() async {
     if (_selectedStoreIds.isEmpty || _isApplyingBulkMode) return;
+    final tokens = context.camsTokens;
 
     final selectedStoreIds = _selectedStoreIds.toList(growable: false);
     final modeSnapshot = _resolveBulkGovernanceModeSelection(selectedStoreIds);
@@ -853,7 +827,7 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                   Text(
                     'Selected stores currently use mixed governance modes.',
                     style: AppTypography.labelSmall.copyWith(
-                      color: AppColors.warning,
+                      color: tokens.warning,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -919,7 +893,7 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                   ? failure.message
                   : 'Failed to update governance mode.',
             ),
-            backgroundColor: AppColors.error,
+            backgroundColor: tokens.error,
           ),
         );
       },
@@ -981,18 +955,19 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
   }
 
   Widget _buildStoreListCard(StoreSummary store) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = context.camsTokens;
     final canUseBulkGovernance =
         context.read<AuthBloc>().state.user?.isBrandManager == true;
     final isSelected = _selectedStoreIds.contains(store.id);
 
     return Card(
       elevation: isSelected ? 0 : 2,
-      color: isDark ? AppColors.surfaceDark : null,
+      color: tokens.bgContainer,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: isSelected ? AppColors.primaryOrange : Colors.transparent,
+          color: isSelected ? colorScheme.primary : Colors.transparent,
           width: 1.5,
         ),
       ),
@@ -1022,14 +997,14 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                     width: 64,
                     height: 64,
                     decoration: BoxDecoration(
-                      color: AppColors.primaryOrange.withValues(alpha: 0.1),
+                      color: colorScheme.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Icon(
                         Icons.store,
                         size: 34,
-                        color: AppColors.primaryOrange,
+                        color: colorScheme.primary,
                       ),
                     ),
                   ),
@@ -1044,7 +1019,7 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                             : (_) => _toggleStoreSelection(store.id),
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         visualDensity: VisualDensity.compact,
-                        activeColor: AppColors.primaryOrange,
+                        activeColor: colorScheme.primary,
                       ),
                     ),
                 ],
@@ -1059,9 +1034,7 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                       store.name,
                       style: AppTypography.titleLarge.copyWith(
                         fontSize: 15,
-                        color: isDark
-                            ? AppColors.textDarkPrimary
-                            : AppColors.textPrimary,
+                        color: tokens.textPrimary,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -1073,15 +1046,14 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                         Icon(
                           Icons.location_on,
                           size: 14,
-                          color: isDark ? Colors.grey[400] : Colors.grey[600],
+                          color: tokens.textTertiary,
                         ),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
                             store.fullAddress,
                             style: AppTypography.labelSmall.copyWith(
-                              color:
-                                  isDark ? Colors.grey[400] : Colors.grey[600],
+                              color: tokens.textTertiary,
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -1101,8 +1073,8 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                           ),
                           decoration: BoxDecoration(
                             color: store.status.isActive
-                                ? AppColors.secondaryTeal.withValues(alpha: 0.1)
-                                : Colors.orange.withValues(alpha: 0.1),
+                                ? tokens.success.withValues(alpha: 0.1)
+                                : tokens.warning.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Row(
@@ -1114,16 +1086,16 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                                     : Icons.pending_outlined,
                                 size: 14,
                                 color: store.status.isActive
-                                    ? AppColors.secondaryTeal
-                                    : Colors.orange,
+                                    ? tokens.success
+                                    : tokens.warning,
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 store.status.displayName,
                                 style: AppTypography.labelSmall.copyWith(
                                   color: store.status.isActive
-                                      ? AppColors.secondaryTeal
-                                      : Colors.orange,
+                                      ? tokens.success
+                                      : tokens.warning,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -1138,9 +1110,8 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                             ),
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? AppColors.primaryOrange
-                                      .withValues(alpha: 0.12)
-                                  : Colors.grey.withValues(alpha: 0.1),
+                                  ? colorScheme.primary.withValues(alpha: 0.12)
+                                  : tokens.bgElevated,
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -1149,10 +1120,8 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                                   : 'Tap to select',
                               style: AppTypography.labelSmall.copyWith(
                                 color: isSelected
-                                    ? AppColors.primaryOrange
-                                    : (isDark
-                                        ? Colors.grey[400]
-                                        : Colors.grey[600]),
+                                    ? colorScheme.primary
+                                    : tokens.textTertiary,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),

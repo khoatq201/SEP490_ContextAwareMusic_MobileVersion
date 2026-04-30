@@ -5,7 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../domain/entities/offline_playlist.dart';
 import '../bloc/offline_library_bloc.dart';
 import '../bloc/offline_library_event.dart';
@@ -22,6 +22,8 @@ class OfflineLibraryBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
+
     return DraggableScrollableSheet(
       initialChildSize: 0.4,
       minChildSize: 0.2,
@@ -29,15 +31,13 @@ class OfflineLibraryBottomSheet extends StatelessWidget {
       builder: (context, scrollController) {
         return Container(
           decoration: BoxDecoration(
-            color: isDarkMode
-                ? const Color(0xFF0F172A).withValues(alpha: 0.95)
-                : Colors.white.withValues(alpha: 0.95),
+            color: tokens.bgContainer.withValues(alpha: 0.95),
             borderRadius: const BorderRadius.vertical(
               top: Radius.circular(28),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
+                color: tokens.shadow.withValues(alpha: 0.3),
                 blurRadius: 30,
                 offset: const Offset(0, -10),
               ),
@@ -58,8 +58,8 @@ class OfflineLibraryBottomSheet extends StatelessWidget {
                     height: 4,
                     decoration: BoxDecoration(
                       color: isDarkMode
-                          ? Colors.white.withValues(alpha: 0.3)
-                          : Colors.black.withValues(alpha: 0.2),
+                          ? tokens.textOnAccent.withValues(alpha: 0.3)
+                          : tokens.textPrimary.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -76,13 +76,13 @@ class OfflineLibraryBottomSheet extends StatelessWidget {
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
                             color: isDarkMode
-                                ? Colors.white.withValues(alpha: 0.1)
-                                : Colors.black.withValues(alpha: 0.05),
+                                ? tokens.textOnAccent.withValues(alpha: 0.1)
+                                : tokens.textPrimary.withValues(alpha: 0.05),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(
                             LucideIcons.download,
-                            color: isDarkMode ? Colors.white : Colors.black87,
+                            color: tokens.textPrimary,
                             size: 22,
                           ),
                         ),
@@ -95,17 +95,14 @@ class OfflineLibraryBottomSheet extends StatelessWidget {
                               style: GoogleFonts.poppins(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w700,
-                                color:
-                                    isDarkMode ? Colors.white : Colors.black87,
+                                color: tokens.textPrimary,
                               ),
                             ),
                             Text(
                               'Download playlists for offline playback',
                               style: GoogleFonts.inter(
                                 fontSize: 12,
-                                color: isDarkMode
-                                    ? Colors.white60
-                                    : Colors.black54,
+                                color: tokens.textSecondary,
                               ),
                             ),
                           ],
@@ -124,8 +121,8 @@ class OfflineLibraryBottomSheet extends StatelessWidget {
                           return Center(
                             child: CircularProgressIndicator(
                               color: isDarkMode
-                                  ? AppColors.primaryCyan
-                                  : const Color(0xFF2196F3),
+                                  ? tokens.techAccent
+                                  : tokens.techAccent,
                             ),
                           );
                         }
@@ -138,15 +135,15 @@ class OfflineLibraryBottomSheet extends StatelessWidget {
                                 Icon(
                                   LucideIcons.alertCircle,
                                   size: 48,
-                                  color: Colors.red.withValues(alpha: 0.7),
+                                  color: tokens.error.withValues(alpha: 0.7),
                                 ),
                                 const SizedBox(height: 12),
                                 Text(
                                   state.errorMessage ?? 'Failed to load',
                                   style: GoogleFonts.inter(
                                     color: isDarkMode
-                                        ? Colors.white70
-                                        : Colors.black54,
+                                        ? tokens.textSecondary
+                                        : tokens.textSecondary,
                                   ),
                                 ),
                               ],
@@ -162,18 +159,15 @@ class OfflineLibraryBottomSheet extends StatelessWidget {
                                 Icon(
                                   LucideIcons.folderOpen,
                                   size: 56,
-                                  color: isDarkMode
-                                      ? Colors.white30
-                                      : Colors.black26,
+                                  color: tokens.textTertiary
+                                      .withValues(alpha: 0.55),
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
                                   'No playlists available',
                                   style: GoogleFonts.inter(
                                     fontSize: 15,
-                                    color: isDarkMode
-                                        ? Colors.white60
-                                        : Colors.black45,
+                                    color: tokens.textTertiary,
                                   ),
                                 ),
                               ],
@@ -237,6 +231,7 @@ class OfflinePlaylistCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
     final moodGradient = MoodColorHelper.gradientFor(playlist.moodName);
     final shadowColor = MoodColorHelper.shadowColorFor(playlist.moodName);
 
@@ -246,20 +241,13 @@ class OfflinePlaylistCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: isDarkMode
-              ? [
-                  const Color(0xFF1A1A1A),
-                  const Color(0xFF121212),
-                ]
-              : [
-                  Colors.white,
-                  Colors.grey.shade50,
-                ],
+          colors: [
+            tokens.bgContainer,
+            tokens.bgElevated,
+          ],
         ),
         border: Border.all(
-          color: isDarkMode
-              ? Colors.white.withValues(alpha: 0.1)
-              : Colors.black.withValues(alpha: 0.08),
+          color: tokens.borderSecondary,
           width: 1,
         ),
         boxShadow: [
@@ -297,9 +285,9 @@ class OfflinePlaylistCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: const Icon(
+                    child: Icon(
                       LucideIcons.music,
-                      color: Colors.white,
+                      color: tokens.textOnAccent,
                       size: 28,
                     ),
                   ),
@@ -316,7 +304,7 @@ class OfflinePlaylistCard extends StatelessWidget {
                           style: GoogleFonts.poppins(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
-                            color: isDarkMode ? Colors.white : Colors.black87,
+                            color: tokens.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -324,7 +312,7 @@ class OfflinePlaylistCard extends StatelessWidget {
                           '${playlist.trackCount} tracks • ${playlist.totalSizeMB.toStringAsFixed(1)} MB',
                           style: GoogleFonts.inter(
                             fontSize: 12,
-                            color: isDarkMode ? Colors.white60 : Colors.black54,
+                            color: tokens.textSecondary,
                           ),
                         ),
                         if (playlist.downloadStatus ==
@@ -334,9 +322,7 @@ class OfflinePlaylistCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(4),
                             child: LinearProgressIndicator(
                               value: playlist.downloadProgress ?? 0.0,
-                              backgroundColor: isDarkMode
-                                  ? Colors.white.withValues(alpha: 0.1)
-                                  : Colors.black.withValues(alpha: 0.08),
+                              backgroundColor: tokens.trackBg,
                               valueColor: AlwaysStoppedAnimation<Color>(
                                 moodGradient.colors.first,
                               ),
@@ -360,7 +346,7 @@ class OfflinePlaylistCard extends StatelessWidget {
                   const SizedBox(width: 12),
 
                   // Action Button
-                  _buildActionButton(moodGradient),
+                  _buildActionButton(context, moodGradient),
                 ],
               ),
             ),
@@ -370,7 +356,9 @@ class OfflinePlaylistCard extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButton(LinearGradient gradient) {
+  Widget _buildActionButton(BuildContext context, LinearGradient gradient) {
+    final tokens = context.camsTokens;
+
     switch (playlist.downloadStatus) {
       case DownloadStatus.notDownloaded:
         return GestureDetector(
@@ -388,9 +376,9 @@ class OfflinePlaylistCard extends StatelessWidget {
                 ),
               ],
             ),
-            child: const Icon(
+            child: Icon(
               LucideIcons.download,
-              color: Colors.white,
+              color: tokens.textOnAccent,
               size: 20,
             ),
           ),
@@ -403,9 +391,7 @@ class OfflinePlaylistCard extends StatelessWidget {
           child: CircularProgressIndicator(
             value: playlist.downloadProgress,
             strokeWidth: 3,
-            backgroundColor: isDarkMode
-                ? Colors.white.withValues(alpha: 0.1)
-                : Colors.black.withValues(alpha: 0.1),
+            backgroundColor: tokens.trackBg,
             valueColor: AlwaysStoppedAnimation<Color>(
               gradient.colors.first,
             ),
@@ -419,16 +405,16 @@ class OfflinePlaylistCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.green.withValues(alpha: 0.15),
+                color: tokens.success.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: Colors.green.withValues(alpha: 0.3),
+                  color: tokens.success.withValues(alpha: 0.3),
                   width: 1.5,
                 ),
               ),
-              child: const Icon(
+              child: Icon(
                 LucideIcons.checkCircle2,
-                color: Colors.green,
+                color: tokens.success,
                 size: 20,
               ),
             ),
@@ -438,14 +424,14 @@ class OfflinePlaylistCard extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: isDarkMode
-                      ? Colors.red.withValues(alpha: 0.15)
-                      : Colors.red.withValues(alpha: 0.1),
+                  color: tokens.error.withValues(
+                    alpha: isDarkMode ? 0.15 : 0.1,
+                  ),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   LucideIcons.trash2,
-                  color: Colors.red.shade400,
+                  color: tokens.error,
                   size: 18,
                 ),
               ),

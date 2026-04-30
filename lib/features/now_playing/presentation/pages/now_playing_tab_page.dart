@@ -7,7 +7,6 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/enums/entity_status_enum.dart';
 import '../../../../core/enums/playback_command_enum.dart';
 import '../../../../core/enums/queue_end_behavior_enum.dart';
@@ -18,6 +17,7 @@ import '../../../../core/player/player_state.dart' as ps;
 import '../../../../core/player/space_info.dart';
 import '../../../../core/presentation/app_feedback.dart';
 import '../../../../core/presentation/playback_mood_label.dart';
+import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../../../core/widgets/app_feedback_presenter.dart';
 import '../../../../core/widgets/cams_skeleton.dart';
 import '../../../../features/cams/data/models/override_response_model.dart';
@@ -247,7 +247,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
 
   @override
   Widget build(BuildContext context) {
-    final palette = _NPPalette.fromBrightness(Theme.of(context).brightness);
+    final palette = _NPPalette.fromContext(context);
     final session = context.watch<SessionCubit>().state;
     final isPlayback = session.isPlaybackDevice;
 
@@ -1933,7 +1933,7 @@ class _IotStatusNotice extends StatelessWidget {
         : playbackState.isIotDeviceOffline
             ? LucideIcons.wifiOff
             : LucideIcons.wifi;
-    final color = isWarning ? AppColors.warning : AppColors.success;
+    final color = isWarning ? palette.warning : palette.success;
     final message = playbackState.isIotDeviceAssigned == false
         ? 'No IoT device is assigned to this space. Schedule and AI telemetry may be limited.'
         : playbackState.isIotDeviceOffline
@@ -4095,8 +4095,8 @@ class _SpaceSwapSheet extends StatelessWidget {
                           decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: space.isOnline
-                                  ? Colors.green
-                                  : Colors.orange)),
+                                  ? palette.success
+                                  : palette.warning)),
                       const SizedBox(width: 4),
                       Text(space.isOnline ? 'Online' : 'Offline',
                           style: GoogleFonts.inter(
@@ -4151,39 +4151,32 @@ class _NPPalette {
     required this.accentAlt,
     required this.textOnAccent,
     required this.shadow,
+    required this.success,
+    required this.warning,
   });
 
-  factory _NPPalette.fromBrightness(Brightness brightness) {
-    final isDark = brightness == Brightness.dark;
-    if (isDark) {
-      return _NPPalette(
-          isDark: true,
-          bg: AppColors.backgroundDarkPrimary,
-          card: AppColors.surfaceDark,
-          overlay: Colors.white.withValues(alpha: 0.06),
-          border: AppColors.borderDarkMedium,
-          textPrimary: AppColors.textDarkPrimary,
-          textMuted: AppColors.textDarkSecondary,
-          accent: AppColors.primaryCyan,
-          accentAlt: AppColors.secondaryLime,
-          textOnAccent: AppColors.textDarkPrimary,
-          shadow: AppColors.shadowDark);
-    }
-    return const _NPPalette(
-        isDark: false,
-        bg: AppColors.backgroundPrimary,
-        card: AppColors.surface,
-        overlay: AppColors.backgroundSecondary,
-        border: AppColors.borderLight,
-        textPrimary: AppColors.textPrimary,
-        textMuted: AppColors.textTertiary,
-        accent: AppColors.primaryOrange,
-        accentAlt: AppColors.secondaryTeal,
-        textOnAccent: AppColors.textInverse,
-        shadow: AppColors.shadow);
+  factory _NPPalette.fromContext(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = context.camsTokens;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return _NPPalette(
+      isDark: isDark,
+      bg: tokens.bgBase,
+      card: tokens.bgContainer,
+      overlay: tokens.bgElevated,
+      border: tokens.borderSecondary,
+      textPrimary: tokens.textPrimary,
+      textMuted: tokens.textSecondary,
+      accent: colorScheme.primary,
+      accentAlt: tokens.techAccent,
+      textOnAccent: colorScheme.onPrimary,
+      shadow: tokens.shadow,
+      success: tokens.success,
+      warning: tokens.warning,
+    );
   }
 
   final bool isDark;
   final Color bg, card, overlay, border, textPrimary, textMuted;
-  final Color accent, accentAlt, textOnAccent, shadow;
+  final Color accent, accentAlt, textOnAccent, shadow, success, warning;
 }

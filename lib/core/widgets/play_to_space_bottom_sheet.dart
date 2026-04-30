@@ -4,9 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../features/space_control/domain/entities/space.dart';
-import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
 import '../session/session_cubit.dart';
+import '../theme/cams_theme_tokens.dart';
 
 /// A bottom sheet that displays a list of spaces for the user to select.
 /// Used by the "Play to Space" feature in Search detail pages.
@@ -43,7 +43,7 @@ class PlayToSpaceBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final tokens = context.camsTokens;
     final sessionState = context.read<SessionCubit>().state;
     final currentSpaceId = sessionState.currentSpace?.id;
 
@@ -52,7 +52,7 @@ class PlayToSpaceBottomSheet extends StatelessWidget {
         maxHeight: MediaQuery.of(context).size.height * 0.55,
       ),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : AppColors.surface,
+        color: tokens.bgContainer,
         borderRadius: const BorderRadius.vertical(
           top: Radius.circular(AppDimensions.radiusLg),
         ),
@@ -66,7 +66,7 @@ class PlayToSpaceBottomSheet extends StatelessWidget {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.grey.shade400,
+              color: tokens.border,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -81,9 +81,7 @@ class PlayToSpaceBottomSheet extends StatelessWidget {
                 Icon(
                   LucideIcons.speaker,
                   size: 22,
-                  color: isDark
-                      ? AppColors.textDarkPrimary
-                      : AppColors.textPrimary,
+                  color: tokens.textPrimary,
                 ),
                 const SizedBox(width: 10),
                 Text(
@@ -91,9 +89,7 @@ class PlayToSpaceBottomSheet extends StatelessWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
-                    color: isDark
-                        ? AppColors.textDarkPrimary
-                        : AppColors.textPrimary,
+                    color: tokens.textPrimary,
                   ),
                 ),
               ],
@@ -107,15 +103,13 @@ class PlayToSpaceBottomSheet extends StatelessWidget {
               'Select a space to play this music',
               style: GoogleFonts.inter(
                 fontSize: 13,
-                color: isDark
-                    ? AppColors.textDarkSecondary
-                    : AppColors.textSecondary,
+                color: tokens.textSecondary,
               ),
             ),
           ),
           const SizedBox(height: 12),
           Divider(
-            color: isDark ? AppColors.borderDarkMedium : AppColors.borderLight,
+            color: tokens.borderSecondary,
             height: 1,
           ),
 
@@ -128,13 +122,13 @@ class PlayToSpaceBottomSheet extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(LucideIcons.wifiOff,
-                            size: 48, color: Colors.grey.shade400),
+                            size: 48, color: tokens.textTertiary),
                         const SizedBox(height: 12),
                         Text(
                           'No spaces available',
                           style: GoogleFonts.inter(
                             fontSize: 14,
-                            color: Colors.grey.shade500,
+                            color: tokens.textTertiary,
                           ),
                         ),
                       ],
@@ -158,8 +152,8 @@ class PlayToSpaceBottomSheet extends StatelessWidget {
                           height: 44,
                           decoration: BoxDecoration(
                             color: space.isOnline
-                                ? AppColors.success.withValues(alpha: 0.12)
-                                : Colors.grey.withValues(alpha: 0.12),
+                                ? tokens.success.withValues(alpha: 0.12)
+                                : tokens.textTertiary.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(
@@ -167,8 +161,8 @@ class PlayToSpaceBottomSheet extends StatelessWidget {
                                 ? LucideIcons.speaker
                                 : LucideIcons.volumeX,
                             color: space.isOnline
-                                ? AppColors.success
-                                : Colors.grey.shade500,
+                                ? tokens.success
+                                : tokens.textTertiary,
                             size: 22,
                           ),
                         ),
@@ -177,9 +171,7 @@ class PlayToSpaceBottomSheet extends StatelessWidget {
                           style: GoogleFonts.inter(
                             fontWeight: FontWeight.w600,
                             fontSize: 14,
-                            color: isDark
-                                ? AppColors.textDarkPrimary
-                                : AppColors.textPrimary,
+                            color: tokens.textPrimary,
                           ),
                         ),
                         subtitle: Text(
@@ -187,19 +179,19 @@ class PlayToSpaceBottomSheet extends StatelessWidget {
                           style: GoogleFonts.inter(
                             fontSize: 12,
                             color: space.isOnline
-                                ? AppColors.success
-                                : Colors.grey.shade500,
+                                ? tokens.success
+                                : tokens.textTertiary,
                           ),
                         ),
                         trailing: isSelected
-                            ? const Icon(
+                            ? Icon(
                                 LucideIcons.checkCircle2,
-                                color: AppColors.primaryCyan,
+                                color: tokens.techAccent,
                                 size: 22,
                               )
                             : Icon(
                                 LucideIcons.circle,
-                                color: Colors.grey.shade400,
+                                color: tokens.textTertiary,
                                 size: 22,
                               ),
                         onTap: space.isOnline

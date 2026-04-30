@@ -507,28 +507,14 @@ class StoreDashboardPage extends StatelessWidget {
     BuildContext context,
     Store store,
   ) async {
-    List<ScheduleMusicItem> musicCatalog;
-    try {
-      musicCatalog = await _loadBrandScheduleMusicCatalog(store);
-    } catch (error) {
-      if (!context.mounted) return;
-      _showStoreSnackBar(
-        context,
-        'Failed to load playlists for brand schedule: $error',
-        isError: true,
-      );
-      return;
-    }
-    if (!context.mounted) return;
-
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => BrandScheduleEditorSheet(
+      builder: (_) => BrandScheduleEditorSheetLoader(
         brandId: store.brandId,
-        musicCatalog: musicCatalog,
+        loadMusicCatalog: () => _loadBrandScheduleMusicCatalog(store),
         remoteDataSource: sl<SpaceScheduleRemoteDataSource>(),
       ),
     );
@@ -543,22 +529,6 @@ class StoreDashboardPage extends StatelessWidget {
     BuildContext context,
     Store store,
   ) async {
-    final storesResult = await sl<GetUserStores>()();
-    if (!context.mounted) return;
-
-    final stores = storesResult.fold<List<StoreSummary>?>(
-      (failure) {
-        _showStoreFailure(
-          context,
-          failure,
-          title: 'Strict Sync stores unavailable',
-        );
-        return null;
-      },
-      (stores) => stores,
-    );
-    if (stores == null || stores.isEmpty) return;
-
     final selection = await showModalBottomSheet<_StrictSyncSelection>(
       context: context,
       isScrollControlled: true,
@@ -567,18 +537,14 @@ class StoreDashboardPage extends StatelessWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => _StrictSyncStoresSheet(
+      builder: (_) => _StrictSyncStoresSheetLoader(
         brandId: store.brandId,
-        stores: stores,
         currentStoreId: store.id,
       ),
     );
     if (selection == null || !context.mounted) return;
 
-    final currentlyStrict = stores
-        .where((item) => item.governanceMode == StoreGovernanceMode.strictSync)
-        .map((item) => item.id)
-        .toSet();
+    final currentlyStrict = selection.previousStrictStoreIds;
     final selectedIds = selection.storeIds.toList(growable: false);
     final releasedIds = currentlyStrict
         .where((storeId) => !selection.storeIds.contains(storeId))
@@ -1325,10 +1291,12 @@ class StoreDashboardPage extends StatelessWidget {
 class _StrictSyncSelection {
   const _StrictSyncSelection({
     required this.storeIds,
+    required this.previousStrictStoreIds,
     this.sourceId,
   });
 
   final Set<String> storeIds;
+  final Set<String> previousStrictStoreIds;
   final String? sourceId;
 }
 
@@ -1340,6 +1308,119 @@ class _GovernanceModeSelection {
 
   final StoreGovernanceMode mode;
   final String? sourceId;
+}
+
+class _StrictSyncStoresSheetLoader extends StatefulWidget {
+  const _StrictSyncStoresSheetLoader({
+    required this.brandId,
+    required this.currentStoreId,
+  });
+
+  final String brandId;
+  final String currentStoreId;
+
+  @override
+  State<_StrictSyncStoresSheetLoader> createState() =>
+      _StrictSyncStoresSheetLoaderState();
+}
+
+class _StrictSyncStoresSheetLoaderState
+    extends State<_StrictSyncStoresSheetLoader> {
+  List<StoreSummary>? _stores;
+  Failure? _failure;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStores();
+  }
+
+  Future<void> _loadStores() async {
+    setState(() {
+      _stores = null;
+      _failure = null;
+    });
+
+    final result = await sl<GetUserStores>()();
+    if (!mounted) return;
+    result.fold(
+      (failure) => setState(() => _failure = failure),
+      (stores) => setState(() => _stores = stores),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final stores = _stores;
+    if (stores != null && stores.isNotEmpty) {
+      return _StrictSyncStoresSheet(
+        brandId: widget.brandId,
+        stores: stores,
+        currentStoreId: widget.currentStoreId,
+      );
+    }
+
+    final theme = Theme.of(context);
+    return SafeArea(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.86,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 18),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: theme.dividerColor,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Text(
+                'Strict Sync stores',
+                style: AppTypography.titleMedium.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text('Loading store list and brand schedule templates.'),
+              const SizedBox(height: 18),
+              if (_failure != null)
+                AppErrorView(
+                  failure: _failure,
+                  title: 'Strict Sync stores unavailable',
+                  onRetry: _loadStores,
+                  onSecondaryAction: () => Navigator.pop(context),
+                  secondaryLabel: 'Close',
+                )
+              else if (stores != null)
+                AppErrorView(
+                  title: 'No stores available',
+                  message: 'There are no stores to configure for Strict Sync.',
+                  onRetry: _loadStores,
+                  onSecondaryAction: () => Navigator.pop(context),
+                  secondaryLabel: 'Close',
+                )
+              else
+                const CamsSkeletonList(
+                  itemCount: 6,
+                  showLeading: false,
+                  showTrailing: true,
+                  padding: EdgeInsets.zero,
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _StrictSyncStoresSheet extends StatefulWidget {
@@ -1507,6 +1588,12 @@ class _StrictSyncStoresSheetState extends State<_StrictSyncStoresSheet> {
                         context,
                         _StrictSyncSelection(
                           storeIds: Set<String>.from(_selectedStoreIds),
+                          previousStrictStoreIds: widget.stores
+                              .where((store) =>
+                                  store.governanceMode ==
+                                  StoreGovernanceMode.strictSync)
+                              .map((store) => store.id)
+                              .toSet(),
                           sourceId: _selectedSourceId,
                         ),
                       ),
@@ -1553,15 +1640,12 @@ class _StrictSyncTemplatePicker extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: theme.colorScheme.outlineVariant),
         ),
-        child: const Row(
+        child: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-            SizedBox(width: 12),
-            Expanded(child: Text('Loading Strict Sync templates...')),
+            CamsSkeletonLine(width: 190, height: 14),
+            SizedBox(height: 10),
+            CamsSkeletonBox(height: 48, radius: 12),
           ],
         ),
       );

@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../../hub_management/presentation/pages/space_hub_page.dart';
 
 class SpaceSettingsPage extends StatelessWidget {
@@ -336,19 +336,16 @@ class _SpaceSettingsPalette {
   final Color accent;
 
   factory _SpaceSettingsPalette.of(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = context.camsTokens;
     return _SpaceSettingsPalette(
-      bg: isDark
-          ? AppColors.backgroundDarkPrimary
-          : AppColors.backgroundPrimary,
-      card: isDark ? AppColors.surfaceDark : Colors.white,
-      panel: isDark
-          ? AppColors.surfaceDark.withValues(alpha: 0.8)
-          : AppColors.backgroundPrimary,
-      border: isDark ? Colors.white.withValues(alpha: 0.08) : AppColors.divider,
-      textPrimary: isDark ? AppColors.textDarkPrimary : AppColors.textPrimary,
-      textMuted: isDark ? AppColors.textDarkSecondary : AppColors.textSecondary,
-      accent: isDark ? AppColors.primaryCyan : AppColors.primaryOrange,
+      bg: tokens.bgBase,
+      card: tokens.bgContainer,
+      panel: tokens.bgElevated,
+      border: tokens.borderSecondary,
+      textPrimary: tokens.textPrimary,
+      textMuted: tokens.textSecondary,
+      accent: colorScheme.primary,
     );
   }
 }

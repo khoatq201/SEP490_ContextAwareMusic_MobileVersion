@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/constants/app_typography.dart';
 import '../../../../core/enums/queue_insert_mode_enum.dart';
@@ -13,6 +12,7 @@ import '../../../../core/player/player_event.dart';
 import '../../../../core/player/local_preview_feedback.dart';
 import '../../../../core/presentation/shell_layout_metrics.dart';
 import '../../../../core/session/session_cubit.dart';
+import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../../../core/utils/cams_queue_actions.dart';
 import '../../../../core/widgets/app_error_view.dart';
 import '../../../../core/widgets/app_inline_error_card.dart';
@@ -244,6 +244,7 @@ class _SearchViewState extends State<_SearchView> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final tokens = context.camsTokens;
     final hasMiniPlayer =
         context.select((PlayerBloc bloc) => bloc.state.hasTrack);
     final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
@@ -254,11 +255,9 @@ class _SearchViewState extends State<_SearchView> {
             hasMiniPlayer: hasMiniPlayer,
             extra: AppDimensions.spacingLg,
           );
-    final bgColor =
-        isDark ? AppColors.backgroundDarkPrimary : AppColors.backgroundPrimary;
 
     return Scaffold(
-      backgroundColor: bgColor,
+      backgroundColor: tokens.bgBase,
       body: SafeArea(
         child: CustomScrollView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -325,6 +324,7 @@ class _SearchViewState extends State<_SearchView> {
   // Browse mode (no query)
   // ─────────────────────────────────────────────────────────────────────────
   Widget _buildBrowse(SearchState state, bool isDark) {
+    final tokens = context.camsTokens;
     final tag = state.activeTag;
 
     if (tag == SearchFilterTag.categories || tag == SearchFilterTag.all) {
@@ -341,18 +341,12 @@ class _SearchViewState extends State<_SearchView> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.search,
-                size: 64,
-                color: isDark
-                    ? AppColors.textDarkTertiary
-                    : AppColors.textTertiary),
+            Icon(Icons.search, size: 64, color: tokens.textTertiary),
             const SizedBox(height: AppDimensions.spacingMd),
             Text(
               'Search for ${tag.label.toLowerCase()}',
               style: TextStyle(
-                color: isDark
-                    ? AppColors.textDarkSecondary
-                    : AppColors.textSecondary,
+                color: tokens.textSecondary,
               ),
             ),
           ],
@@ -366,6 +360,8 @@ class _SearchViewState extends State<_SearchView> {
   // ─────────────────────────────────────────────────────────────────────────
   Widget _buildSearchResults(
       BuildContext context, SearchState state, bool isDark) {
+    final tokens = context.camsTokens;
+
     if (state.status == SearchStatus.loading) {
       return const SliverToBoxAdapter(
         child: CamsSkeletonList(
@@ -398,18 +394,12 @@ class _SearchViewState extends State<_SearchView> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.search_off,
-                  size: 64,
-                  color: isDark
-                      ? AppColors.textDarkTertiary
-                      : AppColors.textTertiary),
+              Icon(Icons.search_off, size: 64, color: tokens.textTertiary),
               const SizedBox(height: AppDimensions.spacingMd),
               Text(
                 'No results for "${state.query}"',
                 style: TextStyle(
-                  color: isDark
-                      ? AppColors.textDarkSecondary
-                      : AppColors.textSecondary,
+                  color: tokens.textSecondary,
                 ),
               ),
             ],
@@ -461,10 +451,12 @@ class _SearchBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
+
     return Container(
       height: 48,
       decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : AppColors.surface,
+        color: tokens.bgContainer,
         borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
       ),
       child: TextField(
@@ -472,26 +464,24 @@ class _SearchBar extends StatelessWidget {
         focusNode: focusNode,
         onChanged: onChanged,
         style: TextStyle(
-          color: isDark ? AppColors.textDarkPrimary : AppColors.textPrimary,
+          color: tokens.textPrimary,
         ),
         decoration: InputDecoration(
           hintText: 'Search songs, artists, playlists...',
           hintStyle: TextStyle(
-            color: isDark ? AppColors.textDarkTertiary : AppColors.textTertiary,
+            color: tokens.textTertiary,
             fontSize: 15,
           ),
           prefixIcon: Icon(
             Icons.search,
-            color: isDark ? AppColors.textDarkTertiary : AppColors.textTertiary,
+            color: tokens.textTertiary,
           ),
           suffixIcon: ValueListenableBuilder<TextEditingValue>(
             valueListenable: controller,
             builder: (_, value, __) => value.text.isNotEmpty
                 ? IconButton(
                     icon: const Icon(Icons.close, size: 20),
-                    color: isDark
-                        ? AppColors.textDarkTertiary
-                        : AppColors.textTertiary,
+                    color: tokens.textTertiary,
                     onPressed: onClear,
                   )
                 : const SizedBox.shrink(),
@@ -520,6 +510,9 @@ class _FilterTagRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = context.camsTokens;
+
     return SizedBox(
       height: 50,
       child: ListView.separated(
@@ -541,16 +534,10 @@ class _FilterTagRow extends StatelessWidget {
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               decoration: BoxDecoration(
-                color: isActive
-                    ? (isDark ? Colors.white : Colors.black87)
-                    : Colors.transparent,
+                color: isActive ? colorScheme.primary : Colors.transparent,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: isActive
-                      ? Colors.transparent
-                      : (isDark
-                          ? Colors.white.withValues(alpha: 0.3)
-                          : Colors.black.withValues(alpha: 0.2)),
+                  color: isActive ? Colors.transparent : tokens.borderSecondary,
                   width: 1,
                 ),
               ),
@@ -560,11 +547,8 @@ class _FilterTagRow extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: isActive
-                        ? (isDark ? Colors.black : Colors.white)
-                        : (isDark
-                            ? AppColors.textDarkPrimary
-                            : AppColors.textPrimary),
+                    color:
+                        isActive ? colorScheme.onPrimary : tokens.textPrimary,
                   ),
                 ),
               ),
@@ -586,6 +570,8 @@ class _BrowseCategoriesSliver extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
+
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spacingMd),
       sliver: SliverList(
@@ -593,7 +579,7 @@ class _BrowseCategoriesSliver extends StatelessWidget {
           Text(
             'Browse all',
             style: AppTypography.titleMedium.copyWith(
-              color: isDark ? AppColors.textDarkPrimary : AppColors.textPrimary,
+              color: tokens.textPrimary,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -715,6 +701,8 @@ class _AllResultsSliver extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
+
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spacingMd),
       sliver: SliverList(
@@ -723,7 +711,7 @@ class _AllResultsSliver extends StatelessWidget {
           Text(
             'Top results',
             style: AppTypography.titleMedium.copyWith(
-              color: isDark ? AppColors.textDarkPrimary : AppColors.textPrimary,
+              color: tokens.textPrimary,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -817,6 +805,8 @@ class _ResultTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = context.camsTokens;
     Widget? trailing;
     if (result.type == SearchResultType.song) {
       trailing = SizedBox(
@@ -829,18 +819,14 @@ class _ResultTile extends StatelessWidget {
               Text(
                 result.duration!,
                 style: TextStyle(
-                  color: isDark
-                      ? AppColors.textDarkTertiary
-                      : AppColors.textTertiary,
+                  color: tokens.textTertiary,
                   fontSize: 12,
                 ),
               ),
             IconButton(
               icon: Icon(
                 Icons.more_vert,
-                color: isDark
-                    ? AppColors.textDarkTertiary
-                    : AppColors.textTertiary,
+                color: tokens.textTertiary,
                 size: 18,
               ),
               splashRadius: 18,
@@ -853,7 +839,7 @@ class _ResultTile extends StatelessWidget {
       trailing = IconButton(
         icon: Icon(
           Icons.more_vert,
-          color: isDark ? AppColors.textDarkTertiary : AppColors.textTertiary,
+          color: tokens.textTertiary,
           size: 18,
         ),
         splashRadius: 18,
@@ -866,7 +852,7 @@ class _ResultTile extends StatelessWidget {
     } else {
       trailing = Icon(
         Icons.chevron_right,
-        color: isDark ? AppColors.textDarkTertiary : AppColors.textTertiary,
+        color: tokens.textTertiary,
         size: 20,
       );
     }
@@ -887,15 +873,15 @@ class _ResultTile extends StatelessWidget {
                   result.imageUrl!,
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => Container(
-                    color: AppColors.primaryOrange.withValues(alpha: 0.12),
+                    color: colorScheme.primary.withValues(alpha: 0.12),
                     child: Icon(_fallbackIcon,
-                        color: AppColors.primaryOrange, size: 24),
+                        color: colorScheme.primary, size: 24),
                   ),
                 )
               : Container(
-                  color: AppColors.primaryOrange.withValues(alpha: 0.12),
-                  child: Icon(_fallbackIcon,
-                      color: AppColors.primaryOrange, size: 24),
+                  color: colorScheme.primary.withValues(alpha: 0.12),
+                  child:
+                      Icon(_fallbackIcon, color: colorScheme.primary, size: 24),
                 ),
         ),
       ),
@@ -904,7 +890,7 @@ class _ResultTile extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
-          color: isDark ? AppColors.textDarkPrimary : AppColors.textPrimary,
+          color: tokens.textPrimary,
           fontWeight: FontWeight.w600,
           fontSize: 14,
         ),
@@ -914,7 +900,7 @@ class _ResultTile extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
-          color: isDark ? AppColors.textDarkSecondary : AppColors.textSecondary,
+          color: tokens.textSecondary,
           fontSize: 12,
         ),
       ),
@@ -934,6 +920,8 @@ class _ArtistGridSliver extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
+
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spacingMd),
       sliver: SliverList(
@@ -941,7 +929,7 @@ class _ArtistGridSliver extends StatelessWidget {
           Text(
             'Artists',
             style: AppTypography.titleMedium.copyWith(
-              color: isDark ? AppColors.textDarkPrimary : AppColors.textPrimary,
+              color: tokens.textPrimary,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -983,9 +971,7 @@ class _ArtistGridSliver extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
                       style: GoogleFonts.inter(
-                        color: isDark
-                            ? AppColors.textDarkPrimary
-                            : AppColors.textPrimary,
+                        color: tokens.textPrimary,
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                       ),
@@ -1007,9 +993,11 @@ class _AvatarFallback extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
+
     return Container(
-      color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
-      child: Icon(Icons.person, size: 48, color: Colors.grey.shade400),
+      color: tokens.bgElevated,
+      child: Icon(Icons.person, size: 48, color: tokens.textTertiary),
     );
   }
 }
@@ -1024,6 +1012,8 @@ class _PlaylistGridSliver extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
+
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spacingMd),
       sliver: SliverList(
@@ -1031,7 +1021,7 @@ class _PlaylistGridSliver extends StatelessWidget {
           Text(
             'Playlists',
             style: AppTypography.titleMedium.copyWith(
-              color: isDark ? AppColors.textDarkPrimary : AppColors.textPrimary,
+              color: tokens.textPrimary,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -1076,9 +1066,7 @@ class _PlaylistGridSliver extends StatelessWidget {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.inter(
-                              color: isDark
-                                  ? AppColors.textDarkPrimary
-                                  : AppColors.textPrimary,
+                              color: tokens.textPrimary,
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
                             ),
@@ -1087,9 +1075,7 @@ class _PlaylistGridSliver extends StatelessWidget {
                         IconButton(
                           icon: Icon(
                             Icons.more_vert,
-                            color: isDark
-                                ? AppColors.textDarkTertiary
-                                : AppColors.textTertiary,
+                            color: tokens.textTertiary,
                             size: 18,
                           ),
                           splashRadius: 18,
@@ -1111,9 +1097,7 @@ class _PlaylistGridSliver extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
-                        color: isDark
-                            ? AppColors.textDarkTertiary
-                            : AppColors.textTertiary,
+                        color: tokens.textTertiary,
                         fontSize: 11,
                       ),
                     ),
@@ -1134,10 +1118,12 @@ class _CoverFallback extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
+
     return Container(
       width: double.infinity,
-      color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
-      child: Icon(LucideIcons.music4, size: 48, color: Colors.grey.shade400),
+      color: tokens.bgElevated,
+      child: Icon(LucideIcons.music4, size: 48, color: tokens.textTertiary),
     );
   }
 }
@@ -1152,6 +1138,8 @@ class _SongListSliver extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
+
     return SliverPadding(
       padding: EdgeInsets.zero,
       sliver: SliverList(
@@ -1162,8 +1150,7 @@ class _SongListSliver extends StatelessWidget {
             child: Text(
               'Songs',
               style: AppTypography.titleMedium.copyWith(
-                color:
-                    isDark ? AppColors.textDarkPrimary : AppColors.textPrimary,
+                color: tokens.textPrimary,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -1205,6 +1192,8 @@ class _AlbumGridSliver extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
+
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spacingMd),
       sliver: SliverList(
@@ -1212,7 +1201,7 @@ class _AlbumGridSliver extends StatelessWidget {
           Text(
             'Albums',
             style: AppTypography.titleMedium.copyWith(
-              color: isDark ? AppColors.textDarkPrimary : AppColors.textPrimary,
+              color: tokens.textPrimary,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -1253,9 +1242,7 @@ class _AlbumGridSliver extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
-                        color: isDark
-                            ? AppColors.textDarkPrimary
-                            : AppColors.textPrimary,
+                        color: tokens.textPrimary,
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                       ),
@@ -1265,9 +1252,7 @@ class _AlbumGridSliver extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
-                        color: isDark
-                            ? AppColors.textDarkTertiary
-                            : AppColors.textTertiary,
+                        color: tokens.textTertiary,
                         fontSize: 11,
                       ),
                     ),
@@ -1292,6 +1277,8 @@ class _CategoryListSliver extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
+
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spacingMd),
       sliver: SliverList(
@@ -1299,7 +1286,7 @@ class _CategoryListSliver extends StatelessWidget {
           Text(
             'Categories',
             style: AppTypography.titleMedium.copyWith(
-              color: isDark ? AppColors.textDarkPrimary : AppColors.textPrimary,
+              color: tokens.textPrimary,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -1315,30 +1302,25 @@ class _CategoryListSliver extends StatelessWidget {
                         ? Image.network(r.imageUrl!,
                             fit: BoxFit.cover,
                             errorBuilder: (_, __, ___) => Container(
-                                  color: Colors.grey.shade700,
-                                  child: const Icon(Icons.category,
-                                      color: Colors.white54),
+                                  color: tokens.bgElevated,
+                                  child: Icon(Icons.category,
+                                      color: tokens.textTertiary),
                                 ))
                         : Container(
-                            color: Colors.grey.shade700,
-                            child: const Icon(Icons.category,
-                                color: Colors.white54),
+                            color: tokens.bgElevated,
+                            child: Icon(Icons.category,
+                                color: tokens.textTertiary),
                           ),
                   ),
                 ),
                 title: Text(
                   r.title,
                   style: TextStyle(
-                    color: isDark
-                        ? AppColors.textDarkPrimary
-                        : AppColors.textPrimary,
+                    color: tokens.textPrimary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                trailing: Icon(Icons.chevron_right,
-                    color: isDark
-                        ? AppColors.textDarkTertiary
-                        : AppColors.textTertiary),
+                trailing: Icon(Icons.chevron_right, color: tokens.textTertiary),
                 onTap: () => context.push(
                   '/search/category/${r.id}',
                   extra: r.title,
@@ -1361,6 +1343,8 @@ class _FeaturedPlaylistsSliver extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
+
     if (playlists.isEmpty) {
       return const SliverToBoxAdapter(
         child: CamsSkeletonCardGrid(
@@ -1378,7 +1362,7 @@ class _FeaturedPlaylistsSliver extends StatelessWidget {
           Text(
             'Featured Playlists',
             style: AppTypography.titleMedium.copyWith(
-              color: isDark ? AppColors.textDarkPrimary : AppColors.textPrimary,
+              color: tokens.textPrimary,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -1412,6 +1396,8 @@ class _PlaylistCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
+
     return GestureDetector(
       onTap: () => context.push('/search/playlist/${playlist.id}'),
       child: SizedBox(
@@ -1471,8 +1457,7 @@ class _PlaylistCard extends StatelessWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: GoogleFonts.inter(
-                color:
-                    isDark ? AppColors.textDarkPrimary : AppColors.textPrimary,
+                color: tokens.textPrimary,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
@@ -1483,9 +1468,7 @@ class _PlaylistCard extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.inter(
-                  color: isDark
-                      ? AppColors.textDarkTertiary
-                      : AppColors.textTertiary,
+                  color: tokens.textTertiary,
                   fontSize: 11,
                 ),
               ),
@@ -1506,13 +1489,15 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           title,
           style: AppTypography.titleMedium.copyWith(
-            color: isDark ? AppColors.textDarkPrimary : AppColors.textPrimary,
+            color: tokens.textPrimary,
             fontWeight: FontWeight.w700,
           ),
         ),

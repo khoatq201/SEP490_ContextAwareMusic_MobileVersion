@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/cams_theme_tokens.dart';
+
 class MoodDisplayWidget extends StatelessWidget {
   final String? mood;
   final bool isOffline;
@@ -27,26 +29,28 @@ class MoodDisplayWidget extends StatelessWidget {
     }
   }
 
-  Color _getMoodColor(String? mood) {
+  Color _getMoodColor(String? mood, CamsThemeTokens tokens) {
     switch (mood?.toLowerCase()) {
       case 'happy':
-        return Colors.yellow.shade700;
+        return tokens.warning;
       case 'chill':
-        return Colors.blue.shade400;
+        return tokens.moodChill;
       case 'energetic':
-        return Colors.orange.shade700;
+        return tokens.moodEnergetic;
       case 'romantic':
-        return Colors.pink.shade400;
+        return tokens.brandPrimaryHover;
       case 'focus':
-        return Colors.purple.shade400;
+        return tokens.moodFocus;
       default:
-        return Colors.grey;
+        return tokens.moodDefault;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final tokens = context.camsTokens;
+    final moodColor = _getMoodColor(mood, tokens);
 
     return Card(
       elevation: 2,
@@ -56,23 +60,21 @@ class MoodDisplayWidget extends StatelessWidget {
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          color: isDark
-              ? _getMoodColor(mood).withValues(alpha: 0.1)
-              : _getMoodColor(mood).withValues(alpha: 0.05),
+          color: moodColor.withValues(alpha: isDark ? 0.1 : 0.05),
         ),
         child: Column(
           children: [
             Icon(
               _getMoodIcon(mood),
               size: 80,
-              color: _getMoodColor(mood),
+              color: moodColor,
             ),
             const SizedBox(height: 16),
             Text(
               mood ?? 'No Mood',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: _getMoodColor(mood),
+                    color: moodColor,
                   ),
             ),
             const SizedBox(height: 8),
@@ -81,7 +83,7 @@ class MoodDisplayWidget extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.orange.shade100,
+                  color: tokens.alertWarningBg,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
@@ -90,13 +92,13 @@ class MoodDisplayWidget extends StatelessWidget {
                     Icon(
                       Icons.offline_bolt,
                       size: 16,
-                      color: Colors.orange.shade900,
+                      color: tokens.warning,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       'Playing from Local Cache',
                       style: TextStyle(
-                        color: Colors.orange.shade900,
+                        color: tokens.warning,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),

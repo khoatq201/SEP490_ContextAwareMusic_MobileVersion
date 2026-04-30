@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/widgets/cams_skeleton.dart';
 import '../../data/datasources/space_schedule_remote_datasource.dart';
 import '../../domain/entities/schedule_music_item.dart';
 import '../../domain/entities/schedule_slot.dart';
@@ -23,6 +24,143 @@ class BrandScheduleEditorSheet extends StatefulWidget {
   @override
   State<BrandScheduleEditorSheet> createState() =>
       _BrandScheduleEditorSheetState();
+}
+
+class BrandScheduleEditorSheetLoader extends StatefulWidget {
+  const BrandScheduleEditorSheetLoader({
+    super.key,
+    required this.brandId,
+    required this.loadMusicCatalog,
+    required this.remoteDataSource,
+  });
+
+  final String brandId;
+  final Future<List<ScheduleMusicItem>> Function() loadMusicCatalog;
+  final SpaceScheduleRemoteDataSource remoteDataSource;
+
+  @override
+  State<BrandScheduleEditorSheetLoader> createState() =>
+      _BrandScheduleEditorSheetLoaderState();
+}
+
+class _BrandScheduleEditorSheetLoaderState
+    extends State<BrandScheduleEditorSheetLoader> {
+  List<ScheduleMusicItem>? _musicCatalog;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMusicCatalog();
+  }
+
+  Future<void> _loadMusicCatalog() async {
+    setState(() {
+      _musicCatalog = null;
+      _errorMessage = null;
+    });
+
+    try {
+      final musicCatalog = await widget.loadMusicCatalog();
+      if (!mounted) return;
+      setState(() => _musicCatalog = musicCatalog);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _errorMessage = error.toString());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final musicCatalog = _musicCatalog;
+    if (musicCatalog != null) {
+      return BrandScheduleEditorSheet(
+        brandId: widget.brandId,
+        musicCatalog: musicCatalog,
+        remoteDataSource: widget.remoteDataSource,
+      );
+    }
+
+    final theme = Theme.of(context);
+    return SafeArea(
+      top: false,
+      child: DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.86,
+        minChildSize: 0.48,
+        maxChildSize: 0.94,
+        builder: (context, controller) => Material(
+          color: theme.colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            children: [
+              const SizedBox(height: 10),
+              Container(
+                width: 42,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: theme.dividerColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 18, 12, 10),
+                child: Row(
+                  children: [
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Brand schedule',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Loading playlists and reusable schedules.',
+                            style: TextStyle(fontSize: 13),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Close',
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                  ],
+                ),
+              ),
+              if (_errorMessage != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                  child: _InlineError(message: _errorMessage!),
+                ),
+              Expanded(
+                child: _errorMessage == null
+                    ? const _BrandScheduleSkeleton()
+                    : ListView(
+                        controller: controller,
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                        children: [
+                          FilledButton.icon(
+                            onPressed: _loadMusicCatalog,
+                            icon: const Icon(Icons.refresh_rounded),
+                            label: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _BrandScheduleEditorSheetState extends State<BrandScheduleEditorSheet> {
@@ -315,7 +453,7 @@ class _BrandScheduleEditorSheetState extends State<BrandScheduleEditorSheet> {
                 ),
               Expanded(
                 child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
+                    ? const _BrandScheduleSkeleton()
                     : ListView(
                         controller: controller,
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
@@ -537,6 +675,41 @@ class _BrandSlotTile extends StatelessWidget {
         icon: const Icon(Icons.delete_outline),
       ),
       onTap: onTap,
+    );
+  }
+}
+
+class _BrandScheduleSkeleton extends StatelessWidget {
+  const _BrandScheduleSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SingleChildScrollView(
+      physics: NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.fromLTRB(16, 0, 16, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CamsSkeletonBox(height: 44, radius: 22),
+          SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(child: CamsSkeletonBox(height: 40, radius: 20)),
+              SizedBox(width: 8),
+              Expanded(child: CamsSkeletonBox(height: 40, radius: 20)),
+            ],
+          ),
+          SizedBox(height: 16),
+          CamsSkeletonLine(width: 180, height: 18),
+          SizedBox(height: 12),
+          CamsSkeletonList(
+            itemCount: 5,
+            padding: EdgeInsets.zero,
+            showLeading: false,
+            showTrailing: true,
+          ),
+        ],
+      ),
     );
   }
 }

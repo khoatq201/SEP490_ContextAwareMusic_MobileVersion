@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../../../core/widgets/cams_skeleton.dart';
 import '../../../cams/domain/entities/space_playback_state.dart';
@@ -275,6 +274,7 @@ class SpaceSchedulePage extends StatelessWidget {
     BuildContext context,
     ScheduleSlot slot,
   ) async {
+    final tokens = context.camsTokens;
     final state = context.read<SpaceScheduleBloc>().state;
     if (state.isBrandScheduleControlled) {
       _showBrandControlledSnack(context);
@@ -294,8 +294,8 @@ class SpaceSchedulePage extends StatelessWidget {
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.error,
-              foregroundColor: Colors.white,
+              backgroundColor: tokens.error,
+              foregroundColor: tokens.textOnAccent,
             ),
             child: const Text('Delete'),
           ),
@@ -363,7 +363,7 @@ class _ScheduleErrorView extends StatelessWidget {
               onPressed: onRetry,
               style: FilledButton.styleFrom(
                 backgroundColor: palette.accent,
-                foregroundColor: Colors.white,
+                foregroundColor: palette.textOnAccent,
                 minimumSize: const Size.fromHeight(52),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(18),
@@ -435,7 +435,7 @@ class _BrandControlledOnlyView extends StatelessWidget {
               onPressed: onClose,
               style: FilledButton.styleFrom(
                 backgroundColor: palette.accent,
-                foregroundColor: Colors.white,
+                foregroundColor: palette.textOnAccent,
                 minimumSize: const Size.fromHeight(52),
               ),
               child: const Text('Done'),
@@ -593,7 +593,7 @@ class _WelcomeActionCard extends StatelessWidget {
                     child: Text(
                       topLabel,
                       style: GoogleFonts.inter(
-                        color: Colors.white.withValues(alpha: 0.7),
+                        color: palette.textOnAccent.withValues(alpha: 0.7),
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 1.2,
@@ -974,8 +974,8 @@ class _ScheduleEditorView extends StatelessWidget {
                 palette: palette,
                 icon: Icons.play_arrow_rounded,
                 semanticLabel: 'Preview schedule playback',
-                background: AppColors.error,
-                foreground: Colors.white,
+                background: palette.error,
+                foreground: palette.textOnAccent,
                 onTap: () {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -1259,7 +1259,7 @@ class _ScheduleIotStatusRow extends StatelessWidget {
         : playback.isIotDeviceOffline
             ? LucideIcons.wifiOff
             : LucideIcons.wifi;
-    final color = isWarning ? AppColors.warning : AppColors.success;
+    final color = isWarning ? palette.warning : palette.success;
     final subtitle = playback.isIotDeviceAssigned == false
         ? 'Assign a device before relying on live telemetry.'
         : playback.isIotDeviceOffline
@@ -1514,7 +1514,7 @@ class _EmptyTimelineView extends StatelessWidget {
               onPressed: onAddSlot,
               style: FilledButton.styleFrom(
                 backgroundColor: palette.accent,
-                foregroundColor: Colors.white,
+                foregroundColor: palette.textOnAccent,
                 padding:
                     const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
                 shape: RoundedRectangleBorder(
@@ -1685,7 +1685,7 @@ class _ScheduleTimeline extends StatelessWidget {
                         maxLines: compact ? 1 : 2,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.poppins(
-                          color: Colors.white,
+                          color: palette.textOnAccent,
                           fontSize: titleSize,
                           fontWeight: FontWeight.w700,
                           height: 1.05,
@@ -1697,7 +1697,7 @@ class _ScheduleTimeline extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.inter(
-                          color: Colors.white.withValues(alpha: 0.76),
+                          color: palette.textOnAccent.withValues(alpha: 0.76),
                           fontSize: detailSize,
                           fontWeight: FontWeight.w600,
                         ),
@@ -1709,7 +1709,7 @@ class _ScheduleTimeline extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.inter(
-                            color: Colors.white.withValues(alpha: 0.76),
+                            color: palette.textOnAccent.withValues(alpha: 0.76),
                             fontSize: detailSize,
                             fontWeight: FontWeight.w500,
                           ),
@@ -1725,7 +1725,7 @@ class _ScheduleTimeline extends StatelessWidget {
                   children: [
                     Icon(
                       Icons.edit_outlined,
-                      color: Colors.white.withValues(alpha: 0.9),
+                      color: palette.textOnAccent.withValues(alpha: 0.9),
                       size: actionIconSize,
                     ),
                     SizedBox(height: compact ? 4 : 8),
@@ -1741,7 +1741,7 @@ class _ScheduleTimeline extends StatelessWidget {
                       ),
                       icon: Icon(
                         Icons.delete_outline,
-                        color: Colors.white.withValues(alpha: 0.92),
+                        color: palette.textOnAccent.withValues(alpha: 0.92),
                         size: actionIconSize,
                       ),
                     ),
@@ -1775,6 +1775,8 @@ class _MiniArtwork extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
+
     return Transform.rotate(
       angle: angle,
       child: Container(
@@ -1799,7 +1801,7 @@ class _MiniArtwork extends StatelessWidget {
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.inter(
-              color: Colors.white,
+              color: tokens.textOnAccent,
               fontSize: 10,
               fontWeight: FontWeight.w700,
               height: 1.05,
@@ -2003,6 +2005,10 @@ class _SchedulePalette {
   final Color textPrimary;
   final Color textMuted;
   final Color accent;
+  final Color error;
+  final Color success;
+  final Color warning;
+  final Color textOnAccent;
   final Color textOnCard;
   final Color textMutedOnCard;
 
@@ -2015,6 +2021,10 @@ class _SchedulePalette {
     required this.textPrimary,
     required this.textMuted,
     required this.accent,
+    required this.error,
+    required this.success,
+    required this.warning,
+    required this.textOnAccent,
     required this.textOnCard,
     required this.textMutedOnCard,
   });
@@ -2030,6 +2040,10 @@ class _SchedulePalette {
       textPrimary: tokens.textPrimary,
       textMuted: tokens.textSecondary,
       accent: tokens.brandPrimary,
+      error: tokens.error,
+      success: tokens.success,
+      warning: tokens.warning,
+      textOnAccent: tokens.textOnAccent,
       textOnCard: tokens.textPrimary,
       textMutedOnCard: tokens.textSecondary,
     );

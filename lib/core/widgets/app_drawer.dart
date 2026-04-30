@@ -4,9 +4,9 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/auth/presentation/bloc/auth_event.dart';
 import '../../features/auth/presentation/bloc/auth_state.dart';
-import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
 import '../constants/app_typography.dart';
+import '../theme/cams_theme_tokens.dart';
 
 class AppDrawer extends StatelessWidget {
   final String currentRoute;
@@ -18,9 +18,9 @@ class AppDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final tokens = context.camsTokens;
     return Drawer(
-      backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surface,
+      backgroundColor: tokens.bgContainer,
       child: BlocBuilder<AuthBloc, AuthState>(
         builder: (context, authState) {
           final user = authState.user;
@@ -85,7 +85,8 @@ class AppDrawer extends StatelessWidget {
   }
 
   Widget _buildUserHeader(BuildContext context, user) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = context.camsTokens;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(
@@ -94,11 +95,11 @@ class AppDrawer extends StatelessWidget {
         AppDimensions.spacingLg,
         AppDimensions.spacingLg,
       ),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.primaryOrange,
-            AppColors.primaryOrangeLight,
+            tokens.brandPrimary,
+            tokens.brandPrimaryHover,
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -110,7 +111,7 @@ class AppDrawer extends StatelessWidget {
           // Avatar
           CircleAvatar(
             radius: 36,
-            backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
+            backgroundColor: tokens.bgContainer,
             child: user?.avatarUrl != null
                 ? ClipOval(
                     child: Image.network(
@@ -119,18 +120,18 @@ class AppDrawer extends StatelessWidget {
                       height: 72,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
-                        return const Icon(
+                        return Icon(
                           Icons.person,
                           size: 40,
-                          color: AppColors.primaryOrange,
+                          color: colorScheme.primary,
                         );
                       },
                     ),
                   )
-                : const Icon(
+                : Icon(
                     Icons.person,
                     size: 40,
-                    color: AppColors.primaryOrange,
+                    color: colorScheme.primary,
                   ),
           ),
           const SizedBox(height: AppDimensions.spacingMd),
@@ -139,7 +140,7 @@ class AppDrawer extends StatelessWidget {
           Text(
             user?.fullName ?? user?.username ?? 'User',
             style: AppTypography.titleLarge.copyWith(
-              color: Colors.white,
+              color: tokens.textOnAccent,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -149,7 +150,7 @@ class AppDrawer extends StatelessWidget {
           Text(
             user?.email ?? '',
             style: AppTypography.bodySmall.copyWith(
-              color: Colors.white.withValues(alpha: 0.9),
+              color: tokens.textOnAccent.withValues(alpha: 0.9),
             ),
           ),
           const SizedBox(height: AppDimensions.spacingXs),
@@ -161,13 +162,13 @@ class AppDrawer extends StatelessWidget {
               vertical: AppDimensions.spacingXs,
             ),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
+              color: tokens.textOnAccent.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
             ),
             child: Text(
               (user?.role ?? 'staff').toUpperCase(),
               style: AppTypography.labelSmall.copyWith(
-                color: Colors.white,
+                color: tokens.textOnAccent,
                 fontWeight: FontWeight.bold,
                 fontSize: 10,
               ),
@@ -179,29 +180,27 @@ class AppDrawer extends StatelessWidget {
   }
 
   Widget _buildStoreSwitcher(BuildContext context, List<String> storeIds) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = context.camsTokens;
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppDimensions.spacingMd,
         vertical: AppDimensions.spacingSm,
       ),
-      color: isDark ? AppColors.surfaceDark : AppColors.backgroundSecondary,
+      color: tokens.bgElevated,
       child: Row(
         children: [
           Icon(
             Icons.store,
             size: 20,
-            color:
-                isDark ? AppColors.textDarkSecondary : AppColors.textSecondary,
+            color: tokens.textSecondary,
           ),
           const SizedBox(width: AppDimensions.spacingSm),
           Expanded(
             child: Text(
               '${storeIds.length} Stores',
               style: AppTypography.labelSmall.copyWith(
-                color: isDark
-                    ? AppColors.textDarkSecondary
-                    : AppColors.textSecondary,
+                color: tokens.textSecondary,
               ),
             ),
           ),
@@ -218,7 +217,7 @@ class AppDrawer extends StatelessWidget {
             child: Text(
               'Switch',
               style: AppTypography.labelSmall.copyWith(
-                color: AppColors.primaryOrange,
+                color: colorScheme.primary,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -235,27 +234,22 @@ class AppDrawer extends StatelessWidget {
     required String route,
     required bool isSelected,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = context.camsTokens;
     return ListTile(
       leading: Icon(
         icon,
-        color: isSelected
-            ? AppColors.primaryOrange
-            : (isDark ? AppColors.textDarkSecondary : AppColors.textSecondary),
+        color: isSelected ? colorScheme.primary : tokens.textSecondary,
       ),
       title: Text(
         title,
         style: AppTypography.bodyMedium.copyWith(
-          color: isSelected
-              ? AppColors.primaryOrange
-              : (isDark ? AppColors.textDarkPrimary : AppColors.textPrimary),
+          color: isSelected ? colorScheme.primary : tokens.textPrimary,
           fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
         ),
       ),
       selected: isSelected,
-      selectedTileColor: isDark
-          ? AppColors.primaryOrange.withValues(alpha: 0.15)
-          : AppColors.primaryOrangePale,
+      selectedTileColor: colorScheme.primary.withValues(alpha: 0.12),
       onTap: () {
         Navigator.pop(context); // Close drawer
         if (!isSelected) {
@@ -266,15 +260,16 @@ class AppDrawer extends StatelessWidget {
   }
 
   Widget _buildLogoutButton(BuildContext context) {
+    final tokens = context.camsTokens;
     return ListTile(
-      leading: const Icon(
+      leading: Icon(
         Icons.logout,
-        color: AppColors.error,
+        color: tokens.error,
       ),
       title: Text(
         'Logout',
         style: AppTypography.bodyMedium.copyWith(
-          color: AppColors.error,
+          color: tokens.error,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -283,6 +278,7 @@ class AppDrawer extends StatelessWidget {
   }
 
   void _handleLogout(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -304,7 +300,8 @@ class AppDrawer extends StatelessWidget {
                 context.go('/login');
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error,
+                backgroundColor: colorScheme.error,
+                foregroundColor: colorScheme.onError,
               ),
               child: const Text('Logout'),
             ),

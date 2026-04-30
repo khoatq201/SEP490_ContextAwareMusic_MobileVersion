@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../constants/app_colors.dart';
+import '../theme/cams_theme_tokens.dart';
 
 /// Container with animated neon glow effect
 class CAMSGlowContainer extends StatefulWidget {
   final Widget child;
-  final Color glowColor;
+  final Color? glowColor;
   final double glowRadius;
   final double glowSpread;
   final bool animate;
@@ -15,7 +15,7 @@ class CAMSGlowContainer extends StatefulWidget {
   const CAMSGlowContainer({
     super.key,
     required this.child,
-    this.glowColor = AppColors.primaryCyan,
+    this.glowColor,
     this.glowRadius = 20,
     this.glowSpread = 2,
     this.animate = true,
@@ -58,6 +58,8 @@ class _CAMSGlowContainerState extends State<CAMSGlowContainer>
 
   @override
   Widget build(BuildContext context) {
+    final glowColor = widget.glowColor ?? context.camsTokens.techAccent;
+
     if (!widget.animate) {
       return Container(
         padding: widget.padding,
@@ -65,7 +67,7 @@ class _CAMSGlowContainerState extends State<CAMSGlowContainer>
           borderRadius: widget.borderRadius,
           boxShadow: [
             BoxShadow(
-              color: widget.glowColor.withValues(alpha: 0.5),
+              color: glowColor.withValues(alpha: 0.5),
               blurRadius: widget.glowRadius,
               spreadRadius: widget.glowSpread,
             ),
@@ -84,7 +86,7 @@ class _CAMSGlowContainerState extends State<CAMSGlowContainer>
             borderRadius: widget.borderRadius,
             boxShadow: [
               BoxShadow(
-                color: widget.glowColor.withValues(alpha: _glowAnimation.value),
+                color: glowColor.withValues(alpha: _glowAnimation.value),
                 blurRadius: widget.glowRadius,
                 spreadRadius: widget.glowSpread,
               ),
@@ -160,15 +162,15 @@ class _CAMSPulseWidgetState extends State<CAMSPulseWidget>
 /// Shimmer loading effect with neon colors
 class CAMSShimmer extends StatefulWidget {
   final Widget child;
-  final Color baseColor;
-  final Color highlightColor;
+  final Color? baseColor;
+  final Color? highlightColor;
   final Duration duration;
 
   const CAMSShimmer({
     super.key,
     required this.child,
-    this.baseColor = AppColors.surfaceDark,
-    this.highlightColor = AppColors.primaryCyan,
+    this.baseColor,
+    this.highlightColor,
     this.duration = const Duration(milliseconds: 1500),
   });
 
@@ -197,6 +199,10 @@ class _CAMSShimmerState extends State<CAMSShimmer>
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
+    final baseColor = widget.baseColor ?? tokens.bgElevated;
+    final highlightColor = widget.highlightColor ?? tokens.techAccent;
+
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
@@ -206,9 +212,9 @@ class _CAMSShimmerState extends State<CAMSShimmer>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                widget.baseColor,
-                widget.highlightColor.withValues(alpha: 0.3),
-                widget.baseColor,
+                baseColor,
+                highlightColor.withValues(alpha: 0.3),
+                baseColor,
               ],
               stops: [
                 0.0,
@@ -228,7 +234,7 @@ class _CAMSShimmerState extends State<CAMSShimmer>
 /// Neon border effect widget
 class CAMSNeonBorder extends StatelessWidget {
   final Widget child;
-  final Color borderColor;
+  final Color? borderColor;
   final double borderWidth;
   final BorderRadius borderRadius;
   final bool glow;
@@ -236,7 +242,7 @@ class CAMSNeonBorder extends StatelessWidget {
   const CAMSNeonBorder({
     super.key,
     required this.child,
-    this.borderColor = AppColors.primaryCyan,
+    this.borderColor,
     this.borderWidth = 2,
     this.borderRadius = const BorderRadius.all(Radius.circular(12)),
     this.glow = true,
@@ -244,17 +250,19 @@ class CAMSNeonBorder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final resolvedBorderColor = borderColor ?? context.camsTokens.techAccent;
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: borderRadius,
         border: Border.all(
-          color: borderColor,
+          color: resolvedBorderColor,
           width: borderWidth,
         ),
         boxShadow: glow
             ? [
                 BoxShadow(
-                  color: borderColor.withValues(alpha: 0.5),
+                  color: resolvedBorderColor.withValues(alpha: 0.5),
                   blurRadius: 10,
                   spreadRadius: 1,
                 ),

@@ -5,7 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../domain/entities/offline_playlist.dart';
 import '../bloc/offline_library_bloc.dart';
 import '../bloc/offline_library_event.dart';
@@ -22,13 +22,14 @@ class SpaceOfflineTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
+
     return BlocBuilder<OfflineLibraryBloc, OfflineLibraryState>(
       builder: (context, state) {
         if (state.status == OfflineLibraryStatus.loading) {
           return Center(
             child: CircularProgressIndicator(
-              color:
-                  isDarkMode ? AppColors.primaryCyan : const Color(0xFF2196F3),
+              color: tokens.techAccent,
             ),
           );
         }
@@ -41,13 +42,13 @@ class SpaceOfflineTab extends StatelessWidget {
                 Icon(
                   LucideIcons.alertCircle,
                   size: 56,
-                  color: Colors.red.withValues(alpha: 0.7),
+                  color: tokens.error.withValues(alpha: 0.7),
                 ),
                 const SizedBox(height: 16),
                 Text(
                   state.errorMessage ?? 'Failed to load playlists',
                   style: GoogleFonts.inter(
-                    color: isDarkMode ? Colors.white70 : Colors.black54,
+                    color: tokens.textSecondary,
                     fontSize: 14,
                   ),
                   textAlign: TextAlign.center,
@@ -76,7 +77,7 @@ class SpaceOfflineTab extends StatelessWidget {
                     Icon(
                       LucideIcons.hardDrive,
                       size: 20,
-                      color: isDarkMode ? Colors.white70 : Colors.black54,
+                      color: tokens.textSecondary,
                     ),
                     const SizedBox(width: 8),
                     Text(
@@ -84,7 +85,7 @@ class SpaceOfflineTab extends StatelessWidget {
                       style: GoogleFonts.poppins(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: isDarkMode ? Colors.white : Colors.black87,
+                        color: tokens.textPrimary,
                       ),
                     ),
                     const Spacer(),
@@ -92,7 +93,7 @@ class SpaceOfflineTab extends StatelessWidget {
                       '${state.playlists.length} playlists',
                       style: GoogleFonts.inter(
                         fontSize: 12,
-                        color: isDarkMode ? Colors.white60 : Colors.black45,
+                        color: tokens.textTertiary,
                       ),
                     ),
                   ],
@@ -110,14 +111,14 @@ class SpaceOfflineTab extends StatelessWidget {
                       Icon(
                         LucideIcons.folderOpen,
                         size: 64,
-                        color: isDarkMode ? Colors.white30 : Colors.black26,
+                        color: tokens.textTertiary.withValues(alpha: 0.55),
                       ),
                       const SizedBox(height: 16),
                       Text(
                         'No playlists available',
                         style: GoogleFonts.inter(
                           fontSize: 15,
-                          color: isDarkMode ? Colors.white60 : Colors.black45,
+                          color: tokens.textTertiary,
                         ),
                       ),
                     ],
@@ -167,6 +168,8 @@ class _StorageStatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
+
     // Mock storage data - replace with real data later
     const usedGB = 1.2;
     const totalGB = 4.0;
@@ -179,26 +182,17 @@ class _StorageStatusCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: isDarkMode
-              ? [
-                  const Color(0xFF1A1A1A).withValues(alpha: 0.95),
-                  const Color(0xFF121212).withValues(alpha: 0.95),
-                ]
-              : [
-                  Colors.white.withValues(alpha: 0.95),
-                  Colors.grey.shade50.withValues(alpha: 0.95),
-                ],
+          colors: [
+            tokens.bgContainer.withValues(alpha: 0.95),
+            tokens.bgElevated.withValues(alpha: 0.95),
+          ],
         ),
         border: Border.all(
-          color: isDarkMode
-              ? Colors.white.withValues(alpha: 0.1)
-              : Colors.black.withValues(alpha: 0.08),
+          color: tokens.borderSecondary,
         ),
         boxShadow: [
           BoxShadow(
-            color: isDarkMode
-                ? Colors.black.withValues(alpha: 0.3)
-                : Colors.black.withValues(alpha: 0.08),
+            color: tokens.shadow.withValues(alpha: isDarkMode ? 0.3 : 0.08),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -216,16 +210,14 @@ class _StorageStatusCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: isDarkMode
-                          ? AppColors.primaryCyan.withValues(alpha: 0.15)
-                          : const Color(0xFF2196F3).withValues(alpha: 0.1),
+                      color: tokens.techAccent.withValues(
+                        alpha: isDarkMode ? 0.15 : 0.1,
+                      ),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
                       LucideIcons.database,
-                      color: isDarkMode
-                          ? AppColors.primaryCyan
-                          : const Color(0xFF2196F3),
+                      color: tokens.techAccent,
                       size: 24,
                     ),
                   ),
@@ -239,7 +231,7 @@ class _StorageStatusCard extends StatelessWidget {
                           style: GoogleFonts.poppins(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
-                            color: isDarkMode ? Colors.white : Colors.black87,
+                            color: tokens.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -247,7 +239,7 @@ class _StorageStatusCard extends StatelessWidget {
                           '${usedGB.toStringAsFixed(1)} GB / ${totalGB.toStringAsFixed(0)} GB Used',
                           style: GoogleFonts.inter(
                             fontSize: 13,
-                            color: isDarkMode ? Colors.white60 : Colors.black54,
+                            color: tokens.textSecondary,
                           ),
                         ),
                       ],
@@ -259,12 +251,12 @@ class _StorageStatusCard extends StatelessWidget {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: isDarkMode
-                          ? Colors.green.withValues(alpha: 0.15)
-                          : Colors.green.withValues(alpha: 0.1),
+                      color: tokens.success.withValues(
+                        alpha: isDarkMode ? 0.15 : 0.1,
+                      ),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: Colors.green.withValues(alpha: 0.3),
+                        color: tokens.success.withValues(alpha: 0.3),
                       ),
                     ),
                     child: Text(
@@ -272,7 +264,7 @@ class _StorageStatusCard extends StatelessWidget {
                       style: GoogleFonts.inter(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: Colors.green,
+                        color: tokens.success,
                       ),
                     ),
                   ),
@@ -284,13 +276,9 @@ class _StorageStatusCard extends StatelessWidget {
                 child: LinearProgressIndicator(
                   value: progress,
                   minHeight: 8,
-                  backgroundColor: isDarkMode
-                      ? Colors.white.withValues(alpha: 0.1)
-                      : Colors.black.withValues(alpha: 0.08),
+                  backgroundColor: tokens.trackBg,
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    isDarkMode
-                        ? AppColors.primaryCyan
-                        : const Color(0xFF2196F3),
+                    tokens.techAccent,
                   ),
                 ),
               ),
@@ -317,6 +305,7 @@ class _OfflinePlaylistCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
     final moodGradient = MoodColorHelper.gradientFor(playlist.moodName);
     final shadowColor = MoodColorHelper.shadowColorFor(playlist.moodName);
 
@@ -326,20 +315,13 @@ class _OfflinePlaylistCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: isDarkMode
-              ? [
-                  const Color(0xFF1A1A1A),
-                  const Color(0xFF121212),
-                ]
-              : [
-                  Colors.white,
-                  Colors.grey.shade50,
-                ],
+          colors: [
+            tokens.bgContainer,
+            tokens.bgElevated,
+          ],
         ),
         border: Border.all(
-          color: isDarkMode
-              ? Colors.white.withValues(alpha: 0.1)
-              : Colors.black.withValues(alpha: 0.08),
+          color: tokens.borderSecondary,
           width: 1,
         ),
         boxShadow: [
@@ -376,9 +358,9 @@ class _OfflinePlaylistCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: const Icon(
+                  child: Icon(
                     LucideIcons.music,
-                    color: Colors.white,
+                    color: tokens.textOnAccent,
                     size: 26,
                   ),
                 ),
@@ -395,7 +377,7 @@ class _OfflinePlaylistCard extends StatelessWidget {
                         style: GoogleFonts.poppins(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
-                          color: isDarkMode ? Colors.white : Colors.black87,
+                          color: tokens.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -403,7 +385,7 @@ class _OfflinePlaylistCard extends StatelessWidget {
                         '${playlist.trackCount} tracks • ${playlist.totalSizeMB.toStringAsFixed(1)} MB',
                         style: GoogleFonts.inter(
                           fontSize: 12,
-                          color: isDarkMode ? Colors.white60 : Colors.black54,
+                          color: tokens.textSecondary,
                         ),
                       ),
                       if (playlist.downloadStatus ==
@@ -416,9 +398,7 @@ class _OfflinePlaylistCard extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(4),
                                 child: LinearProgressIndicator(
                                   value: playlist.downloadProgress ?? 0.0,
-                                  backgroundColor: isDarkMode
-                                      ? Colors.white.withValues(alpha: 0.1)
-                                      : Colors.black.withValues(alpha: 0.08),
+                                  backgroundColor: tokens.trackBg,
                                   valueColor: AlwaysStoppedAnimation<Color>(
                                     moodGradient.colors.first,
                                   ),
@@ -442,10 +422,10 @@ class _OfflinePlaylistCard extends StatelessWidget {
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            const Icon(
+                            Icon(
                               LucideIcons.checkCircle2,
                               size: 14,
-                              color: Colors.green,
+                              color: tokens.success,
                             ),
                             const SizedBox(width: 4),
                             Text(
@@ -453,7 +433,7 @@ class _OfflinePlaylistCard extends StatelessWidget {
                               style: GoogleFonts.inter(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
-                                color: Colors.green,
+                                color: tokens.success,
                               ),
                             ),
                           ],
@@ -466,7 +446,7 @@ class _OfflinePlaylistCard extends StatelessWidget {
                 const SizedBox(width: 12),
 
                 // Action Button
-                _buildActionButton(moodGradient),
+                _buildActionButton(context, moodGradient),
               ],
             ),
           ),
@@ -475,7 +455,9 @@ class _OfflinePlaylistCard extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButton(LinearGradient gradient) {
+  Widget _buildActionButton(BuildContext context, LinearGradient gradient) {
+    final tokens = context.camsTokens;
+
     switch (playlist.downloadStatus) {
       case DownloadStatus.notDownloaded:
         return GestureDetector(
@@ -504,9 +486,7 @@ class _OfflinePlaylistCard extends StatelessWidget {
           child: CircularProgressIndicator(
             value: playlist.downloadProgress,
             strokeWidth: 2.5,
-            backgroundColor: isDarkMode
-                ? Colors.white.withValues(alpha: 0.1)
-                : Colors.black.withValues(alpha: 0.1),
+            backgroundColor: tokens.trackBg,
             valueColor: AlwaysStoppedAnimation<Color>(
               gradient.colors.first,
             ),
@@ -520,16 +500,16 @@ class _OfflinePlaylistCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.green.withValues(alpha: 0.15),
+                color: tokens.success.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: Colors.green.withValues(alpha: 0.3),
+                  color: tokens.success.withValues(alpha: 0.3),
                   width: 1.5,
                 ),
               ),
-              child: const Icon(
+              child: Icon(
                 LucideIcons.checkCircle2,
-                color: Colors.green,
+                color: tokens.success,
                 size: 18,
               ),
             ),
@@ -539,14 +519,14 @@ class _OfflinePlaylistCard extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: isDarkMode
-                      ? Colors.red.withValues(alpha: 0.15)
-                      : Colors.red.withValues(alpha: 0.1),
+                  color: tokens.error.withValues(
+                    alpha: isDarkMode ? 0.15 : 0.1,
+                  ),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   LucideIcons.trash2,
-                  color: Colors.red.shade400,
+                  color: tokens.error,
                   size: 18,
                 ),
               ),

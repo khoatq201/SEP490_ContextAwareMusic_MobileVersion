@@ -3,9 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/player/player_bloc.dart';
 import '../../../../core/player/player_event.dart';
+import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../../../core/widgets/cams_skeleton.dart';
 import '../../../cams/presentation/bloc/cams_playback_bloc.dart';
 import '../../../cams/presentation/bloc/cams_playback_event.dart';
@@ -119,7 +119,7 @@ class _SpaceDetailPageState extends State<SpaceDetailPage>
                       height: 8,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: isOnline ? Colors.green : Colors.orange,
+                        color: isOnline ? palette.success : palette.warning,
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -228,9 +228,9 @@ class _SpaceErrorView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
+            Icon(
               LucideIcons.alertTriangle,
-              color: Colors.amber,
+              color: palette.warning,
               size: 48,
             ),
             const SizedBox(height: 14),
@@ -521,6 +521,8 @@ class _SpaceDetailPalette {
     required this.textPrimary,
     required this.textMuted,
     required this.textOnAccent,
+    required this.success,
+    required this.warning,
     required this.isDark,
   });
 
@@ -532,21 +534,25 @@ class _SpaceDetailPalette {
   final Color textPrimary;
   final Color textMuted;
   final Color textOnAccent;
+  final Color success;
+  final Color warning;
   final bool isDark;
 
   factory _SpaceDetailPalette.fromContext(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = context.camsTokens;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return _SpaceDetailPalette(
-      bg: isDark
-          ? AppColors.backgroundDarkPrimary
-          : AppColors.backgroundPrimary,
-      card: isDark ? AppColors.surfaceDark : Colors.white,
-      overlay: isDark ? AppColors.surfaceDarkElevated : Colors.white,
-      border: isDark ? AppColors.borderDarkMedium : AppColors.borderLight,
-      accent: AppColors.primaryOrange,
-      textPrimary: isDark ? AppColors.textDarkPrimary : AppColors.textPrimary,
-      textMuted: isDark ? AppColors.textDarkSecondary : AppColors.textSecondary,
-      textOnAccent: Colors.white,
+      bg: tokens.bgBase,
+      card: tokens.bgContainer,
+      overlay: tokens.bgElevated,
+      border: tokens.borderSecondary,
+      accent: colorScheme.primary,
+      textPrimary: tokens.textPrimary,
+      textMuted: tokens.textSecondary,
+      textOnAccent: colorScheme.onPrimary,
+      success: tokens.success,
+      warning: tokens.warning,
       isDark: isDark,
     );
   }

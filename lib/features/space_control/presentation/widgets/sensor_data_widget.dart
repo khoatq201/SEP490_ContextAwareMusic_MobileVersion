@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../domain/entities/sensor_data.dart';
 
 class SensorDataWidget extends StatelessWidget {
@@ -13,13 +14,18 @@ class SensorDataWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
+
     if (sensorData == null) {
-      return const Card(
+      return Card(
         elevation: 2,
         child: Padding(
-          padding: EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(24.0),
           child: Center(
-            child: Text('No sensor data available'),
+            child: Text(
+              'No sensor data available',
+              style: TextStyle(color: tokens.textSecondary),
+            ),
           ),
         ),
       );
@@ -42,7 +48,7 @@ class SensorDataWidget extends StatelessWidget {
                 icon: Icons.thermostat,
                 label: 'Temperature',
                 value: '${sensorData!.temperature.toStringAsFixed(1)}°C',
-                color: Colors.red,
+                color: tokens.error,
               ),
             ),
             const SizedBox(width: 12),
@@ -51,7 +57,7 @@ class SensorDataWidget extends StatelessWidget {
                 icon: Icons.volume_up,
                 label: 'Noise Level',
                 value: '${sensorData!.noiseLevel.toStringAsFixed(0)} dB',
-                color: Colors.orange,
+                color: tokens.warning,
               ),
             ),
           ],
@@ -64,7 +70,7 @@ class SensorDataWidget extends StatelessWidget {
                 icon: Icons.water_drop,
                 label: 'Humidity',
                 value: '${sensorData!.humidity.toStringAsFixed(0)}%',
-                color: Colors.blue,
+                color: tokens.techAccent,
               ),
             ),
             const SizedBox(width: 12),
@@ -75,7 +81,7 @@ class SensorDataWidget extends StatelessWidget {
                 value: sensorData!.lightLevel != null
                     ? '${sensorData!.lightLevel!.toStringAsFixed(0)} lux'
                     : 'N/A',
-                color: Colors.amber,
+                color: tokens.moodEnergetic,
               ),
             ),
           ],
@@ -113,7 +119,7 @@ class _SensorCard extends StatelessWidget {
             Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey.shade600,
+                    color: context.camsTokens.textSecondary,
                   ),
             ),
             const SizedBox(height: 4),

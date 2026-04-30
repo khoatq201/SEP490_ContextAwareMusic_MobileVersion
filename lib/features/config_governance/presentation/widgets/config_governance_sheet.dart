@@ -5,6 +5,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/constants/app_typography.dart';
+import '../../../../core/widgets/cams_skeleton.dart';
 import '../../../../injection_container.dart';
 import '../../domain/entities/config_flat_row.dart';
 import '../../domain/entities/config_governance_enums.dart';
@@ -206,10 +207,11 @@ class _ConfigGovernanceSheetViewState
                         ConfigGovernanceState>(
                       builder: (context, state) {
                         if (state.isInitialLoading) {
-                          return Center(
-                            child: CircularProgressIndicator(
-                              color: palette.accent,
-                            ),
+                          return const CamsSkeletonList(
+                            itemCount: 7,
+                            showLeading: false,
+                            showTrailing: true,
+                            padding: EdgeInsets.fromLTRB(16, 8, 16, 16),
                           );
                         }
 

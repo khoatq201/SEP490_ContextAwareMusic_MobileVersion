@@ -1,0 +1,66 @@
+CAMS Theme Refactor Audit
+=========================
+
+Generated during the hybrid red-blue theme refactor.
+
+Last updated after the Phase A/B migration pass and expanded Phase C adoption.
+
+Refactor Targets
+----------------
+
+- Canonical theme files: `lib/core/constants/app_colors.dart`, `lib/core/theme/app_theme.dart`, `lib/core/theme/cams_theme_tokens.dart`.
+- Shared UI migration now covers core bottom sheets, song list tile, mini player, schedule palette, CAMS button/card/logo/glow effects, theme toggle, app drawer, and Play to Space sheet.
+- Space control migration now covers offline tab, offline library bottom sheet, mood display, sensor data, space detail, and space settings palettes.
+- High-traffic migration started for Library, Home, and Now Playing local palettes.
+- Search, Welcome, Store Selection, and Space Schedule page-level UI colors have been routed through `ColorScheme`/`CamsThemeTokens` where they were static theme colors.
+- Brand/platform sync includes `assets/images/cams_logo.svg`, `assets/generate_logo.dart`, `web/manifest.json`, and native splash comments in `pubspec.yaml`.
+
+Current Top Hard-Color Offenders
+--------------------------------
+
+These files still contain the most raw `Color(0x...)`, `Colors.*`, or hex literals and should be prioritized for future cleanup. Some occurrences are legitimate content-driven colors or transparent placeholders.
+
+| Area | File | Notes |
+| --- | --- | --- |
+| Library | `lib/features/library/presentation/pages/library_tab_page.dart` | Main `_Palette` now uses tokens; remaining hard colors are mostly status chips, bottom-sheet editor decoration, and artwork/solid overlay contrast. |
+| Home | `lib/features/home/presentation/pages/home_tab_page.dart` | Main `_Palette` now uses tokens; remaining raw whites/blacks are mostly hero/artwork overlay contrast. |
+| Space schedule | `lib/features/space_schedule/presentation/pages/space_schedule_page.dart` | Main page no longer uses `AppColors` or fixed white/status colors; remaining audit hits are dynamic hex parsing / transparent cases. |
+| Now playing | `lib/features/now_playing/presentation/pages/now_playing_tab_page.dart` | Main `_NPPalette` now uses tokens; remaining raw colors are mood/category/status details and artwork overlays. |
+| Search | `lib/features/search/presentation/pages/search_tab_page.dart` | Search surface/text/fallback colors now use tokens; remaining raw colors are fixed contrast on artwork/category tiles. |
+| Store selection | `lib/features/store_selection/presentation/pages/store_selection_page.dart` | Store cards/search/bulk UI now use tokens; pre-existing loader/skeleton diff preserved. |
+| Auth | `lib/features/auth/presentation/pages/welcome_page.dart` | Welcome hero now uses theme tokens for background/brand/actions. |
+| Store dashboard | `lib/features/store_dashboard/presentation/pages/store_dashboard_page.dart` | Mixed theme and direct color usage. |
+| Config governance | `lib/features/config_governance/presentation/widgets/config_governance_sheet.dart` | Local palette should move to `CamsThemeTokens`. |
+| Context rules | `lib/features/context_rules/presentation/pages/context_rules_page.dart` | Local palette and inline status colors. |
+
+Current audit top counts from `scripts/theme_color_audit.ps1`:
+
+| Count | File |
+| ---: | --- |
+| 69 | `lib/core/constants/app_colors.dart` |
+| 33 | `lib/features/library/presentation/pages/library_tab_page.dart` |
+| 27 | `lib/features/home/presentation/pages/home_tab_page.dart` |
+| 16 | `lib/features/now_playing/presentation/pages/now_playing_tab_page.dart` |
+| 15 | `assets/images/cams_logo.svg` |
+| 14 | `lib/features/music_policy/presentation/widgets/fuzzy_override_editor_sheet.dart` |
+| 14 | `lib/features/space_schedule/presentation/pages/space_schedule_page.dart` |
+| 12 | `lib/features/space_schedule/data/datasources/space_schedule_mock_datasource.dart` |
+| 11 | `lib/features/home/presentation/widgets/app_drawer.dart` |
+| 11 | `lib/features/hub_management/presentation/pages/space_device_page.dart` |
+| 11 | `lib/features/auth/presentation/pages/login_page.dart` |
+
+Allowed Color Categories
+------------------------
+
+- `Colors.transparent`.
+- Dynamic content colors parsed from API/user/music hex fields.
+- Test fixtures and mock data that intentionally exercise arbitrary colors.
+- Central token definitions in `AppColors` and `CamsThemeTokens`.
+- Generated asset colors in the logo source, as long as they match the hybrid brand palette.
+
+Follow-Up Cleanup Rules
+-----------------------
+
+- Prefer `Theme.of(context).colorScheme` for Material roles.
+- Prefer `context.camsTokens` for app-specific roles: sidebar, elevated surfaces, alert backgrounds, slider tracks, mood colors, and tech accent.
+- Avoid adding new raw `Color(0x...)` or `Colors.white/black/grey/red/blue/orange/green` in feature widgets unless it is content-driven or explicitly allowlisted.

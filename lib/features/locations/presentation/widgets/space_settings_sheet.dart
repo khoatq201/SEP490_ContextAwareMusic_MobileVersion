@@ -9,6 +9,7 @@ import '../../../../core/error/exceptions.dart';
 import '../../../../core/enums/space_type_enum.dart';
 import '../../../../core/enums/user_role.dart';
 import '../../../../core/session/session_cubit.dart';
+import '../../../../core/widgets/cams_skeleton.dart';
 import '../../../../injection_container.dart';
 import '../../../hub_management/presentation/pages/space_hub_page.dart';
 import '../../../music_policy/data/datasources/fuzzy_music_profile_remote_datasource.dart';
@@ -951,11 +952,7 @@ class _AutoVolumeSettingsCardState extends State<_AutoVolumeSettingsCard> {
               ),
               const SizedBox(width: 12),
               if (_isLoading)
-                const SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
+                const CamsSkeletonCircle(size: 22)
               else
                 Switch.adaptive(
                   value: profile?.autoVolumeEnabled ?? false,
@@ -967,14 +964,9 @@ class _AutoVolumeSettingsCardState extends State<_AutoVolumeSettingsCard> {
           ),
           if (_isLoading) ...[
             const SizedBox(height: 12),
-            Text(
-              'Loading auto volume profile...',
-              style: GoogleFonts.inter(
-                color: palette.textMuted,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            const CamsSkeletonLine(width: 220, height: 12),
+            const SizedBox(height: 8),
+            const CamsSkeletonLine(width: 150, height: 12),
           ] else if (profile == null) ...[
             const SizedBox(height: 12),
             _AutoVolumeMessageRow(

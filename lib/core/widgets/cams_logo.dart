@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../constants/app_colors.dart';
+import '../theme/cams_theme_tokens.dart';
 
 /// CAMS logo lockup inspired by the provided login mockup.
 class CAMSLogo extends StatelessWidget {
@@ -14,12 +14,10 @@ class CAMSLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accent = isDark ? AppColors.primaryCyan : AppColors.primaryOrange;
-    final accentDark =
-        isDark ? AppColors.primaryCyanBright : AppColors.secondaryTealDark;
-    final accentLight =
-        isDark ? AppColors.primaryCyanMuted : AppColors.primaryOrangeLight;
+    final tokens = context.camsTokens;
+    final accent = tokens.brandPrimary;
+    final accentDark = tokens.brandPrimaryActive;
+    final accentLight = tokens.techAccent;
 
     return SizedBox.square(
       dimension: size,

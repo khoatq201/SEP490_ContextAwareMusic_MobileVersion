@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
 import '../constants/app_typography.dart';
+import '../theme/cams_theme_tokens.dart';
 import '../theme/theme_provider.dart';
 import 'cams_glow_effects.dart';
 
@@ -21,6 +21,8 @@ class ThemeToggleSwitch extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
+    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = context.camsTokens;
 
     Widget toggleWidget = Container(
       padding: const EdgeInsets.symmetric(
@@ -28,14 +30,12 @@ class ThemeToggleSwitch extends StatelessWidget {
         vertical: AppDimensions.spacing8,
       ),
       decoration: BoxDecoration(
-        color: isDark
-            ? AppColors.surfaceDarkElevated
-            : AppColors.backgroundSecondary,
+        color: tokens.bgElevated,
         borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
         border: Border.all(
           color: isDark
-              ? AppColors.primaryCyan.withValues(alpha: 0.3)
-              : AppColors.borderLight,
+              ? tokens.techAccent.withValues(alpha: 0.3)
+              : tokens.borderSecondary,
           width: AppDimensions.borderWidthNormal,
         ),
       ),
@@ -44,21 +44,20 @@ class ThemeToggleSwitch extends StatelessWidget {
         children: [
           Icon(
             Icons.wb_sunny,
-            color:
-                isDark ? AppColors.textDarkTertiary : AppColors.primaryOrange,
+            color: isDark ? tokens.textTertiary : colorScheme.primary,
             size: AppDimensions.iconSm,
           ),
           const SizedBox(width: AppDimensions.spacing8),
           Switch(
             value: isDark,
             onChanged: (_) => themeProvider.toggleTheme(),
-            activeThumbColor: AppColors.primaryCyan,
-            activeTrackColor: AppColors.primaryCyanMuted,
+            activeThumbColor: tokens.techAccent,
+            activeTrackColor: tokens.techAccent.withValues(alpha: 0.35),
           ),
           const SizedBox(width: AppDimensions.spacing8),
           Icon(
             Icons.nights_stay,
-            color: isDark ? AppColors.primaryCyan : AppColors.textTertiary,
+            color: isDark ? tokens.techAccent : tokens.textTertiary,
             size: AppDimensions.iconSm,
           ),
           if (showLabel) ...[
@@ -66,8 +65,7 @@ class ThemeToggleSwitch extends StatelessWidget {
             Text(
               isDark ? 'Dark Mode' : 'Light Mode',
               style: AppTypography.labelMedium.copyWith(
-                color:
-                    isDark ? AppColors.textDarkPrimary : AppColors.textPrimary,
+                color: tokens.textPrimary,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -78,7 +76,7 @@ class ThemeToggleSwitch extends StatelessWidget {
 
     if (glowEffect && isDark) {
       return CAMSGlowContainer(
-        glowColor: AppColors.primaryCyan,
+        glowColor: tokens.techAccent,
         glowRadius: 15,
         glowSpread: 1,
         borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
@@ -98,6 +96,7 @@ class ThemeToggleFAB extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
+    final colorScheme = Theme.of(context).colorScheme;
 
     Widget fab = FloatingActionButton(
       onPressed: () => themeProvider.toggleTheme(),
@@ -115,14 +114,13 @@ class ThemeToggleFAB extends StatelessWidget {
         child: Icon(
           isDark ? Icons.wb_sunny : Icons.nights_stay,
           key: ValueKey(isDark),
-          color: isDark ? AppColors.backgroundDarkPrimary : Colors.white,
+          color: colorScheme.onPrimary,
         ),
       ),
     );
 
     if (isDark) {
       return CAMSGlowContainer(
-        glowColor: AppColors.primaryCyan,
         glowRadius: 20,
         glowSpread: 3,
         borderRadius: BorderRadius.circular(AppDimensions.radiusXxl),
@@ -142,27 +140,29 @@ class ThemeSelectorCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
+    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = context.camsTokens;
 
     return Container(
       padding: const EdgeInsets.all(AppDimensions.spacingLg),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : Colors.white,
+        color: tokens.bgContainer,
         borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
         border: Border.all(
-          color: isDark ? AppColors.borderDarkLight : AppColors.borderLight,
+          color: tokens.borderSecondary,
           width: AppDimensions.borderWidthNormal,
         ),
         boxShadow: isDark
             ? [
                 BoxShadow(
-                  color: AppColors.primaryCyan.withValues(alpha: 0.1),
+                  color: tokens.techAccent.withValues(alpha: 0.1),
                   blurRadius: 15,
                   spreadRadius: 1,
                 ),
               ]
             : [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
+                  color: tokens.shadow.withValues(alpha: 0.05),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -175,16 +175,14 @@ class ThemeSelectorCard extends StatelessWidget {
             children: [
               Icon(
                 Icons.palette_outlined,
-                color: isDark ? AppColors.primaryCyan : AppColors.primaryOrange,
+                color: isDark ? tokens.techAccent : colorScheme.primary,
                 size: AppDimensions.iconMd,
               ),
               const SizedBox(width: AppDimensions.spacingMd),
               Text(
                 'Theme Settings',
                 style: AppTypography.titleMedium.copyWith(
-                  color: isDark
-                      ? AppColors.textDarkPrimary
-                      : AppColors.textPrimary,
+                  color: tokens.textPrimary,
                 ),
               ),
             ],
@@ -197,9 +195,7 @@ class ThemeSelectorCard extends StatelessWidget {
                 ? 'Minimalist Digital Pulse - Dark mode with cyan & lime neon accents'
                 : 'Adaptive Retail Hub - Light mode with orange & teal theme',
             style: AppTypography.bodySmall.copyWith(
-              color: isDark
-                  ? AppColors.textDarkSecondary
-                  : AppColors.textSecondary,
+              color: tokens.textSecondary,
             ),
           ),
         ],

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
+import '../theme/cams_theme_tokens.dart';
 
 /// CAMS Signature Card - Glassmorphism style with orange accent
 class CAMSCard extends StatelessWidget {
@@ -33,6 +33,8 @@ class CAMSCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = context.camsTokens;
     Widget cardContent;
 
     // Handle gradient border case
@@ -47,7 +49,7 @@ class CAMSCard extends StatelessWidget {
         padding: const EdgeInsets.all(2), // Border width
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: tokens.bgContainer,
             borderRadius: BorderRadius.circular(AppDimensions.radiusCard - 2),
           ),
           padding: padding ?? const EdgeInsets.all(AppDimensions.cardPaddingMd),
@@ -59,7 +61,7 @@ class CAMSCard extends StatelessWidget {
         width: width,
         height: height,
         padding: padding ?? const EdgeInsets.all(AppDimensions.cardPaddingMd),
-        decoration: _buildDecoration(),
+        decoration: _buildDecoration(colorScheme, tokens),
         child: child,
       );
     }
@@ -70,8 +72,8 @@ class CAMSCard extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
-          splashColor: AppColors.primaryOrange.withValues(alpha: 0.1),
-          highlightColor: AppColors.primaryOrange.withValues(alpha: 0.05),
+          splashColor: colorScheme.primary.withValues(alpha: 0.1),
+          highlightColor: colorScheme.primary.withValues(alpha: 0.05),
           child: cardContent,
         ),
       );
@@ -80,29 +82,32 @@ class CAMSCard extends StatelessWidget {
     return cardContent;
   }
 
-  BoxDecoration _buildDecoration() {
+  BoxDecoration _buildDecoration(
+    ColorScheme colorScheme,
+    CamsThemeTokens tokens,
+  ) {
     switch (variant) {
       case CAMSCardVariant.solid:
-        return _solidDecoration();
+        return _solidDecoration(tokens);
       case CAMSCardVariant.outlined:
-        return _outlinedDecoration();
+        return _outlinedDecoration(colorScheme);
     }
   }
 
-  BoxDecoration _solidDecoration() {
+  BoxDecoration _solidDecoration(CamsThemeTokens tokens) {
     return BoxDecoration(
-      color: Colors.white,
+      color: tokens.bgContainer,
       borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
       border: showBorder
           ? Border.all(
-              color: Colors.grey.shade200,
+              color: tokens.borderSecondary,
               width: AppDimensions.borderWidthNormal,
             )
           : null,
       boxShadow: showShadow
           ? [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
+                color: tokens.shadow.withValues(alpha: 0.08),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
                 spreadRadius: 0,
@@ -112,12 +117,12 @@ class CAMSCard extends StatelessWidget {
     );
   }
 
-  BoxDecoration _outlinedDecoration() {
+  BoxDecoration _outlinedDecoration(ColorScheme colorScheme) {
     return BoxDecoration(
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
       border: Border.all(
-        color: AppColors.primaryOrange,
+        color: colorScheme.primary,
         width: AppDimensions.borderWidthThick,
       ),
     );
@@ -152,6 +157,10 @@ class CAMSSensorCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
+    final accent = iconColor ?? tokens.techAccent;
+    final valueAccent = valueColor ?? accent;
+
     return CAMSCard(
       width: AppDimensions.sensorCardWidth,
       height: AppDimensions.sensorCardHeight,
@@ -165,14 +174,13 @@ class CAMSSensorCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(AppDimensions.spacing8),
             decoration: BoxDecoration(
-              color:
-                  (iconColor ?? AppColors.primaryOrange).withValues(alpha: 0.1),
+              color: accent.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
             ),
             child: Icon(
               icon,
               size: AppDimensions.iconLg,
-              color: iconColor ?? AppColors.primaryOrange,
+              color: accent,
             ),
           ),
 
@@ -188,7 +196,7 @@ class CAMSSensorCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.w700,
-                      color: valueColor ?? AppColors.primaryOrange,
+                      color: valueAccent,
                       height: 1.0,
                     ),
                   ),
@@ -200,7 +208,7 @@ class CAMSSensorCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: Colors.grey.shade600,
+                        color: tokens.textSecondary,
                       ),
                     ),
                   ),
@@ -212,7 +220,7 @@ class CAMSSensorCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
-                  color: Colors.grey.shade700,
+                  color: tokens.textTertiary,
                 ),
               ),
             ],
@@ -244,6 +252,9 @@ class CAMSInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
+    final accent = iconColor ?? tokens.techAccent;
+
     return CAMSCard(
       variant: CAMSCardVariant.solid,
       onTap: onTap,
@@ -253,14 +264,13 @@ class CAMSInfoCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(AppDimensions.spacing12),
             decoration: BoxDecoration(
-              color:
-                  (iconColor ?? AppColors.primaryOrange).withValues(alpha: 0.1),
+              color: accent.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
             ),
             child: Icon(
               icon,
               size: AppDimensions.iconLg,
-              color: iconColor ?? AppColors.primaryOrange,
+              color: accent,
             ),
           ),
 
@@ -273,9 +283,10 @@ class CAMSInfoCard extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
+                    color: tokens.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -283,7 +294,7 @@ class CAMSInfoCard extends StatelessWidget {
                   subtitle,
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey.shade600,
+                    color: tokens.textSecondary,
                   ),
                 ),
               ],

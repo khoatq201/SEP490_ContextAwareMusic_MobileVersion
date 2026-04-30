@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/theme/cams_theme_tokens.dart';
 
 /// Welcome / Landing screen — the first thing a new user sees.
 /// Inspired by Spotify-style onboarding: dark gradient bg, collage of
@@ -42,18 +42,20 @@ class _WelcomePageState extends State<WelcomePage>
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
+
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFF0D1B2A), // Deep blue-navy at top
-              Color(0xFF0A1929), // backgroundDarkPrimary
-              Color(0xFF050E18), // Darker at bottom
+              tokens.bgLayout,
+              tokens.bgBase,
+              tokens.sidebar,
             ],
-            stops: [0.0, 0.55, 1.0],
+            stops: const [0.0, 0.55, 1.0],
           ),
         ),
         child: SafeArea(
@@ -96,6 +98,7 @@ class _WelcomePageState extends State<WelcomePage>
 class _CAMSSymbol extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
     const double s = 40;
     const double g = 4;
     const r = Radius.circular(10);
@@ -111,9 +114,9 @@ class _CAMSSymbol extends StatelessWidget {
             child: Container(
               width: s,
               height: s,
-              decoration: const BoxDecoration(
-                color: AppColors.primaryOrange,
-                borderRadius: BorderRadius.only(
+              decoration: BoxDecoration(
+                color: tokens.brandPrimary,
+                borderRadius: const BorderRadius.only(
                   topLeft: r,
                   topRight: r,
                   bottomLeft: r,
@@ -129,7 +132,7 @@ class _CAMSSymbol extends StatelessWidget {
               width: s,
               height: s,
               decoration: BoxDecoration(
-                color: AppColors.primaryOrange.withValues(alpha: 0.7),
+                color: tokens.brandPrimaryHover.withValues(alpha: 0.7),
                 shape: BoxShape.circle,
               ),
             ),
@@ -142,7 +145,7 @@ class _CAMSSymbol extends StatelessWidget {
               width: s,
               height: s,
               decoration: BoxDecoration(
-                color: AppColors.primaryOrange.withValues(alpha: 0.5),
+                color: tokens.brandPrimary.withValues(alpha: 0.5),
                 shape: BoxShape.circle,
               ),
             ),
@@ -154,8 +157,8 @@ class _CAMSSymbol extends StatelessWidget {
             child: Container(
               width: s * 0.65,
               height: s * 0.65,
-              decoration: const BoxDecoration(
-                color: AppColors.primaryOrange,
+              decoration: BoxDecoration(
+                color: tokens.brandPrimary,
                 shape: BoxShape.circle,
               ),
             ),
@@ -170,44 +173,45 @@ class _CAMSSymbol extends StatelessWidget {
 class _CardCollage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
     final screenH = MediaQuery.of(context).size.height;
     final screenW = MediaQuery.of(context).size.width;
 
     // Card definitions: [angle, left%, top%, colorHex, label, sublabel]
     final cards = [
-      const _CardDef(
+      _CardDef(
           angle: -0.18,
           leftF: 0.52,
           topF: 0.12,
-          color: Color(0xFF1A3A5C),
+          color: tokens.techAccent.withValues(alpha: 0.42),
           label: 'Jazz Lounge',
           sub: 'HOTEL'),
-      const _CardDef(
+      _CardDef(
           angle: 0.08,
           leftF: 0.1,
           topF: 0.22,
-          color: Color(0xFF2C1654),
+          color: tokens.moodDefault.withValues(alpha: 0.42),
           label: 'Night Vibes',
           sub: 'BAR'),
-      const _CardDef(
+      _CardDef(
           angle: 0.25,
           leftF: 0.35,
           topF: 0.30,
-          color: Color(0xFF1B3A2D),
+          color: tokens.moodChill.withValues(alpha: 0.34),
           label: 'Chill Afternoon',
           sub: 'CAFÉ'),
-      const _CardDef(
+      _CardDef(
           angle: -0.08,
           leftF: 0.55,
           topF: 0.35,
-          color: Color(0xFF3A1A1A),
+          color: tokens.brandPrimary.withValues(alpha: 0.38),
           label: 'Hip Bar Grooves',
           sub: 'BAR'),
-      const _CardDef(
+      _CardDef(
           angle: 0.12,
           leftF: 0.0,
           topF: 0.38,
-          color: Color(0xFF1A2C3A),
+          color: tokens.bgElevated,
           label: 'Retail Rush',
           sub: 'STORE'),
     ];
@@ -221,12 +225,12 @@ class _CardCollage extends StatelessWidget {
           bottom: 0,
           height: screenH * 0.45,
           child: Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Colors.transparent, Color(0xFF050E18)],
-                stops: [0.0, 0.85],
+                colors: [Colors.transparent, tokens.sidebar],
+                stops: const [0.0, 0.85],
               ),
             ),
           ),
@@ -281,6 +285,8 @@ class _SpaceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
+
     return Container(
       width: width,
       height: height,
@@ -289,7 +295,7 @@ class _SpaceCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.5),
+            color: tokens.shadow.withValues(alpha: 0.5),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -305,7 +311,7 @@ class _SpaceCard extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.white.withValues(alpha: 0.04),
+                  tokens.textOnAccent.withValues(alpha: 0.04),
                   Colors.transparent,
                 ],
               ),
@@ -315,7 +321,7 @@ class _SpaceCard extends StatelessWidget {
           Center(
             child: Icon(
               Icons.music_note_rounded,
-              color: Colors.white.withValues(alpha: 0.06),
+              color: tokens.textOnAccent.withValues(alpha: 0.06),
               size: width * 0.55,
             ),
           ),
@@ -330,7 +336,7 @@ class _SpaceCard extends StatelessWidget {
               children: [
                 Text(sub,
                     style: GoogleFonts.inter(
-                      color: Colors.white54,
+                      color: tokens.textOnAccent.withValues(alpha: 0.54),
                       fontSize: 9,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1.5,
@@ -338,7 +344,7 @@ class _SpaceCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(label,
                     style: GoogleFonts.poppins(
-                      color: Colors.white,
+                      color: tokens.textOnAccent,
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                     ),
@@ -357,6 +363,9 @@ class _SpaceCard extends StatelessWidget {
 class _BottomActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = context.camsTokens;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(28, 0, 28, 32),
       child: Column(
@@ -367,7 +376,7 @@ class _BottomActions extends StatelessWidget {
             'Smart music,\nsmarter spaces.',
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(
-              color: Colors.white,
+              color: tokens.textOnAccent,
               fontSize: 26,
               fontWeight: FontWeight.w800,
               height: 1.2,
@@ -382,8 +391,8 @@ class _BottomActions extends StatelessWidget {
             height: 54,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryOrange,
-                foregroundColor: Colors.white,
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.onPrimary,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(50),
                 ),
@@ -414,8 +423,11 @@ class _BottomActions extends StatelessWidget {
             child: OutlinedButton(
               key: const ValueKey('welcome_login_button'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.white,
-                side: const BorderSide(color: Colors.white38, width: 1.5),
+                foregroundColor: tokens.textOnAccent,
+                side: BorderSide(
+                  color: tokens.textOnAccent.withValues(alpha: 0.38),
+                  width: 1.5,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(50),
                 ),
@@ -436,11 +448,11 @@ class _BottomActions extends StatelessWidget {
             child: Text(
               'Set up playback device',
               style: GoogleFonts.inter(
-                color: Colors.white60,
+                color: tokens.textOnAccent.withValues(alpha: 0.6),
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 decoration: TextDecoration.underline,
-                decorationColor: Colors.white38,
+                decorationColor: tokens.textOnAccent.withValues(alpha: 0.38),
               ),
             ),
           ),

@@ -7,7 +7,6 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/enums/ai_generation_mode_enum.dart';
 import '../../../../core/enums/music_provider_enum.dart';
 import '../../../../core/enums/queue_insert_mode_enum.dart';
@@ -15,6 +14,7 @@ import '../../../../core/enums/user_role.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/player/player_bloc.dart';
 import '../../../../core/session/session_cubit.dart';
+import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../../../core/utils/cams_queue_actions.dart';
 import '../../../../core/widgets/cams_skeleton.dart';
 import '../../../../core/widgets/queue_mode_picker_bottom_sheet.dart';
@@ -114,9 +114,8 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
 
   @override
   void dispose() {
-    _sunoGenerationSub?.cancel();
+    unawaited(_releaseSunoRealtimeSubscription());
     _sunoPlaybackUpdateSub?.cancel();
-    _sunoHubService?.dispose();
     super.dispose();
   }
 
@@ -294,8 +293,7 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
       return;
     }
 
-    await _sunoGenerationSub?.cancel();
-    _sunoHubService?.dispose();
+    await _releaseSunoRealtimeSubscription();
 
     final hubService = sl<StoreHubService>();
     _sunoHubService = hubService;
@@ -308,6 +306,26 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
       _subscribedBrandId = brandId;
     } catch (_) {
       // Realtime is optional. Polling still keeps the UI updated.
+    }
+  }
+
+  Future<void> _releaseSunoRealtimeSubscription() async {
+    final hubService = _sunoHubService;
+    final brandId = _subscribedBrandId;
+
+    _sunoHubService = null;
+    _subscribedBrandId = null;
+    await _sunoGenerationSub?.cancel();
+    _sunoGenerationSub = null;
+
+    if (hubService == null || brandId == null || brandId.isEmpty) {
+      return;
+    }
+
+    try {
+      await hubService.leaveBrandManagerRoom(brandId);
+    } catch (_) {
+      // Realtime is optional and the shared hub may already be reconnecting.
     }
   }
 
@@ -777,7 +795,7 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
 
   @override
   Widget build(BuildContext context) {
-    final palette = _Palette.fromBrightness(Theme.of(context).brightness);
+    final palette = _Palette.fromContext(context);
     final session = context.watch<SessionCubit>().state;
     final canManagePlaylists = !session.isPlaybackDevice &&
         (session.currentRole == UserRole.brandManager ||
@@ -1768,7 +1786,7 @@ class _TrackDetailBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = _Palette.fromBrightness(Theme.of(context).brightness);
+    final palette = _Palette.fromContext(context);
     final metadataRows = <MapEntry<String, String?>>[
       MapEntry('Provider', track.provider?.displayName),
       MapEntry('Metadata', track.metadataStatus.displayName),
@@ -2725,13 +2743,11 @@ class _UploadTrackBottomSheetState extends State<_UploadTrackBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF1C1C1E) : Colors.white;
-    final textPrimary = isDark ? Colors.white : Colors.black87;
-    final textMuted = isDark ? Colors.white60 : Colors.black45;
-    final cardColor = isDark
-        ? Colors.white.withValues(alpha: 0.06)
-        : Colors.black.withValues(alpha: 0.04);
+    final tokens = context.camsTokens;
+    final bgColor = tokens.bgContainer;
+    final textPrimary = tokens.textPrimary;
+    final textMuted = tokens.textSecondary;
+    final cardColor = tokens.bgElevated;
 
     return SafeArea(
       top: false,
@@ -2759,7 +2775,7 @@ class _UploadTrackBottomSheetState extends State<_UploadTrackBottomSheet> {
                       width: 38,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: isDark ? Colors.white24 : Colors.black26,
+                        color: tokens.border,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -2800,7 +2816,7 @@ class _UploadTrackBottomSheetState extends State<_UploadTrackBottomSheet> {
                     style: GoogleFonts.inter(color: textPrimary),
                     decoration: _inputDecoration(
                       label: 'Title *',
-                      isDark: isDark,
+                      tokens: tokens,
                     ),
                     validator: (value) {
                       final text = value?.trim() ?? '';
@@ -2815,7 +2831,7 @@ class _UploadTrackBottomSheetState extends State<_UploadTrackBottomSheet> {
                     style: GoogleFonts.inter(color: textPrimary),
                     decoration: _inputDecoration(
                       label: 'Artist',
-                      isDark: isDark,
+                      tokens: tokens,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -2825,7 +2841,7 @@ class _UploadTrackBottomSheetState extends State<_UploadTrackBottomSheet> {
                     style: GoogleFonts.inter(color: textPrimary),
                     decoration: _inputDecoration(
                       label: 'Genre',
-                      isDark: isDark,
+                      tokens: tokens,
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -2890,18 +2906,16 @@ class _UploadTrackBottomSheetState extends State<_UploadTrackBottomSheet> {
 
   InputDecoration _inputDecoration({
     required String label,
-    required bool isDark,
+    required CamsThemeTokens tokens,
   }) {
     return InputDecoration(
       labelText: label,
       labelStyle: GoogleFonts.inter(
-        color: isDark ? Colors.white60 : Colors.black54,
+        color: tokens.textSecondary,
         fontSize: 12,
       ),
       filled: true,
-      fillColor: isDark
-          ? Colors.white.withValues(alpha: 0.06)
-          : Colors.black.withValues(alpha: 0.04),
+      fillColor: tokens.bgElevated,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,
@@ -3020,13 +3034,21 @@ class _GenerateSunoTrackBottomSheetState
   @override
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
-    final maxSheetHeight = mediaQuery.size.height -
+    final availableHeight =
+        mediaQuery.size.height - mediaQuery.viewInsets.bottom;
+    final preferredSheetHeight = availableHeight * 0.88;
+    final safeSheetHeight = availableHeight -
         mediaQuery.padding.top -
-        mediaQuery.viewInsets.top -
-        24;
+        mediaQuery.padding.bottom -
+        48;
+    final maxSheetHeight = (preferredSheetHeight < safeSheetHeight
+            ? preferredSheetHeight
+            : safeSheetHeight)
+        .clamp(360.0, availableHeight);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary = isDark ? Colors.white : Colors.black87;
-    final textMuted = isDark ? Colors.white60 : Colors.black54;
+    final tokens = context.camsTokens;
+    final textPrimary = tokens.textPrimary;
+    final textMuted = tokens.textSecondary;
     final brandProfile = _brandProfile;
     final hasBrandProfile = brandProfile != null;
     final generatedPrompt = _generatedPrompt;
@@ -3055,7 +3077,7 @@ class _GenerateSunoTrackBottomSheetState
           child: Container(
             clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+              color: tokens.bgContainer,
               borderRadius: BorderRadius.circular(24),
             ),
             child: Column(
@@ -3075,7 +3097,7 @@ class _GenerateSunoTrackBottomSheetState
                               width: 38,
                               height: 4,
                               decoration: BoxDecoration(
-                                color: isDark ? Colors.white24 : Colors.black26,
+                                color: tokens.border,
                                 borderRadius: BorderRadius.circular(2),
                               ),
                             ),
@@ -3820,8 +3842,9 @@ class _SunoConfigBottomSheetState extends State<_SunoConfigBottomSheet> {
         mediaQuery.viewInsets.top -
         24;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary = isDark ? Colors.white : Colors.black87;
-    final textMuted = isDark ? Colors.white60 : Colors.black54;
+    final tokens = context.camsTokens;
+    final textPrimary = tokens.textPrimary;
+    final textMuted = tokens.textSecondary;
     final generationModes = _generationModeOptions;
 
     return SafeArea(
@@ -3837,7 +3860,7 @@ class _SunoConfigBottomSheetState extends State<_SunoConfigBottomSheet> {
           child: Container(
             clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+              color: tokens.bgContainer,
               borderRadius: BorderRadius.circular(24),
             ),
             child: Column(
@@ -3855,7 +3878,7 @@ class _SunoConfigBottomSheetState extends State<_SunoConfigBottomSheet> {
                             width: 38,
                             height: 4,
                             decoration: BoxDecoration(
-                              color: isDark ? Colors.white24 : Colors.black26,
+                              color: tokens.border,
                               borderRadius: BorderRadius.circular(2),
                             ),
                           ),
@@ -4224,7 +4247,7 @@ class _CreatePlaylistBottomSheetState
 
   @override
   Widget build(BuildContext context) {
-    final palette = _Palette.fromBrightness(Theme.of(context).brightness);
+    final palette = _Palette.fromContext(context);
     final isDark = palette.isDark;
     final filteredTracks = _filteredTracks;
     final selectedTrackCount = _selectedTrackIds.length;
@@ -4859,35 +4882,23 @@ class _Palette {
     required this.shadow,
   });
 
-  factory _Palette.fromBrightness(Brightness brightness) {
+  factory _Palette.fromContext(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = context.camsTokens;
+    final brightness = Theme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
-    if (isDark) {
-      return _Palette(
-        isDark: true,
-        bg: AppColors.backgroundDarkPrimary,
-        card: AppColors.surfaceDark,
-        overlay: Colors.white.withValues(alpha: 0.06),
-        border: AppColors.borderDarkMedium,
-        textPrimary: AppColors.textDarkPrimary,
-        textMuted: AppColors.textDarkSecondary,
-        accent: AppColors.primaryCyan,
-        accentAlt: AppColors.secondaryLime,
-        textOnAccent: AppColors.textDarkPrimary,
-        shadow: AppColors.shadowDark,
-      );
-    }
-    return const _Palette(
-      isDark: false,
-      bg: AppColors.backgroundPrimary,
-      card: AppColors.surface,
-      overlay: AppColors.backgroundSecondary,
-      border: AppColors.borderLight,
-      textPrimary: AppColors.textPrimary,
-      textMuted: AppColors.textTertiary,
-      accent: AppColors.primaryOrange,
-      accentAlt: AppColors.secondaryTeal,
-      textOnAccent: AppColors.textInverse,
-      shadow: AppColors.shadow,
+    return _Palette(
+      isDark: isDark,
+      bg: tokens.bgBase,
+      card: tokens.bgContainer,
+      overlay: tokens.bgElevated,
+      border: tokens.borderSecondary,
+      textPrimary: tokens.textPrimary,
+      textMuted: tokens.textSecondary,
+      accent: colorScheme.primary,
+      accentAlt: tokens.techAccent,
+      textOnAccent: colorScheme.onPrimary,
+      shadow: tokens.shadow,
     );
   }
 

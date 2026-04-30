@@ -8,12 +8,12 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/player/player_bloc.dart';
 import '../../../../core/presentation/playback_mood_label.dart';
 import '../../../../core/presentation/shell_layout_metrics.dart';
 import '../../../../core/session/session_cubit.dart';
 import '../../../../core/session/session_state.dart';
+import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../../../core/widgets/cams_skeleton.dart';
 import '../../../../injection_container.dart';
 import '../../../cams/domain/entities/space_playback_state.dart';
@@ -105,7 +105,7 @@ class _HomeDashboardView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = _Palette.fromBrightness(Theme.of(context).brightness);
+    final palette = _Palette.fromContext(context);
     final isPlaybackDevice =
         context.select((SessionCubit cubit) => cubit.state.isPlaybackDevice);
     final hasMiniPlayer =
@@ -384,7 +384,7 @@ class _HomeSliverAppBar extends StatelessWidget {
   }
 
   void _showSpaceSheet(BuildContext context) {
-    final palette = _Palette.fromBrightness(Theme.of(context).brightness);
+    final palette = _Palette.fromContext(context);
     showModalBottomSheet(
       context: context,
       useRootNavigator: true, // renders above shell Scaffold (+ MiniPlayer)
@@ -666,7 +666,7 @@ class _CurrentMoodChip extends StatelessWidget {
                           width: 6,
                           height: 6,
                           decoration: BoxDecoration(
-                            color: Colors.green.shade400,
+                            color: palette.success,
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -1791,7 +1791,7 @@ class _ErrorView extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(LucideIcons.alertTriangle, color: Colors.amber, size: 52),
+          Icon(LucideIcons.alertTriangle, color: palette.warning, size: 52),
           const SizedBox(height: 12),
           Text(
             message ?? 'An error occurred',
@@ -1837,37 +1837,28 @@ class _Palette {
     required this.accentAlt,
     required this.textOnAccent,
     required this.shadow,
+    required this.success,
+    required this.warning,
   });
 
-  factory _Palette.fromBrightness(Brightness brightness) {
-    final isDark = brightness == Brightness.dark;
-    if (isDark) {
-      return _Palette(
-        isDark: true,
-        bg: AppColors.backgroundDarkPrimary,
-        card: AppColors.surfaceDark,
-        overlay: Colors.white.withValues(alpha: 0.06),
-        border: AppColors.borderDarkMedium,
-        textPrimary: AppColors.textDarkPrimary,
-        textMuted: AppColors.textDarkSecondary,
-        accent: AppColors.primaryCyan,
-        accentAlt: AppColors.secondaryLime,
-        textOnAccent: AppColors.textDarkPrimary,
-        shadow: AppColors.shadowDark,
-      );
-    }
-    return const _Palette(
-      isDark: false,
-      bg: AppColors.backgroundPrimary,
-      card: AppColors.surface,
-      overlay: AppColors.backgroundSecondary,
-      border: AppColors.borderLight,
-      textPrimary: AppColors.textPrimary,
-      textMuted: AppColors.textTertiary,
-      accent: AppColors.primaryOrange,
-      accentAlt: AppColors.secondaryTeal,
-      textOnAccent: AppColors.textInverse,
-      shadow: AppColors.shadow,
+  factory _Palette.fromContext(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = context.camsTokens;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return _Palette(
+      isDark: isDark,
+      bg: tokens.bgBase,
+      card: tokens.bgContainer,
+      overlay: tokens.bgElevated,
+      border: tokens.borderSecondary,
+      textPrimary: tokens.textPrimary,
+      textMuted: tokens.textSecondary,
+      accent: colorScheme.primary,
+      accentAlt: tokens.techAccent,
+      textOnAccent: colorScheme.onPrimary,
+      shadow: tokens.shadow,
+      success: tokens.success,
+      warning: tokens.warning,
     );
   }
 
@@ -1882,4 +1873,6 @@ class _Palette {
   final Color accentAlt;
   final Color textOnAccent;
   final Color shadow;
+  final Color success;
+  final Color warning;
 }
