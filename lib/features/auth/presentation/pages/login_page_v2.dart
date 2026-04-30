@@ -7,6 +7,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/constants/app_typography.dart';
 import '../../../../core/theme/cams_theme_tokens.dart';
+import '../../../../core/theme/theme_provider.dart';
 import '../../../../core/widgets/app_inline_error_card.dart';
 import '../../../../core/widgets/cams_logo.dart';
 import '../bloc/auth_bloc.dart';
@@ -154,6 +155,13 @@ class _LoginPageV2State extends State<LoginPageV2>
                       ),
                     ),
                   ),
+                ),
+              ),
+              const Positioned(
+                top: AppDimensions.spacingMd,
+                right: AppDimensions.spacingMd,
+                child: SafeArea(
+                  child: _LoginThemeToggleButton(),
                 ),
               ),
             ],
@@ -882,6 +890,47 @@ class _LoginPageV2State extends State<LoginPageV2>
           textAlign: TextAlign.center,
         ),
       ],
+    );
+  }
+}
+
+class _LoginThemeToggleButton extends StatelessWidget {
+  const _LoginThemeToggleButton();
+
+  @override
+  Widget build(BuildContext context) {
+    final themeProvider = context.watch<ThemeProvider>();
+    final tokens = context.camsTokens;
+    final isDark = themeProvider.isDarkMode;
+
+    return Tooltip(
+      message: isDark ? 'Switch to light mode' : 'Switch to dark mode',
+      child: Material(
+        color: tokens.bgElevated.withValues(alpha: 0.88),
+        shape: const CircleBorder(),
+        elevation: 0,
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: themeProvider.toggleTheme,
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 220),
+            transitionBuilder: (child, animation) => RotationTransition(
+              turns: animation,
+              child: FadeTransition(opacity: animation, child: child),
+            ),
+            child: SizedBox(
+              key: ValueKey(isDark),
+              width: 44,
+              height: 44,
+              child: Icon(
+                isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                color: isDark ? tokens.warning : tokens.brandPrimary,
+                size: 22,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
