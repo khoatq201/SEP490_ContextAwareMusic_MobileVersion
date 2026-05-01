@@ -155,12 +155,23 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                   _buildSearchBar(),
                   if (canUseBulkGovernance && _isBulkSelectionMode)
                     _buildBulkGovernanceBar(state.filteredStores),
-                  if (state.filteredStores.isEmpty)
-                    _buildEmptyState()
-                  else
-                    Expanded(
-                      child: _buildStoreGrid(state.filteredStores),
+                  Expanded(
+                    child: RefreshIndicator(
+                      onRefresh: _refreshStores,
+                      child: state.filteredStores.isEmpty
+                          ? ListView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              children: [
+                                SizedBox(
+                                  height:
+                                      MediaQuery.sizeOf(context).height * 0.55,
+                                  child: _buildEmptyState(),
+                                ),
+                              ],
+                            )
+                          : _buildStoreGrid(state.filteredStores),
                     ),
+                  ),
                 ],
               );
             }
@@ -321,8 +332,14 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
     context.read<StoreSelectionBloc>().add(
           LoadUserStores(
             preferredBrandId: context.read<AuthBloc>().state.user?.brandId,
+            forceRefresh: true,
           ),
         );
+  }
+
+  Future<void> _refreshStores() async {
+    _reloadStores();
+    await Future<void>.delayed(const Duration(milliseconds: 350));
   }
 
   Widget _buildBrandAvatarAction(
@@ -500,7 +517,9 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
             ),
           ),
         );
-        context.read<StoreSelectionBloc>().add(LoadBrandDetail(brandId));
+        context
+            .read<StoreSelectionBloc>()
+            .add(LoadBrandDetail(brandId, forceRefresh: true));
         return true;
       },
     );
@@ -593,32 +612,30 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
 
   Widget _buildEmptyState() {
     final tokens = context.camsTokens;
-    return Expanded(
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.search_off,
-              size: 64,
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.search_off,
+            size: 64,
+            color: tokens.textTertiary,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No stores found',
+            style: AppTypography.titleLarge.copyWith(
+              color: tokens.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Try adjusting your search',
+            style: AppTypography.bodyMedium.copyWith(
               color: tokens.textTertiary,
             ),
-            const SizedBox(height: 16),
-            Text(
-              'No stores found',
-              style: AppTypography.titleLarge.copyWith(
-                color: tokens.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Try adjusting your search',
-              style: AppTypography.bodyMedium.copyWith(
-                color: tokens.textTertiary,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -724,6 +741,7 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
 
         if (useListLayout) {
           return ListView.separated(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(34, 0, 34, 32),
             itemCount: stores.length,
             separatorBuilder: (_, __) => const SizedBox(height: 28),
@@ -749,6 +767,7 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
             : (isCompactTile ? 216.0 : 200.0);
 
         return GridView.builder(
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossAxisCount,

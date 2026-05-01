@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/error/error_mapper.dart';
 import '../../../../core/models/pagination_result.dart';
+import '../../../../core/services/session_data_cache.dart';
 import '../../../../core/session/session_cubit.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../cams/data/services/store_hub_service.dart';
@@ -41,6 +42,7 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
   final PlaylistRemoteDataSource playlistDataSource;
   final GetUserStores getUserStores;
   final StoreHubService storeHubService;
+  final SessionDataCache? sessionDataCache;
 
   final Map<String, ApiPlaylist> _playlistCache = <String, ApiPlaylist>{};
   StreamSubscription<SpacePlaybackState>? _stateSyncSub;
@@ -63,6 +65,7 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
     required this.playlistDataSource,
     required this.getUserStores,
     required this.storeHubService,
+    this.sessionDataCache,
   }) : super(const LocationState()) {
     on<LoadLocationsRequested>(_onLoadLocationsRequested);
     on<LocationSelectedStoreChanged>(_onSelectedStoreChanged);
@@ -83,12 +86,27 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
     LoadLocationsRequested event,
     Emitter<LocationState> emit,
   ) async {
-    emit(state.copyWith(
-      status: LocationStatus.loading,
-      clearError: true,
-    ));
-
     final session = sessionCubit.state;
+    final cacheKey = _locationsCacheKey(session);
+    if (!event.forceRefresh) {
+      final cached = sessionDataCache?.get<LocationState>(cacheKey);
+      if (cached != null) {
+        emit(cached.copyWith(clearError: true));
+        await _syncManagerRoomForStore(cached.selectedStoreId);
+        return;
+      }
+    }
+
+    if (state.status == LocationStatus.initial ||
+        !_hasLoadedLocationData(state)) {
+      emit(state.copyWith(
+        status: LocationStatus.loading,
+        clearError: true,
+      ));
+    } else {
+      emit(state.copyWith(clearError: true));
+    }
+
     debugPrint(
       '[LocationBloc] isBrandScopedUser=$_isBrandScopedUser, isPlaybackDevice=${session.isPlaybackDevice}',
     );
@@ -146,14 +164,16 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
         final resolvedSpace = (enriched.isNotEmpty ? enriched.first : space)
             .copyWith(pairDeviceInfo: pairInfo);
 
-        emit(state.copyWith(
+        final next = state.copyWith(
           status: LocationStatus.success,
           pairedSpace: resolvedSpace,
           storeNamesById: {
             session.currentStore!.id: session.currentStore!.name,
           },
           selectedStoreId: session.currentStore!.id,
-        ));
+        );
+        _cacheCurrentLocations(next);
+        emit(next);
       },
     );
   }
@@ -198,12 +218,14 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
           currentStoreId: sessionCubit.state.currentStore?.id,
         );
 
-        emit(state.copyWith(
+        final next = state.copyWith(
           status: LocationStatus.success,
           brandSpaces: enriched,
           storeNamesById: storeNamesById,
           selectedStoreId: selectedStoreId,
-        ));
+        );
+        _cacheCurrentLocations(next);
+        emit(next);
 
         await _syncManagerRoomForStore(selectedStoreId);
       },
@@ -239,7 +261,7 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
           },
         );
 
-        emit(state.copyWith(
+        final next = state.copyWith(
           status: LocationStatus.success,
           storeSpaces: PaginationResult<LocationSpace>(
             currentPage: spacesPagination.currentPage,
@@ -254,7 +276,9 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
             session.currentStore!.id: session.currentStore!.name,
           },
           selectedStoreId: session.currentStore!.id,
-        ));
+        );
+        _cacheCurrentLocations(next);
+        emit(next);
 
         await _syncManagerRoomForStore(session.currentStore!.id);
       },
@@ -408,11 +432,34 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
       _playlistCache,
     );
 
-    emit(_replaceSpaceInState(
+    final next = _replaceSpaceInState(
       state,
       currentSpace.id,
       (_) => updatedSpace,
-    ));
+    );
+    _cacheCurrentLocations(next);
+    emit(next);
+  }
+
+  bool _hasLoadedLocationData(LocationState value) {
+    return value.pairedSpace != null ||
+        value.storeSpaces != null ||
+        value.brandSpaces != null;
+  }
+
+  String _locationsCacheKey([dynamic session]) {
+    final currentSession = session ?? sessionCubit.state;
+    if (currentSession.isPlaybackDevice) {
+      return 'locations.playback.${currentSession.currentSpace?.id ?? ''}';
+    }
+    if (_isBrandScopedUser) {
+      return 'locations.brand.${authBloc.state.user?.brandId ?? 'all'}';
+    }
+    return 'locations.store.${currentSession.currentStore?.id ?? ''}';
+  }
+
+  void _cacheCurrentLocations(LocationState next) {
+    sessionDataCache?.put(_locationsCacheKey(), next);
   }
 
   void _subscribeToHub() {

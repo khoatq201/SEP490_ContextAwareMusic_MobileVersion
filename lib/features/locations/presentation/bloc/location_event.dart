@@ -9,7 +9,12 @@ abstract class LocationEvent extends Equatable {
 }
 
 class LoadLocationsRequested extends LocationEvent {
-  const LoadLocationsRequested();
+  const LoadLocationsRequested({this.forceRefresh = false});
+
+  final bool forceRefresh;
+
+  @override
+  List<Object> get props => [forceRefresh];
 }
 
 class LocationSelectedStoreChanged extends LocationEvent {

@@ -13,6 +13,7 @@ import '../../../../core/enums/queue_insert_mode_enum.dart';
 import '../../../../core/enums/user_role.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/player/player_bloc.dart';
+import '../../../../core/services/session_data_cache.dart';
 import '../../../../core/session/session_cubit.dart';
 import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../../../core/utils/cams_queue_actions.dart';
@@ -97,6 +98,8 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
   StreamSubscription<SunoPlaybackUpdate>? _sunoPlaybackUpdateSub;
   String? _subscribedBrandId;
 
+  SessionDataCache get _cache => sl<SessionDataCache>();
+
   @override
   void initState() {
     super.initState();
@@ -119,16 +122,16 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
     super.dispose();
   }
 
-  Future<void> _loadInitialData() async {
+  Future<void> _loadInitialData({bool forceRefresh = false}) async {
     try {
       final futures = <Future<void>>[
-        _loadPlaylists(),
-        _loadMoods(),
-        _loadTracks(),
-        _loadSunoConfig(),
+        _loadPlaylists(forceRefresh: forceRefresh),
+        _loadMoods(forceRefresh: forceRefresh),
+        _loadTracks(forceRefresh: forceRefresh),
+        _loadSunoConfig(forceRefresh: forceRefresh),
       ];
       if (_canManageSunoTracks()) {
-        futures.add(_loadSunoGenerationHistory());
+        futures.add(_loadSunoGenerationHistory(forceRefresh: forceRefresh));
       }
       await Future.wait(futures);
     } finally {
@@ -138,7 +141,20 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
     }
   }
 
-  Future<void> _loadPlaylists() async {
+  Future<void> _refreshAllData({bool forceRefresh = true}) async {
+    await _loadInitialData(forceRefresh: forceRefresh);
+  }
+
+  Future<void> _loadPlaylists({bool forceRefresh = false}) async {
+    const cacheKey = 'library.playlists';
+    if (!forceRefresh) {
+      final cached = _cache.get<List<PlaylistEntity>>(cacheKey);
+      if (cached != null) {
+        if (mounted) setState(() => _savedPlaylists = cached);
+        return;
+      }
+    }
+
     try {
       final playlistDs = sl<PlaylistRemoteDataSource>();
       final resp = await playlistDs.getPlaylists(page: 1, pageSize: 50);
@@ -154,19 +170,32 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
                   overrideTrackCount: p.trackCount,
                 ))
             .toList();
+        _cache.put(cacheKey, _savedPlaylists);
       });
     } catch (_) {
       // Keep library usable even when playlists fail to load.
     }
   }
 
-  Future<void> _loadMoods() async {
+  Future<void> _loadMoods({bool forceRefresh = false}) async {
+    const cacheKey = 'library.moods';
+    if (!forceRefresh) {
+      final cached = _cache.get<List<Mood>>(cacheKey);
+      if (cached != null) {
+        if (mounted) setState(() => _moods = cached);
+        return;
+      }
+    }
+
     try {
       final result = await sl<GetMoods>()();
       if (!mounted) return;
       result.fold(
         (_) {},
-        (moods) => setState(() => _moods = moods),
+        (moods) {
+          _cache.put(cacheKey, moods);
+          setState(() => _moods = moods);
+        },
       );
     } catch (_) {
       // Suno generation can still work without mood labels.
@@ -192,7 +221,19 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
     );
   }
 
-  Future<void> _loadTracks({bool silent = false}) async {
+  Future<void> _loadTracks({
+    bool silent = false,
+    bool forceRefresh = false,
+  }) async {
+    final cacheKey = 'library.tracks.${_trackProviderScope.name}.$_showAiOnly';
+    if (!forceRefresh) {
+      final cached = _cache.get<List<ApiTrack>>(cacheKey);
+      if (cached != null) {
+        if (mounted) setState(() => _tracks = cached);
+        return;
+      }
+    }
+
     final result = await sl<GetTracks>()(filter: _buildTrackFilter());
     if (!mounted) return;
 
@@ -206,6 +247,7 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
         final nextTracks = response.items
             .map<ApiTrack>(_mergeTrackWithCurrentState)
             .toList(growable: false);
+        _cache.put(cacheKey, nextTracks);
         setState(() => _tracks = nextTracks);
       },
     );
@@ -237,16 +279,43 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
     );
   }
 
-  Future<void> _loadSunoConfig() async {
+  Future<void> _loadSunoConfig({bool forceRefresh = false}) async {
+    const cacheKey = 'library.sunoConfig';
+    if (!forceRefresh) {
+      final cached = _cache.get<SunoConfig>(cacheKey);
+      if (cached != null) {
+        if (mounted) setState(() => _sunoConfig = cached);
+        return;
+      }
+    }
+
     final result = await sl<GetSunoConfig>()();
     if (!mounted) return;
     result.fold(
       (_) {},
-      (config) => setState(() => _sunoConfig = config),
+      (config) {
+        _cache.put(cacheKey, config);
+        setState(() => _sunoConfig = config);
+      },
     );
   }
 
-  Future<void> _loadSunoGenerationHistory() async {
+  Future<void> _loadSunoGenerationHistory({bool forceRefresh = false}) async {
+    const cacheKey = 'library.sunoGenerations';
+    if (!forceRefresh) {
+      final cached = _cache.get<List<SunoGeneration>>(cacheKey);
+      if (cached != null) {
+        if (mounted) {
+          setState(() {
+            _sunoGenerations
+              ..clear()
+              ..addAll(cached);
+          });
+        }
+        return;
+      }
+    }
+
     final result = await sl<GetSunoGenerations>()(page: 1, pageSize: 6);
     if (!mounted) return;
 
@@ -258,6 +327,7 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
             ..clear()
             ..addAll(generations.take(6));
         });
+        _cache.put(cacheKey, _sunoGenerations.toList(growable: false));
 
         final playbackContext = _currentSunoPlaybackContext();
         if (playbackContext == null) return;
@@ -535,7 +605,7 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
         createBrandWide: draft.isBrandWide,
       );
 
-      await _loadPlaylists();
+      await _loadPlaylists(forceRefresh: true);
       if (!mounted) return;
 
       _showSnackBar(
@@ -580,7 +650,7 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
       ),
     );
 
-    await _loadTracks();
+    await _loadTracks(forceRefresh: true);
     if (result.trackId != null && result.trackId!.isNotEmpty) {
       _startMetadataPollingForTrackId(result.trackId!);
     } else {
@@ -689,7 +759,7 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
     result.fold(
       (failure) => _showSnackBar(failure.message, isError: true),
       (_) async {
-        await _loadTracks();
+        await _loadTracks(forceRefresh: true);
         _showSnackBar('Track status updated.');
       },
     );
@@ -764,7 +834,7 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
         final refreshed = await sl<GetTrackById>()(track.id);
         if (!mounted) return;
         refreshed.fold(
-          (_) => unawaited(_loadTracks(silent: true)),
+          (_) => unawaited(_loadTracks(silent: true, forceRefresh: true)),
           _upsertTrack,
         );
         _showSnackBar(
@@ -821,252 +891,259 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
       backgroundColor: palette.bg,
       body: Stack(
         children: [
-          CustomScrollView(
-            slivers: [
-              // ── SliverAppBar ───────────────────────────────────────────────
-              SliverAppBar(
-                pinned: true,
-                expandedHeight: 92,
-                backgroundColor: palette.bg,
-                surfaceTintColor: Colors.transparent,
-                elevation: 0,
-                automaticallyImplyLeading: false,
-                flexibleSpace: FlexibleSpaceBar(
-                  collapseMode: CollapseMode.pin,
-                  titlePadding: const EdgeInsets.only(left: 20, bottom: 14),
-                  title: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'REMOTE CONTROLLING',
-                        style: GoogleFonts.inter(
-                          color: palette.textMuted,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.4,
+          RefreshIndicator(
+            onRefresh: () => _refreshAllData(forceRefresh: true),
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                // ── SliverAppBar ───────────────────────────────────────────────
+                SliverAppBar(
+                  pinned: true,
+                  expandedHeight: 92,
+                  backgroundColor: palette.bg,
+                  surfaceTintColor: Colors.transparent,
+                  elevation: 0,
+                  automaticallyImplyLeading: false,
+                  flexibleSpace: FlexibleSpaceBar(
+                    collapseMode: CollapseMode.pin,
+                    titlePadding: const EdgeInsets.only(left: 20, bottom: 14),
+                    title: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'REMOTE CONTROLLING',
+                          style: GoogleFonts.inter(
+                            color: palette.textMuted,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.4,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 1),
-                      Text(
-                        'Music Library',
-                        style: GoogleFonts.poppins(
-                          color: palette.textPrimary,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.3,
+                        const SizedBox(height: 1),
+                        Text(
+                          'Music Library',
+                          style: GoogleFonts.poppins(
+                            color: palette.textPrimary,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.3,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                actions: [
-                  GestureDetector(
-                    onTap: () {},
-                    child: Container(
-                      margin:
-                          const EdgeInsets.only(right: 16, top: 10, bottom: 10),
-                      decoration: BoxDecoration(
-                        color: palette.overlay,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: palette.border),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: Icon(
-                          LucideIcons.search,
-                          color: palette.textPrimary,
-                          size: 18,
+                  actions: [
+                    GestureDetector(
+                      onTap: () {},
+                      child: Container(
+                        margin: const EdgeInsets.only(
+                            right: 16, top: 10, bottom: 10),
+                        decoration: BoxDecoration(
+                          color: palette.overlay,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: palette.border),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: Icon(
+                            LucideIcons.search,
+                            color: palette.textPrimary,
+                            size: 18,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-
-              // ── Filter chips ───────────────────────────────────────────────
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                  child: Wrap(
-                    spacing: 8,
-                    children: _LibraryFilter.values.map((f) {
-                      final selected = _filter == f;
-                      return FilterChip(
-                        label: Text(f.label),
-                        selected: selected,
-                        onSelected: (_) => setState(() => _filter = f),
-                        selectedColor: palette.accent,
-                        checkmarkColor: palette.textOnAccent,
-                        showCheckmark: false,
-                        labelStyle: GoogleFonts.inter(
-                          color: selected
-                              ? palette.textOnAccent
-                              : palette.textMuted,
-                          fontWeight:
-                              selected ? FontWeight.w700 : FontWeight.w500,
-                          fontSize: 13,
-                        ),
-                        backgroundColor: palette.card,
-                        side: BorderSide(
-                          color: selected ? palette.accent : palette.border,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                      );
-                    }).toList(),
-                  ),
+                  ],
                 ),
-              ),
-              if (_filter == _LibraryFilter.tracks)
+
+                // ── Filter chips ───────────────────────────────────────────────
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
                     child: Wrap(
                       spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        _buildTrackScopeChip(
-                          palette: palette,
-                          label: 'All',
-                          selected:
-                              _trackProviderScope == _TrackProviderScope.all,
-                          onTap: () {
-                            setState(() {
-                              _trackProviderScope = _TrackProviderScope.all;
-                            });
-                            unawaited(_loadTracks());
-                          },
-                        ),
-                        _buildTrackScopeChip(
-                          palette: palette,
-                          label: 'Custom',
-                          selected:
-                              _trackProviderScope == _TrackProviderScope.custom,
-                          onTap: () {
-                            setState(() {
-                              _trackProviderScope = _TrackProviderScope.custom;
-                            });
-                            unawaited(_loadTracks());
-                          },
-                        ),
-                        _buildTrackScopeChip(
-                          palette: palette,
-                          label: 'Suno',
-                          selected:
-                              _trackProviderScope == _TrackProviderScope.suno,
-                          onTap: () {
-                            setState(() {
-                              _trackProviderScope = _TrackProviderScope.suno;
-                            });
-                            unawaited(_loadTracks());
-                          },
-                        ),
-                        _buildTrackScopeChip(
-                          palette: palette,
-                          label: _showAiOnly ? 'AI Only' : 'All Origins',
-                          selected: _showAiOnly,
-                          onTap: () {
-                            setState(() => _showAiOnly = !_showAiOnly);
-                            unawaited(_loadTracks());
-                          },
-                        ),
-                        if (canManageTracks)
+                      children: _LibraryFilter.values.map((f) {
+                        final selected = _filter == f;
+                        return FilterChip(
+                          label: Text(f.label),
+                          selected: selected,
+                          onSelected: (_) => setState(() => _filter = f),
+                          selectedColor: palette.accent,
+                          checkmarkColor: palette.textOnAccent,
+                          showCheckmark: false,
+                          labelStyle: GoogleFonts.inter(
+                            color: selected
+                                ? palette.textOnAccent
+                                : palette.textMuted,
+                            fontWeight:
+                                selected ? FontWeight.w700 : FontWeight.w500,
+                            fontSize: 13,
+                          ),
+                          backgroundColor: palette.card,
+                          side: BorderSide(
+                            color: selected ? palette.accent : palette.border,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+                if (_filter == _LibraryFilter.tracks)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
                           _buildTrackScopeChip(
                             palette: palette,
-                            label: 'Suno Config',
-                            selected: false,
-                            onTap: _openSunoConfigSheet,
+                            label: 'All',
+                            selected:
+                                _trackProviderScope == _TrackProviderScope.all,
+                            onTap: () {
+                              setState(() {
+                                _trackProviderScope = _TrackProviderScope.all;
+                              });
+                              unawaited(_loadTracks());
+                            },
                           ),
+                          _buildTrackScopeChip(
+                            palette: palette,
+                            label: 'Custom',
+                            selected: _trackProviderScope ==
+                                _TrackProviderScope.custom,
+                            onTap: () {
+                              setState(() {
+                                _trackProviderScope =
+                                    _TrackProviderScope.custom;
+                              });
+                              unawaited(_loadTracks());
+                            },
+                          ),
+                          _buildTrackScopeChip(
+                            palette: palette,
+                            label: 'Suno',
+                            selected:
+                                _trackProviderScope == _TrackProviderScope.suno,
+                            onTap: () {
+                              setState(() {
+                                _trackProviderScope = _TrackProviderScope.suno;
+                              });
+                              unawaited(_loadTracks());
+                            },
+                          ),
+                          _buildTrackScopeChip(
+                            palette: palette,
+                            label: _showAiOnly ? 'AI Only' : 'All Origins',
+                            selected: _showAiOnly,
+                            onTap: () {
+                              setState(() => _showAiOnly = !_showAiOnly);
+                              unawaited(_loadTracks());
+                            },
+                          ),
+                          if (canManageTracks)
+                            _buildTrackScopeChip(
+                              palette: palette,
+                              label: 'Suno Config',
+                              selected: false,
+                              onTap: _openSunoConfigSheet,
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                if (_filter == _LibraryFilter.tracks &&
+                    _sunoGenerations.isNotEmpty)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                      child: _SunoGenerationPanel(
+                        palette: palette,
+                        generations: _sunoGenerations,
+                        playlists: _savedPlaylists,
+                        moods: _moods,
+                        onCancel:
+                            canManageTracks ? _cancelSunoGeneration : null,
+                      ),
+                    ),
+                  ),
+
+                // ── Section label ──────────────────────────────────────────────
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                    child: Row(
+                      children: [
+                        Text(
+                          _sectionTitle,
+                          style: GoogleFonts.poppins(
+                            color: palette.textPrimary,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          _sectionCount,
+                          style: GoogleFonts.inter(
+                            color: palette.textMuted,
+                            fontSize: 12,
+                          ),
+                        ),
                       ],
                     ),
                   ),
                 ),
-              if (_filter == _LibraryFilter.tracks &&
-                  _sunoGenerations.isNotEmpty)
+
+                // ── Divider ────────────────────────────────────────────────────
                 SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                    child: _SunoGenerationPanel(
-                      palette: palette,
-                      generations: _sunoGenerations,
-                      playlists: _savedPlaylists,
-                      moods: _moods,
-                      onCancel: canManageTracks ? _cancelSunoGeneration : null,
+                  child: Divider(
+                    color: palette.border,
+                    height: 1,
+                    indent: 20,
+                    endIndent: 20,
+                  ),
+                ),
+
+                // ── Body ───────────────────────────────────────────────────────
+                if (_loading)
+                  const SliverToBoxAdapter(
+                    child: CamsSkeletonList(
+                      itemCount: 8,
+                      showTrailing: true,
+                      padding: EdgeInsets.fromLTRB(20, 20, 20, 164),
                     ),
-                  ),
-                ),
-
-              // ── Section label ──────────────────────────────────────────────
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-                  child: Row(
-                    children: [
-                      Text(
-                        _sectionTitle,
-                        style: GoogleFonts.poppins(
-                          color: palette.textPrimary,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
+                  )
+                else if (_filter == _LibraryFilter.playlists)
+                  _savedPlaylists.isEmpty
+                      ? _emptyPlaylistsSliver(palette)
+                      : _playlistsSliver(palette)
+                else if (_filter == _LibraryFilter.blocked)
+                  _blockedSongs.isEmpty
+                      ? _emptyBlockedSliver(palette)
+                      : _blockedSliver(palette)
+                else
+                  _tracks.isEmpty
+                      ? _emptyTracksSliver(palette)
+                      : _tracksSliver(
+                          palette,
+                          canManageTracks: canManageTracks,
+                          canReviewTrackCopyright: canReviewTrackCopyright,
                         ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        _sectionCount,
-                        style: GoogleFonts.inter(
-                          color: palette.textMuted,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
 
-              // ── Divider ────────────────────────────────────────────────────
-              SliverToBoxAdapter(
-                child: Divider(
-                  color: palette.border,
-                  height: 1,
-                  indent: 20,
-                  endIndent: 20,
-                ),
-              ),
-
-              // ── Body ───────────────────────────────────────────────────────
-              if (_loading)
-                const SliverToBoxAdapter(
-                  child: CamsSkeletonList(
-                    itemCount: 8,
-                    showTrailing: true,
-                    padding: EdgeInsets.fromLTRB(20, 20, 20, 164),
-                  ),
-                )
-              else if (_filter == _LibraryFilter.playlists)
-                _savedPlaylists.isEmpty
-                    ? _emptyPlaylistsSliver(palette)
-                    : _playlistsSliver(palette)
-              else if (_filter == _LibraryFilter.blocked)
-                _blockedSongs.isEmpty
-                    ? _emptyBlockedSliver(palette)
-                    : _blockedSliver(palette)
-              else
-                _tracks.isEmpty
-                    ? _emptyTracksSliver(palette)
-                    : _tracksSliver(
-                        palette,
-                        canManageTracks: canManageTracks,
-                        canReviewTrackCopyright: canReviewTrackCopyright,
-                      ),
-
-              SliverToBoxAdapter(child: SizedBox(height: contentBottomSpacing)),
-            ],
+                SliverToBoxAdapter(
+                    child: SizedBox(height: contentBottomSpacing)),
+              ],
+            ),
           ),
           if (_filter == _LibraryFilter.playlists && canManagePlaylists)
             Positioned(

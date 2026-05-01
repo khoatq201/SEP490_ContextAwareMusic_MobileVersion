@@ -1,12 +1,17 @@
+import 'package:dartz/dartz.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/error/error_mapper.dart';
+import '../../../../core/error/failures.dart';
+import '../../../../core/services/session_data_cache.dart';
 import '../../../cams/domain/entities/space_playback_state.dart';
 import '../../../cams/domain/usecases/cancel_override.dart';
 import '../../../cams/domain/usecases/get_space_state.dart';
 import '../../../cams/domain/usecases/override_space.dart';
 import '../../../moods/domain/entities/mood.dart';
 import '../../../moods/domain/usecases/get_moods.dart';
+import '../../domain/entities/category_entity.dart';
+import '../../domain/entities/sensor_entity.dart';
 import '../../domain/repositories/home_repository.dart';
 import 'home_state.dart';
 
@@ -24,6 +29,7 @@ class HomeCubit extends Cubit<HomeState> {
   final GetMoods _getMoods;
   final OverrideSpace _overrideSpace;
   final CancelOverride _cancelOverride;
+  final SessionDataCache? _sessionDataCache;
   bool _usePlaybackDeviceScope = false;
 
   HomeCubit(
@@ -32,10 +38,12 @@ class HomeCubit extends Cubit<HomeState> {
     required GetMoods getMoods,
     required OverrideSpace overrideSpace,
     required CancelOverride cancelOverride,
+    SessionDataCache? sessionDataCache,
   })  : _getSpaceState = getSpaceState,
         _getMoods = getMoods,
         _overrideSpace = overrideSpace,
         _cancelOverride = cancelOverride,
+        _sessionDataCache = sessionDataCache,
         super(const HomeState());
 
   Future<void> load({
@@ -43,15 +51,31 @@ class HomeCubit extends Cubit<HomeState> {
     bool loadMoods = true,
     String? storeId,
     String? spaceId,
+    bool forceRefresh = false,
   }) async {
-    emit(state.copyWith(
-      status: HomeStatus.loading,
-      clearError: true,
-    ));
+    if (!forceRefresh && includeCatalog && state.status == HomeStatus.initial) {
+      _emitCachedHomeSnapshot(
+        storeId: storeId,
+        spaceId: spaceId,
+        loadMoods: loadMoods,
+      );
+    }
+
+    final hasDisplayData =
+        state.categories.isNotEmpty || state.sensors.isNotEmpty;
+    if (!hasDisplayData || state.status == HomeStatus.initial) {
+      emit(state.copyWith(
+        status: HomeStatus.loading,
+        clearError: true,
+      ));
+    } else {
+      emit(state.copyWith(clearError: true));
+    }
 
     final sensorsResult = await _repository.getSensorData(
       storeId: storeId,
       spaceId: spaceId,
+      forceRefresh: forceRefresh,
     );
     if (!includeCatalog) {
       emit(state.copyWith(
@@ -63,8 +87,9 @@ class HomeCubit extends Cubit<HomeState> {
       return;
     }
 
-    final categoriesResult = await _repository.getCategories();
-    final moodsResult = loadMoods ? await _getMoods() : null;
+    final categoriesResult =
+        await _repository.getCategories(forceRefresh: forceRefresh);
+    final moodsResult = loadMoods ? await _getCachedMoods(forceRefresh) : null;
 
     final sensors = sensorsResult.getOrElse(() => const []);
     categoriesResult.fold(
@@ -86,11 +111,61 @@ class HomeCubit extends Cubit<HomeState> {
     );
   }
 
+  void _emitCachedHomeSnapshot({
+    String? storeId,
+    String? spaceId,
+    required bool loadMoods,
+  }) {
+    final cachedCategories =
+        _sessionDataCache?.get<List<CategoryEntity>>('home.categories');
+    final cachedSensors = _sessionDataCache
+        ?.get<List<SensorEntity>>(_sensorCacheKey(storeId, spaceId));
+    final cachedMoods = loadMoods
+        ? _sessionDataCache?.get<List<Mood>>('home.moods')
+        : const <Mood>[];
+
+    if (cachedCategories == null && cachedSensors == null) return;
+    emit(state.copyWith(
+      status: HomeStatus.loaded,
+      categories: cachedCategories ?? state.categories,
+      sensors: cachedSensors ?? state.sensors,
+      moods: cachedMoods ?? state.moods,
+      clearError: true,
+    ));
+  }
+
+  String _sensorCacheKey(String? storeId, String? spaceId) {
+    return 'home.sensors.${storeId ?? ''}.${spaceId ?? ''}';
+  }
+
+  Future<void> refresh({
+    bool includeCatalog = true,
+    bool loadMoods = true,
+    String? storeId,
+    String? spaceId,
+  }) async {
+    await load(
+      includeCatalog: includeCatalog,
+      loadMoods: loadMoods,
+      storeId: storeId,
+      spaceId: spaceId,
+      forceRefresh: true,
+    );
+    await syncForSpace(
+      spaceId,
+      storeId: storeId,
+      loadMoods: loadMoods,
+      usePlaybackDeviceScope: _usePlaybackDeviceScope,
+      forceRefresh: true,
+    );
+  }
+
   Future<void> syncForSpace(
     String? spaceId, {
     String? storeId,
     bool loadMoods = true,
     bool usePlaybackDeviceScope = false,
+    bool forceRefresh = false,
   }) async {
     _usePlaybackDeviceScope = usePlaybackDeviceScope;
     if (spaceId == null || spaceId.isEmpty) {
@@ -115,9 +190,13 @@ class HomeCubit extends Cubit<HomeState> {
     ));
 
     if (loadMoods) {
-      await _ensureMoodsLoaded();
+      await _ensureMoodsLoaded(forceRefresh: forceRefresh);
     }
-    await _refreshSensors(storeId: storeId, spaceId: spaceId);
+    await _refreshSensors(
+      storeId: storeId,
+      spaceId: spaceId,
+      forceRefresh: forceRefresh,
+    );
     await loadSpacePlaybackState(
       spaceId,
       usePlaybackDeviceScope: usePlaybackDeviceScope,
@@ -269,9 +348,26 @@ class HomeCubit extends Cubit<HomeState> {
     );
   }
 
-  Future<void> _ensureMoodsLoaded() async {
-    if (state.moods.isNotEmpty) return;
+  Future<Either<Failure, List<Mood>>> _getCachedMoods(bool forceRefresh) async {
+    const cacheKey = 'home.moods';
+    if (!forceRefresh) {
+      final cached = _sessionDataCache?.get<List<Mood>>(cacheKey);
+      if (cached != null) {
+        return Right(cached);
+      }
+    }
+
     final result = await _getMoods();
+    result.fold(
+      (_) {},
+      (moods) => _sessionDataCache?.put(cacheKey, moods),
+    );
+    return result;
+  }
+
+  Future<void> _ensureMoodsLoaded({bool forceRefresh = false}) async {
+    if (!forceRefresh && state.moods.isNotEmpty) return;
+    final result = await _getCachedMoods(forceRefresh);
     result.fold(
       (_) {},
       (moods) => emit(state.copyWith(moods: moods)),
@@ -281,10 +377,12 @@ class HomeCubit extends Cubit<HomeState> {
   Future<void> _refreshSensors({
     String? storeId,
     String? spaceId,
+    bool forceRefresh = false,
   }) async {
     final result = await _repository.getSensorData(
       storeId: storeId,
       spaceId: spaceId,
+      forceRefresh: forceRefresh,
     );
     result.fold(
       (_) {},

@@ -270,7 +270,9 @@ void main() {
 
 class _FakeHomeRepository implements HomeRepository {
   @override
-  Future<Either<Failure, List<CategoryEntity>>> getCategories() async {
+  Future<Either<Failure, List<CategoryEntity>>> getCategories({
+    bool forceRefresh = false,
+  }) async {
     return const Right([]);
   }
 
@@ -278,6 +280,7 @@ class _FakeHomeRepository implements HomeRepository {
   Future<Either<Failure, List<SensorEntity>>> getSensorData({
     String? storeId,
     String? spaceId,
+    bool forceRefresh = false,
   }) async {
     return const Right([]);
   }

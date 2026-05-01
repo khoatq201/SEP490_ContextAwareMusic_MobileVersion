@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/presentation/app_feedback.dart';
+import '../../../../core/services/session_data_cache.dart';
 import '../../../../core/session/session_cubit.dart';
 import '../../domain/usecases/change_password.dart';
 import '../../domain/usecases/get_current_user.dart';
@@ -16,6 +17,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     required this.getCurrentUser,
     required this.changePassword,
     required this.sessionCubit,
+    this.sessionDataCache,
   }) : super(const AuthState()) {
     on<LoginRequested>(_onLoginRequested);
     on<LogoutRequested>(_onLogoutRequested);
@@ -29,6 +31,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final GetCurrentUser getCurrentUser;
   final ChangePassword changePassword;
   final SessionCubit sessionCubit;
+  final SessionDataCache? sessionDataCache;
 
   Future<void> _onLoginRequested(
     LoginRequested event,
@@ -57,6 +60,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         );
       },
       (user) async {
+        sessionDataCache?.clear();
         sessionCubit.setRoleFromString(user.role);
         await sessionCubit.restoreSelectionFromStorage();
         emit(
@@ -92,6 +96,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         ),
       ),
       (_) {
+        sessionDataCache?.clear();
         sessionCubit.reset();
         emit(const AuthState(status: AuthStatus.unauthenticated));
       },
@@ -112,6 +117,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     result.fold(
       (_) {
+        sessionDataCache?.clear();
         sessionCubit.reset();
         emit(const AuthState(status: AuthStatus.unauthenticated));
       },

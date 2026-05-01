@@ -402,7 +402,7 @@ class StoreDashboardPage extends StatelessWidget {
       (success) {
         context
             .read<StoreDashboardBloc>()
-            .add(LoadStoreDashboard(storeId: storeId));
+            .add(LoadStoreDashboard(storeId: storeId, forceRefresh: true));
         _showStoreSnackBar(
           context,
           success.message ?? 'Store updated successfully.',
@@ -421,7 +421,7 @@ class StoreDashboardPage extends StatelessWidget {
       (success) {
         context
             .read<StoreDashboardBloc>()
-            .add(LoadStoreDashboard(storeId: storeId));
+            .add(LoadStoreDashboard(storeId: storeId, forceRefresh: true));
         _showStoreSnackBar(
           context,
           success.message ?? 'Store status updated successfully.',
@@ -1178,7 +1178,7 @@ class StoreDashboardPage extends StatelessWidget {
                 failure: state.failure,
                 title: 'Store unavailable',
                 onRetry: () => context.read<StoreDashboardBloc>().add(
-                      LoadStoreDashboard(storeId: storeId),
+                      LoadStoreDashboard(storeId: storeId, forceRefresh: true),
                     ),
               );
             }
@@ -1194,6 +1194,7 @@ class StoreDashboardPage extends StatelessWidget {
                 context.read<StoreDashboardBloc>().add(
                       RefreshStoreDashboard(storeId: storeId),
                     );
+                await Future<void>.delayed(const Duration(milliseconds: 350));
               },
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),

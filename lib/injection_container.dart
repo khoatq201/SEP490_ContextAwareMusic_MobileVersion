@@ -4,6 +4,7 @@ import 'core/network/dio_client.dart';
 import 'core/network/network_info.dart';
 import 'core/services/mqtt_service.dart';
 import 'core/services/local_storage_service.dart';
+import 'core/services/session_data_cache.dart';
 import 'core/session/session_cubit.dart';
 
 // Auth Feature
@@ -195,6 +196,7 @@ Future<void> initializeDependencies() async {
 
   // Services
   sl.registerLazySingleton(() => LocalStorageService());
+  sl.registerLazySingleton(() => SessionDataCache());
   sl.registerLazySingleton(() => DioClient(localStorage: sl()));
   sl.registerLazySingleton(() => MqttService());
 
@@ -248,6 +250,7 @@ Future<void> initializeDependencies() async {
       getCurrentUser: sl(),
       changePassword: sl(),
       sessionCubit: sl(),
+      sessionDataCache: sl(),
     ),
   );
 
@@ -388,6 +391,7 @@ Future<void> initializeDependencies() async {
       playlistDataSource: sl(),
       getUserStores: sl(),
       storeHubService: sl(),
+      sessionDataCache: sl(),
     ),
   );
 
@@ -543,6 +547,7 @@ Future<void> initializeDependencies() async {
     () => StoreDashboardBloc(
       getStoreDetails: sl(),
       getSpaceSummaries: sl(),
+      sessionDataCache: sl(),
     ),
   );
 
@@ -572,6 +577,7 @@ Future<void> initializeDependencies() async {
     () => StoreSelectionBloc(
       getUserStores: sl(),
       getBrandDetail: sl(),
+      sessionDataCache: sl(),
     ),
   );
 
@@ -808,7 +814,7 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton<HomeRepository>(
     () => ApiConstants.useMockData
         ? MockHomeRepositoryImpl()
-        : HomeRepositoryImpl(dataSource: sl()),
+        : HomeRepositoryImpl(dataSource: sl(), sessionDataCache: sl()),
   );
 
   // Cubits
@@ -819,6 +825,7 @@ Future<void> initializeDependencies() async {
       getMoods: sl(),
       overrideSpace: sl(),
       cancelOverride: sl(),
+      sessionDataCache: sl(),
     ),
   );
 
@@ -852,6 +859,7 @@ Future<void> initializeDependencies() async {
       searchMusic: sl(),
       searchByType: sl(),
       getFeaturedPlaylists: sl(),
+      sessionDataCache: sl(),
     ),
   );
 

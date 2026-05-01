@@ -10,16 +10,28 @@ abstract class SearchEvent extends Equatable {
 
 /// Fired once when the Search screen mounts to load categories.
 class LoadCategoriesEvent extends SearchEvent {
-  const LoadCategoriesEvent();
+  const LoadCategoriesEvent({this.forceRefresh = false});
+
+  final bool forceRefresh;
+
+  @override
+  List<Object?> get props => [forceRefresh];
 }
 
 /// Fired on every keystroke / query change.
 class QueryChangedEvent extends SearchEvent {
   final String query;
-  const QueryChangedEvent(this.query);
+  final bool forceRefresh;
+  final bool debounce;
+
+  const QueryChangedEvent(
+    this.query, {
+    this.forceRefresh = false,
+    this.debounce = false,
+  });
 
   @override
-  List<Object?> get props => [query];
+  List<Object?> get props => [query, forceRefresh, debounce];
 }
 
 /// Fired when the user clears the search field.
@@ -38,5 +50,14 @@ class FilterTagChangedEvent extends SearchEvent {
 
 /// Fired to load featured playlists for the "Featuring" tab.
 class LoadFeaturedEvent extends SearchEvent {
-  const LoadFeaturedEvent();
+  const LoadFeaturedEvent({this.forceRefresh = false});
+
+  final bool forceRefresh;
+
+  @override
+  List<Object?> get props => [forceRefresh];
+}
+
+class RefreshSearchEvent extends SearchEvent {
+  const RefreshSearchEvent();
 }

@@ -10,8 +10,11 @@ abstract class HomeRepository {
   Future<Either<Failure, List<SensorEntity>>> getSensorData({
     String? storeId,
     String? spaceId,
+    bool forceRefresh = false,
   });
 
   /// Returns a list of music categories, each containing playlists.
-  Future<Either<Failure, List<CategoryEntity>>> getCategories();
+  Future<Either<Failure, List<CategoryEntity>>> getCategories({
+    bool forceRefresh = false,
+  });
 }

@@ -259,62 +259,70 @@ class _SearchViewState extends State<_SearchView> {
     return Scaffold(
       backgroundColor: tokens.bgBase,
       body: SafeArea(
-        child: CustomScrollView(
-          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          slivers: [
-            // ── Search bar ─────────────────────────────────────────────
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppDimensions.spacingMd,
-                  AppDimensions.spacingMd,
-                  AppDimensions.spacingMd,
-                  0,
-                ),
-                child: _SearchBar(
-                  controller: _controller,
-                  focusNode: _focusNode,
-                  isDark: isDark,
-                  onChanged: (q) =>
-                      context.read<SearchBloc>().add(QueryChangedEvent(q)),
-                  onClear: () {
-                    _controller.clear();
-                    _focusNode.unfocus();
-                    context.read<SearchBloc>().add(const ClearSearchEvent());
-                  },
-                ),
-              ),
-            ),
-
-            // ── Filter tag chips ───────────────────────────────────────
-            SliverToBoxAdapter(
-              child: BlocBuilder<SearchBloc, SearchState>(
-                buildWhen: (prev, curr) => prev.activeTag != curr.activeTag,
-                builder: (context, state) => _FilterTagRow(
-                  activeTag: state.activeTag,
-                  isDark: isDark,
-                  onTagSelected: (tag) => context
-                      .read<SearchBloc>()
-                      .add(FilterTagChangedEvent(tag)),
+        child: RefreshIndicator(
+          onRefresh: () async {
+            context.read<SearchBloc>().add(const RefreshSearchEvent());
+            await Future<void>.delayed(const Duration(milliseconds: 350));
+          },
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            slivers: [
+              // ── Search bar ─────────────────────────────────────────────
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppDimensions.spacingMd,
+                    AppDimensions.spacingMd,
+                    AppDimensions.spacingMd,
+                    0,
+                  ),
+                  child: _SearchBar(
+                    controller: _controller,
+                    focusNode: _focusNode,
+                    isDark: isDark,
+                    onChanged: (q) => context
+                        .read<SearchBloc>()
+                        .add(QueryChangedEvent(q, debounce: true)),
+                    onClear: () {
+                      _controller.clear();
+                      _focusNode.unfocus();
+                      context.read<SearchBloc>().add(const ClearSearchEvent());
+                    },
+                  ),
                 ),
               ),
-            ),
 
-            const SliverToBoxAdapter(
-                child: SizedBox(height: AppDimensions.spacingMd)),
+              // ── Filter tag chips ───────────────────────────────────────
+              SliverToBoxAdapter(
+                child: BlocBuilder<SearchBloc, SearchState>(
+                  buildWhen: (prev, curr) => prev.activeTag != curr.activeTag,
+                  builder: (context, state) => _FilterTagRow(
+                    activeTag: state.activeTag,
+                    isDark: isDark,
+                    onTagSelected: (tag) => context
+                        .read<SearchBloc>()
+                        .add(FilterTagChangedEvent(tag)),
+                  ),
+                ),
+              ),
 
-            // ── Body: depends on isSearching + activeTag ───────────────
-            BlocBuilder<SearchBloc, SearchState>(
-              builder: (context, state) {
-                if (!state.isSearching) {
-                  return _buildBrowse(state, isDark);
-                }
-                return _buildSearchResults(context, state, isDark);
-              },
-            ),
+              const SliverToBoxAdapter(
+                  child: SizedBox(height: AppDimensions.spacingMd)),
 
-            SliverToBoxAdapter(child: SizedBox(height: bottomSpacing)),
-          ],
+              // ── Body: depends on isSearching + activeTag ───────────────
+              BlocBuilder<SearchBloc, SearchState>(
+                builder: (context, state) {
+                  if (!state.isSearching) {
+                    return _buildBrowse(state, isDark);
+                  }
+                  return _buildSearchResults(context, state, isDark);
+                },
+              ),
+
+              SliverToBoxAdapter(child: SizedBox(height: bottomSpacing)),
+            ],
+          ),
         ),
       ),
     );

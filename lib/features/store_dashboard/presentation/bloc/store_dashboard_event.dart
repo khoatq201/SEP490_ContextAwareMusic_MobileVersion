@@ -9,11 +9,15 @@ abstract class StoreDashboardEvent extends Equatable {
 
 class LoadStoreDashboard extends StoreDashboardEvent {
   final String storeId;
+  final bool forceRefresh;
 
-  const LoadStoreDashboard({required this.storeId});
+  const LoadStoreDashboard({
+    required this.storeId,
+    this.forceRefresh = false,
+  });
 
   @override
-  List<Object?> get props => [storeId];
+  List<Object?> get props => [storeId, forceRefresh];
 }
 
 class RefreshStoreDashboard extends StoreDashboardEvent {

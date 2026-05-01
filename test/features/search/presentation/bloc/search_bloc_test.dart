@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cams_store_manager/core/error/failure_kind.dart';
 import 'package:cams_store_manager/core/error/failures.dart';
+import 'package:cams_store_manager/core/services/session_data_cache.dart';
 import 'package:cams_store_manager/features/home/domain/entities/playlist_entity.dart';
 import 'package:cams_store_manager/features/search/domain/entities/album_entity.dart';
 import 'package:cams_store_manager/features/search/domain/entities/artist_entity.dart';
@@ -73,6 +74,36 @@ void main() {
       expect(bloc.state.status, SearchStatus.success);
       expect(bloc.state.results, hasLength(1));
     });
+
+    test('caches repeated query/filter results until force refresh', () async {
+      await bloc.close();
+      repository = _FakeSearchRepository();
+      bloc = SearchBloc(
+        getCategories: GetCategoriesUseCase(repository),
+        searchMusic: SearchMusicUseCase(repository),
+        searchByType: SearchByTypeUseCase(repository),
+        getFeaturedPlaylists: GetFeaturedPlaylistsUseCase(repository),
+        sessionDataCache: SessionDataCache(),
+      );
+      repository.searchResult = const Right([
+        SearchResult(
+          id: 'track-1',
+          title: 'Morning Track',
+          subtitle: 'Artist',
+          type: SearchResultType.song,
+        ),
+      ]);
+
+      bloc.add(const QueryChangedEvent('morning'));
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      bloc.add(const QueryChangedEvent('morning'));
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      bloc.add(const QueryChangedEvent('morning', forceRefresh: true));
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+
+      expect(repository.searchCallCount, 2);
+      expect(bloc.state.results.single.title, 'Morning Track');
+    });
   });
 }
 
@@ -108,13 +139,15 @@ class _FakeSearchRepository implements SearchRepository {
 
   String? lastTypeQuery;
   SearchResultType? lastType;
+  int searchCallCount = 0;
 
   @override
   Future<Either<Failure, AlbumEntity>> getAlbumDetail(String albumId) async =>
       albumResult;
 
   @override
-  Future<Either<Failure, ArtistEntity>> getArtistDetail(String artistId) async =>
+  Future<Either<Failure, ArtistEntity>> getArtistDetail(
+          String artistId) async =>
       artistResult;
 
   @override
@@ -138,8 +171,10 @@ class _FakeSearchRepository implements SearchRepository {
       playlistResult;
 
   @override
-  Future<Either<Failure, List<SearchResult>>> search(String query) async =>
-      searchResult;
+  Future<Either<Failure, List<SearchResult>>> search(String query) async {
+    searchCallCount += 1;
+    return searchResult;
+  }
 
   @override
   Future<Either<Failure, List<SearchResult>>> searchByType(

@@ -245,6 +245,13 @@ class LocationsTabPage extends StatelessWidget {
         ),
         body: BlocBuilder<LocationBloc, LocationState>(
           builder: (context, state) {
+            Future<void> refreshLocations() async {
+              context
+                  .read<LocationBloc>()
+                  .add(const LoadLocationsRequested(forceRefresh: true));
+              await Future<void>.delayed(const Duration(milliseconds: 350));
+            }
+
             if (state.status == LocationStatus.loading ||
                 state.status == LocationStatus.initial) {
               return const CamsSkeletonDashboard(
@@ -283,24 +290,36 @@ class LocationsTabPage extends StatelessWidget {
             // 1. Playback Device — same rich card as store/brand manager
             if (isPlayback) {
               return state.pairedSpace != null
-                  ? Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: SpaceManagementTile(space: state.pairedSpace!),
+                  ? RefreshIndicator(
+                      onRefresh: refreshLocations,
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.all(16),
+                        children: [
+                          SpaceManagementTile(space: state.pairedSpace!),
+                        ],
+                      ),
                     )
                   : const Center(child: Text('Device not paired correctly.'));
             }
 
             // 2. Brand Manager — accordion with all stores
             if (isBrand && state.brandSpaces != null) {
-              return BrandLocationsView(
-                brandSpaces: state.brandSpaces!,
-                storeNamesById: state.storeNamesById ?? const {},
+              return RefreshIndicator(
+                onRefresh: refreshLocations,
+                child: BrandLocationsView(
+                  brandSpaces: state.brandSpaces!,
+                  storeNamesById: state.storeNamesById ?? const {},
+                ),
               );
             }
 
             // 3. Store Manager — flat list of spaces
             if (state.storeSpaces != null) {
-              return StoreSpacesList(spaces: state.storeSpaces!);
+              return RefreshIndicator(
+                onRefresh: refreshLocations,
+                child: StoreSpacesList(spaces: state.storeSpaces!),
+              );
             }
 
             return const Center(child: Text('No locations available.'));

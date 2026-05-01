@@ -180,119 +180,136 @@ class _HomeDashboardView extends StatelessWidget {
               );
             }
 
-            return CustomScrollView(
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                // 1. SliverAppBar
-                _HomeSliverAppBar(palette: palette),
-
-                // 2. Current Mood Chip
-                if (buildPlaybackMoodLabel(
-                  isManualOverride: state.isManualOverride,
-                  primaryMoodName: state.currentMoodName,
-                )
-                    case final moodLabel?)
-                  SliverToBoxAdapter(
-                    child: _CurrentMoodChip(
-                      moodName: moodLabel,
-                      isManualOverride: state.isManualOverride,
-                      playbackLabel: state.currentPlaybackName,
-                      isStreaming: state.isStreaming,
-                      palette: palette,
-                    ).animate().fadeIn(duration: 320.ms).slideY(begin: 0.04),
-                  ),
-
-                // 3. Sensors Row
-                if (state.sensors.isNotEmpty)
-                  SliverToBoxAdapter(
-                    child: _SensorsRow(sensors: state.sensors, palette: palette)
-                        .animate()
-                        .fadeIn(duration: 350.ms)
-                        .slideY(begin: 0.06),
-                  ),
-
-                // 4. Master Control Card
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                    child: _MasterControlCard(
-                      autoModeEnabled: state.autoModeEnabled,
-                      manualModeActive: state.isManualMode,
-                      manualSelectionOpen: state.isManualSelectionOpen,
-                      hasSpaceSelected: state.activeSpaceId != null,
-                      isApplying: state.isApplyingOverride,
-                      isPendingTranscode: state.isPendingTranscode,
-                      currentPlaybackName: state.currentPlaybackName,
-                      modeMessage: state.modeMessage,
-                      palette: palette,
-                      onSelectAuto: () =>
-                          context.read<HomeCubit>().selectAutoMode(),
-                      onSelectManual: () =>
-                          context.read<HomeCubit>().activateManualMode(),
-                      onChangeMood: () =>
-                          context.read<HomeCubit>().openManualSelection(),
-                      onCloseManualPicker: () =>
-                          context.read<HomeCubit>().closeManualSelection(),
-                    ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.08),
-                  ),
+            return RefreshIndicator(
+              onRefresh: () async {
+                final session = context.read<SessionCubit>().state;
+                await context.read<HomeCubit>().refresh(
+                      includeCatalog: true,
+                      loadMoods: !isPlaybackDevice,
+                      storeId: session.currentStore?.id,
+                      spaceId: session.currentSpace?.id,
+                    );
+              },
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
                 ),
+                slivers: [
+                  // 1. SliverAppBar
+                  _HomeSliverAppBar(palette: palette),
 
-                if (state.isManualMode ||
-                    state.explainability?.hasAnyData == true)
+                  // 2. Current Mood Chip
+                  if (buildPlaybackMoodLabel(
+                    isManualOverride: state.isManualOverride,
+                    primaryMoodName: state.currentMoodName,
+                  )
+                      case final moodLabel?)
+                    SliverToBoxAdapter(
+                      child: _CurrentMoodChip(
+                        moodName: moodLabel,
+                        isManualOverride: state.isManualOverride,
+                        playbackLabel: state.currentPlaybackName,
+                        isStreaming: state.isStreaming,
+                        palette: palette,
+                      ).animate().fadeIn(duration: 320.ms).slideY(begin: 0.04),
+                    ),
+
+                  // 3. Sensors Row
+                  if (state.sensors.isNotEmpty)
+                    SliverToBoxAdapter(
+                      child:
+                          _SensorsRow(sensors: state.sensors, palette: palette)
+                              .animate()
+                              .fadeIn(duration: 350.ms)
+                              .slideY(begin: 0.06),
+                    ),
+
+                  // 4. Master Control Card
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                      child: _AiExplainabilityCard(
-                        explainability: state.explainability,
-                        isManualMode: state.isManualMode,
+                      child: _MasterControlCard(
+                        autoModeEnabled: state.autoModeEnabled,
+                        manualModeActive: state.isManualMode,
                         manualSelectionOpen: state.isManualSelectionOpen,
+                        hasSpaceSelected: state.activeSpaceId != null,
+                        isApplying: state.isApplyingOverride,
+                        isPendingTranscode: state.isPendingTranscode,
+                        currentPlaybackName: state.currentPlaybackName,
+                        modeMessage: state.modeMessage,
                         palette: palette,
-                      ).animate().fadeIn(duration: 380.ms).slideY(begin: 0.06),
+                        onSelectAuto: () =>
+                            context.read<HomeCubit>().selectAutoMode(),
+                        onSelectManual: () =>
+                            context.read<HomeCubit>().activateManualMode(),
+                        onChangeMood: () =>
+                            context.read<HomeCubit>().openManualSelection(),
+                        onCloseManualPicker: () =>
+                            context.read<HomeCubit>().closeManualSelection(),
+                      ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.08),
                     ),
                   ),
 
-                if (state.showMoodPicker)
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                      child: _MoodPickerCard(
-                        moods: state.moods,
-                        currentMoodName: state.currentMoodName,
-                        isLoading: state.isApplyingOverride,
-                        palette: palette,
-                        onClose: () =>
-                            context.read<HomeCubit>().closeManualSelection(),
-                        onApplyMood: (mood, ttlSeconds, isCutOver) {
-                          context.read<HomeCubit>().applyMoodOverride(
-                                mood.id,
-                                manualOverrideTtlSeconds: ttlSeconds,
-                                isCutOver: isCutOver,
-                              );
-                        },
+                  if (state.isManualMode ||
+                      state.explainability?.hasAnyData == true)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                        child: _AiExplainabilityCard(
+                          explainability: state.explainability,
+                          isManualMode: state.isManualMode,
+                          manualSelectionOpen: state.isManualSelectionOpen,
+                          palette: palette,
+                        )
+                            .animate()
+                            .fadeIn(duration: 380.ms)
+                            .slideY(begin: 0.06),
                       ),
                     ),
+
+                  if (state.showMoodPicker)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                        child: _MoodPickerCard(
+                          moods: state.moods,
+                          currentMoodName: state.currentMoodName,
+                          isLoading: state.isApplyingOverride,
+                          palette: palette,
+                          onClose: () =>
+                              context.read<HomeCubit>().closeManualSelection(),
+                          onApplyMood: (mood, ttlSeconds, isCutOver) {
+                            context.read<HomeCubit>().applyMoodOverride(
+                                  mood.id,
+                                  manualOverrideTtlSeconds: ttlSeconds,
+                                  isCutOver: isCutOver,
+                                );
+                          },
+                        ),
+                      ),
+                    ),
+
+                  // 5. Dynamic Category Sections
+                  SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final category = state.categories[index];
+                        return _CategorySection(
+                          category: category,
+                          palette: palette,
+                        )
+                            .animate()
+                            .fadeIn(duration: 420.ms, delay: (index * 60).ms)
+                            .slideY(begin: 0.10);
+                      },
+                      childCount: state.categories.length,
+                    ),
                   ),
 
-                // 5. Dynamic Category Sections
-                SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final category = state.categories[index];
-                      return _CategorySection(
-                        category: category,
-                        palette: palette,
-                      )
-                          .animate()
-                          .fadeIn(duration: 420.ms, delay: (index * 60).ms)
-                          .slideY(begin: 0.10);
-                    },
-                    childCount: state.categories.length,
-                  ),
-                ),
-
-                // Bottom padding
-                SliverToBoxAdapter(child: SizedBox(height: bottomSpacing)),
-              ],
+                  // Bottom padding
+                  SliverToBoxAdapter(child: SizedBox(height: bottomSpacing)),
+                ],
+              ),
             );
           },
         ),

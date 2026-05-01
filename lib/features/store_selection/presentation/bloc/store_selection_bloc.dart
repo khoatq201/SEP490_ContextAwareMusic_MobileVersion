@@ -1,4 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/services/session_data_cache.dart';
+import '../../domain/entities/brand_detail.dart';
 import '../../domain/entities/store_summary.dart';
 import '../../domain/usecases/get_brand_detail.dart';
 import '../../domain/usecases/get_user_stores.dart';
@@ -9,10 +11,12 @@ class StoreSelectionBloc
     extends Bloc<StoreSelectionEvent, StoreSelectionState> {
   final GetUserStores getUserStores;
   final GetBrandDetail getBrandDetail;
+  final SessionDataCache? sessionDataCache;
 
   StoreSelectionBloc({
     required this.getUserStores,
     required this.getBrandDetail,
+    this.sessionDataCache,
   }) : super(StoreSelectionInitial()) {
     on<LoadUserStores>(_onLoadUserStores);
     on<SelectStore>(_onSelectStore);
@@ -24,13 +28,33 @@ class StoreSelectionBloc
     LoadUserStores event,
     Emitter<StoreSelectionState> emit,
   ) async {
-    emit(StoreSelectionLoading());
+    const cacheKey = 'storeSelection.userStores';
+    if (!event.forceRefresh) {
+      final cached = sessionDataCache?.get<List<StoreSummary>>(cacheKey);
+      if (cached != null) {
+        emit(StoreSelectionLoaded(
+          stores: cached,
+          filteredStores: cached,
+        ));
+        final brandId = _normalizeId(event.preferredBrandId) ??
+            _resolvePrimaryBrandId(cached);
+        if (brandId != null) {
+          add(LoadBrandDetail(brandId));
+        }
+        return;
+      }
+    }
+
+    if (state is! StoreSelectionLoaded) {
+      emit(StoreSelectionLoading());
+    }
 
     final result = await getUserStores();
 
     result.fold(
       (failure) => emit(StoreSelectionError(failure)),
       (stores) {
+        sessionDataCache?.put(cacheKey, stores);
         emit(StoreSelectionLoaded(
           stores: stores,
           filteredStores: stores,
@@ -84,6 +108,19 @@ class StoreSelectionBloc
   ) async {
     final currentState = state;
     if (currentState is! StoreSelectionLoaded) return;
+    final cacheKey = 'storeSelection.brandDetail.${event.brandId}';
+
+    if (!event.forceRefresh) {
+      final cached = sessionDataCache?.get<BrandDetail>(cacheKey);
+      if (cached != null) {
+        emit(currentState.copyWith(
+          brandDetail: cached,
+          isBrandDetailLoading: false,
+          clearBrandDetailFailure: true,
+        ));
+        return;
+      }
+    }
 
     emit(currentState.copyWith(
       isBrandDetailLoading: true,
@@ -99,11 +136,14 @@ class StoreSelectionBloc
         brandDetailFailure: failure,
         isBrandDetailLoading: false,
       )),
-      (brandDetail) => emit(latestState.copyWith(
-        brandDetail: brandDetail,
-        isBrandDetailLoading: false,
-        clearBrandDetailFailure: true,
-      )),
+      (brandDetail) {
+        sessionDataCache?.put(cacheKey, brandDetail);
+        emit(latestState.copyWith(
+          brandDetail: brandDetail,
+          isBrandDetailLoading: false,
+          clearBrandDetailFailure: true,
+        ));
+      },
     );
   }
 

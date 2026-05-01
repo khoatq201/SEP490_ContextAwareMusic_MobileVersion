@@ -19,6 +19,7 @@ class MockHomeRepositoryImpl implements HomeRepository {
   Future<Either<Failure, List<SensorEntity>>> getSensorData({
     String? storeId,
     String? spaceId,
+    bool forceRefresh = false,
   }) async {
     try {
       final sensors = await dataSource.getSensorData(
@@ -32,7 +33,9 @@ class MockHomeRepositoryImpl implements HomeRepository {
   }
 
   @override
-  Future<Either<Failure, List<CategoryEntity>>> getCategories() async {
+  Future<Either<Failure, List<CategoryEntity>>> getCategories({
+    bool forceRefresh = false,
+  }) async {
     try {
       final categories = await dataSource.getCategories();
       return Right(categories);
