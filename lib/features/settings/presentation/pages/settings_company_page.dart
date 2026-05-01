@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../../../core/widgets/app_error_view.dart';
 import '../../../../core/widgets/cams_skeleton.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
@@ -16,8 +17,7 @@ class SettingsCompanyPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette =
-        _CompanyPalette.fromBrightness(Theme.of(context).brightness);
+    final palette = _CompanyPalette.fromContext(context);
 
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
@@ -39,14 +39,14 @@ class SettingsCompanyPage extends StatelessWidget {
                 context.go('/home');
               }
             },
-            icon: Icon(Icons.arrow_back_ios_new, color: palette.textPrimary),
+            icon: Icon(LucideIcons.chevronLeft, color: palette.textPrimary),
           ),
           title: Text(
             'Company',
             style: GoogleFonts.poppins(
               color: palette.textPrimary,
-              fontWeight: FontWeight.w600,
-              fontSize: 28,
+              fontWeight: FontWeight.w700,
+              fontSize: 24,
             ),
           ),
           titleSpacing: 0,
@@ -74,31 +74,51 @@ class SettingsCompanyPage extends StatelessWidget {
             final snapshot = state.snapshot!;
 
             return ListView(
-              padding: const EdgeInsets.fromLTRB(14, 8, 14, 28),
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
               children: [
+                _SectionLabel(label: 'Organization', palette: palette),
+                const SizedBox(height: 10),
                 _InfoCard(
                   palette: palette,
                   rows: [
                     _InfoRow(label: 'Name', value: snapshot.companyName),
                     _InfoRow(
                         label: 'Business type', value: snapshot.businessType),
-                    _InfoRow(label: 'Plan', value: snapshot.planName),
                   ],
                 ),
                 const SizedBox(height: 20),
-                Padding(
-                  padding: const EdgeInsets.only(left: 4),
-                  child: Text(
-                    'MUSIC CONTROL',
-                    style: GoogleFonts.inter(
-                      color: palette.sectionLabel,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.3,
+                _SectionLabel(label: 'Subscription & tokens', palette: palette),
+                const SizedBox(height: 10),
+                _InfoCard(
+                  palette: palette,
+                  rows: [
+                    _InfoRow(
+                      label: 'Subscription',
+                      value: snapshot.subscriptionLabel,
                     ),
-                  ),
+                    if (snapshot.subscriptionId?.trim().isNotEmpty == true)
+                      _InfoRow(
+                        label: 'Subscription ID',
+                        value: _shortId(snapshot.subscriptionId!),
+                      ),
+                    _InfoRow(
+                      label: 'Token balance',
+                      value: snapshot.tokenBalanceLabel,
+                      valueColor: snapshot.walletLocked
+                          ? palette.danger
+                          : palette.success,
+                    ),
+                    if (snapshot.walletLocked)
+                      _InfoRow(
+                        label: 'Wallet status',
+                        value: 'Locked',
+                        valueColor: palette.warning,
+                      ),
+                  ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 20),
+                _SectionLabel(label: 'Music control', palette: palette),
+                const SizedBox(height: 10),
                 _ControlCard(
                   palette: palette,
                   rows: [
@@ -129,6 +149,32 @@ class SettingsCompanyPage extends StatelessWidget {
           content: Text('$title settings are managed by your admin panel.')),
     );
   }
+
+  String _shortId(String value) {
+    final trimmed = value.trim();
+    if (trimmed.length <= 8) return trimmed;
+    return trimmed.substring(0, 8);
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel({required this.label, required this.palette});
+
+  final String label;
+  final _CompanyPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      style: GoogleFonts.inter(
+        color: palette.sectionLabel,
+        fontSize: 12,
+        fontWeight: FontWeight.w800,
+        letterSpacing: 0.5,
+      ),
+    );
+  }
 }
 
 class _InfoCard extends StatelessWidget {
@@ -142,7 +188,8 @@ class _InfoCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: palette.card,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: palette.border),
       ),
       child: Column(
         children: [
@@ -154,10 +201,10 @@ class _InfoCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       rows[i].label,
-                      style: GoogleFonts.inter(
+                      style: GoogleFonts.poppins(
                         color: palette.textPrimary,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w500,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -167,10 +214,11 @@ class _InfoCard extends StatelessWidget {
                       rows[i].value,
                       textAlign: TextAlign.right,
                       overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
                       style: GoogleFonts.inter(
-                        color: palette.textSecondary,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w500,
+                        color: rows[i].valueColor ?? palette.textSecondary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
@@ -206,7 +254,8 @@ class _ControlCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: palette.card,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: palette.border),
       ),
       child: Column(
         children: [
@@ -223,7 +272,7 @@ class _ControlCard extends StatelessWidget {
                       height: 24,
                       decoration: BoxDecoration(
                         color: palette.iconBackground,
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(rows[i].icon,
                           color: palette.iconColor, size: 16),
@@ -234,8 +283,8 @@ class _ControlCard extends StatelessWidget {
                         rows[i].title,
                         style: GoogleFonts.inter(
                           color: palette.textPrimary,
-                          fontSize: 17,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
@@ -243,8 +292,8 @@ class _ControlCard extends StatelessWidget {
                       rows[i].value,
                       style: GoogleFonts.inter(
                         color: palette.textSecondary,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w500,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -273,8 +322,13 @@ class _ControlCard extends StatelessWidget {
 class _InfoRow {
   final String label;
   final String value;
+  final Color? valueColor;
 
-  const _InfoRow({required this.label, required this.value});
+  const _InfoRow({
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
 }
 
 class _ControlRow {
@@ -292,6 +346,7 @@ class _ControlRow {
 class _CompanyPalette {
   final Color background;
   final Color card;
+  final Color border;
   final Color divider;
   final Color textPrimary;
   final Color textSecondary;
@@ -299,10 +354,14 @@ class _CompanyPalette {
   final Color iconBackground;
   final Color iconColor;
   final Color trailingIcon;
+  final Color success;
+  final Color warning;
+  final Color danger;
 
   const _CompanyPalette({
     required this.background,
     required this.card,
+    required this.border,
     required this.divider,
     required this.textPrimary,
     required this.textSecondary,
@@ -310,33 +369,27 @@ class _CompanyPalette {
     required this.iconBackground,
     required this.iconColor,
     required this.trailingIcon,
+    required this.success,
+    required this.warning,
+    required this.danger,
   });
 
-  factory _CompanyPalette.fromBrightness(Brightness brightness) {
-    if (brightness == Brightness.dark) {
-      return const _CompanyPalette(
-        background: AppColors.backgroundDarkPrimary,
-        card: AppColors.surfaceDark,
-        divider: AppColors.borderDarkLight,
-        textPrimary: AppColors.textDarkPrimary,
-        textSecondary: AppColors.textDarkSecondary,
-        sectionLabel: AppColors.textDarkTertiary,
-        iconBackground: AppColors.surfaceDarkElevated,
-        iconColor: AppColors.primaryCyan,
-        trailingIcon: AppColors.textDarkTertiary,
-      );
-    }
-
+  factory _CompanyPalette.fromContext(BuildContext context) {
+    final tokens = context.camsTokens;
     return _CompanyPalette(
-      background: AppColors.backgroundSecondary,
-      card: Colors.white,
-      divider: AppColors.divider,
-      textPrimary: AppColors.textPrimary,
-      textSecondary: AppColors.textTertiary,
-      sectionLabel: AppColors.textTertiary,
-      iconBackground: AppColors.primaryOrange.withValues(alpha: 0.14),
-      iconColor: AppColors.primaryOrange,
-      trailingIcon: AppColors.textTertiary,
+      background: tokens.bgBase,
+      card: tokens.bgContainer,
+      border: tokens.borderSecondary,
+      divider: tokens.divider,
+      textPrimary: tokens.textPrimary,
+      textSecondary: tokens.textSecondary,
+      sectionLabel: tokens.textTertiary,
+      iconBackground: tokens.brandPrimarySoft,
+      iconColor: tokens.brandPrimary,
+      trailingIcon: tokens.textTertiary,
+      success: tokens.success,
+      warning: tokens.warning,
+      danger: tokens.error,
     );
   }
 }

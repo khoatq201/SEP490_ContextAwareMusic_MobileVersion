@@ -1573,10 +1573,45 @@ class _MoodPickerCardState extends State<_MoodPickerCard> {
 // ─────────────────────────────────────────────────────────────────────────────
 // 4. Category Section (SliverList item)
 // ─────────────────────────────────────────────────────────────────────────────
-class _CategorySection extends StatelessWidget {
+class _CategorySection extends StatefulWidget {
   const _CategorySection({required this.category, required this.palette});
   final CategoryEntity category;
   final _Palette palette;
+
+  @override
+  State<_CategorySection> createState() => _CategorySectionState();
+}
+
+class _CategorySectionState extends State<_CategorySection> {
+  late final ScrollController _playlistScrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _playlistScrollController = ScrollController();
+  }
+
+  @override
+  void dispose() {
+    _playlistScrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollPlaylists(double direction) {
+    if (!_playlistScrollController.hasClients) return;
+
+    final position = _playlistScrollController.position;
+    final distance = position.viewportDimension * 0.82;
+    final target = (position.pixels + distance * direction)
+        .clamp(0.0, position.maxScrollExtent)
+        .toDouble();
+
+    _playlistScrollController.animateTo(
+      target,
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1592,9 +1627,9 @@ class _CategorySection extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    category.title,
+                    widget.category.title,
                     style: GoogleFonts.poppins(
-                      color: palette.textPrimary,
+                      color: widget.palette.textPrimary,
                       fontSize: 17,
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.2,
@@ -1602,15 +1637,15 @@ class _CategorySection extends StatelessWidget {
                   ),
                 ),
                 GestureDetector(
-                  onTap: () {},
+                  onTap: () => _scrollPlaylists(-1),
                   child: Icon(LucideIcons.chevronLeft,
-                      color: palette.textMuted, size: 20),
+                      color: widget.palette.textMuted, size: 20),
                 ),
                 const SizedBox(width: 4),
                 GestureDetector(
-                  onTap: () {},
+                  onTap: () => _scrollPlaylists(1),
                   child: Icon(LucideIcons.chevronRight,
-                      color: palette.accent, size: 20),
+                      color: widget.palette.accent, size: 20),
                 ),
               ],
             ),
@@ -1620,13 +1655,14 @@ class _CategorySection extends StatelessWidget {
           SizedBox(
             height: 200,
             child: ListView.separated(
+              controller: _playlistScrollController,
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: category.playlists.length,
+              itemCount: widget.category.playlists.length,
               separatorBuilder: (_, __) => const SizedBox(width: 12),
               itemBuilder: (context, i) => _PlaylistCard(
-                playlist: category.playlists[i],
-                palette: palette,
+                playlist: widget.category.playlists[i],
+                palette: widget.palette,
               ),
             ),
           ),

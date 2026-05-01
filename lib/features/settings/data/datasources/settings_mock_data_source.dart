@@ -12,7 +12,9 @@ class SettingsMockDataSource implements SettingsDataSource {
     return const SettingsSnapshotModel(
       companyName: 'Coplyp',
       businessType: 'Restaurant',
-      planName: 'Soundtrack Unlimited',
+      planName: 'Active subscription',
+      subscriptionId: 'mock-subscription',
+      tokenBalance: 1250,
       explicitMusicAllowed: true,
       blockingSongsAllowed: true,
     );

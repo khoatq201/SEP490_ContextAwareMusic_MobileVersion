@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../../../core/widgets/cams_skeleton.dart';
@@ -36,14 +37,14 @@ class SettingsUserPage extends StatelessWidget {
                 context.go('/home');
               }
             },
-            icon: Icon(Icons.arrow_back_ios_new, color: palette.textPrimary),
+            icon: Icon(LucideIcons.chevronLeft, color: palette.textPrimary),
           ),
           title: Text(
-            'User',
+            'Account',
             style: GoogleFonts.poppins(
               color: palette.textPrimary,
-              fontWeight: FontWeight.w600,
-              fontSize: 28,
+              fontWeight: FontWeight.w700,
+              fontSize: 24,
             ),
           ),
           titleSpacing: 0,
@@ -61,15 +62,28 @@ class SettingsUserPage extends StatelessWidget {
             final user = authState.user;
             final displayName = _displayName(user?.fullName, user?.username);
             final email = user?.email ?? '-';
+            final role = user?.role.trim().isEmpty == true || user == null
+                ? '-'
+                : user.role;
 
             return ListView(
-              padding: const EdgeInsets.fromLTRB(14, 8, 14, 28),
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
               children: [
+                _AccountHeaderCard(
+                  palette: palette,
+                  displayName: displayName,
+                  email: email,
+                  role: role,
+                ),
+                const SizedBox(height: 20),
+                _SectionLabel(label: 'Profile', palette: palette),
+                const SizedBox(height: 10),
                 _UserInfoCard(
                   palette: palette,
                   rows: [
                     _UserInfoRow(label: 'Name', value: displayName),
                     _UserInfoRow(label: 'Email', value: email),
+                    _UserInfoRow(label: 'Role', value: role),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -79,7 +93,8 @@ class SettingsUserPage extends StatelessWidget {
                     'These can be changed from the web interface.',
                     style: GoogleFonts.inter(
                       color: palette.textSecondary,
-                      fontSize: 16,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
@@ -91,14 +106,16 @@ class SettingsUserPage extends StatelessWidget {
                       backgroundColor: palette.primaryButton,
                       foregroundColor: palette.primaryButtonText,
                       minimumSize: const Size.fromHeight(56),
-                      shape: const StadiumBorder(),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                     ),
                     onPressed: () => _confirmLogout(context, palette),
                     child: Text(
                       'Log out',
                       style: GoogleFonts.inter(
-                        fontSize: 30,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                   ),
@@ -111,7 +128,8 @@ class SettingsUserPage extends StatelessWidget {
                       'Delete my user account',
                       style: GoogleFonts.inter(
                         color: palette.textSecondary,
-                        fontSize: 20,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
                         decoration: TextDecoration.underline,
                       ),
                     ),
@@ -179,6 +197,122 @@ class SettingsUserPage extends StatelessWidget {
   }
 }
 
+class _AccountHeaderCard extends StatelessWidget {
+  const _AccountHeaderCard({
+    required this.palette,
+    required this.displayName,
+    required this.email,
+    required this.role,
+  });
+
+  final _UserPalette palette;
+  final String displayName;
+  final String email;
+  final String role;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: palette.card,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: palette.border),
+        boxShadow: [
+          BoxShadow(
+            color: palette.shadow.withValues(alpha: 0.08),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: palette.accentSoft,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(
+              LucideIcons.user,
+              color: palette.primaryButton,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  displayName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    color: palette.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  email,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    color: palette.textSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: palette.accentSoft,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    role,
+                    style: GoogleFonts.inter(
+                      color: palette.primaryButton,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel({required this.label, required this.palette});
+
+  final String label;
+  final _UserPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      style: GoogleFonts.inter(
+        color: palette.textSecondary,
+        fontSize: 12,
+        fontWeight: FontWeight.w800,
+        letterSpacing: 0.5,
+      ),
+    );
+  }
+}
+
 class _UserInfoCard extends StatelessWidget {
   final List<_UserInfoRow> rows;
   final _UserPalette palette;
@@ -190,7 +324,8 @@ class _UserInfoCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: palette.card,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: palette.border),
       ),
       child: Column(
         children: [
@@ -202,10 +337,10 @@ class _UserInfoCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       rows[i].label,
-                      style: GoogleFonts.inter(
+                      style: GoogleFonts.poppins(
                         color: palette.textPrimary,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w500,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -217,8 +352,8 @@ class _UserInfoCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
                         color: palette.textSecondary,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w500,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
@@ -248,18 +383,24 @@ class _UserInfoRow {
 class _UserPalette {
   final Color background;
   final Color card;
+  final Color border;
   final Color divider;
   final Color textPrimary;
   final Color textSecondary;
+  final Color accentSoft;
+  final Color shadow;
   final Color primaryButton;
   final Color primaryButtonText;
 
   const _UserPalette({
     required this.background,
     required this.card,
+    required this.border,
     required this.divider,
     required this.textPrimary,
     required this.textSecondary,
+    required this.accentSoft,
+    required this.shadow,
     required this.primaryButton,
     required this.primaryButtonText,
   });
@@ -270,9 +411,12 @@ class _UserPalette {
     return _UserPalette(
       background: tokens.bgBase,
       card: tokens.bgContainer,
+      border: tokens.borderSecondary,
       divider: tokens.divider,
       textPrimary: tokens.textPrimary,
       textSecondary: tokens.textSecondary,
+      accentSoft: tokens.brandPrimarySoft,
+      shadow: tokens.shadow,
       primaryButton: theme.colorScheme.primary,
       primaryButtonText: tokens.textOnAccent,
     );

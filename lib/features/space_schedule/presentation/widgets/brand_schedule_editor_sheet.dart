@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../../../core/widgets/cams_skeleton.dart';
 import '../../data/datasources/space_schedule_remote_datasource.dart';
 import '../../domain/entities/schedule_music_item.dart';
@@ -81,7 +81,7 @@ class _BrandScheduleEditorSheetLoaderState
       );
     }
 
-    final theme = Theme.of(context);
+    final tokens = context.camsTokens;
     return SafeArea(
       top: false,
       child: DraggableScrollableSheet(
@@ -90,7 +90,7 @@ class _BrandScheduleEditorSheetLoaderState
         minChildSize: 0.48,
         maxChildSize: 0.94,
         builder: (context, controller) => Material(
-          color: theme.colorScheme.surface,
+          color: tokens.bgBase,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           clipBehavior: Clip.antiAlias,
           child: Column(
@@ -100,7 +100,7 @@ class _BrandScheduleEditorSheetLoaderState
                 width: 42,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: theme.dividerColor,
+                  color: tokens.borderSecondary,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -290,7 +290,9 @@ class _BrandScheduleEditorSheetState extends State<BrandScheduleEditorSheet> {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.camsTokens.error,
+            ),
             child: const Text('Delete'),
           ),
         ],
@@ -341,7 +343,9 @@ class _BrandScheduleEditorSheetState extends State<BrandScheduleEditorSheet> {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.camsTokens.error,
+            ),
             child: const Text('Delete'),
           ),
         ],
@@ -383,7 +387,7 @@ class _BrandScheduleEditorSheetState extends State<BrandScheduleEditorSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final tokens = context.camsTokens;
     final selectedSource = _selectedSource;
     final visibleSources = _visibleSources;
     final isTemplateTab = _selectedType == ScheduleSourceType.template;
@@ -396,7 +400,7 @@ class _BrandScheduleEditorSheetState extends State<BrandScheduleEditorSheet> {
         minChildSize: 0.48,
         maxChildSize: 0.94,
         builder: (context, controller) => Material(
-          color: theme.colorScheme.surface,
+          color: tokens.bgBase,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           clipBehavior: Clip.antiAlias,
           child: Column(
@@ -406,7 +410,7 @@ class _BrandScheduleEditorSheetState extends State<BrandScheduleEditorSheet> {
                 width: 42,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: theme.dividerColor,
+                  color: tokens.borderSecondary,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -469,6 +473,37 @@ class _BrandScheduleEditorSheetState extends State<BrandScheduleEditorSheet> {
                           ),
                           const SizedBox(height: 12),
                           SegmentedButton<ScheduleSourceType>(
+                            selectedIcon: Icon(
+                              Icons.check_rounded,
+                              color: tokens.brandPrimary,
+                              size: 18,
+                            ),
+                            style: ButtonStyle(
+                              backgroundColor:
+                                  WidgetStateProperty.resolveWith((states) {
+                                if (states.contains(WidgetState.selected)) {
+                                  return tokens.brandPrimarySoft;
+                                }
+                                return tokens.bgContainer;
+                              }),
+                              foregroundColor:
+                                  WidgetStateProperty.resolveWith((states) {
+                                if (states.contains(WidgetState.selected)) {
+                                  return tokens.brandPrimary;
+                                }
+                                return tokens.textPrimary;
+                              }),
+                              iconColor:
+                                  WidgetStateProperty.resolveWith((states) {
+                                if (states.contains(WidgetState.selected)) {
+                                  return tokens.brandPrimary;
+                                }
+                                return tokens.textSecondary;
+                              }),
+                              side: WidgetStatePropertyAll(
+                                BorderSide(color: tokens.borderSecondary),
+                              ),
+                            ),
                             segments: const [
                               ButtonSegment(
                                 value: ScheduleSourceType.template,
@@ -510,6 +545,20 @@ class _BrandScheduleEditorSheetState extends State<BrandScheduleEditorSheet> {
                                         '${source.title} (${_sourceTypeLabel(source.type)})',
                                       ),
                                       selected: source.id == selectedSource?.id,
+                                      selectedColor: tokens.brandPrimarySoft,
+                                      backgroundColor: tokens.bgContainer,
+                                      checkmarkColor: tokens.brandPrimary,
+                                      side: BorderSide(
+                                        color: source.id == selectedSource?.id
+                                            ? tokens.brandPrimarySoft
+                                            : tokens.borderSecondary,
+                                      ),
+                                      labelStyle: TextStyle(
+                                        color: source.id == selectedSource?.id
+                                            ? tokens.brandPrimary
+                                            : tokens.textPrimary,
+                                        fontWeight: FontWeight.w700,
+                                      ),
                                       onSelected: (_) => setState(
                                         () => _selectedSourceId = source.id,
                                       ),
@@ -566,14 +615,16 @@ class _BrandSourcePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
     final slots = [...source.schedule.slots]
       ..sort((a, b) => a.startTime.compareTo(b.startTime));
 
     return Card(
       elevation: 0,
+      color: tokens.bgContainer,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
-        side: BorderSide(color: Theme.of(context).dividerColor),
+        side: BorderSide(color: tokens.borderSecondary),
       ),
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -721,14 +772,18 @@ class _InlineError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.error.withValues(alpha: 0.10),
+        color: tokens.alertErrorBg,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Text(message),
+      child: Text(
+        message,
+        style: TextStyle(color: tokens.error),
+      ),
     );
   }
 }
@@ -759,7 +814,8 @@ class _SourceTypeBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isTemplate = type == ScheduleSourceType.template;
-    final color = isTemplate ? AppColors.primaryCyan : AppColors.primaryOrange;
+    final tokens = context.camsTokens;
+    final color = isTemplate ? tokens.brandPrimary : tokens.techAccent;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(

@@ -337,7 +337,8 @@ class StoreRemoteDataSourceImpl implements StoreRemoteDataSource {
         final payload = data['data'];
         if (payload is Map<String, dynamic>) {
           final normalized = Map<String, dynamic>.from(payload);
-          final moodName = _readString(normalized, 'moodName');
+          final liveMoodName = await _getLiveSpaceMoodName(spaceId);
+          final moodName = liveMoodName ?? _readString(normalized, 'moodName');
           final currentTrack = _readString(normalized, 'currentTrackName') ??
               _readString(normalized, 'currentPlaylistName');
           final hlsUrl = _readString(normalized, 'hlsUrl');
@@ -370,6 +371,88 @@ class StoreRemoteDataSourceImpl implements StoreRemoteDataSource {
       // Keep per-space fallback without failing the full list.
     }
     return _SpaceRuntimeSummary(moodName: fallbackMood);
+  }
+
+  Future<String?> _getLiveSpaceMoodName(String spaceId) async {
+    final trimmedSpaceId = spaceId.trim();
+    if (trimmedSpaceId.isEmpty) return null;
+
+    for (final path in [
+      ApiConstants.camsSpaceMood(trimmedSpaceId),
+      ApiConstants.camsSpaceMoodPlural(trimmedSpaceId),
+    ]) {
+      try {
+        final response = await dioClient.get(path);
+        final moodName = _extractMoodName(response.data);
+        if (moodName != null && moodName.trim().isNotEmpty) {
+          return moodName.trim();
+        }
+      } on DioException catch (error) {
+        final statusCode = error.response?.statusCode;
+        if (statusCode == 401 || statusCode == 403 || statusCode == 404) {
+          continue;
+        }
+      } catch (_) {
+        continue;
+      }
+    }
+    return null;
+  }
+
+  String? _extractMoodName(dynamic body) {
+    final payload = _extractMoodPayload(body);
+    if (payload == null) return null;
+
+    final direct = _readFirstString(payload, const [
+      'moodName',
+      'currentMood',
+      'spaceMood',
+      'name',
+      'selectedMoodName',
+      'newMood',
+      'targetMood',
+    ]);
+    if (direct != null) return direct;
+
+    final mood = _readValue(payload, 'mood');
+    if (mood is Map) {
+      return _readFirstString(Map<String, dynamic>.from(mood), const [
+        'moodName',
+        'name',
+        'currentMood',
+      ]);
+    }
+    if (mood is String && mood.trim().isNotEmpty) {
+      return mood.trim();
+    }
+    return null;
+  }
+
+  Map<String, dynamic>? _extractMoodPayload(dynamic body) {
+    if (body is Map<String, dynamic>) {
+      final data = body['data'];
+      if (data is Map<String, dynamic>) return data;
+      if (data is Map) return Map<String, dynamic>.from(data);
+      return body;
+    }
+    if (body is Map) {
+      final normalized = Map<String, dynamic>.from(body);
+      final data = normalized['data'];
+      if (data is Map<String, dynamic>) return data;
+      if (data is Map) return Map<String, dynamic>.from(data);
+      return normalized;
+    }
+    return null;
+  }
+
+  String? _readFirstString(Map<String, dynamic> json, List<String> keys) {
+    for (final key in keys) {
+      final value = _readValue(json, key);
+      if (value == null) continue;
+      final text = value.toString().trim();
+      if (text.isNotEmpty) return text;
+    }
+    return null;
   }
 
   StoreMutationResult _parseMutationResult(dynamic data) {

@@ -385,6 +385,8 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
     final showAiInsightButton =
         playbackState?.explainability?.hasAnyData == true ||
             playbackState?.isManualOverride == true;
+    final showIotStatus = camsState.playbackState?.iotStatusLabel != null;
+    final trackMoodAccent = _trackMoodAccent(track?.moodTags, palette);
 
     if (isPlayback && _isCamsPlaybackLoading(camsState) && !hasPlayableTrack) {
       return _NowPlayingSkeleton(
@@ -448,15 +450,16 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
 
                 // â”€â”€ Album art â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 Center(
-                  child: AspectRatio(
-                    aspectRatio: 1,
+                  child: SizedBox.square(
+                    dimension: _discDimension(context),
                     child: _SpinningAlbumDisc(
                       artUrl: track?.albumArt,
                       palette: palette,
+                      moodAccent: trackMoodAccent,
                       rotation: _discRotationController,
                       placeholder: _artPlaceholder(palette),
                     ),
@@ -466,7 +469,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
                     .fadeIn(duration: 380.ms)
                     .scale(begin: const Offset(0.96, 0.96)),
 
-                const SizedBox(height: 28),
+                const SizedBox(height: 18),
 
                 // â”€â”€ Song title + artist â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 Text(
@@ -499,37 +502,44 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
-                      color: palette.accent,
+                      color: trackMoodAccent,
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
-                if (showAiInsightButton && playbackState != null) ...[
-                  const SizedBox(height: 12),
-                  _AiInsightButton(
-                    palette: palette,
-                    onTap: () => _showAiExplainabilitySheet(
-                      context,
-                      palette: palette,
-                      playbackState: playbackState,
-                      fallbackMoodName: mood,
-                    ),
+                if ((showAiInsightButton && playbackState != null) ||
+                    showIotStatus) ...[
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      if (showAiInsightButton && playbackState != null)
+                        _AiInsightButton(
+                          palette: palette,
+                          accentColor: trackMoodAccent,
+                          onTap: () => _showAiExplainabilitySheet(
+                            context,
+                            palette: palette,
+                            playbackState: playbackState,
+                            fallbackMoodName: mood,
+                          ),
+                        ),
+                      if (showIotStatus)
+                        _IotStatusNotice(
+                          palette: palette,
+                          playbackState: camsState.playbackState!,
+                        ),
+                    ],
                   ),
                 ],
                 if (showLocalPreviewBanner) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
                   _LocalPreviewBanner(palette: palette),
                 ],
-                if (camsState.playbackState?.iotStatusLabel != null) ...[
-                  const SizedBox(height: 12),
-                  _IotStatusNotice(
-                    palette: palette,
-                    playbackState: camsState.playbackState!,
-                  ),
-                ],
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
 
                 // â”€â”€ Progress bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 _ProgressBar(
@@ -541,9 +551,10 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
                   useRemoteControls: useRemoteControls,
                   enabled: playbackActionsEnabled,
                   palette: palette,
+                  accentColor: trackMoodAccent,
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 14),
 
                 // â”€â”€ Controls row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 _ControlsRow(
@@ -551,6 +562,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
                   isShuffleOn: _isShuffleOn,
                   volume: effectiveVolume,
                   palette: palette,
+                  accentColor: trackMoodAccent,
                   actionsEnabled: playbackActionsEnabled,
                   hasNext: hasNextForControls,
                   hasPrevious: playbackActionsEnabled &&
@@ -614,7 +626,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
                   },
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
 
                 // â”€â”€ Override Mood CTA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 if (effectiveSpaceId != null)
@@ -649,7 +661,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
                   ).animate().fadeIn(duration: 450.ms).slideY(begin: 0.12),
                 ],
 
-                const SizedBox(height: 100), // breathing space
+                const SizedBox(height: 28),
               ],
             ),
           ),
@@ -660,6 +672,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
           deviceLabel: deviceLabel,
           isPlayback: isPlayback,
           palette: palette,
+          accentColor: trackMoodAccent,
           onQueue: () => _showQueueSheet(context, palette),
         ),
       ],
@@ -676,6 +689,43 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
   }
 
   // â”€â”€ Song Options Bottom Sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  double _discDimension(BuildContext context) {
+    final media = MediaQuery.of(context);
+    final widthBound = media.size.width - 72;
+    final heightBound = media.size.height * 0.36;
+    return widthBound.clamp(260.0, 330.0).clamp(0.0, heightBound).toDouble();
+  }
+
+  Color _trackMoodAccent(List<String>? moodTags, _NPPalette palette) {
+    final normalizedTags = moodTags
+            ?.map((tag) => tag.trim().toLowerCase())
+            .where((tag) => tag.isNotEmpty)
+            .toList() ??
+        const <String>[];
+
+    for (final mood in normalizedTags) {
+      if (mood.contains('focus')) return palette.moodFocus;
+      if (mood.contains('calm') || mood.contains('chill')) {
+        return palette.moodChill;
+      }
+      if (mood.contains('energetic') || mood.contains('energy')) {
+        return palette.moodEnergetic;
+      }
+      if (mood.contains('social')) return palette.accentAlt;
+      if (mood.contains('romantic') || mood.contains('romance')) {
+        return palette.accent;
+      }
+      if (mood.contains('uplifting') ||
+          mood.contains('positive') ||
+          mood.contains('happy') ||
+          mood.contains('motivational')) {
+        return palette.success;
+      }
+    }
+
+    return palette.moodDefault;
+  }
+
   void _showAiExplainabilitySheet(
     BuildContext context, {
     required _NPPalette palette,
@@ -1768,12 +1818,14 @@ class _SpinningAlbumDisc extends StatelessWidget {
   const _SpinningAlbumDisc({
     required this.artUrl,
     required this.palette,
+    required this.moodAccent,
     required this.rotation,
     required this.placeholder,
   });
 
   final String? artUrl;
   final _NPPalette palette;
+  final Color moodAccent;
   final Animation<double> rotation;
   final Widget placeholder;
 
@@ -1784,10 +1836,10 @@ class _SpinningAlbumDisc extends StatelessWidget {
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: palette.accent.withValues(alpha: 0.22),
-            blurRadius: 32,
-            spreadRadius: 2,
-            offset: const Offset(0, 16),
+            color: moodAccent.withValues(alpha: 0.24),
+            blurRadius: 38,
+            spreadRadius: 3,
+            offset: const Offset(0, 18),
           ),
         ],
       ),
@@ -1804,7 +1856,7 @@ class _SpinningAlbumDisc extends StatelessWidget {
                     shape: BoxShape.circle,
                     color: palette.card,
                     border: Border.all(
-                      color: palette.border.withValues(alpha: 0.75),
+                      color: moodAccent.withValues(alpha: 0.18),
                       width: 1.5,
                     ),
                   ),
@@ -1835,34 +1887,6 @@ class _SpinningAlbumDisc extends StatelessWidget {
                         ],
                         stops: const [0.0, 0.62, 1.0],
                       ),
-                    ),
-                  ),
-                ),
-              ),
-              Container(
-                width: 58,
-                height: 58,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: palette.bg,
-                  border: Border.all(
-                    color: palette.border.withValues(alpha: 0.9),
-                    width: 8,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.18),
-                      blurRadius: 12,
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: palette.textMuted.withValues(alpha: 0.45),
                     ),
                   ),
                 ),
@@ -1935,53 +1959,47 @@ class _IotStatusNotice extends StatelessWidget {
             : LucideIcons.wifi;
     final color = isWarning ? palette.warning : palette.success;
     final message = playbackState.isIotDeviceAssigned == false
+        ? 'Telemetry limited'
+        : playbackState.isIotDeviceOffline
+            ? 'Manual override available'
+            : 'Telemetry online';
+    final tooltip = playbackState.isIotDeviceAssigned == false
         ? 'No IoT device is assigned to this space. Schedule and AI telemetry may be limited.'
         : playbackState.isIotDeviceOffline
             ? 'IoT device is offline. Manual override remains available while CAMS waits for fresh telemetry.'
             : 'IoT telemetry is online.';
 
-    return Container(
-      padding: EdgeInsets.all(isWarning ? 14 : 10),
-      decoration: BoxDecoration(
-        color: palette.overlay,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isWarning ? color.withValues(alpha: 0.42) : palette.border,
+    return Tooltip(
+      message: tooltip,
+      child: Container(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width - 48,
         ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: color, size: 18),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: GoogleFonts.inter(
-                    color: palette.textPrimary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                  ),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: color.withValues(alpha: 0.28)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 15),
+            const SizedBox(width: 7),
+            Flexible(
+              child: Text(
+                '$label - $message',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.inter(
+                  color: color,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
                 ),
-                if (isWarning) ...[
-                  const SizedBox(height: 3),
-                  Text(
-                    message,
-                    style: GoogleFonts.inter(
-                      color: palette.textMuted,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      height: 1.35,
-                    ),
-                  ),
-                ],
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -2095,7 +2113,8 @@ class _ProgressBar extends StatefulWidget {
       required this.useAbsoluteSeek,
       required this.useRemoteControls,
       required this.enabled,
-      required this.palette});
+      required this.palette,
+      required this.accentColor});
   final int duration;
   final double currentPosition;
   final int remainingDuration;
@@ -2104,6 +2123,7 @@ class _ProgressBar extends StatefulWidget {
   final bool useRemoteControls;
   final bool enabled;
   final _NPPalette palette;
+  final Color accentColor;
 
   @override
   State<_ProgressBar> createState() => _ProgressBarState();
@@ -2198,11 +2218,11 @@ class _ProgressBarState extends State<_ProgressBar> {
             trackHeight: 3,
             thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
             overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
-            activeTrackColor: widget.palette.textPrimary,
+            activeTrackColor: widget.accentColor,
             inactiveTrackColor:
                 widget.palette.textMuted.withValues(alpha: 0.25),
-            thumbColor: widget.palette.textPrimary,
-            overlayColor: widget.palette.textPrimary.withValues(alpha: 0.15),
+            thumbColor: widget.accentColor,
+            overlayColor: widget.accentColor.withValues(alpha: 0.15),
           ),
           child: Slider(
             value: widget.duration > 0 ? clampedPosition : 0,
@@ -2265,6 +2285,7 @@ class _ControlsRow extends StatelessWidget {
     required this.isShuffleOn,
     required this.volume,
     required this.palette,
+    required this.accentColor,
     required this.actionsEnabled,
     required this.hasNext,
     required this.hasPrevious,
@@ -2279,6 +2300,7 @@ class _ControlsRow extends StatelessWidget {
   final bool hasNext, hasPrevious;
   final double volume;
   final _NPPalette palette;
+  final Color accentColor;
   final VoidCallback onShuffle, onPlayPause, onSkipBack, onSkip;
   final ValueChanged<double> onVolumeChanged;
 
@@ -2292,12 +2314,12 @@ class _ControlsRow extends StatelessWidget {
         _ControlButton(
           icon: LucideIcons.shuffle,
           color: actionsEnabled
-              ? (isShuffleOn ? palette.accent : palette.textMuted)
+              ? (isShuffleOn ? accentColor : palette.textMuted)
               : palette.textMuted.withValues(alpha: 0.4),
           size: 22,
           onTap: actionsEnabled ? onShuffle : null,
         ),
-        const SizedBox(width: 20),
+        const SizedBox(width: 14),
         // Skip Previous
         _ControlButton(
           icon: LucideIcons.skipBack,
@@ -2307,13 +2329,13 @@ class _ControlsRow extends StatelessWidget {
           size: 26,
           onTap: hasPrevious ? onSkipBack : null,
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: 10),
         // Play/Pause (large center button)
         GestureDetector(
           onTap: actionsEnabled ? onPlayPause : null,
           child: Container(
-            width: 64,
-            height: 64,
+            width: 56,
+            height: 56,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: actionsEnabled
@@ -2323,11 +2345,11 @@ class _ControlsRow extends StatelessWidget {
             child: Icon(
               isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
               color: palette.bg,
-              size: 36,
+              size: 32,
             ),
           ),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: 10),
         // Skip Next
         _ControlButton(
           icon: LucideIcons.skipForward,
@@ -2337,7 +2359,7 @@ class _ControlsRow extends StatelessWidget {
           size: 26,
           onTap: hasNext ? onSkip : null,
         ),
-        const SizedBox(width: 20),
+        const SizedBox(width: 14),
         // Volume
         _ControlButton(
           icon: volume > 0 ? LucideIcons.volume2 : LucideIcons.volumeX,
@@ -2388,11 +2410,13 @@ class _BottomBar extends StatelessWidget {
     required this.deviceLabel,
     required this.isPlayback,
     required this.palette,
+    required this.accentColor,
     required this.onQueue,
   });
   final String deviceLabel;
   final bool isPlayback;
   final _NPPalette palette;
+  final Color accentColor;
   final VoidCallback onQueue;
 
   @override
@@ -2406,7 +2430,7 @@ class _BottomBar extends StatelessWidget {
         children: [
           Icon(
             isPlayback ? LucideIcons.speaker : LucideIcons.smartphone,
-            color: palette.accent,
+            color: accentColor,
             size: 18,
           ),
           const SizedBox(width: 10),
@@ -3158,47 +3182,46 @@ class _RuntimePill extends StatelessWidget {
 class _AiInsightButton extends StatelessWidget {
   const _AiInsightButton({
     required this.palette,
+    required this.accentColor,
     required this.onTap,
   });
 
   final _NPPalette palette;
+  final Color accentColor;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(999),
-          child: Ink(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: palette.accent.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: palette.accent.withValues(alpha: 0.28)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.auto_awesome_rounded,
-                  color: palette.accent,
-                  size: 16,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          decoration: BoxDecoration(
+            color: accentColor.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: accentColor.withValues(alpha: 0.28)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.auto_awesome_rounded,
+                color: accentColor,
+                size: 15,
+              ),
+              const SizedBox(width: 7),
+              Text(
+                'AI insight',
+                style: GoogleFonts.inter(
+                  color: accentColor,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
                 ),
-                const SizedBox(width: 7),
-                Text(
-                  'AI insight',
-                  style: GoogleFonts.inter(
-                    color: palette.accent,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

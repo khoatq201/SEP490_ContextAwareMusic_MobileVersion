@@ -111,6 +111,8 @@ abstract class CamsRemoteDataSource {
     bool usePlaybackDeviceScope = false,
   });
 
+  Future<String?> getSpaceMoodName(String spaceId);
+
   Future<SpacePlaybackStateModel> getSpaceStateForPlaybackDevice();
 
   Future<SpacePlaybackExplainability?> getFuzzyProfileBpmGuidance({
@@ -505,14 +507,16 @@ class CamsRemoteDataSourceImpl implements CamsRemoteDataSource {
         usePlaybackDeviceScope ? managerScopedPath : playbackScopedPath;
 
     try {
-      return await _fetchSpaceStateByPath(primaryPath);
+      final state = await _fetchSpaceStateByPath(primaryPath);
+      return await _withLiveSpaceMood(state);
     } on DioException catch (e) {
       final canFallback = fallbackPath != null &&
           fallbackPath != primaryPath &&
           _isScopeFallbackStatusCode(e.response?.statusCode);
       if (canFallback) {
         try {
-          return await _fetchSpaceStateByPath(fallbackPath);
+          final state = await _fetchSpaceStateByPath(fallbackPath);
+          return await _withLiveSpaceMood(state);
         } catch (_) {
           // Fall through to the common error message below.
         }
@@ -531,6 +535,80 @@ class CamsRemoteDataSourceImpl implements CamsRemoteDataSource {
         fallbackMessage: 'Unable to load CAMS playback state right now.',
       );
     }
+  }
+
+  @override
+  Future<String?> getSpaceMoodName(String spaceId) async {
+    final trimmedSpaceId = spaceId.trim();
+    if (trimmedSpaceId.isEmpty) return null;
+
+    for (final path in [
+      ApiConstants.camsSpaceMood(trimmedSpaceId),
+      ApiConstants.camsSpaceMoodPlural(trimmedSpaceId),
+    ]) {
+      try {
+        final response = await dioClient.get(path);
+        final moodName = _extractMoodName(response.data);
+        if (moodName != null && moodName.trim().isNotEmpty) {
+          return moodName.trim();
+        }
+      } on DioException catch (error) {
+        if (_isScopeFallbackStatusCode(error.response?.statusCode)) {
+          continue;
+        }
+        continue;
+      } catch (_) {
+        continue;
+      }
+    }
+
+    return null;
+  }
+
+  Future<SpacePlaybackStateModel> _withLiveSpaceMood(
+    SpacePlaybackStateModel state,
+  ) async {
+    final moodName = await getSpaceMoodName(state.spaceId);
+    if (moodName == null || moodName.trim().isEmpty) return state;
+    if (moodName.trim() == state.moodName?.trim()) return state;
+    return SpacePlaybackStateModel(
+      spaceId: state.spaceId,
+      storeId: state.storeId,
+      brandId: state.brandId,
+      currentQueueItemId: state.currentQueueItemId,
+      currentTrackName: state.currentTrackName,
+      currentPlaylistId: state.currentPlaylistId,
+      currentPlaylistName: state.currentPlaylistName,
+      hlsUrl: state.hlsUrl,
+      moodName: moodName,
+      isManualOverride: state.isManualOverride,
+      overrideMode: state.overrideMode,
+      overrideReason: state.overrideReason,
+      manualOverrideActivatedAtUtc: state.manualOverrideActivatedAtUtc,
+      manualOverrideExpiresAtUtc: state.manualOverrideExpiresAtUtc,
+      manualOverrideTtlSeconds: state.manualOverrideTtlSeconds,
+      manualOverrideRemainingSeconds: state.manualOverrideRemainingSeconds,
+      isScheduling: state.isScheduling,
+      schedulingSlotId: state.schedulingSlotId,
+      schedulingSlotOrigin: state.schedulingSlotOrigin,
+      schedulingEndsAtUtc: state.schedulingEndsAtUtc,
+      schedulingRemainingSeconds: state.schedulingRemainingSeconds,
+      startedAtUtc: state.startedAtUtc,
+      expectedEndAtUtc: state.expectedEndAtUtc,
+      isPaused: state.isPaused,
+      pausePositionSeconds: state.pausePositionSeconds,
+      seekOffsetSeconds: state.seekOffsetSeconds,
+      pendingQueueItemId: state.pendingQueueItemId,
+      pendingPlaylistId: state.pendingPlaylistId,
+      pendingOverrideReason: state.pendingOverrideReason,
+      volumePercent: state.volumePercent,
+      isIotDeviceAssigned: state.isIotDeviceAssigned,
+      isIotDeviceOffline: state.isIotDeviceOffline,
+      isMuted: state.isMuted,
+      queueEndBehavior: state.queueEndBehavior,
+      spaceQueueItems: state.spaceQueueItems,
+      explainability: state.explainability,
+    );
   }
 
   @override
@@ -702,6 +780,63 @@ class CamsRemoteDataSourceImpl implements CamsRemoteDataSource {
       response.statusCode,
       _requestDebugContext(path: path, payload: data),
     );
+  }
+
+  String? _extractMoodName(dynamic body) {
+    final payload = _extractMoodPayload(body);
+    if (payload == null) return null;
+
+    final direct = _readFirstString(payload, const [
+      'moodName',
+      'currentMood',
+      'spaceMood',
+      'name',
+      'selectedMoodName',
+      'newMood',
+      'targetMood',
+    ]);
+    if (direct != null) return direct;
+
+    final mood = _readValue(payload, 'mood');
+    if (mood is Map) {
+      return _readFirstString(Map<String, dynamic>.from(mood), const [
+        'moodName',
+        'name',
+        'currentMood',
+      ]);
+    }
+    if (mood is String && mood.trim().isNotEmpty) {
+      return mood.trim();
+    }
+
+    return null;
+  }
+
+  Map<String, dynamic>? _extractMoodPayload(dynamic body) {
+    if (body is Map<String, dynamic>) {
+      final data = body['data'];
+      if (data is Map<String, dynamic>) return data;
+      if (data is Map) return Map<String, dynamic>.from(data);
+      return body;
+    }
+    if (body is Map) {
+      final normalized = Map<String, dynamic>.from(body);
+      final data = normalized['data'];
+      if (data is Map<String, dynamic>) return data;
+      if (data is Map) return Map<String, dynamic>.from(data);
+      return normalized;
+    }
+    return null;
+  }
+
+  String? _readFirstString(Map<String, dynamic> json, List<String> keys) {
+    for (final key in keys) {
+      final value = _readValue(json, key);
+      if (value == null) continue;
+      final text = value.toString().trim();
+      if (text.isNotEmpty) return text;
+    }
+    return null;
   }
 
   Future<List<SpaceQueueStateItemModel>> _fetchQueueByPath(String path) async {

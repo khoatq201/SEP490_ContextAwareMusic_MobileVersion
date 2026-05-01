@@ -12,6 +12,7 @@ class UserModel extends User {
     required super.role,
     super.roles = const [],
     required super.storeIds,
+    super.brandId,
     super.avatarUrl,
     super.lastLogin,
   });
@@ -44,7 +45,8 @@ class UserModel extends User {
       ...?(json['storeIds'] as List<dynamic>?)
           ?.map((entry) => entry.toString())
           .where((entry) => entry.trim().isNotEmpty),
-      if (directStoreId != null && directStoreId.trim().isNotEmpty) directStoreId,
+      if (directStoreId != null && directStoreId.trim().isNotEmpty)
+        directStoreId,
     }.toList(growable: false);
 
     return UserModel(
@@ -61,11 +63,17 @@ class UserModel extends User {
               (rolesList.isNotEmpty ? rolesList.first : '')),
       roles: rolesList,
       storeIds: storeIds,
+      brandId: _readOptionalString(json['brandId']),
       avatarUrl: json['avatarUrl'] as String?,
       lastLogin: json['lastLogin'] != null
           ? DateTime.parse(json['lastLogin'] as String)
           : null,
     );
+  }
+
+  static String? _readOptionalString(dynamic value) {
+    final parsed = value?.toString().trim();
+    return parsed == null || parsed.isEmpty ? null : parsed;
   }
 
   Map<String, dynamic> toJson() {
@@ -81,6 +89,7 @@ class UserModel extends User {
       'roles': roles,
       'storeIds': storeIds,
       if (storeIds.isNotEmpty) 'storeId': storeIds.first,
+      'brandId': brandId,
       'avatarUrl': avatarUrl,
       'lastLogin': lastLogin?.toIso8601String(),
     };
@@ -98,6 +107,7 @@ class UserModel extends User {
       role: role,
       roles: roles,
       storeIds: storeIds,
+      brandId: brandId,
       avatarUrl: avatarUrl,
       lastLogin: lastLogin,
     );
@@ -115,6 +125,7 @@ class UserModel extends User {
       role: user.role,
       roles: user.roles,
       storeIds: user.storeIds,
+      brandId: user.brandId,
       avatarUrl: user.avatarUrl,
       lastLogin: user.lastLogin,
     );

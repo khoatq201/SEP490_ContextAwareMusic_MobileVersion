@@ -99,6 +99,8 @@ class ApiConstants {
   static const String changePassword = '/api/auth/change-password';
 
   // Stores & Spaces
+  static String getBrandDetail(String brandId) => '/api/brands/$brandId';
+  static String updateBrand(String brandId) => '/api/brands/$brandId';
   static const String getStoresEndpoint = '/api/stores';
   static String getStoreDetail(String storeId) => '/api/stores/$storeId';
   static String updateStore(String storeId) => '/api/stores/$storeId';
@@ -146,6 +148,10 @@ class ApiConstants {
       '$sunoGenerations/$id/cancel';
   static const String sunoConfig = '$sunoBase/config';
 
+  // Billing
+  static const String billingBase = '/api/cms/billing';
+  static const String billingWallet = '$billingBase/wallet';
+
   // Playlists
   static const String getPlaylists = '/api/playlists';
   static const String createPlaylist = getPlaylists;
@@ -165,6 +171,10 @@ class ApiConstants {
   static String camsPlayback(String spaceId) =>
       '/api/cams/spaces/$spaceId/playback';
   static String camsState(String spaceId) => '/api/cams/spaces/$spaceId/state';
+  static String camsSpaceMood(String spaceId) =>
+      '/api/cams/space/$spaceId/mood';
+  static String camsSpaceMoodPlural(String spaceId) =>
+      '/api/cams/spaces/$spaceId/mood';
   static const String camsCurrentDeviceState = '/api/cams/spaces/state';
   static String camsAudioState(String spaceId) =>
       '/api/cams/spaces/$spaceId/state/audio';

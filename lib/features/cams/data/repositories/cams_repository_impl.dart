@@ -421,7 +421,7 @@ class CamsRepositoryImpl implements CamsRepository {
   Future<SpacePlaybackState> _withProfileBpmGuidance(
     SpacePlaybackState state,
   ) async {
-    final moodName = state.explainability?.moodName ?? state.moodName;
+    final moodName = state.moodName ?? state.explainability?.moodName;
     final baseExplainability = _ensureMoodExplainability(
       state.explainability,
       moodName,

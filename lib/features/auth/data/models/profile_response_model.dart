@@ -4,7 +4,8 @@ import '../../domain/entities/user.dart';
 ///
 /// ```json
 /// { "email": "...", "userId": "...", "firstName": "...", "lastName": "...",
-///   "phoneNumber": null, "avatarPath": null, "roles": ["StoreManager"] }
+///   "phoneNumber": null, "avatarPath": null, "brandId": "...",
+///   "roles": ["StoreManager"] }
 /// ```
 class ProfileResponseModel {
   final String email;
@@ -14,6 +15,7 @@ class ProfileResponseModel {
   final String? phoneNumber;
   final String? avatarPath;
   final List<String> storeIds;
+  final String? brandId;
   final List<String> roles;
 
   const ProfileResponseModel({
@@ -24,6 +26,7 @@ class ProfileResponseModel {
     this.phoneNumber,
     this.avatarPath,
     this.storeIds = const [],
+    this.brandId,
     required this.roles,
   });
 
@@ -34,7 +37,8 @@ class ProfileResponseModel {
       ...?rawStoreIds?.map((entry) => entry.toString()).where(
             (entry) => entry.trim().isNotEmpty,
           ),
-      if (directStoreId != null && directStoreId.trim().isNotEmpty) directStoreId,
+      if (directStoreId != null && directStoreId.trim().isNotEmpty)
+        directStoreId,
     }.toList(growable: false);
 
     return ProfileResponseModel(
@@ -45,8 +49,14 @@ class ProfileResponseModel {
       phoneNumber: json['phoneNumber'] as String?,
       avatarPath: (json['avatarUrl'] ?? json['avatarPath']) as String?,
       storeIds: parsedStoreIds,
+      brandId: _readOptionalString(json['brandId']),
       roles: (json['roles'] as List<dynamic>).map((e) => _mapRole(e)).toList(),
     );
+  }
+
+  static String? _readOptionalString(dynamic value) {
+    final parsed = value?.toString().trim();
+    return parsed == null || parsed.isEmpty ? null : parsed;
   }
 
   /// Backend returns role as integer:
@@ -85,6 +95,7 @@ class ProfileResponseModel {
       role: roles.isNotEmpty ? roles.first : '',
       roles: roles,
       storeIds: storeIds,
+      brandId: brandId,
       avatarUrl: avatarPath,
     );
   }
@@ -98,6 +109,7 @@ class ProfileResponseModel {
       'phoneNumber': phoneNumber,
       'avatarPath': avatarPath,
       'storeIds': storeIds,
+      'brandId': brandId,
       'roles': roles,
     };
   }

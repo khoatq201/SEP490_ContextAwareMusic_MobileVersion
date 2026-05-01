@@ -5,6 +5,9 @@ class SettingsSnapshotModel extends SettingsSnapshot {
     required super.companyName,
     required super.businessType,
     required super.planName,
+    super.subscriptionId,
+    super.tokenBalance,
+    super.walletLocked,
     required super.explicitMusicAllowed,
     required super.blockingSongsAllowed,
   });
@@ -14,6 +17,9 @@ class SettingsSnapshotModel extends SettingsSnapshot {
       companyName: json['companyName'] as String,
       businessType: json['businessType'] as String,
       planName: json['planName'] as String,
+      subscriptionId: json['subscriptionId'] as String?,
+      tokenBalance: (json['tokenBalance'] as num?)?.round(),
+      walletLocked: json['walletLocked'] as bool? ?? false,
       explicitMusicAllowed: json['explicitMusicAllowed'] as bool,
       blockingSongsAllowed: json['blockingSongsAllowed'] as bool,
     );
@@ -24,6 +30,9 @@ class SettingsSnapshotModel extends SettingsSnapshot {
       'companyName': companyName,
       'businessType': businessType,
       'planName': planName,
+      'subscriptionId': subscriptionId,
+      'tokenBalance': tokenBalance,
+      'walletLocked': walletLocked,
       'explicitMusicAllowed': explicitMusicAllowed,
       'blockingSongsAllowed': blockingSongsAllowed,
     };

@@ -6,10 +6,19 @@ import '../../../../core/error/error_mapper.dart';
 import '../../../../core/models/api_result.dart';
 import '../../../../core/models/pagination_result.dart';
 import '../../../../core/network/dio_client.dart';
+import '../../domain/entities/brand_update_request.dart';
+import '../models/brand_detail_model.dart';
 import '../models/store_summary_model.dart';
 
 abstract class StoreSelectionRemoteDataSource {
   Future<List<StoreSummaryModel>> getUserStores();
+
+  Future<BrandDetailModel> getBrandDetail(String brandId);
+
+  Future<String> updateBrandDetail({
+    required String brandId,
+    required BrandUpdateRequest request,
+  });
 }
 
 class StoreSelectionRemoteDataSourceImpl
@@ -65,6 +74,70 @@ class StoreSelectionRemoteDataSourceImpl
     }
   }
 
+  @override
+  Future<BrandDetailModel> getBrandDetail(String brandId) async {
+    if (ApiConstants.useMockData) {
+      return _getMockBrandDetail(brandId);
+    }
+
+    try {
+      final response = await dioClient.get(
+        ApiConstants.getBrandDetail(brandId),
+      );
+      final data = response.data as Map<String, dynamic>;
+      final apiResult = ApiResult<BrandDetailModel>.fromJson(
+        data,
+        fromData: BrandDetailModel.fromJson,
+      );
+      if (!apiResult.isSuccess || apiResult.data == null) {
+        throw ErrorMapper.fromApiErrorDetails(
+          apiResult.errorDetails,
+          fallbackMessage: 'We could not load the brand profile right now.',
+        );
+      }
+      return apiResult.data!;
+    } on DioException catch (error) {
+      throw ErrorMapper.fromDioException(
+        error,
+        fallbackMessage: 'We could not load the brand profile right now.',
+      );
+    }
+  }
+
+  @override
+  Future<String> updateBrandDetail({
+    required String brandId,
+    required BrandUpdateRequest request,
+  }) async {
+    if (ApiConstants.useMockData) {
+      await Future.delayed(const Duration(milliseconds: 350));
+      return 'Brand updated successfully';
+    }
+
+    try {
+      final response = await dioClient.patch(
+        ApiConstants.updateBrand(brandId),
+        data: FormData.fromMap(request.toFormFields()),
+        options: Options(contentType: 'multipart/form-data'),
+      );
+      final apiResult = ApiResult<void>.fromJson(
+        response.data as Map<String, dynamic>,
+      );
+      if (!apiResult.isSuccess) {
+        throw ErrorMapper.fromApiErrorDetails(
+          apiResult.errorDetails,
+          fallbackMessage: 'We could not update the brand profile right now.',
+        );
+      }
+      return apiResult.message ?? 'Brand updated successfully';
+    } on DioException catch (error) {
+      throw ErrorMapper.fromDioException(
+        error,
+        fallbackMessage: 'We could not update the brand profile right now.',
+      );
+    }
+  }
+
   Future<List<StoreSummaryModel>> _getMockStores() async {
     await Future.delayed(const Duration(milliseconds: 500));
     return const [
@@ -96,5 +169,25 @@ class StoreSelectionRemoteDataSourceImpl
         status: EntityStatusEnum.pending,
       ),
     ];
+  }
+
+  Future<BrandDetailModel> _getMockBrandDetail(String brandId) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    return BrandDetailModel(
+      id: brandId,
+      name: 'Highlands Coffee',
+      logoUrl: null,
+      industry: 'F&B',
+      primaryContactName: 'Brand Operations',
+      contactEmail: 'ops@highlands.example',
+      contactPhone: '0123456789',
+      description: 'Retail coffee brand profile used for store operations.',
+      website: 'https://www.highlandscoffee.com.vn',
+      legalName: 'Highlands Coffee Service Joint Stock Company',
+      billingAddress: 'Ho Chi Minh City',
+      technicalContactEmail: 'iot@highlands.example',
+      defaultTimeZone: 'SE Asia Standard Time',
+      status: EntityStatusEnum.active,
+    );
   }
 }

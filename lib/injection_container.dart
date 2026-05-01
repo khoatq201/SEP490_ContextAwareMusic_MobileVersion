@@ -56,6 +56,7 @@ import 'features/space_schedule/domain/usecases/space_schedule_usecases.dart';
 import 'features/space_schedule/presentation/bloc/space_schedule_bloc.dart';
 
 import 'features/settings/data/datasources/settings_mock_data_source.dart';
+import 'features/settings/data/datasources/settings_remote_data_source.dart';
 import 'features/settings/data/repositories/settings_repository_impl.dart';
 import 'features/settings/domain/repositories/settings_repository.dart';
 import 'features/settings/domain/usecases/get_settings_snapshot.dart';
@@ -89,7 +90,9 @@ import 'features/store_dashboard/presentation/bloc/store_dashboard_bloc.dart';
 import 'features/store_selection/data/datasources/store_selection_remote_datasource.dart';
 import 'features/store_selection/data/repositories/store_selection_repository_impl.dart';
 import 'features/store_selection/domain/repositories/store_selection_repository.dart';
+import 'features/store_selection/domain/usecases/get_brand_detail.dart';
 import 'features/store_selection/domain/usecases/get_user_stores.dart';
+import 'features/store_selection/domain/usecases/update_brand_detail.dart';
 import 'features/store_selection/presentation/bloc/store_selection_bloc.dart';
 
 // Zone Management Feature
@@ -439,7 +442,7 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton<SettingsDataSource>(
     () => ApiConstants.useMockData
         ? SettingsMockDataSource()
-        : SettingsMockDataSource(), // TODO: Replace with SettingsRemoteDataSource when backend ready
+        : SettingsRemoteDataSource(dioClient: sl()),
   );
 
   // Repositories
@@ -561,11 +564,14 @@ Future<void> initializeDependencies() async {
 
   // Use cases
   sl.registerLazySingleton(() => GetUserStores(sl()));
+  sl.registerLazySingleton(() => GetBrandDetail(sl()));
+  sl.registerLazySingleton(() => UpdateBrandDetail(sl()));
 
   // BLoCs
   sl.registerFactory(
     () => StoreSelectionBloc(
       getUserStores: sl(),
+      getBrandDetail: sl(),
     ),
   );
 

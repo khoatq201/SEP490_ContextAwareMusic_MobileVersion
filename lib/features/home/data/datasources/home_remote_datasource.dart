@@ -127,18 +127,14 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
         ));
       }
 
-      // 4. Add "All Playlists" category for playlists without mood
-      final unmoodedPlaylists = allPlaylists
-          .where((p) => p.moodId == null || p.moodId!.isEmpty)
-          .toList();
-
-      if (unmoodedPlaylists.isNotEmpty) {
+      // 4. Add a complete catalog section before mood-specific sections.
+      if (allPlaylists.isNotEmpty) {
         categories.insert(
           0,
           CategoryEntity(
             id: 'cat-all',
             title: 'All Playlists',
-            playlists: unmoodedPlaylists
+            playlists: allPlaylists
                 .map((p) => PlaylistEntity(
                       id: p.id,
                       title: p.name,
@@ -150,24 +146,6 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
                 .toList(),
           ),
         );
-      }
-
-      // 5. If no categories at all, add a single "Browse" category
-      if (categories.isEmpty && allPlaylists.isNotEmpty) {
-        categories.add(CategoryEntity(
-          id: 'cat-browse',
-          title: 'Browse Playlists',
-          playlists: allPlaylists
-              .map((p) => PlaylistEntity(
-                    id: p.id,
-                    title: p.name,
-                    description: p.description,
-                    coverUrl: null,
-                    songs: const [],
-                    overrideTrackCount: p.trackCount,
-                  ))
-              .toList(),
-        ));
       }
 
       return categories;

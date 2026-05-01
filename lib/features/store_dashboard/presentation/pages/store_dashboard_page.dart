@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/constants/app_typography.dart';
 import '../../../../core/enums/entity_status_enum.dart';
@@ -72,7 +71,6 @@ class StoreDashboardPage extends StatelessWidget {
     final theme = Theme.of(context);
     final tokens = context.camsTokens;
     final colorScheme = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
 
     showModalBottomSheet(
       context: context,
@@ -118,9 +116,7 @@ class StoreDashboardPage extends StatelessWidget {
                           Text(
                             user?.fullName ?? user?.username ?? 'User',
                             style: AppTypography.titleMedium.copyWith(
-                              color: isDark
-                                  ? AppColors.textDarkPrimary
-                                  : AppColors.textPrimary,
+                              color: tokens.textPrimary,
                               fontWeight: FontWeight.w700,
                             ),
                             maxLines: 1,
@@ -130,9 +126,7 @@ class StoreDashboardPage extends StatelessWidget {
                           Text(
                             user?.email ?? '',
                             style: AppTypography.bodySmall.copyWith(
-                              color: isDark
-                                  ? AppColors.textDarkSecondary
-                                  : AppColors.textSecondary,
+                              color: tokens.textSecondary,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -180,18 +174,14 @@ class StoreDashboardPage extends StatelessWidget {
                   title: Text(
                     'Switch Store',
                     style: AppTypography.bodyMedium.copyWith(
-                      color: isDark
-                          ? AppColors.textDarkPrimary
-                          : AppColors.textPrimary,
+                      color: tokens.textPrimary,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   subtitle: Text(
                     'Select a different store',
                     style: AppTypography.bodySmall.copyWith(
-                      color: isDark
-                          ? AppColors.textDarkSecondary
-                          : AppColors.textSecondary,
+                      color: tokens.textSecondary,
                     ),
                   ),
                   onTap: () {
@@ -205,25 +195,26 @@ class StoreDashboardPage extends StatelessWidget {
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.error.withValues(alpha: 0.12),
+                    color: tokens.error.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.logout_outlined,
-                      color: AppColors.error, size: 22),
+                  child: Icon(
+                    Icons.logout_outlined,
+                    color: tokens.error,
+                    size: 22,
+                  ),
                 ),
                 title: Text(
                   'Logout',
                   style: AppTypography.bodyMedium.copyWith(
-                    color: AppColors.error,
+                    color: tokens.error,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
                 subtitle: Text(
                   'Sign out of your account',
                   style: AppTypography.bodySmall.copyWith(
-                    color: isDark
-                        ? AppColors.textDarkSecondary
-                        : AppColors.textSecondary,
+                    color: tokens.textSecondary,
                   ),
                 ),
                 onTap: () {
@@ -877,125 +868,144 @@ class StoreDashboardPage extends StatelessWidget {
         await showModalBottomSheet<_StoreDashboardToolAction>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: tokens.bgElevated,
+      backgroundColor: tokens.bgBase,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (sheetContext) {
         return SafeArea(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.82,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    margin: const EdgeInsets.only(top: 10, bottom: 8),
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: tokens.textTertiary.withValues(alpha: 0.35),
-                      borderRadius: BorderRadius.circular(2),
+          child: ColoredBox(
+            color: tokens.bgBase,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.82,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      margin: const EdgeInsets.only(top: 10, bottom: 8),
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: tokens.borderSecondary,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Store tools',
-                        style: AppTypography.titleMedium.copyWith(
-                          color: textPrimary,
-                          fontWeight: FontWeight.w700,
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Store tools',
+                          style: AppTypography.titleMedium.copyWith(
+                            color: textPrimary,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        store.name,
-                        style: AppTypography.bodySmall.copyWith(
-                          color: textSecondary,
+                        const SizedBox(height: 4),
+                        Text(
+                          store.name,
+                          style: AppTypography.bodySmall.copyWith(
+                            color: textSecondary,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                Flexible(
-                  child: ListView(
-                    shrinkWrap: true,
-                    padding: const EdgeInsets.only(bottom: 12),
-                    children: [
-                      ListTile(
-                        leading: const Icon(Icons.refresh_rounded),
-                        title: const Text('Refresh dashboard'),
-                        subtitle: const Text('Reload store and space status'),
-                        onTap: () => Navigator.of(sheetContext).pop(
-                          _StoreDashboardToolAction.refresh,
-                        ),
-                      ),
-                      if (canViewGovernanceConfig)
+                  Flexible(
+                    child: ListView(
+                      shrinkWrap: true,
+                      padding: const EdgeInsets.only(bottom: 12),
+                      children: [
                         ListTile(
-                          leading: const Icon(Icons.tune_rounded),
-                          title: const Text('Store configuration'),
-                          subtitle: const Text(
-                            'Review effective config and overrides',
+                          leading: Icon(
+                            Icons.refresh_rounded,
+                            color: textSecondary,
                           ),
+                          title: const Text('Refresh dashboard'),
+                          subtitle: const Text('Reload store and space status'),
                           onTap: () => Navigator.of(sheetContext).pop(
-                            _StoreDashboardToolAction.storeGovernance,
+                            _StoreDashboardToolAction.refresh,
                           ),
                         ),
-                      if (canManageStore)
-                        ListTile(
-                          leading: const Icon(
-                            Icons.admin_panel_settings_outlined,
+                        if (canViewGovernanceConfig)
+                          ListTile(
+                            leading: Icon(
+                              Icons.tune_rounded,
+                              color: textSecondary,
+                            ),
+                            title: const Text('Store configuration'),
+                            subtitle: const Text(
+                              'Review effective config and overrides',
+                            ),
+                            onTap: () => Navigator.of(sheetContext).pop(
+                              _StoreDashboardToolAction.storeGovernance,
+                            ),
                           ),
-                          title: const Text('Governance mode'),
-                          subtitle: const Text(
-                            'Set Strict Sync, AI Mode, or Freedom',
+                        if (canManageStore)
+                          ListTile(
+                            leading: Icon(
+                              Icons.admin_panel_settings_outlined,
+                              color: textSecondary,
+                            ),
+                            title: const Text('Governance mode'),
+                            subtitle: const Text(
+                              'Set Strict Sync, AI Mode, or Freedom',
+                            ),
+                            onTap: () => Navigator.of(sheetContext).pop(
+                              _StoreDashboardToolAction.governanceMode,
+                            ),
                           ),
-                          onTap: () => Navigator.of(sheetContext).pop(
-                            _StoreDashboardToolAction.governanceMode,
+                        if (canManageStore)
+                          ListTile(
+                            leading: Icon(
+                              Icons.sync_alt_rounded,
+                              color: textSecondary,
+                            ),
+                            title: const Text('Strict Sync stores'),
+                            subtitle: const Text(
+                              'Choose stores that must follow brand schedule',
+                            ),
+                            onTap: () => Navigator.of(sheetContext).pop(
+                              _StoreDashboardToolAction.strictSyncStores,
+                            ),
                           ),
-                        ),
-                      if (canManageStore)
-                        ListTile(
-                          leading: const Icon(Icons.sync_alt_rounded),
-                          title: const Text('Strict Sync stores'),
-                          subtitle: const Text(
-                            'Choose stores that must follow brand schedule',
+                        if (canManageStore)
+                          ListTile(
+                            leading: Icon(
+                              Icons.event_note_outlined,
+                              color: textSecondary,
+                            ),
+                            title: const Text('Brand schedule'),
+                            subtitle: const Text(
+                              'Edit brand schedule sources and slots',
+                            ),
+                            onTap: () => Navigator.of(sheetContext).pop(
+                              _StoreDashboardToolAction.brandSchedule,
+                            ),
                           ),
-                          onTap: () => Navigator.of(sheetContext).pop(
-                            _StoreDashboardToolAction.strictSyncStores,
+                        if (canManageMusicPolicy)
+                          ListTile(
+                            leading: Icon(
+                              Icons.library_music_outlined,
+                              color: textSecondary,
+                            ),
+                            title: const Text('Music policy'),
+                            subtitle: Text(_musicPolicySummary(store)),
+                            onTap: () => Navigator.of(sheetContext).pop(
+                              _StoreDashboardToolAction.musicPolicy,
+                            ),
                           ),
-                        ),
-                      if (canManageStore)
-                        ListTile(
-                          leading: const Icon(Icons.event_note_outlined),
-                          title: const Text('Brand schedule'),
-                          subtitle: const Text(
-                            'Edit brand schedule sources and slots',
-                          ),
-                          onTap: () => Navigator.of(sheetContext).pop(
-                            _StoreDashboardToolAction.brandSchedule,
-                          ),
-                        ),
-                      if (canManageMusicPolicy)
-                        ListTile(
-                          leading: const Icon(Icons.library_music_outlined),
-                          title: const Text('Music policy'),
-                          subtitle: Text(_musicPolicySummary(store)),
-                          onTap: () => Navigator.of(sheetContext).pop(
-                            _StoreDashboardToolAction.musicPolicy,
-                          ),
-                        ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );
@@ -1032,7 +1042,10 @@ class StoreDashboardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final tokens = context.camsTokens;
+    final isDark = theme.brightness == Brightness.dark;
     final authState = context.read<AuthBloc>().state;
     final user = authState.user;
     final session = context.watch<SessionCubit>().state;
@@ -1080,18 +1093,32 @@ class StoreDashboardPage extends StatelessWidget {
         }
       },
       child: Scaffold(
-        backgroundColor: isDark
-            ? AppColors.backgroundDarkPrimary
-            : AppColors.backgroundPrimary,
+        backgroundColor: tokens.bgBase,
         appBar: AppBar(
+          backgroundColor: tokens.bgBase,
+          surfaceTintColor: tokens.bgBase,
+          elevation: 0,
           centerTitle: true,
           leadingWidth: showStoreTools ? 108 : 60,
           leading: SizedBox(width: showStoreTools ? 108 : 60),
-          title: const Text('Store Dashboard'),
+          title: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              'Store Dashboard',
+              maxLines: 1,
+              style: AppTypography.titleLarge.copyWith(
+                color: tokens.textPrimary,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
           actions: [
             if (showStoreTools)
               IconButton(
-                icon: const Icon(Icons.tune_rounded),
+                icon: Icon(
+                  Icons.tune_rounded,
+                  color: colorScheme.primary,
+                ),
                 onPressed: () {
                   final dashboardState =
                       context.read<StoreDashboardBloc>().state;
@@ -1188,15 +1215,23 @@ class StoreDashboardPage extends StatelessWidget {
                           : null,
                     ),
 
-                    const SizedBox(height: AppDimensions.spacingLg),
+                    const SizedBox(height: 28),
 
                     // Spaces Section
                     Text(
                       'Spaces',
-                      style: AppTypography.titleLarge.copyWith(
-                        color: isDark
-                            ? AppColors.textDarkPrimary
-                            : AppColors.textPrimary,
+                      style: AppTypography.headlineSmall.copyWith(
+                        color: colorScheme.primary,
+                        fontWeight: FontWeight.w900,
+                        shadows: isDark
+                            ? [
+                                Shadow(
+                                  color: colorScheme.primary
+                                      .withValues(alpha: 0.32),
+                                  blurRadius: 14,
+                                ),
+                              ]
+                            : null,
                       ),
                     ),
                     const SizedBox(height: AppDimensions.spacingMd),
@@ -1211,17 +1246,13 @@ class StoreDashboardPage extends StatelessWidget {
                               Icon(
                                 Icons.space_dashboard_outlined,
                                 size: 64,
-                                color: isDark
-                                    ? AppColors.textDarkTertiary
-                                    : AppColors.textTertiary,
+                                color: tokens.textTertiary,
                               ),
                               const SizedBox(height: AppDimensions.spacingMd),
                               Text(
                                 'No spaces available',
                                 style: AppTypography.bodyMedium.copyWith(
-                                  color: isDark
-                                      ? AppColors.textDarkSecondary
-                                      : AppColors.textSecondary,
+                                  color: tokens.textSecondary,
                                 ),
                               ),
                             ],
@@ -1237,7 +1268,7 @@ class StoreDashboardPage extends StatelessWidget {
                           crossAxisCount: 2,
                           crossAxisSpacing: AppDimensions.spacingMd,
                           mainAxisSpacing: AppDimensions.spacingMd,
-                          childAspectRatio: 0.78,
+                          mainAxisExtent: 356,
                         ),
                         itemCount: state.spaces.length,
                         itemBuilder: (context, index) {

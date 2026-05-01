@@ -153,6 +153,7 @@ class HomeCubit extends Cubit<HomeState> {
     _applyPlaybackState(
       playbackState,
       closeManualSelection: false,
+      preferCurrentMood: true,
     );
   }
 
@@ -174,36 +175,10 @@ class HomeCubit extends Cubit<HomeState> {
     }
 
     emit(state.copyWith(
-      isApplyingOverride: true,
-      isManualSelectionOpen: false,
+      isApplyingOverride: false,
+      isManualSelectionOpen: true,
       clearModeMessage: true,
     ));
-
-    final result = await _overrideSpace(
-      spaceId: spaceId,
-      isClearManagerSelectedQueues: false,
-      isCutOver: false,
-      reason: 'Home manual mode request',
-      usePlaybackDeviceScope: _usePlaybackDeviceScope,
-    );
-
-    await result.fold<Future<void>>(
-      (failure) async => emit(state.copyWith(
-        isApplyingOverride: false,
-        modeMessage:
-            'Switch to manual failed: ${ErrorMapper.displayMessageForFailure(failure)}',
-      )),
-      (_) async {
-        emit(state.copyWith(
-          isApplyingOverride: false,
-          isManualOverride: true,
-          isManualSelectionOpen: false,
-          isPendingTranscode: false,
-          modeMessage: null,
-        ));
-        await loadSpacePlaybackState(spaceId);
-      },
-    );
   }
 
   void closeManualSelection() {
@@ -349,9 +324,13 @@ class HomeCubit extends Cubit<HomeState> {
   void _applyPlaybackState(
     SpacePlaybackState playbackState, {
     required bool closeManualSelection,
+    bool preferCurrentMood = false,
   }) {
     final resolvedPlaybackName = playbackState.currentDisplayName;
-    final resolvedMoodName = _resolveMoodName(playbackState);
+    final resolvedMoodName = _resolveMoodName(
+      playbackState,
+      preferCurrentMood: preferCurrentMood,
+    );
     final resolvedExplainability =
         _resolveExplainability(playbackState, resolvedMoodName);
 
@@ -371,7 +350,15 @@ class HomeCubit extends Cubit<HomeState> {
     ));
   }
 
-  String? _resolveMoodName(SpacePlaybackState playbackState) {
+  String? _resolveMoodName(
+    SpacePlaybackState playbackState, {
+    bool preferCurrentMood = false,
+  }) {
+    final currentMood = state.currentMoodName?.trim();
+    if (preferCurrentMood && currentMood != null && currentMood.isNotEmpty) {
+      return currentMood;
+    }
+
     final primaryMood = playbackState.moodName?.trim();
     if (primaryMood?.isNotEmpty == true) {
       return primaryMood;

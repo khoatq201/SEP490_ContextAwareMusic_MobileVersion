@@ -21,6 +21,7 @@ class AuthMockDataSource implements AuthRemoteDataSource {
       email: 'store@example.com',
       firstName: 'Store',
       lastName: 'Manager',
+      brandId: 'brand-001',
       roles: ['StoreManager'],
       phoneNumber: null,
       avatarPath: null,
@@ -30,6 +31,7 @@ class AuthMockDataSource implements AuthRemoteDataSource {
       email: 'brand@example.com',
       firstName: 'Brand',
       lastName: 'Director',
+      brandId: 'brand-001',
       roles: ['BrandManager'],
       phoneNumber: null,
       avatarPath: null,
@@ -99,7 +101,8 @@ class AuthMockDataSource implements AuthRemoteDataSource {
   }) async {
     await Future.delayed(const Duration(milliseconds: 500));
     if (newPassword != confirmPassword) {
-      throw const ServerException('New password and confirm password do not match');
+      throw const ServerException(
+          'New password and confirm password do not match');
     }
     // Mock: always succeeds
   }

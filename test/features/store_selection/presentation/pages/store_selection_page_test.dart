@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cams_store_manager/core/error/failures.dart';
+import 'package:cams_store_manager/core/enums/entity_status_enum.dart';
 import 'package:cams_store_manager/core/services/local_storage_service.dart';
 import 'package:cams_store_manager/core/session/session_cubit.dart';
 import 'package:cams_store_manager/features/auth/domain/entities/user.dart';
@@ -14,8 +15,11 @@ import 'package:cams_store_manager/features/auth/domain/usecases/login.dart';
 import 'package:cams_store_manager/features/auth/domain/usecases/logout.dart';
 import 'package:cams_store_manager/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:cams_store_manager/features/auth/presentation/bloc/auth_event.dart';
+import 'package:cams_store_manager/features/store_selection/domain/entities/brand_detail.dart';
+import 'package:cams_store_manager/features/store_selection/domain/entities/brand_update_request.dart';
 import 'package:cams_store_manager/features/store_selection/domain/entities/store_summary.dart';
 import 'package:cams_store_manager/features/store_selection/domain/repositories/store_selection_repository.dart';
+import 'package:cams_store_manager/features/store_selection/domain/usecases/get_brand_detail.dart';
 import 'package:cams_store_manager/features/store_selection/domain/usecases/get_user_stores.dart';
 import 'package:cams_store_manager/features/store_selection/presentation/bloc/store_selection_bloc.dart';
 import 'package:cams_store_manager/features/store_selection/presentation/bloc/store_selection_event.dart';
@@ -77,10 +81,12 @@ void main() {
 
       expect(authBloc.state.user?.isBrandManager, isTrue);
       expect(storeSelectionBloc.state, isA<StoreSelectionLoaded>());
-      expect(find.byTooltip('Brand schedule'), findsOneWidget);
-      expect(find.byTooltip('Bulk governance'), findsOneWidget);
+      expect(find.byTooltip('Store actions'), findsOneWidget);
+      expect(find.byTooltip('Acme Coffee profile'), findsOneWidget);
 
-      await tester.tap(find.byTooltip('Bulk governance'));
+      await tester.tap(find.byTooltip('Store actions'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Bulk governance'));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
 
@@ -97,10 +103,21 @@ class _StaticStoreSelectionBloc extends StoreSelectionBloc {
           getUserStores: GetUserStores(
             _FakeStoreSelectionRepository(stores: stores),
           ),
+          getBrandDetail: GetBrandDetail(
+            _FakeStoreSelectionRepository(stores: stores),
+          ),
         ) {
     emit(StoreSelectionLoaded(
       stores: stores,
       filteredStores: stores,
+      brandDetail: const BrandDetail(
+        id: 'brand-1',
+        name: 'Acme Coffee',
+        industry: 'F&B',
+        description: 'Brand profile for store operations.',
+        defaultTimeZone: 'SE Asia Standard Time',
+        status: EntityStatusEnum.active,
+      ),
     ));
   }
 
@@ -119,6 +136,7 @@ User _brandManagerUser() {
     role: 'BrandManager',
     roles: ['BrandManager'],
     storeIds: ['store-1', 'store-2'],
+    brandId: 'brand-1',
   );
 }
 
@@ -130,6 +148,29 @@ class _FakeStoreSelectionRepository implements StoreSelectionRepository {
   @override
   Future<Either<Failure, List<StoreSummary>>> getUserStores() async {
     return Right(stores);
+  }
+
+  @override
+  Future<Either<Failure, BrandDetail>> getBrandDetail(String brandId) async {
+    return Right(
+      BrandDetail(
+        id: brandId,
+        name: 'Acme Coffee',
+        industry: 'F&B',
+        contactEmail: 'ops@acme.test',
+        description: 'Brand profile for store operations.',
+        defaultTimeZone: 'SE Asia Standard Time',
+        status: EntityStatusEnum.active,
+      ),
+    );
+  }
+
+  @override
+  Future<Either<Failure, String>> updateBrandDetail({
+    required String brandId,
+    required BrandUpdateRequest request,
+  }) async {
+    return const Right('Brand updated successfully');
   }
 }
 

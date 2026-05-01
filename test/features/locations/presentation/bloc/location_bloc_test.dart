@@ -42,6 +42,8 @@ import 'package:cams_store_manager/features/music_policy/data/models/fuzzy_overr
 import 'package:cams_store_manager/features/playlists/data/datasources/playlist_remote_datasource.dart';
 import 'package:cams_store_manager/features/playlists/data/models/api_playlist_model.dart';
 import 'package:cams_store_manager/features/store_dashboard/domain/entities/store.dart';
+import 'package:cams_store_manager/features/store_selection/domain/entities/brand_detail.dart';
+import 'package:cams_store_manager/features/store_selection/domain/entities/brand_update_request.dart';
 import 'package:cams_store_manager/features/store_selection/domain/entities/store_summary.dart';
 import 'package:cams_store_manager/features/store_selection/domain/repositories/store_selection_repository.dart';
 import 'package:cams_store_manager/features/store_selection/domain/usecases/get_user_stores.dart';
@@ -475,6 +477,25 @@ class _FakeStoreSelectionRepository implements StoreSelectionRepository {
   @override
   Future<Either<Failure, List<StoreSummary>>> getUserStores() async {
     return const Right([]);
+  }
+
+  @override
+  Future<Either<Failure, BrandDetail>> getBrandDetail(String brandId) async {
+    return Right(
+      BrandDetail(
+        id: brandId,
+        name: 'Test Brand',
+        status: EntityStatusEnum.active,
+      ),
+    );
+  }
+
+  @override
+  Future<Either<Failure, String>> updateBrandDetail({
+    required String brandId,
+    required BrandUpdateRequest request,
+  }) async {
+    return const Right('Brand updated successfully');
   }
 }
 

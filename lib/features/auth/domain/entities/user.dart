@@ -12,6 +12,7 @@ class User extends Equatable {
       role; // Primary role (PascalCase from backend, e.g. "StoreManager")
   final List<String> roles; // All roles from backend
   final List<String> storeIds; // List of stores this user manages
+  final String? brandId;
   final String? avatarUrl;
   final DateTime? lastLogin;
 
@@ -26,6 +27,7 @@ class User extends Equatable {
     required this.role,
     this.roles = const [],
     required this.storeIds,
+    this.brandId,
     this.avatarUrl,
     this.lastLogin,
   });
@@ -79,6 +81,7 @@ class User extends Equatable {
         role,
         roles,
         storeIds,
+        brandId,
         avatarUrl,
         lastLogin,
       ];

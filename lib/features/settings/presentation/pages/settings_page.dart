@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/enums/user_role.dart';
 import '../../../../core/player/player_bloc.dart';
@@ -25,6 +26,10 @@ import '../bloc/settings_state.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
+
+  static final Uri _subscriptionPortalUri = Uri.parse(
+    'https://cams-hazel.vercel.app/brand/tokens',
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -190,8 +195,13 @@ class SettingsPage extends StatelessWidget {
                     context: context,
                     isPlayback: isPlayback,
                     user: user,
-                    companySummary:
-                        '${snapshot.businessType} · ${snapshot.planName}',
+                    canManageSubscription:
+                        session.currentRole == UserRole.brandManager,
+                    businessType: snapshot.businessType,
+                    planName: snapshot.planName,
+                    subscriptionId: snapshot.subscriptionId,
+                    tokenBalance: snapshot.tokenBalance,
+                    walletLocked: snapshot.walletLocked,
                     palette: palette,
                   ),
                 ),
@@ -229,7 +239,12 @@ class SettingsPage extends StatelessWidget {
     required BuildContext context,
     required bool isPlayback,
     required User? user,
-    required String companySummary,
+    required bool canManageSubscription,
+    required String businessType,
+    required String planName,
+    required String? subscriptionId,
+    required int? tokenBalance,
+    required bool walletLocked,
     required _SettingsPalette palette,
   }) {
     final children = <Widget>[];
@@ -249,9 +264,23 @@ class SettingsPage extends StatelessWidget {
         _ActionTile(
           icon: LucideIcons.briefcase,
           title: 'Organization',
-          subtitle: companySummary,
+          subtitle: businessType,
           palette: palette,
           onTap: () => context.push('/settings/company'),
+        ),
+      );
+      children.add(_InfoDivider(palette: palette));
+      children.add(
+        _SubscriptionAccessTile(
+          palette: palette,
+          planName: planName,
+          subscriptionId: subscriptionId,
+          tokenBalance: tokenBalance,
+          walletLocked: walletLocked,
+          canManage: canManageSubscription,
+          onManage: canManageSubscription
+              ? () => _openSubscriptionPortal(context, palette)
+              : null,
         ),
       );
       children.add(_InfoDivider(palette: palette));
@@ -268,6 +297,24 @@ class SettingsPage extends StatelessWidget {
     );
 
     return children;
+  }
+
+  Future<void> _openSubscriptionPortal(
+    BuildContext context,
+    _SettingsPalette palette,
+  ) async {
+    final opened = await launchUrl(
+      _subscriptionPortalUri,
+      mode: LaunchMode.externalApplication,
+    );
+    if (opened || !context.mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Could not open ${_subscriptionPortalUri.toString()}'),
+        backgroundColor: palette.dangerForeground,
+      ),
+    );
   }
 
   static String _displayName(User? user) {
@@ -766,6 +813,207 @@ class _ActionTile extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _SubscriptionAccessTile extends StatelessWidget {
+  const _SubscriptionAccessTile({
+    required this.palette,
+    required this.planName,
+    required this.subscriptionId,
+    required this.tokenBalance,
+    required this.walletLocked,
+    required this.canManage,
+    required this.onManage,
+  });
+
+  final _SettingsPalette palette;
+  final String planName;
+  final String? subscriptionId;
+  final int? tokenBalance;
+  final bool walletLocked;
+  final bool canManage;
+  final VoidCallback? onManage;
+
+  @override
+  Widget build(BuildContext context) {
+    final subscriptionText = _subscriptionText();
+    final tokenText = tokenBalance == null
+        ? 'Token balance unavailable'
+        : '${_formatTokens(tokenBalance!)} tokens';
+
+    return InkWell(
+      onTap: canManage ? onManage : null,
+      borderRadius: BorderRadius.circular(20),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: palette.accentSoft,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: palette.accentBorder),
+              ),
+              child: Icon(
+                LucideIcons.badgeDollarSign,
+                size: 18,
+                color: palette.accent,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Current subscription',
+                    style: GoogleFonts.poppins(
+                      color: palette.textPrimary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subscriptionText,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      color: palette.textMuted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _SettingsMiniPill(
+                        palette: palette,
+                        label: tokenText,
+                        icon: LucideIcons.coins,
+                        color: walletLocked
+                            ? palette.dangerForeground
+                            : palette.success,
+                      ),
+                      if (walletLocked)
+                        _SettingsMiniPill(
+                          palette: palette,
+                          label: 'Wallet locked',
+                          icon: LucideIcons.lock,
+                          color: palette.warning,
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            if (canManage) ...[
+              const SizedBox(width: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 7,
+                ),
+                decoration: BoxDecoration(
+                  color: palette.accentSoft,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: palette.accentBorder),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Manage',
+                      style: GoogleFonts.inter(
+                        color: palette.accent,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Icon(
+                      LucideIcons.externalLink,
+                      size: 14,
+                      color: palette.accent,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _subscriptionText() {
+    final id = subscriptionId?.trim();
+    if (id == null || id.isEmpty) return 'No active subscription';
+    return '$planName · ${_shortId(id)}';
+  }
+
+  String _shortId(String id) {
+    if (id.length <= 8) return id;
+    return id.substring(0, 8);
+  }
+
+  String _formatTokens(int value) {
+    final text = value.abs().toString();
+    final buffer = StringBuffer();
+    for (var i = 0; i < text.length; i++) {
+      final remaining = text.length - i;
+      buffer.write(text[i]);
+      if (remaining > 1 && remaining % 3 == 1) {
+        buffer.write(',');
+      }
+    }
+    return value < 0 ? '-$buffer' : buffer.toString();
+  }
+}
+
+class _SettingsMiniPill extends StatelessWidget {
+  const _SettingsMiniPill({
+    required this.palette,
+    required this.label,
+    required this.icon,
+    required this.color,
+  });
+
+  final _SettingsPalette palette;
+  final String label;
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.26)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              color: palette.textPrimary,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1539,6 +1787,8 @@ class _SettingsPalette {
     required this.textSecondary,
     required this.textMuted,
     required this.accent,
+    required this.accentSoft,
+    required this.accentBorder,
     required this.shadow,
     required this.success,
     required this.warning,
@@ -1555,6 +1805,8 @@ class _SettingsPalette {
   final Color textSecondary;
   final Color textMuted;
   final Color accent;
+  final Color accentSoft;
+  final Color accentBorder;
   final Color shadow;
   final Color success;
   final Color warning;
@@ -1574,6 +1826,8 @@ class _SettingsPalette {
       textSecondary: tokens.textSecondary,
       textMuted: tokens.textTertiary,
       accent: theme.colorScheme.primary,
+      accentSoft: tokens.brandPrimarySoft,
+      accentBorder: tokens.brandPrimary.withValues(alpha: 0.28),
       shadow: tokens.shadow,
       success: tokens.success,
       warning: tokens.warning,

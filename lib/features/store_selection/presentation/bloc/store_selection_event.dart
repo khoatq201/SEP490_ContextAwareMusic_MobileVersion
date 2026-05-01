@@ -8,7 +8,14 @@ abstract class StoreSelectionEvent extends Equatable {
 }
 
 class LoadUserStores extends StoreSelectionEvent {
-  const LoadUserStores();
+  const LoadUserStores({this.preferredBrandId});
+
+  final String? preferredBrandId;
+
+  @override
+  List<Object> get props => [
+        if (preferredBrandId != null) preferredBrandId!,
+      ];
 }
 
 class SelectStore extends StoreSelectionEvent {
@@ -27,4 +34,13 @@ class SearchStores extends StoreSelectionEvent {
 
   @override
   List<Object> get props => [query];
+}
+
+class LoadBrandDetail extends StoreSelectionEvent {
+  final String brandId;
+
+  const LoadBrandDetail(this.brandId);
+
+  @override
+  List<Object> get props => [brandId];
 }

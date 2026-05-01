@@ -1,4 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../domain/entities/store_summary.dart';
+import '../../domain/usecases/get_brand_detail.dart';
 import '../../domain/usecases/get_user_stores.dart';
 import 'store_selection_event.dart';
 import 'store_selection_state.dart';
@@ -6,13 +8,16 @@ import 'store_selection_state.dart';
 class StoreSelectionBloc
     extends Bloc<StoreSelectionEvent, StoreSelectionState> {
   final GetUserStores getUserStores;
+  final GetBrandDetail getBrandDetail;
 
   StoreSelectionBloc({
     required this.getUserStores,
+    required this.getBrandDetail,
   }) : super(StoreSelectionInitial()) {
     on<LoadUserStores>(_onLoadUserStores);
     on<SelectStore>(_onSelectStore);
     on<SearchStores>(_onSearchStores);
+    on<LoadBrandDetail>(_onLoadBrandDetail);
   }
 
   Future<void> _onLoadUserStores(
@@ -25,10 +30,17 @@ class StoreSelectionBloc
 
     result.fold(
       (failure) => emit(StoreSelectionError(failure)),
-      (stores) => emit(StoreSelectionLoaded(
-        stores: stores,
-        filteredStores: stores,
-      )),
+      (stores) {
+        emit(StoreSelectionLoaded(
+          stores: stores,
+          filteredStores: stores,
+        ));
+        final brandId = _normalizeId(event.preferredBrandId) ??
+            _resolvePrimaryBrandId(stores);
+        if (brandId != null) {
+          add(LoadBrandDetail(brandId));
+        }
+      },
     );
   }
 
@@ -64,5 +76,47 @@ class StoreSelectionBloc
         ));
       }
     }
+  }
+
+  Future<void> _onLoadBrandDetail(
+    LoadBrandDetail event,
+    Emitter<StoreSelectionState> emit,
+  ) async {
+    final currentState = state;
+    if (currentState is! StoreSelectionLoaded) return;
+
+    emit(currentState.copyWith(
+      isBrandDetailLoading: true,
+      clearBrandDetailFailure: true,
+    ));
+
+    final result = await getBrandDetail(event.brandId);
+    final latestState = state;
+    if (latestState is! StoreSelectionLoaded) return;
+
+    result.fold(
+      (failure) => emit(latestState.copyWith(
+        brandDetailFailure: failure,
+        isBrandDetailLoading: false,
+      )),
+      (brandDetail) => emit(latestState.copyWith(
+        brandDetail: brandDetail,
+        isBrandDetailLoading: false,
+        clearBrandDetailFailure: true,
+      )),
+    );
+  }
+
+  String? _resolvePrimaryBrandId(List<StoreSummary> stores) {
+    for (final store in stores) {
+      final brandId = _normalizeId(store.brandId);
+      if (brandId != null) return brandId;
+    }
+    return null;
+  }
+
+  String? _normalizeId(String? value) {
+    final trimmed = value?.trim();
+    return trimmed == null || trimmed.isEmpty ? null : trimmed;
   }
 }
