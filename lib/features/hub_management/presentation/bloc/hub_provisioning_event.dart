@@ -83,20 +83,32 @@ class HubProvisioningCredentialsSubmitted extends HubProvisioningEvent {
 class HubProvisioningNvrConfigSubmitted extends HubProvisioningEvent {
   const HubProvisioningNvrConfigSubmitted({
     required this.mode,
+    required this.vendor,
     required this.username,
     required this.password,
     required this.host,
     required this.port,
+    required this.selectedChannel,
   });
 
   final String mode;
+  final String vendor;
   final String username;
   final String password;
   final String host;
   final int port;
+  final int selectedChannel;
 
   @override
-  List<Object?> get props => [mode, username, password, host, port];
+  List<Object?> get props => [
+        mode,
+        vendor,
+        username,
+        password,
+        host,
+        port,
+        selectedChannel,
+      ];
 }
 
 class HubProvisioningNvrChannelSelected extends HubProvisioningEvent {
