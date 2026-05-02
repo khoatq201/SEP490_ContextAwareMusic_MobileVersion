@@ -86,8 +86,6 @@ class ApiConstants {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   };
-  static const String mqttBrokerUrl = 'mqtt.cams.example.com';
-  static const int mqttPort = 1883;
 
   // API Endpoints - Auth
   static const String login = '/api/auth/login';
@@ -270,36 +268,6 @@ class ApiConstants {
 
   // SignalR
   static String get storeHubUrl => '$baseUrl/hubs/store';
-
-  // MQTT Topics - Space Level
-  static String spaceStatusTopic(String storeId, String spaceId) =>
-      'cams/store/$storeId/space/$spaceId/status';
-
-  static String spaceSensorTopic(String storeId, String spaceId) =>
-      'cams/store/$storeId/space/$spaceId/sensor';
-
-  static String spaceMusicTopic(String storeId, String spaceId) =>
-      'cams/store/$storeId/space/$spaceId/music';
-
-  // MQTT Topics - Zone Level (for multi-zone spaces)
-  static String zoneStatusTopic(
-          String storeId, String spaceId, String zoneId) =>
-      'cams/store/$storeId/space/$spaceId/zone/$zoneId/status';
-
-  static String zoneSensorTopic(
-          String storeId, String spaceId, String zoneId) =>
-      'cams/store/$storeId/space/$spaceId/zone/$zoneId/sensor';
-
-  static String zoneMusicTopic(String storeId, String spaceId, String zoneId) =>
-      'cams/store/$storeId/space/$spaceId/zone/$zoneId/music';
-
-  static String zoneSpeakerTopic(
-          String storeId, String spaceId, String zoneId, String speakerId) =>
-      'cams/store/$storeId/space/$spaceId/zone/$zoneId/speaker/$speakerId';
-
-  // Zone sync topic - for coordinating multi-zone playback
-  static String zoneSyncTopic(String storeId, String spaceId) =>
-      'cams/store/$storeId/space/$spaceId/zone/sync';
 
   // Timeouts
   static const Duration connectTimeout = Duration(seconds: 30);

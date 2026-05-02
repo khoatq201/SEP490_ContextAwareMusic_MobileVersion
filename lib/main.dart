@@ -8,7 +8,6 @@ import 'router.dart';
 import 'core/constants/api_constants.dart';
 import 'core/network/dio_client.dart';
 import 'core/services/local_storage_service.dart';
-import 'core/services/mqtt_service.dart';
 import 'core/presentation/splash_screen.dart';
 import 'core/presentation/app_playback_coordinator.dart';
 import 'core/session/session_cubit.dart';
@@ -194,115 +193,111 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _initializeApp() async {
-    WidgetsFlutterBinding.ensureInitialized();
+    try {
+      WidgetsFlutterBinding.ensureInitialized();
 
-    if (!_isE2ERun) {
-      debugPrint('API base URL: ${ApiConstants.baseUrl}');
-      debugPrint('useMockData: ${ApiConstants.useMockData}');
-    }
-
-    // Initialize dependency injection
-    await initializeDependencies();
-    AppRouter.resetRouter();
-
-    // Initialize local storage
-    final localStorage = sl<LocalStorageService>();
-    await localStorage.init();
-
-    // Initialize cookie jar for HttpOnly refresh token cookies
-    final dioClient = sl<DioClient>();
-    await dioClient.initCookieJar();
-    await _resetAuthSessionIfBaseUrlChanged(
-      localStorage: localStorage,
-      dioClient: dioClient,
-    );
-
-    final sessionCubit = sl<SessionCubit>();
-    final deviceSession = await _hydratePlaybackDeviceSession(
-      localStorage: localStorage,
-    );
-    final hasRestorablePlaybackSession = deviceSession != null &&
-        deviceSession['storeId'] != null &&
-        deviceSession['spaceId'] != null;
-    if (!_isE2ERun) {
-      debugPrint(
-        '[PlaybackAuthDebug] initializeApp '
-        'hasRestorablePlaybackSession=$hasRestorablePlaybackSession '
-        'activeSessionMode=${localStorage.getActiveSessionMode() ?? 'null'} '
-        'hasDeviceAccessToken=${(localStorage.getDeviceAccessToken()?.isNotEmpty ?? false)} '
-        'hasDeviceRefreshToken=${(localStorage.getDeviceRefreshToken()?.isNotEmpty ?? false)}',
-      );
-    }
-
-    if (hasRestorablePlaybackSession) {
-      await localStorage.saveDeviceSession(deviceSession);
-      await localStorage.saveActiveSessionMode(
-        LocalStorageService.sessionModePlaybackDevice,
-      );
-      sessionCubit.setPlaybackMode(
-        store: Store(
-          id: deviceSession['storeId'].toString(),
-          name: deviceSession['storeName']?.toString() ?? 'Paired Store',
-          brandId: deviceSession['brandId']?.toString() ?? '',
-        ),
-        space: Space(
-          id: deviceSession['spaceId'].toString(),
-          name: deviceSession['spaceName']?.toString() ?? 'Paired Space',
-          storeId: deviceSession['storeId'].toString(),
-          type: SpaceTypeEnum.hall,
-          status: EntityStatusEnum.active,
-        ),
-        deviceId: deviceSession['deviceId']?.toString() ??
-            deviceSession['spaceId'].toString(),
-      );
-    } else {
-      await localStorage.clearDeviceSession();
-
-      // ── Restore manager auth session from persisted token ──
-      final authBloc = sl<AuthBloc>();
-      authBloc.add(const CheckAuthStatus());
-      final resolvedAuthState = await authBloc.stream
-          .firstWhere((s) =>
-              s.status == AuthStatus.authenticated ||
-              s.status == AuthStatus.unauthenticated)
-          .timeout(
-            const Duration(seconds: 5),
-            onTimeout: () =>
-                const AuthState(status: AuthStatus.unauthenticated),
-          );
-
-      if (resolvedAuthState.status == AuthStatus.authenticated) {
-        await localStorage.saveActiveSessionMode(
-          LocalStorageService.sessionModeManager,
-        );
-        await sessionCubit.restoreSelectionFromStorage();
-      } else {
-        await localStorage.clearManagerSession();
-        sessionCubit.reset();
+      if (!_isE2ERun) {
+        debugPrint('API base URL: ${ApiConstants.baseUrl}');
+        debugPrint('useMockData: ${ApiConstants.useMockData}');
       }
-    }
 
-    // Skip MQTT in demo mode — no backend required
-    if (!ApiConstants.useMockData) {
-      final mqttService = sl<MqttService>();
-      try {
-        await mqttService.connect(
-          clientId: 'cams_manager_${DateTime.now().millisecondsSinceEpoch}',
+      // Initialize dependency injection
+      await initializeDependencies();
+      AppRouter.resetRouter();
+
+      // Initialize local storage
+      final localStorage = sl<LocalStorageService>();
+      await localStorage.init();
+
+      // Initialize cookie jar for HttpOnly refresh token cookies
+      final dioClient = sl<DioClient>();
+      await dioClient.initCookieJar();
+      await _resetAuthSessionIfBaseUrlChanged(
+        localStorage: localStorage,
+        dioClient: dioClient,
+      );
+
+      final sessionCubit = sl<SessionCubit>();
+      final deviceSession = await _hydratePlaybackDeviceSession(
+        localStorage: localStorage,
+      );
+      final hasRestorablePlaybackSession = deviceSession != null &&
+          deviceSession['storeId'] != null &&
+          deviceSession['spaceId'] != null;
+      if (!_isE2ERun) {
+        debugPrint(
+          '[PlaybackAuthDebug] initializeApp '
+          'hasRestorablePlaybackSession=$hasRestorablePlaybackSession '
+          'activeSessionMode=${localStorage.getActiveSessionMode() ?? 'null'} '
+          'hasDeviceAccessToken=${(localStorage.getDeviceAccessToken()?.isNotEmpty ?? false)} '
+          'hasDeviceRefreshToken=${(localStorage.getDeviceRefreshToken()?.isNotEmpty ?? false)}',
         );
-      } catch (e) {
-        if (!_isE2ERun) {
-          debugPrint('MQTT connection failed: $e');
+      }
+
+      if (hasRestorablePlaybackSession) {
+        await localStorage.saveDeviceSession(deviceSession);
+        await localStorage.saveActiveSessionMode(
+          LocalStorageService.sessionModePlaybackDevice,
+        );
+        sessionCubit.setPlaybackMode(
+          store: Store(
+            id: deviceSession['storeId'].toString(),
+            name: deviceSession['storeName']?.toString() ?? 'Paired Store',
+            brandId: deviceSession['brandId']?.toString() ?? '',
+          ),
+          space: Space(
+            id: deviceSession['spaceId'].toString(),
+            name: deviceSession['spaceName']?.toString() ?? 'Paired Space',
+            storeId: deviceSession['storeId'].toString(),
+            type: SpaceTypeEnum.hall,
+            status: EntityStatusEnum.active,
+          ),
+          deviceId: deviceSession['deviceId']?.toString() ??
+              deviceSession['spaceId'].toString(),
+        );
+      } else {
+        await localStorage.clearDeviceSession();
+
+        // ── Restore manager auth session from persisted token ──
+        final authBloc = sl<AuthBloc>();
+        authBloc.add(const CheckAuthStatus());
+        final resolvedAuthState = await authBloc.stream
+            .firstWhere((s) =>
+                s.status == AuthStatus.authenticated ||
+                s.status == AuthStatus.unauthenticated ||
+                s.status == AuthStatus.error)
+            .timeout(
+              const Duration(seconds: 5),
+              onTimeout: () => const AuthState(status: AuthStatus.error),
+            );
+
+        if (resolvedAuthState.status == AuthStatus.authenticated) {
+          await localStorage.saveActiveSessionMode(
+            LocalStorageService.sessionModeManager,
+          );
+          await sessionCubit.restoreSelectionFromStorage();
+        } else if (resolvedAuthState.status == AuthStatus.unauthenticated) {
+          await localStorage.clearManagerSession();
+          sessionCubit.reset();
+        } else {
+          await localStorage.saveActiveSessionMode(
+            LocalStorageService.sessionModeManager,
+          );
+          await sessionCubit.restoreSelectionFromStorage();
         }
       }
-    } else {
+    } catch (e, stackTrace) {
       if (!_isE2ERun) {
-        debugPrint('🎨 Demo mode enabled — MQTT connection skipped');
+        debugPrint('App initialization failed: $e');
+        debugPrintStack(stackTrace: stackTrace);
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+        });
       }
     }
-
-    setState(() {
-      _isInitialized = true;
-    });
   }
 
   @override

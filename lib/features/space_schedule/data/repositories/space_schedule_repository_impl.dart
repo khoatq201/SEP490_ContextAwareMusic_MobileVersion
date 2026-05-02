@@ -3,6 +3,7 @@ import 'package:dartz/dartz.dart';
 import '../../../../core/error/error_mapper.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/error/failures.dart';
+import '../../../../core/utils/guid.dart';
 import '../../domain/entities/schedule_source.dart';
 import '../../domain/entities/space_schedule.dart';
 import '../../domain/entities/space_schedule_bootstrap.dart';
@@ -509,7 +510,7 @@ class SpaceScheduleRepositoryImpl implements SpaceScheduleRepository {
       slots: schedule.slots
           .map(
             (slot) => slot.copyWith(
-              id: 'slot-${slot.id}-$spaceId',
+              id: generateGuidV4(),
               daysOfWeek: List<int>.from(slot.daysOfWeek),
             ),
           )

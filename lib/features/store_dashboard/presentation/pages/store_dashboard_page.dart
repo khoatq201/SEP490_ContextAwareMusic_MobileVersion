@@ -550,11 +550,7 @@ class StoreDashboardPage extends StatelessWidget {
     );
     if (selection == null || !context.mounted) return;
 
-    final currentlyStrict = selection.previousStrictStoreIds;
     final selectedIds = selection.storeIds.toList(growable: false);
-    final releasedIds = currentlyStrict
-        .where((storeId) => !selection.storeIds.contains(storeId))
-        .toList(growable: false);
 
     final setMode = sl<SetStoreGovernanceMode>();
     if (selectedIds.isNotEmpty) {
@@ -572,25 +568,6 @@ class StoreDashboardPage extends StatelessWidget {
           context,
           failed,
           title: 'Strict Sync update failed',
-        );
-        return;
-      }
-    }
-
-    if (releasedIds.isNotEmpty) {
-      final result = await setMode(
-        request: SetStoreGovernanceModeRequest(
-          storeIds: releasedIds,
-          mode: StoreGovernanceMode.freedom,
-        ),
-      );
-      if (!context.mounted) return;
-      final failed = result.fold((failure) => failure, (_) => null);
-      if (failed != null) {
-        _showStoreFailure(
-          context,
-          failed,
-          title: 'Strict Sync release failed',
         );
         return;
       }
@@ -1337,12 +1314,10 @@ class StoreDashboardPage extends StatelessWidget {
 class _StrictSyncSelection {
   const _StrictSyncSelection({
     required this.storeIds,
-    required this.previousStrictStoreIds,
     this.sourceId,
   });
 
   final Set<String> storeIds;
-  final Set<String> previousStrictStoreIds;
   final String? sourceId;
 }
 
@@ -1634,12 +1609,6 @@ class _StrictSyncStoresSheetState extends State<_StrictSyncStoresSheet> {
                         context,
                         _StrictSyncSelection(
                           storeIds: Set<String>.from(_selectedStoreIds),
-                          previousStrictStoreIds: widget.stores
-                              .where((store) =>
-                                  store.governanceMode ==
-                                  StoreGovernanceMode.strictSync)
-                              .map((store) => store.id)
-                              .toSet(),
                           sourceId: _selectedSourceId,
                         ),
                       ),

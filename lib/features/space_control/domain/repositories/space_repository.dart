@@ -10,10 +10,10 @@ abstract class SpaceRepository {
   /// Get space details by ID
   Future<Either<Failure, Space>> getSpaceById(String spaceId);
 
-  /// Subscribe to real-time space status updates via MQTT
+  /// Subscribe to real-time space status updates.
   Stream<Space> subscribeToSpaceStatus(String storeId, String spaceId);
 
-  /// Subscribe to real-time sensor data via MQTT
+  /// Subscribe to real-time sensor data.
   Stream<SensorData> subscribeToSensorData(String storeId, String spaceId);
 
   /// Unsubscribe from all topics for a space

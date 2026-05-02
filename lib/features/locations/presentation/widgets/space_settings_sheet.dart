@@ -471,19 +471,21 @@ class SpaceSettingsSheet extends StatelessWidget {
                         }
                       },
                     ),
-                    const SizedBox(height: 10),
-                    _NavTile(
-                      icon: LucideIcons.calendar,
-                      iconColor: palette.accent,
-                      label: 'Space schedule',
-                      subtitle:
-                          'Control when this space follows automatic schedules.',
-                      palette: palette,
-                      onTap: () {
-                        Navigator.pop(context);
-                        router.push(_buildSpaceScheduleLocation(space));
-                      },
-                    ),
+                    if (!isPlaybackDevice) ...[
+                      const SizedBox(height: 10),
+                      _NavTile(
+                        icon: LucideIcons.calendar,
+                        iconColor: palette.accent,
+                        label: 'Space schedule',
+                        subtitle:
+                            'Control when this space follows automatic schedules.',
+                        palette: palette,
+                        onTap: () {
+                          Navigator.pop(context);
+                          router.push(_buildSpaceScheduleLocation(space));
+                        },
+                      ),
+                    ],
                     const SizedBox(height: 10),
                     _NavTile(
                       icon: LucideIcons.clock,

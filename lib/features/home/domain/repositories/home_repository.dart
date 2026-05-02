@@ -4,7 +4,7 @@ import '../entities/sensor_entity.dart';
 import '../entities/category_entity.dart';
 
 /// Contract for the Home dashboard data layer.
-/// Implementations can be mock (for dev/test) or real (API / MQTT).
+/// Implementations can be mock (for dev/test) or real API-backed.
 abstract class HomeRepository {
   /// Returns a list of sensor readings for the overview cards.
   Future<Either<Failure, List<SensorEntity>>> getSensorData({

@@ -103,7 +103,15 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
           _addPlayerEvent(const PlayerContextCleared());
           unawaited(context.read<PlaybackNotificationService>().clear());
           context.read<SessionCubit>().reset();
-          AppRouter.router.go('/welcome');
+          final currentPath =
+              AppRouter.router.routeInformationProvider.value.uri.path;
+          final isPublicRoute = currentPath == '/welcome' ||
+              currentPath == '/login' ||
+              currentPath == '/forgot-password' ||
+              currentPath == '/pair-device';
+          if (!isPublicRoute) {
+            AppRouter.router.go('/login');
+          }
         });
       }
       _syncSession(context.read<SessionCubit>().state);

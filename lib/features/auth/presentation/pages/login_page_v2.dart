@@ -32,6 +32,7 @@ class _LoginPageV2State extends State<LoginPageV2>
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
   bool _rememberMe = false;
+  bool _hasSubmittedLogin = false;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
@@ -59,6 +60,9 @@ class _LoginPageV2State extends State<LoginPageV2>
 
   void _handleLogin() {
     if (_formKey.currentState!.validate()) {
+      setState(() {
+        _hasSubmittedLogin = true;
+      });
       context.read<AuthBloc>().add(
             LoginRequested(
               email: _emailController.text.trim(),
@@ -223,7 +227,7 @@ class _LoginPageV2State extends State<LoginPageV2>
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppDimensions.spacingLg),
-          if (state.failure != null) ...[
+          if (_hasSubmittedLogin && state.failure != null) ...[
             AppInlineErrorCard(
               failure: state.failure,
               title: 'Sign-in failed',

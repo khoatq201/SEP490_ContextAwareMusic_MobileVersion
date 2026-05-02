@@ -16,6 +16,7 @@ import '../../../config_governance/domain/usecases/config_governance_usecases.da
 import '../../../playlists/data/datasources/playlist_remote_datasource.dart';
 import '../../../space_schedule/data/datasources/space_schedule_remote_datasource.dart';
 import '../../../space_schedule/domain/entities/schedule_music_item.dart';
+import '../../../space_schedule/domain/entities/schedule_source.dart';
 import '../../../space_schedule/presentation/widgets/brand_schedule_editor_sheet.dart';
 import '../bloc/store_selection_bloc.dart';
 import '../bloc/store_selection_event.dart';
@@ -1203,70 +1204,168 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
     final tokens = context.camsTokens;
 
     final selectedStoreIds = _selectedStoreIds.toList(growable: false);
+    final currentState = context.read<StoreSelectionBloc>().state;
+    final selectedStores = currentState is StoreSelectionLoaded
+        ? currentState.stores
+            .where((store) => _selectedStoreIds.contains(store.id))
+            .toList(growable: false)
+        : const <StoreSummary>[];
+    final selectedBrandIds = selectedStores
+        .map((store) => store.brandId.trim())
+        .where((brandId) => brandId.isNotEmpty)
+        .toSet();
+    final fallbackBrandId = context.read<AuthBloc>().state.user?.brandId;
+    final selectedBrandId = selectedBrandIds.length == 1
+        ? selectedBrandIds.single
+        : fallbackBrandId;
+    final canLoadStrictSyncTemplates = selectedBrandIds.length <= 1 &&
+        selectedBrandId?.trim().isNotEmpty == true;
+    var templates = const <ScheduleSource>[];
+    var isLoadingTemplates = false;
+    String? templateError;
+    Future<void> loadTemplates(StateSetter setDialogState) async {
+      if (!canLoadStrictSyncTemplates || isLoadingTemplates) return;
+      setDialogState(() {
+        isLoadingTemplates = true;
+        templateError = null;
+      });
+      try {
+        final freshTemplates = await sl<SpaceScheduleRemoteDataSource>()
+            .getBrandTemplates(selectedBrandId!.trim());
+        if (!mounted) return;
+        setDialogState(() {
+          templates = freshTemplates;
+          isLoadingTemplates = false;
+          templateError = null;
+        });
+      } catch (error) {
+        if (!mounted) return;
+        setDialogState(() {
+          isLoadingTemplates = false;
+          templateError = error.toString();
+        });
+      }
+    }
+
     final modeSnapshot = _resolveBulkGovernanceModeSelection(selectedStoreIds);
     StoreGovernanceMode? selectedMode = modeSnapshot.initialMode;
-    final result = await showDialog<StoreGovernanceMode>(
+    String? selectedSourceId;
+    var hasRequestedTemplates = false;
+    final result = await showDialog<_BulkGovernanceApplySelection>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('Bulk governance mode'),
-          content: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${_selectedStoreIds.length} selected store(s) will receive the same governance mode.',
-                  style: AppTypography.bodyMedium.copyWith(height: 1.35),
-                ),
-                if (modeSnapshot.isMixed) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    'Selected stores currently use mixed governance modes.',
-                    style: AppTypography.labelSmall.copyWith(
-                      color: tokens.warning,
-                      fontWeight: FontWeight.w600,
+        builder: (context, setState) {
+          if (selectedMode == StoreGovernanceMode.strictSync &&
+              canLoadStrictSyncTemplates &&
+              !hasRequestedTemplates) {
+            hasRequestedTemplates = true;
+            WidgetsBinding.instance.addPostFrameCallback(
+              (_) => loadTemplates(setState),
+            );
+          }
+
+          return AlertDialog(
+            title: const Text('Bulk governance mode'),
+            content: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${_selectedStoreIds.length} selected store(s) will receive the same governance mode.',
+                      style: AppTypography.bodyMedium.copyWith(height: 1.35),
                     ),
-                  ),
-                ],
-                const SizedBox(height: 12),
-                RadioGroup<StoreGovernanceMode>(
-                  groupValue: selectedMode,
-                  onChanged: (value) {
-                    if (value == null) return;
-                    setState(() => selectedMode = value);
-                  },
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: StoreGovernanceMode.values
-                        .map(
-                          (mode) => RadioListTile<StoreGovernanceMode>(
-                            value: mode,
-                            title: Text(mode.label),
-                            subtitle: Text(mode.description),
-                            contentPadding: EdgeInsets.zero,
+                    if (modeSnapshot.isMixed) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'Selected stores currently use mixed governance modes.',
+                        style: AppTypography.labelSmall.copyWith(
+                          color: tokens.warning,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    RadioGroup<StoreGovernanceMode>(
+                      groupValue: selectedMode,
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setState(() {
+                          selectedMode = value;
+                          if (value != StoreGovernanceMode.strictSync) {
+                            selectedSourceId = null;
+                          } else if (canLoadStrictSyncTemplates &&
+                              !hasRequestedTemplates) {
+                            hasRequestedTemplates = true;
+                            WidgetsBinding.instance.addPostFrameCallback(
+                              (_) => loadTemplates(setState),
+                            );
+                          }
+                        });
+                      },
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: StoreGovernanceMode.values
+                            .map(
+                              (mode) => RadioListTile<StoreGovernanceMode>(
+                                value: mode,
+                                title: Text(mode.label),
+                                subtitle: Text(mode.description),
+                                contentPadding: EdgeInsets.zero,
+                              ),
+                            )
+                            .toList(growable: false),
+                      ),
+                    ),
+                    if (selectedMode == StoreGovernanceMode.strictSync) ...[
+                      const SizedBox(height: 12),
+                      if (!canLoadStrictSyncTemplates)
+                        Text(
+                          'Templates are unavailable when selected stores belong to multiple brands.',
+                          style: AppTypography.labelSmall.copyWith(
+                            color: tokens.warning,
+                            fontWeight: FontWeight.w600,
                           ),
                         )
-                        .toList(growable: false),
-                  ),
+                      else
+                        _StrictSyncTemplatePicker(
+                          templates: templates,
+                          selectedSourceId: selectedSourceId,
+                          isLoading: isLoadingTemplates,
+                          errorMessage: templateError,
+                          onRefresh: () => loadTemplates(setState),
+                          onChanged: (value) =>
+                              setState(() => selectedSourceId = value),
+                        ),
+                    ],
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: selectedMode == null
-                  ? null
-                  : () => Navigator.of(dialogContext).pop(selectedMode),
-              child: const Text('Apply'),
-            ),
-          ],
-        ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: selectedMode == null
+                    ? null
+                    : () => Navigator.of(dialogContext).pop(
+                          _BulkGovernanceApplySelection(
+                            mode: selectedMode!,
+                            sourceId:
+                                selectedMode == StoreGovernanceMode.strictSync
+                                    ? selectedSourceId
+                                    : null,
+                          ),
+                        ),
+                child: const Text('Apply'),
+              ),
+            ],
+          );
+        },
       ),
     );
 
@@ -1276,7 +1375,8 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
     final response = await sl<SetStoreGovernanceMode>()(
       request: SetStoreGovernanceModeRequest(
         storeIds: selectedStoreIds,
-        mode: result,
+        mode: result.mode,
+        sourceId: result.sourceId,
       ),
     );
     if (!mounted) return;
@@ -1298,7 +1398,7 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
       (message) {
         setState(() {
           for (final storeId in selectedStoreIds) {
-            _knownStoreGovernanceModes[storeId] = result;
+            _knownStoreGovernanceModes[storeId] = result.mode;
           }
           _isApplyingBulkMode = false;
           _isBulkSelectionMode = false;
@@ -1790,6 +1890,111 @@ class _BulkGovernanceModeSelection {
     this.initialMode,
     this.isMixed = false,
   });
+}
+
+class _BulkGovernanceApplySelection {
+  const _BulkGovernanceApplySelection({
+    required this.mode,
+    this.sourceId,
+  });
+
+  final StoreGovernanceMode mode;
+  final String? sourceId;
+}
+
+class _StrictSyncTemplatePicker extends StatelessWidget {
+  const _StrictSyncTemplatePicker({
+    required this.templates,
+    required this.selectedSourceId,
+    required this.isLoading,
+    required this.errorMessage,
+    required this.onRefresh,
+    required this.onChanged,
+  });
+
+  final List<ScheduleSource> templates;
+  final String? selectedSourceId;
+  final bool isLoading;
+  final String? errorMessage;
+  final VoidCallback onRefresh;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    if (isLoading) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest.withAlpha(110),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: theme.colorScheme.outlineVariant),
+        ),
+        child: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CamsSkeletonLine(width: 190, height: 14),
+            SizedBox(height: 10),
+            CamsSkeletonBox(height: 48, radius: 12),
+          ],
+        ),
+      );
+    }
+
+    if (errorMessage != null) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.errorContainer.withAlpha(80),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: theme.colorScheme.error.withAlpha(90)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.error_outline_rounded, color: theme.colorScheme.error),
+            const SizedBox(width: 10),
+            const Expanded(
+              child:
+                  Text('Cannot load templates. Strict Sync can still be set.'),
+            ),
+            TextButton(
+              onPressed: onRefresh,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return DropdownButtonFormField<String?>(
+      initialValue: selectedSourceId,
+      isExpanded: true,
+      decoration: const InputDecoration(
+        labelText: 'Strict Sync source template',
+        helperText: 'Optional. Selected template is linked to chosen stores.',
+      ),
+      items: [
+        const DropdownMenuItem<String?>(
+          value: null,
+          child: Text('Link template later'),
+        ),
+        ...templates.map(
+          (template) => DropdownMenuItem<String?>(
+            value: template.id,
+            child: Text(
+              template.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+      ],
+      onChanged: onChanged,
+    );
+  }
 }
 
 class _BrandProfileSheet extends StatefulWidget {

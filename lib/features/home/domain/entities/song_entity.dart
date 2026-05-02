@@ -2,7 +2,7 @@ import 'package:equatable/equatable.dart';
 
 /// A song/track entry used in playlist cards on the Home tab.
 /// Deliberately separate from [Track] (space_control domain) which carries
-/// MQTT-specific fields (fileUrl, moodTags, localPath).
+/// Realtime/API-specific fields (fileUrl, moodTags, localPath).
 class SongEntity extends Equatable {
   final String id;
   final String title;

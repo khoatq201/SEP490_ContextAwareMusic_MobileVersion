@@ -124,7 +124,10 @@ class AppRouter {
             if (location == '/welcome' ||
                 location == '/login' ||
                 location == '/pair-device' ||
-                location == '/store-selection') {
+                location == '/store-selection' ||
+                location == '/space-schedule' ||
+                location == '/settings/user' ||
+                location == '/settings/company') {
               return '/home';
             }
             return null;
@@ -286,7 +289,17 @@ class AppRouter {
                 builder: (context, state) => MultiBlocProvider(
                   providers: [
                     BlocProvider.value(value: sl<AuthBloc>()),
-                    BlocProvider(create: (_) => sl<SettingsCubit>()..load()),
+                    BlocProvider(
+                      create: (_) {
+                        final cubit = sl<SettingsCubit>();
+                        if (sl<SessionCubit>().state.isPlaybackDevice) {
+                          cubit.loadPlaybackDevice();
+                        } else {
+                          cubit.load();
+                        }
+                        return cubit;
+                      },
+                    ),
                   ],
                   child: const SettingsPage(),
                 ),
@@ -417,10 +430,26 @@ class AppRouter {
               final spaceId = state.uri.queryParameters['spaceId'];
               final storeId = state.uri.queryParameters['storeId'];
               final spaceName = state.uri.queryParameters['spaceName'];
-              final currentStore = sl<SessionCubit>().state.currentStore;
+              final session = sl<SessionCubit>().state;
+              final currentStore = session.currentStore;
               final initialGovernanceMode = currentStore?.id == storeId
                   ? currentStore?.governanceMode
                   : null;
+
+              if (session.isPlaybackDevice) {
+                return MaterialPage(
+                  fullscreenDialog: true,
+                  child: Scaffold(
+                    body: AppErrorView(
+                      title: 'Schedule unavailable',
+                      message:
+                          'Playback devices can view runtime scheduling state, but cannot edit space schedules.',
+                      onSecondaryAction: () => Navigator.of(context).maybePop(),
+                      secondaryLabel: 'Go back',
+                    ),
+                  ),
+                );
+              }
 
               if (spaceId == null || storeId == null || spaceName == null) {
                 return MaterialPage(

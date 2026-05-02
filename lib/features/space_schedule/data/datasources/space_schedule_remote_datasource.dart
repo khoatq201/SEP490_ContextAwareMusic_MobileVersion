@@ -399,14 +399,18 @@ class SpaceScheduleRemoteDataSourceImpl
   }
 
   List<ScheduleSourceModel> _parseSourceList(dynamic raw) {
-    return (raw as List<dynamic>? ?? const [])
-        .whereType<Map>()
-        .map(
-          (item) => ScheduleSourceModel.fromJson(
-            Map<String, dynamic>.from(item),
-          ),
-        )
-        .toList(growable: false);
+    final sources = <ScheduleSourceModel>[];
+    for (final item in raw as List<dynamic>? ?? const []) {
+      if (item is! Map) continue;
+      try {
+        sources.add(
+          ScheduleSourceModel.fromJson(Map<String, dynamic>.from(item)),
+        );
+      } catch (_) {
+        continue;
+      }
+    }
+    return sources;
   }
 
   List<ScheduleSourceModel> _uniqueSources(

@@ -30,7 +30,7 @@ abstract class ZoneRemoteDataSource {
   /// Delete a zone
   Future<void> deleteZone(String zoneId);
 
-  /// Update speaker volume via API/MQTT
+  /// Update speaker volume via API
   Future<void> updateSpeakerVolume({
     required String speakerId,
     required int volume,

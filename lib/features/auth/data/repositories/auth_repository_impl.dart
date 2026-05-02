@@ -110,14 +110,26 @@ class AuthRepositoryImpl implements AuthRepository {
           return Right(cachedUser);
         }
 
-        final profileResponse = await remoteDataSource.getProfile();
-        final refreshedUser = profileResponse.toUser();
-        await localStorage
-            .saveUser(UserModel.fromEntity(refreshedUser).toJson());
-        await localStorage.saveActiveSessionMode(
-          LocalStorageService.sessionModeManager,
-        );
-        return Right(refreshedUser);
+        try {
+          final profileResponse = await remoteDataSource.getProfile();
+          final refreshedUser = profileResponse.toUser();
+          await localStorage
+              .saveUser(UserModel.fromEntity(refreshedUser).toJson());
+          await localStorage.saveActiveSessionMode(
+            LocalStorageService.sessionModeManager,
+          );
+          return Right(refreshedUser);
+        } catch (error, stackTrace) {
+          final failure = ErrorMapper.toFailure(
+            error,
+            fallbackMessage: 'We could not refresh your profile right now.',
+            stackTrace: stackTrace,
+          );
+          if (failure.isRetryable) {
+            return Right(cachedUser);
+          }
+          return Left(failure);
+        }
       }
 
       if (await networkInfo.isConnected) {
@@ -130,7 +142,11 @@ class AuthRepositoryImpl implements AuthRepository {
         return Right(user);
       }
 
-      return const Left(CacheFailure('No user found'));
+      return const Left(
+        NetworkFailure(
+          'A saved sign-in was found, but your profile is not available offline yet.',
+        ),
+      );
     } catch (error, stackTrace) {
       return Left(
         ErrorMapper.toFailure(

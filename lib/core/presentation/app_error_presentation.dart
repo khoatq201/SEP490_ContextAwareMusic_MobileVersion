@@ -78,7 +78,7 @@ class AppErrorPresentation {
         return 'Something went wrong';
       case FailureKind.cache:
         return 'Unavailable offline';
-      case FailureKind.mqtt:
+      case FailureKind.realtime:
         return 'Realtime unavailable';
       case FailureKind.permission:
         return 'Permission needed';
@@ -113,7 +113,7 @@ class AppErrorPresentation {
         return Icons.cloud_off_rounded;
       case FailureKind.cache:
         return Icons.inventory_2_outlined;
-      case FailureKind.mqtt:
+      case FailureKind.realtime:
         return Icons.hub_outlined;
       case FailureKind.permission:
         return Icons.gpp_maybe_outlined;
@@ -139,7 +139,7 @@ class AppErrorPresentation {
       case FailureKind.network:
       case FailureKind.timeout:
       case FailureKind.cache:
-      case FailureKind.mqtt:
+      case FailureKind.realtime:
         return AppStatusTone.info;
       case FailureKind.serverUnavailable:
       case FailureKind.server:

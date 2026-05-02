@@ -112,15 +112,15 @@ class ForbiddenFailure extends Failure {
         );
 }
 
-class MqttConnectionFailure extends Failure {
-  const MqttConnectionFailure([
+class RealtimeConnectionFailure extends Failure {
+  const RealtimeConnectionFailure([
     super.message = 'Realtime connection is unavailable right now.',
     String? backendCode,
     int? statusCode,
     String? debugMessage,
     bool isRetryable = true,
   ]) : super(
-          kind: FailureKind.mqtt,
+          kind: FailureKind.realtime,
           backendCode: backendCode,
           statusCode: statusCode,
           debugMessage: debugMessage,

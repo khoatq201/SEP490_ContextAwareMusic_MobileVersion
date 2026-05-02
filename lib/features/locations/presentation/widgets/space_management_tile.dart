@@ -936,6 +936,7 @@ class _ActionRow extends StatelessWidget {
             icon: LucideIcons.calendar,
             label: 'Schedule',
             palette: palette,
+            enabled: !isPlaybackDevice,
             onTap: onSchedule,
           ),
         ),

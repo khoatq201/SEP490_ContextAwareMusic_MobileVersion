@@ -217,15 +217,15 @@ class UnexpectedException extends AppException {
         );
 }
 
-class MqttConnectionException extends AppException {
-  const MqttConnectionException([
+class RealtimeConnectionException extends AppException {
+  const RealtimeConnectionException([
     super.message = 'Realtime connection is unavailable right now.',
     String? backendCode,
     int? statusCode,
     String? debugMessage,
     bool isRetryable = true,
   ]) : super(
-          kind: FailureKind.mqtt,
+          kind: FailureKind.realtime,
           backendCode: backendCode,
           statusCode: statusCode,
           debugMessage: debugMessage,

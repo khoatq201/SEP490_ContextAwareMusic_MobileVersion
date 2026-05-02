@@ -116,10 +116,23 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     final result = await getCurrentUser();
 
     result.fold(
-      (_) {
+      (failure) {
+        if (failure.isRetryable) {
+          emit(
+            state.copyWith(
+              status: AuthStatus.error,
+              failure: failure,
+              clearFeedback: true,
+            ),
+          );
+          return;
+        }
+
         sessionDataCache?.clear();
         sessionCubit.reset();
-        emit(const AuthState(status: AuthStatus.unauthenticated));
+        emit(
+          const AuthState(status: AuthStatus.unauthenticated),
+        );
       },
       (user) {
         emit(

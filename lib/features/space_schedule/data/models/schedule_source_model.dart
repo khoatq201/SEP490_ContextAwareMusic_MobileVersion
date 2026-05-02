@@ -14,14 +14,24 @@ class ScheduleSourceModel extends ScheduleSource {
 
   factory ScheduleSourceModel.fromJson(Map<String, dynamic> json) {
     final type = _parseSourceType(json);
+    final rawSchedule = json['schedule'];
+    final schedule = rawSchedule is Map
+        ? SpaceScheduleModel.fromJson(Map<String, dynamic>.from(rawSchedule))
+        : SpaceScheduleModel(
+            id: json['id']?.toString() ?? '',
+            name: json['title']?.toString() ?? 'Schedule source',
+            spaceId: null,
+            slots: const [],
+            enabled: true,
+            updatedAt: DateTime.now(),
+          );
     return ScheduleSourceModel(
       id: json['id']?.toString() ?? '',
       title: json['title']?.toString() ?? 'Schedule source',
       subtitle: json['subtitle']?.toString() ?? '',
       description: json['description']?.toString(),
       type: type,
-      schedule:
-          SpaceScheduleModel.fromJson(json['schedule'] as Map<String, dynamic>),
+      schedule: schedule,
       isUserCreated: json['isUserCreated'] as bool? ?? false,
     );
   }

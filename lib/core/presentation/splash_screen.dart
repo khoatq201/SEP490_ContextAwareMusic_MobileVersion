@@ -39,6 +39,7 @@ class _SplashScreenState extends State<SplashScreen>
 
     // Wait for animation + initialization to complete before transitioning
     Future.delayed(const Duration(milliseconds: 2500), () async {
+      if (!mounted) return;
       await widget.onInitializationComplete();
     });
   }

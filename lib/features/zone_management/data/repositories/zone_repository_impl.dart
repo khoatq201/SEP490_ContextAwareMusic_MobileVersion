@@ -99,7 +99,7 @@ class ZoneRepositoryImpl implements ZoneRepository {
     required int volume,
   }) async {
     try {
-      // Mock implementation - in production would call API/MQTT
+      // Mock implementation - in production would call API
       await Future.delayed(const Duration(milliseconds: 300));
       return const Right(null);
     } on ServerException catch (e) {
@@ -113,7 +113,7 @@ class ZoneRepositoryImpl implements ZoneRepository {
   @override
   Future<Either<Failure, void>> syncZonesMusic(List<String> zoneIds) async {
     try {
-      // Mock implementation - in production would call API/MQTT
+      // Mock implementation - in production would call API
       // This would instruct the server to sync music playback across zones
       await Future.delayed(const Duration(milliseconds: 500));
       return const Right(null);
@@ -127,7 +127,7 @@ class ZoneRepositoryImpl implements ZoneRepository {
   @override
   Future<Either<Failure, void>> unsyncZones(List<String> zoneIds) async {
     try {
-      // Mock implementation - in production would call API/MQTT
+      // Mock implementation - in production would call API
       await Future.delayed(const Duration(milliseconds: 500));
       return const Right(null);
     } on ServerException catch (e) {

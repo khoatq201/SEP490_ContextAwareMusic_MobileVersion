@@ -2,7 +2,6 @@ import 'package:get_it/get_it.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'core/network/dio_client.dart';
 import 'core/network/network_info.dart';
-import 'core/services/mqtt_service.dart';
 import 'core/services/local_storage_service.dart';
 import 'core/services/session_data_cache.dart';
 import 'core/session/session_cubit.dart';
@@ -198,7 +197,6 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(() => LocalStorageService());
   sl.registerLazySingleton(() => SessionDataCache());
   sl.registerLazySingleton(() => DioClient(localStorage: sl()));
-  sl.registerLazySingleton(() => MqttService());
 
   // Network
   sl.registerLazySingleton<NetworkInfo>(
@@ -472,7 +470,7 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton<SpaceRemoteDataSource>(
     () => ApiConstants.useMockData
         ? SpaceMockDataSource()
-        : SpaceRemoteDataSourceImpl(dioClient: sl(), mqttService: sl()),
+        : SpaceRemoteDataSourceImpl(dioClient: sl()),
   );
 
   sl.registerLazySingleton<OfflinePlaylistDataSource>(

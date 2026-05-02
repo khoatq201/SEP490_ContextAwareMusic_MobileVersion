@@ -169,6 +169,7 @@ class _BrandScheduleEditorSheetState extends State<BrandScheduleEditorSheet> {
   String? _errorMessage;
   String? _selectedSourceId;
   var _selectedType = ScheduleSourceType.template;
+  var _selectedDay = DateTime.now().weekday % DateTime.sunday;
   List<ScheduleSource> _templateSources = const [];
   List<ScheduleSource> _librarySources = const [];
 
@@ -314,10 +315,9 @@ class _BrandScheduleEditorSheetState extends State<BrandScheduleEditorSheet> {
       builder: (_) => ScheduleSlotFormSheet(
         title: slot == null ? 'Add brand slot' : 'Edit brand slot',
         slot: slot,
-        initialDay: DateTime.now().weekday % DateTime.sunday,
+        initialDay: slot?.daysOfWeek.firstOrNull ?? _selectedDay,
         musicCatalog: widget.musicCatalog,
         allowMultipleDays: true,
-        generatedIdPrefix: 'brand-slot',
       ),
     );
     if (!mounted || payload == null) return;
@@ -572,6 +572,9 @@ class _BrandScheduleEditorSheetState extends State<BrandScheduleEditorSheet> {
                                 source: selectedSource,
                                 musicCatalog: widget.musicCatalog,
                                 isSaving: _isSaving,
+                                selectedDay: _selectedDay,
+                                onDaySelected: (day) =>
+                                    setState(() => _selectedDay = day),
                                 onEdit: () => _editSource(selectedSource),
                                 onDelete: () => _deleteSource(selectedSource),
                                 onAddSlot: () => _upsertSlot(selectedSource),
@@ -597,6 +600,8 @@ class _BrandSourcePanel extends StatelessWidget {
     required this.source,
     required this.musicCatalog,
     required this.isSaving,
+    required this.selectedDay,
+    required this.onDaySelected,
     required this.onEdit,
     required this.onDelete,
     required this.onAddSlot,
@@ -607,6 +612,8 @@ class _BrandSourcePanel extends StatelessWidget {
   final ScheduleSource source;
   final List<ScheduleMusicItem> musicCatalog;
   final bool isSaving;
+  final int selectedDay;
+  final ValueChanged<int> onDaySelected;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final VoidCallback onAddSlot;
@@ -616,8 +623,12 @@ class _BrandSourcePanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.camsTokens;
-    final slots = [...source.schedule.slots]
-      ..sort((a, b) => a.startTime.compareTo(b.startTime));
+    final daySlots = source.schedule.slots
+        .where((slot) => slot.daysOfWeek.contains(selectedDay))
+        .toList()
+      ..sort((a, b) => _minutesOfDay(a.startTime).compareTo(
+            _minutesOfDay(b.startTime),
+          ));
 
     return Card(
       elevation: 0,
@@ -669,27 +680,49 @@ class _BrandSourcePanel extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: isSaving ? null : onAddSlot,
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('Add brand slot'),
+            Row(
+              children: [
+                Expanded(
+                  child: _BrandScheduleSummary(
+                    source: source,
+                    musicCatalog: musicCatalog,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                FilledButton.icon(
+                  onPressed: isSaving ? null : onAddSlot,
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text('Add slot'),
+                ),
+              ],
             ),
             const SizedBox(height: 12),
-            if (slots.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 18),
-                child: Center(
-                  child: Text('No brand slots yet.'),
+            SizedBox(
+              height: 40,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemBuilder: (context, index) => _BrandDayChip(
+                  label: _shortDayLabels[index],
+                  selected: selectedDay == index,
+                  onTap: () => onDaySelected(index),
                 ),
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemCount: _shortDayLabels.length,
+              ),
+            ),
+            const SizedBox(height: 12),
+            if (daySlots.isEmpty)
+              _EmptyBrandTimeline(
+                sourceType: source.type,
+                dayLabel: _shortDayLabels[selectedDay],
+                onAddSlot: isSaving ? null : onAddSlot,
               )
             else
-              ...slots.map(
-                (slot) => _BrandSlotTile(
-                  slot: slot,
-                  music: _findMusic(musicCatalog, slot.musicId),
-                  onTap: isSaving ? null : () => onEditSlot(slot),
-                  onDelete: isSaving ? null : () => onDeleteSlot(slot),
-                ),
+              _BrandScheduleTimeline(
+                slots: daySlots,
+                musicCatalog: musicCatalog,
+                onSlotTap: isSaving ? null : onEditSlot,
+                onSlotDelete: isSaving ? null : onDeleteSlot,
               ),
           ],
         ),
@@ -698,34 +731,369 @@ class _BrandSourcePanel extends StatelessWidget {
   }
 }
 
-class _BrandSlotTile extends StatelessWidget {
-  const _BrandSlotTile({
-    required this.slot,
-    required this.music,
-    required this.onTap,
-    required this.onDelete,
+class _BrandScheduleSummary extends StatelessWidget {
+  const _BrandScheduleSummary({
+    required this.source,
+    required this.musicCatalog,
   });
 
-  final ScheduleSlot slot;
-  final ScheduleMusicItem? music;
-  final VoidCallback? onTap;
-  final VoidCallback? onDelete;
+  final ScheduleSource source;
+  final List<ScheduleMusicItem> musicCatalog;
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: const CircleAvatar(child: Icon(Icons.schedule_rounded)),
-      title: Text(music?.title ?? 'Missing playlist'),
-      subtitle: Text(
-        '${_daysLabel(slot.daysOfWeek)} | ${slot.startTime} - ${slot.endTime}',
+    final tokens = context.camsTokens;
+    final slotCount = source.schedule.slots.length;
+    final playlistCount = source.schedule.slots
+        .map((slot) => slot.musicId)
+        .where((id) => id.trim().isNotEmpty)
+        .toSet()
+        .length;
+    final knownPlaylistCount = source.schedule.slots
+        .map((slot) => _findMusic(musicCatalog, slot.musicId))
+        .whereType<ScheduleMusicItem>()
+        .map((item) => item.id)
+        .toSet()
+        .length;
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        _MetricPill(
+          icon: Icons.view_week_outlined,
+          label: '$slotCount slots',
+          color: tokens.brandPrimary,
+        ),
+        _MetricPill(
+          icon: Icons.queue_music_outlined,
+          label: '$playlistCount playlists',
+          color: tokens.techAccent,
+        ),
+        if (knownPlaylistCount < playlistCount)
+          _MetricPill(
+            icon: Icons.warning_amber_rounded,
+            label: '${playlistCount - knownPlaylistCount} missing',
+            color: tokens.warning,
+          ),
+      ],
+    );
+  }
+}
+
+class _MetricPill extends StatelessWidget {
+  const _MetricPill({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.22)),
       ),
-      trailing: IconButton(
-        tooltip: 'Delete slot',
-        onPressed: onDelete,
-        icon: const Icon(Icons.delete_outline),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 15, color: color),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
       ),
+    );
+  }
+}
+
+class _BrandDayChip extends StatelessWidget {
+  const _BrandDayChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
+    return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        width: 58,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: selected ? tokens.brandPrimary : tokens.bgElevated,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: selected ? tokens.brandPrimary : tokens.borderSecondary,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? Colors.white : tokens.textPrimary,
+            fontWeight: FontWeight.w800,
+            fontSize: 12,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyBrandTimeline extends StatelessWidget {
+  const _EmptyBrandTimeline({
+    required this.sourceType,
+    required this.dayLabel,
+    required this.onAddSlot,
+  });
+
+  final ScheduleSourceType sourceType;
+  final String dayLabel;
+  final VoidCallback? onAddSlot;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
+    final noun = sourceType == ScheduleSourceType.template
+        ? 'template'
+        : 'library schedule';
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: tokens.bgElevated,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: tokens.borderSecondary),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.calendar_today_outlined, color: tokens.textTertiary),
+          const SizedBox(height: 8),
+          Text(
+            'No $dayLabel slots in this $noun.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: tokens.textPrimary,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: onAddSlot,
+            icon: const Icon(Icons.add_rounded),
+            label: const Text('Add slot'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BrandScheduleTimeline extends StatelessWidget {
+  const _BrandScheduleTimeline({
+    required this.slots,
+    required this.musicCatalog,
+    required this.onSlotTap,
+    required this.onSlotDelete,
+  });
+
+  final List<ScheduleSlot> slots;
+  final List<ScheduleMusicItem> musicCatalog;
+  final ValueChanged<ScheduleSlot>? onSlotTap;
+  final ValueChanged<ScheduleSlot>? onSlotDelete;
+
+  static const double _hourHeight = 62;
+  static const int _startHour = 0;
+  static const int _endHour = 24;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
+    const totalHeight = (_endHour - _startHour) * _hourHeight;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: tokens.bgElevated,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: tokens.borderSecondary),
+      ),
+      child: SizedBox(
+        height: totalHeight,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 54,
+              child: Column(
+                children: List.generate(_endHour - _startHour, (index) {
+                  final hour = _startHour + index;
+                  return SizedBox(
+                    height: _hourHeight,
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 7),
+                        child: Text(
+                          _formatHourLabel(hour),
+                          style: TextStyle(
+                            color: tokens.textTertiary,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
+            Expanded(
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  for (int index = 0; index < _endHour - _startHour; index++)
+                    Positioned(
+                      top: index * _hourHeight,
+                      left: 0,
+                      right: 0,
+                      child: Container(
+                        height: _hourHeight,
+                        decoration: BoxDecoration(
+                          border: Border(
+                            top: BorderSide(color: tokens.borderSecondary),
+                          ),
+                        ),
+                      ),
+                    ),
+                  for (final slot in slots) _buildPositionedSlot(context, slot),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPositionedSlot(BuildContext context, ScheduleSlot slot) {
+    final music = _findMusic(musicCatalog, slot.musicId);
+    final startMinutes = _minutesOfDay(slot.startTime);
+    final endMinutes = _minutesOfDay(slot.endTime);
+    final top = ((startMinutes - (_startHour * 60)) / 60) * _hourHeight;
+    final rawHeight = ((endMinutes - startMinutes) / 60) * _hourHeight;
+    final height = rawHeight < 72 ? 72.0 : rawHeight;
+    final primary = _colorFromHex(music?.primaryHex ?? '#335C67');
+    final secondary = _colorFromHex(music?.secondaryHex ?? '#2A9D8F');
+
+    return Positioned(
+      top:
+          top.clamp(0, ((_endHour - _startHour) * _hourHeight) - 72).toDouble(),
+      left: 6,
+      right: 10,
+      height: height,
+      child: InkWell(
+        onTap: onSlotTap == null ? null : () => onSlotTap!(slot),
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            gradient: LinearGradient(
+              colors: [primary, secondary],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: secondary.withValues(alpha: 0.18),
+                blurRadius: 14,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.2),
+                  ),
+                ),
+                child: Text(
+                  _initials(music?.artworkLabel ?? music?.title ?? '?'),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      music?.title ?? 'Missing playlist',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${slot.startTime} - ${slot.endTime} | ${_daysLabel(slot.daysOfWeek)}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.78),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: 'Delete slot',
+                onPressed:
+                    onSlotDelete == null ? null : () => onSlotDelete!(slot),
+                icon: const Icon(Icons.delete_outline),
+                color: Colors.white,
+                visualDensity: VisualDensity.compact,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -848,6 +1216,40 @@ String _daysLabel(List<int> days) {
   if (days.length == 7) return 'Every day';
   final normalized = days.where((day) => day >= 0 && day <= 6).toList()..sort();
   return normalized.map((day) => _shortDayLabels[day]).join(', ');
+}
+
+String _formatHourLabel(int hour) {
+  final period = hour >= 12 ? 'PM' : 'AM';
+  final display = hour % 12 == 0 ? 12 : hour % 12;
+  return '$display $period';
+}
+
+int _minutesOfDay(String value) {
+  final segments = value.split(':');
+  if (segments.length != 2) return 0;
+  final hour = int.tryParse(segments[0]) ?? 0;
+  final minute = int.tryParse(segments[1]) ?? 0;
+  return (hour * 60) + minute;
+}
+
+String _initials(String value) {
+  final trimmed = value.trim();
+  if (trimmed.isEmpty) return '?';
+  final words = trimmed.split(RegExp(r'\s+'));
+  if (words.length == 1) {
+    return words.first
+        .substring(0, words.first.length < 2 ? 1 : 2)
+        .toUpperCase();
+  }
+  return '${words[0][0]}${words[1][0]}'.toUpperCase();
+}
+
+Color _colorFromHex(String value) {
+  final sanitized = value.replaceAll('#', '').trim();
+  final hex = sanitized.length == 6 ? 'FF$sanitized' : sanitized;
+  final parsed = int.tryParse(hex, radix: 16);
+  if (parsed == null) return const Color(0xFF335C67);
+  return Color(parsed);
 }
 
 String _sourceTypeLabel(ScheduleSourceType type) {

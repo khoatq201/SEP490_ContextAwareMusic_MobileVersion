@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+import '../../../../core/enums/user_role.dart';
+import '../../../../core/session/session_cubit.dart';
 import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../../../core/widgets/cams_skeleton.dart';
 import '../../../cams/domain/entities/space_playback_state.dart';
@@ -136,17 +138,23 @@ class SpaceSchedulePage extends StatelessWidget {
 
               switch (state.stage) {
                 case SpaceScheduleStage.welcome:
+                  final isPlaybackDevice =
+                      context.read<SessionCubit>().state.isPlaybackDevice;
                   return _ScheduleWelcomeView(
                     palette: palette,
                     onClose: () => context.pop(),
-                    onCreateNew: () => context
-                        .read<SpaceScheduleBloc>()
-                        .add(const SpaceScheduleCreateNewRequested()),
-                    onLoadSchedule: () => context.read<SpaceScheduleBloc>().add(
-                          const SpaceScheduleSourcePickerRequested(
-                            initialTab: ScheduleSourceType.library,
-                          ),
-                        ),
+                    onCreateNew: isPlaybackDevice
+                        ? () => _showPlaybackDeviceScheduleSnack(context)
+                        : () => context
+                            .read<SpaceScheduleBloc>()
+                            .add(const SpaceScheduleCreateNewRequested()),
+                    onLoadSchedule: isPlaybackDevice
+                        ? () => _showPlaybackDeviceScheduleSnack(context)
+                        : () => context.read<SpaceScheduleBloc>().add(
+                              const SpaceScheduleSourcePickerRequested(
+                                initialTab: ScheduleSourceType.library,
+                              ),
+                            ),
                   );
                 case SpaceScheduleStage.sourcePicker:
                   return _ScheduleSourcePickerView(
@@ -188,6 +196,12 @@ class SpaceSchedulePage extends StatelessWidget {
     _EditorAction action,
     SpaceScheduleState state,
   ) async {
+    final session = context.read<SessionCubit>().state;
+    if (session.isPlaybackDevice) {
+      _showPlaybackDeviceScheduleSnack(context);
+      return;
+    }
+
     if (state.isBrandScheduleControlled && action != _EditorAction.about) {
       _showBrandControlledSnack(context);
       return;
@@ -202,6 +216,16 @@ class SpaceSchedulePage extends StatelessWidget {
             );
         break;
       case _EditorAction.saveToLibrary:
+        if (session.currentRole != UserRole.brandManager) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                  'Only brand managers can save schedules to the library.'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          return;
+        }
         final result = await showDialog<ScheduleSourceFormPayload>(
           context: context,
           builder: (_) => ScheduleSourceFormDialog(
@@ -248,6 +272,11 @@ class SpaceSchedulePage extends StatelessWidget {
     required SpaceScheduleState state,
     ScheduleSlot? slot,
   }) async {
+    if (context.read<SessionCubit>().state.isPlaybackDevice) {
+      _showPlaybackDeviceScheduleSnack(context);
+      return;
+    }
+
     if (state.isBrandScheduleControlled) {
       _showBrandControlledSnack(context);
       return;
@@ -262,7 +291,6 @@ class SpaceSchedulePage extends StatelessWidget {
         slot: slot,
         initialDay: state.selectedDay,
         musicCatalog: state.musicCatalog,
-        generatedIdPrefix: 'slot',
       ),
     );
 
@@ -276,6 +304,11 @@ class SpaceSchedulePage extends StatelessWidget {
   ) async {
     final tokens = context.camsTokens;
     final state = context.read<SpaceScheduleBloc>().state;
+    if (context.read<SessionCubit>().state.isPlaybackDevice) {
+      _showPlaybackDeviceScheduleSnack(context);
+      return;
+    }
+
     if (state.isBrandScheduleControlled) {
       _showBrandControlledSnack(context);
       return;
@@ -924,6 +957,8 @@ class _ScheduleEditorView extends StatelessWidget {
   Widget build(BuildContext context) {
     final draft = state.draftSchedule;
     final isBrandControlled = state.isBrandScheduleControlled;
+    final session = context.read<SessionCubit>().state;
+    final isPlaybackDevice = session.isPlaybackDevice;
     final allSlots = draft?.slots ?? const <ScheduleSlot>[];
     final daySlots = allSlots
         .where(
@@ -1005,7 +1040,11 @@ class _ScheduleEditorView extends StatelessWidget {
                   final action = await showModalBottomSheet<_EditorAction>(
                     context: context,
                     backgroundColor: Colors.transparent,
-                    builder: (_) => _ScheduleOptionsSheet(palette: palette),
+                    builder: (_) => _ScheduleOptionsSheet(
+                      palette: palette,
+                      canSaveToLibrary:
+                          session.currentRole == UserRole.brandManager,
+                    ),
                   );
                   if (action != null && context.mounted) {
                     await onActionSelected(action);
@@ -1040,7 +1079,7 @@ class _ScheduleEditorView extends StatelessWidget {
                     isSaving: state.status == SpaceScheduleStatus.saving,
                     isBrandControlled: isBrandControlled,
                     camsState: null,
-                    onConfigChanged: isBrandControlled
+                    onConfigChanged: isBrandControlled || isPlaybackDevice
                         ? null
                         : (enabled) => context
                             .read<SpaceScheduleBloc>()
@@ -1056,7 +1095,7 @@ class _ScheduleEditorView extends StatelessWidget {
                             camsState.isOverriding,
                         isBrandControlled: isBrandControlled,
                         camsState: camsState,
-                        onConfigChanged: isBrandControlled
+                        onConfigChanged: isBrandControlled || isPlaybackDevice
                             ? null
                             : (enabled) => context
                                 .read<SpaceScheduleBloc>()
@@ -1814,9 +1853,13 @@ class _MiniArtwork extends StatelessWidget {
 }
 
 class _ScheduleOptionsSheet extends StatelessWidget {
-  const _ScheduleOptionsSheet({required this.palette});
+  const _ScheduleOptionsSheet({
+    required this.palette,
+    required this.canSaveToLibrary,
+  });
 
   final _SchedulePalette palette;
+  final bool canSaveToLibrary;
 
   @override
   Widget build(BuildContext context) {
@@ -1847,13 +1890,15 @@ class _ScheduleOptionsSheet extends StatelessWidget {
               subtitle: 'Copies music from another schedule',
               onTap: () => Navigator.pop(context, _EditorAction.loadSchedule),
             ),
-            _OptionsTile(
-              palette: palette,
-              icon: LucideIcons.upload,
-              title: 'Save to library',
-              subtitle: 'Creates a shareable copy of this schedule',
-              onTap: () => Navigator.pop(context, _EditorAction.saveToLibrary),
-            ),
+            if (canSaveToLibrary)
+              _OptionsTile(
+                palette: palette,
+                icon: LucideIcons.upload,
+                title: 'Save to library',
+                subtitle: 'Creates a shareable copy of this schedule',
+                onTap: () =>
+                    Navigator.pop(context, _EditorAction.saveToLibrary),
+              ),
             _OptionsTile(
               palette: palette,
               icon: LucideIcons.calendarRange,
@@ -2113,6 +2158,17 @@ void _showBrandControlledSnack(BuildContext context) {
     const SnackBar(
       content: Text(
         'This space follows the brand schedule in Strict Sync mode.',
+      ),
+      behavior: SnackBarBehavior.floating,
+    ),
+  );
+}
+
+void _showPlaybackDeviceScheduleSnack(BuildContext context) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text(
+        'Playback devices can view runtime scheduling state, but cannot edit space schedules.',
       ),
       behavior: SnackBarBehavior.floating,
     ),

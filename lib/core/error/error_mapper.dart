@@ -229,7 +229,8 @@ class ErrorMapper {
     int? statusCode,
     String? debugMessage,
   }) {
-    final details = ApiErrorDetails.fromPayload(payload, statusCode: statusCode);
+    final details =
+        ApiErrorDetails.fromPayload(payload, statusCode: statusCode);
     return fromApiErrorDetails(
       details,
       fallbackMessage: fallbackMessage,
@@ -285,8 +286,8 @@ class ErrorMapper {
     if (error is DioException) {
       return fromDioException(
         error,
-        fallbackMessage:
-            fallbackMessage ?? 'Something unexpected happened. Please try again.',
+        fallbackMessage: fallbackMessage ??
+            'Something unexpected happened. Please try again.',
       );
     }
 
@@ -387,7 +388,7 @@ class ErrorMapper {
         return 'Something went wrong on our side. Please try again.';
       case FailureKind.cache:
         return 'Stored data is unavailable right now.';
-      case FailureKind.mqtt:
+      case FailureKind.realtime:
         return 'Realtime connection is unavailable right now.';
       case FailureKind.permission:
         return 'Permission is required to continue.';
@@ -566,8 +567,8 @@ class ErrorMapper {
           debugMessage,
           retryable,
         );
-      case FailureKind.mqtt:
-        return MqttConnectionException(
+      case FailureKind.realtime:
+        return RealtimeConnectionException(
           resolvedMessage,
           backendCode,
           statusCode,
@@ -692,8 +693,8 @@ class ErrorMapper {
           debugMessage,
           retryable,
         );
-      case FailureKind.mqtt:
-        return MqttConnectionFailure(
+      case FailureKind.realtime:
+        return RealtimeConnectionFailure(
           resolvedMessage,
           backendCode,
           statusCode,
@@ -743,7 +744,7 @@ class ErrorMapper {
       case FailureKind.serverUnavailable:
       case FailureKind.server:
       case FailureKind.cache:
-      case FailureKind.mqtt:
+      case FailureKind.realtime:
       case FailureKind.cancelled:
       case FailureKind.unexpected:
         return true;

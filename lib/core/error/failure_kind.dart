@@ -11,7 +11,7 @@ enum FailureKind {
   serverUnavailable,
   server,
   cache,
-  mqtt,
+  realtime,
   permission,
   cancelled,
   unexpected,

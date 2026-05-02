@@ -66,7 +66,7 @@ class SpaceMonitoringBloc
                 status: SpaceMonitoringStatus.error,
                 errorMessage: ErrorMapper.sanitizeMessageForDisplay(
                   '$error',
-                  kind: FailureKind.mqtt,
+                  kind: FailureKind.realtime,
                 ),
               ));
             },
@@ -82,7 +82,7 @@ class SpaceMonitoringBloc
                 status: SpaceMonitoringStatus.error,
                 errorMessage: ErrorMapper.sanitizeMessageForDisplay(
                   '$error',
-                  kind: FailureKind.mqtt,
+                  kind: FailureKind.realtime,
                 ),
               ));
             },
@@ -92,7 +92,7 @@ class SpaceMonitoringBloc
             status: SpaceMonitoringStatus.error,
             errorMessage: ErrorMapper.sanitizeMessageForDisplay(
               '$error',
-              kind: FailureKind.mqtt,
+              kind: FailureKind.realtime,
             ),
           ));
         }

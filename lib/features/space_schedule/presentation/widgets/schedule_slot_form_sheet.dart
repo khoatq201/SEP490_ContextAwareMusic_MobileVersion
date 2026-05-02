@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/utils/guid.dart';
 import '../../domain/entities/schedule_music_item.dart';
 import '../../domain/entities/schedule_slot.dart';
 
@@ -11,7 +12,6 @@ class ScheduleSlotFormSheet extends StatefulWidget {
     required this.initialDay,
     required this.musicCatalog,
     this.allowMultipleDays = false,
-    this.generatedIdPrefix = 'slot',
   });
 
   final String title;
@@ -19,7 +19,6 @@ class ScheduleSlotFormSheet extends StatefulWidget {
   final int initialDay;
   final List<ScheduleMusicItem> musicCatalog;
   final bool allowMultipleDays;
-  final String generatedIdPrefix;
 
   @override
   State<ScheduleSlotFormSheet> createState() => _ScheduleSlotFormSheetState();
@@ -220,8 +219,7 @@ class _ScheduleSlotFormSheetState extends State<ScheduleSlotFormSheet> {
     Navigator.pop(
       context,
       ScheduleSlot(
-        id: widget.slot?.id ??
-            '${widget.generatedIdPrefix}-${DateTime.now().millisecondsSinceEpoch}',
+        id: widget.slot?.id ?? generateGuidV4(),
         daysOfWeek: days,
         startTime: _formatTime(_startTime),
         endTime: _formatTime(_endTime),

@@ -3,7 +3,6 @@ import 'dart:async';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/network/dio_client.dart';
-import '../../../../core/services/mqtt_service.dart';
 import '../models/sensor_data_model.dart';
 import '../models/space_model.dart';
 
@@ -17,11 +16,9 @@ abstract class SpaceRemoteDataSource {
 
 class SpaceRemoteDataSourceImpl implements SpaceRemoteDataSource {
   final DioClient dioClient;
-  final MqttService mqttService;
 
   SpaceRemoteDataSourceImpl({
     required this.dioClient,
-    required this.mqttService,
   });
 
   @override
@@ -89,19 +86,7 @@ class SpaceRemoteDataSourceImpl implements SpaceRemoteDataSource {
 
   @override
   Stream<SpaceModel> subscribeToSpaceStatus(String storeId, String spaceId) {
-    final topic = ApiConstants.spaceStatusTopic(storeId, spaceId);
-
-    mqttService.subscribe(topic);
-
-    return mqttService.messages
-        .where((message) => message.topic == topic)
-        .map((message) {
-      try {
-        return SpaceModel.fromJson(message.payloadAsJson);
-      } catch (e) {
-        throw ServerException('Failed to parse space status: $e');
-      }
-    });
+    return const Stream<SpaceModel>.empty();
   }
 
   @override
@@ -109,27 +94,9 @@ class SpaceRemoteDataSourceImpl implements SpaceRemoteDataSource {
     String storeId,
     String spaceId,
   ) {
-    final topic = ApiConstants.spaceSensorTopic(storeId, spaceId);
-
-    mqttService.subscribe(topic);
-
-    return mqttService.messages
-        .where((message) => message.topic == topic)
-        .map((message) {
-      try {
-        return SensorDataModel.fromJson(message.payloadAsJson);
-      } catch (e) {
-        throw ServerException('Failed to parse sensor data: $e');
-      }
-    });
+    return const Stream<SensorDataModel>.empty();
   }
 
   @override
-  void unsubscribeFromSpace(String storeId, String spaceId) {
-    final statusTopic = ApiConstants.spaceStatusTopic(storeId, spaceId);
-    final sensorTopic = ApiConstants.spaceSensorTopic(storeId, spaceId);
-
-    mqttService.unsubscribe(statusTopic);
-    mqttService.unsubscribe(sensorTopic);
-  }
+  void unsubscribeFromSpace(String storeId, String spaceId) {}
 }

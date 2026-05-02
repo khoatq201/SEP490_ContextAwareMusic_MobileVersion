@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/cams_theme_tokens.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_event.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -157,6 +160,8 @@ class AppDrawer extends StatelessWidget {
               ),
               onTap: () {
                 Navigator.of(context).pop();
+                context.read<AuthBloc>().add(const LogoutRequested());
+                context.go('/login');
               },
             ),
           ),

@@ -6,7 +6,7 @@ import '../../../../core/enums/entity_status_enum.dart';
 import '../../../../core/enums/space_type_enum.dart';
 
 /// Mock implementation of SpaceRemoteDataSource for development and testing
-/// Provides realistic data without requiring API server or MQTT broker
+/// Provides realistic data without requiring an API server.
 class SpaceMockDataSource implements SpaceRemoteDataSource {
   final _statusController = StreamController<SpaceModel>.broadcast();
   final _sensorController = StreamController<SensorDataModel>.broadcast();

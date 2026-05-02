@@ -23,8 +23,9 @@ class SpaceScheduleModel extends SpaceSchedule {
           'Space schedule',
       spaceId: json['spaceId']?.toString(),
       slots: (json['slots'] as List<dynamic>? ?? const [])
+          .whereType<Map>()
           .map((slot) =>
-              ScheduleSlotModel.fromJson(slot as Map<String, dynamic>))
+              ScheduleSlotModel.fromJson(Map<String, dynamic>.from(slot)))
           .toList(),
       enabled: json['enabled'] as bool? ?? true,
       sourceId: json['sourceId']?.toString(),

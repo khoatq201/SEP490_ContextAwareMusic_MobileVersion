@@ -30,6 +30,7 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
+  bool _hasSubmittedLogin = false;
 
   @override
   void dispose() {
@@ -40,6 +41,9 @@ class _LoginPageState extends State<LoginPage> {
 
   void _handleLogin() {
     if (_formKey.currentState!.validate()) {
+      setState(() {
+        _hasSubmittedLogin = true;
+      });
       context.read<AuthBloc>().add(
             LoginRequested(
               email: _emailController.text.trim(),
@@ -132,7 +136,8 @@ class _LoginPageState extends State<LoginPage> {
                                   textAlign: TextAlign.center,
                                 ),
                                 const SizedBox(height: 32),
-                                if (state.failure != null) ...[
+                                if (_hasSubmittedLogin &&
+                                    state.failure != null) ...[
                                   AppInlineErrorCard(
                                     failure: state.failure,
                                     title: 'Sign-in failed',

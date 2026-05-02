@@ -1,343 +1,436 @@
-I/flutter (15890): *** Request ***
-I/flutter (15890): uri: https://logcams.cloud/api/cms/suno/generations/4e86cf82-f2f8-475a-9ccd-b503aeb94ff3
-I/flutter (15890): method: GET
-I/flutter (15890): responseType: ResponseType.json
-I/flutter (15890): followRedirects: true
-I/flutter (15890): persistentConnection: true
-I/flutter (15890): connectTimeout: 0:00:30.000000
-I/flutter (15890): sendTimeout: 0:00:30.000000
-I/flutter (15890): receiveTimeout: 0:00:30.000000
-I/flutter (15890): receiveDataWhenStatusError: true
-I/flutter (15890): extra: {}
-I/flutter (15890): headers:
-I/flutter (15890):  Content-Type: application/json
-I/flutter (15890):  Accept: application/json
-I/flutter (15890): data:
-I/flutter (15890): null
-I/flutter (15890): 
-I/flutter (15890): [DioClient] Preparing auth header for "/api/cms/suno/generations/4e86cf82-f2f8-475a-9ccd-b503aeb94ff3": playbackScoped=false selectedToken=eyJhbGciOiJI...
-I/flutter (15890): [DioClient] [request-auth] path=/api/cms/suno/generations/4e86cf82-f2f8-475a-9ccd-b503aeb94ff3 activeMode=manager hasManagerToken=true managerExpiry=2026-05-01T17:16:39.121913Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
-I/flutter (15890): *** Response ***
-I/flutter (15890): uri: https://logcams.cloud/api/cms/suno/generations/4e86cf82-f2f8-475a-9ccd-b503aeb94ff3
-I/flutter (15890): statusCode: 200
-I/flutter (15890): statusMessage: OK
-I/flutter (15890): headers:
-I/flutter (15890):  connection: keep-alive
-I/flutter (15890):  alt-svc: h3=":443"; ma=86400
-I/flutter (15890):  date: Fri, 01 May 2026 17:05:27 GMT
-I/flutter (15890):  transfer-encoding: chunked
-I/flutter (15890):  content-encoding: gzip
-I/flutter (15890):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
-I/flutter (15890):  cf-ray: 9f505f027fcb91bd-SIN
-I/flutter (15890):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=zTmcUERStlhGw1NqX4kycC%2B%2BgB%2FZUVQJed%2BB1xKwLKZdmS6yfwsZJk0UF0Wz9UcyqeFIxJt85k7KU%2Bpcj%2B%2BYZIkXoGSW6PKZ9mx570lMmI0Q2He6MyMJ2FZ6VlqfRpX5"}]}
-I/flutter (15890):  cf-cache-status: DYNAMIC
-I/flutter (15890):  content-type: application/json; charset=utf-8
-I/flutter (15890):  server: cloudflare
-I/flutter (15890): Response Text:
-I/flutter (15890): {"isSuccess":true,"message":"Success","data":{"id":"4e86cf82-f2f8-475a-9ccd-b503aeb94ff3","brandId":"ff587081-083f-42ec-b43b-b3a6b2f4756d","generationMode":2,"generationStatus":1,"progressPercent":15,"prompt":"Create royalty-free instrumental background music for a commercial space using the brand's CAMS music profile (template: Cafe).\n\nPrimary direction: Focus / steady zone — neutral, concentration-friendly instrumental music. Use roughly the 80-100 BPM range as a tempo guide (do not speak BPM numbers to the listener).\n\nPalette: also allow calm (55-78 BPM feel) and high-energy (110-130 BPM feel) for consistency with the same brand — this track should emphasize the focus zone.\n\nVenue traffic context from brand profile: light load up to 2 concurrent guests, busy peak from 5 upward (inform the energy curve only; do not mention numbers in lyrics).\n\nWorking title: new music.\n\nKeep dynamics smooth for in-store playback; loop-friendly; no vocals unless the genre hint clearly requires subtle vocal tex
-I/flutter (15890): 
-D/WindowOnBackDispatcher(15890): setTopOnBackInvokedCallback (unwrapped): io.flutter.embedding.android.FlutterActivity$1@6516a31
-D/WindowOnBackDispatcher(15890): setTopOnBackInvokedCallback (unwrapped): android.app.Activity$$ExternalSyntheticLambda0@35ed6ad
-D/WindowOnBackDispatcher(15890): setTopOnBackInvokedCallback (unwrapped): io.flutter.embedding.android.FlutterActivity$1@6516a31
-D/WindowOnBackDispatcher(15890): setTopOnBackInvokedCallback (unwrapped): android.app.Activity$$ExternalSyntheticLambda0@35ed6ad
-I/flutter (15890): *** Request ***
-I/flutter (15890): uri: https://logcams.cloud/api/stores/d34ffedc-f11a-41f6-b485-efb6cf6181a5/context-logs?page=1&pageSize=20&spaceId=d0d258f5-3c74-457a-b17b-629f61d504d6
-I/flutter (15890): method: GET
-I/flutter (15890): responseType: ResponseType.json
-I/flutter (15890): followRedirects: true
-I/flutter (15890): persistentConnection: true
-I/flutter (15890): connectTimeout: 0:00:30.000000
-I/flutter (15890): sendTimeout: 0:00:30.000000
-I/flutter (15890): receiveTimeout: 0:00:30.000000
-I/flutter (15890): receiveDataWhenStatusError: true
-I/flutter (15890): extra: {}
-I/flutter (15890): headers:
-I/flutter (15890):  Content-Type: application/json
-I/flutter (15890):  Accept: application/json
-I/flutter (15890): data:
-I/flutter (15890): null
-I/flutter (15890): 
-I/flutter (15890): [DioClient] Preparing auth header for "/api/stores/d34ffedc-f11a-41f6-b485-efb6cf6181a5/context-logs": playbackScoped=false selectedToken=eyJhbGciOiJI...
-I/flutter (15890): [DioClient] [request-auth] path=/api/stores/d34ffedc-f11a-41f6-b485-efb6cf6181a5/context-logs activeMode=manager hasManagerToken=true managerExpiry=2026-05-01T17:16:39.121913Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
-I/flutter (15890): *** Response ***
-I/flutter (15890): uri: https://logcams.cloud/api/stores/d34ffedc-f11a-41f6-b485-efb6cf6181a5/context-logs?page=1&pageSize=20&spaceId=d0d258f5-3c74-457a-b17b-629f61d504d6
-I/flutter (15890): statusCode: 200
-I/flutter (15890): statusMessage: OK
-I/flutter (15890): headers:
-I/flutter (15890):  connection: keep-alive
-I/flutter (15890):  alt-svc: h3=":443"; ma=86400
-I/flutter (15890):  date: Fri, 01 May 2026 17:05:30 GMT
-I/flutter (15890):  transfer-encoding: chunked
-I/flutter (15890):  content-encoding: gzip
-I/flutter (15890):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
-I/flutter (15890):  cf-ray: 9f505f16fd599cb6-SIN
-I/flutter (15890):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=4f9oM380HOGq1eYlxXdyHe%2FoizcXxEZ1A4ClpG49l6iI63fKH%2B2q6hrAdlC3KCAkyGvwQ0Zv5W9F2Pc3gHWq%2B5d5p2eKv%2FdlETmhjfcdg51yYAAIQYemSSJSQviNoROJ"}]}
-I/flutter (15890):  cf-cache-status: DYNAMIC
-I/flutter (15890):  content-type: application/json; charset=utf-8
-I/flutter (15890):  server: cloudflare
-I/flutter (15890): Response Text:
-I/flutter (15890): {"currentPage":1,"pageSize":20,"totalItems":0,"totalPages":0,"hasPrevious":false,"hasNext":false,"items":[],"isSuccess":true,"message":"Store context raw logs."}
-I/flutter (15890): 
-I/flutter (15890): *** Request ***
-I/flutter (15890): uri: https://logcams.cloud/api/stores/d34ffedc-f11a-41f6-b485-efb6cf6181a5/context-logs?page=1&pageSize=20&spaceId=d0d258f5-3c74-457a-b17b-629f61d504d6
-I/flutter (15890): method: GET
-I/flutter (15890): responseType: ResponseType.json
-I/flutter (15890): followRedirects: true
-I/flutter (15890): persistentConnection: true
-I/flutter (15890): connectTimeout: 0:00:30.000000
-I/flutter (15890): sendTimeout: 0:00:30.000000
-I/flutter (15890): receiveTimeout: 0:00:30.000000
-I/flutter (15890): receiveDataWhenStatusError: true
-I/flutter (15890): extra: {}
-I/flutter (15890): headers:
-I/flutter (15890):  Content-Type: application/json
-I/flutter (15890):  Accept: application/json
-I/flutter (15890): data:
-I/flutter (15890): null
-I/flutter (15890): 
-I/flutter (15890): [DioClient] Preparing auth header for "/api/stores/d34ffedc-f11a-41f6-b485-efb6cf6181a5/context-logs": playbackScoped=false selectedToken=eyJhbGciOiJI...
-I/flutter (15890): [DioClient] [request-auth] path=/api/stores/d34ffedc-f11a-41f6-b485-efb6cf6181a5/context-logs activeMode=manager hasManagerToken=true managerExpiry=2026-05-01T17:16:39.121913Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
-I/flutter (15890): *** Response ***
-I/flutter (15890): uri: https://logcams.cloud/api/stores/d34ffedc-f11a-41f6-b485-efb6cf6181a5/context-logs?page=1&pageSize=20&spaceId=d0d258f5-3c74-457a-b17b-629f61d504d6
-I/flutter (15890): statusCode: 200
-I/flutter (15890): statusMessage: OK
-I/flutter (15890): headers:
-I/flutter (15890):  connection: keep-alive
-I/flutter (15890):  alt-svc: h3=":443"; ma=86400
-I/flutter (15890):  date: Fri, 01 May 2026 17:05:30 GMT
-I/flutter (15890):  transfer-encoding: chunked
-I/flutter (15890):  content-encoding: gzip
-I/flutter (15890):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
-I/flutter (15890):  cf-ray: 9f505f180e6d9cb6-SIN
-I/flutter (15890):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=Kud0rGIQpHj2FHmgWLj5a1VGIZGpuaK%2FpyelnUah7jBnc%2FAss7o2IpW263tpuQgu4sg71HRvsGr8xpyYa8OHbaWel%2FLbmDkjYS%2BVcofNoQwJMRRmxPOSNSx9dJe2sAlQ"}]}
-I/flutter (15890):  cf-cache-status: DYNAMIC
-I/flutter (15890):  content-type: application/json; charset=utf-8
-I/flutter (15890):  server: cloudflare
-I/flutter (15890): Response Text:
-I/flutter (15890): {"currentPage":1,"pageSize":20,"totalItems":0,"totalPages":0,"hasPrevious":false,"hasNext":false,"items":[],"isSuccess":true,"message":"Store context raw logs."}
-I/flutter (15890): 
-I/flutter (15890): *** Request ***
-I/flutter (15890): uri: https://logcams.cloud/api/cams/spaces/d0d258f5-3c74-457a-b17b-629f61d504d6/state
-I/flutter (15890): method: GET
-I/flutter (15890): responseType: ResponseType.json
-I/flutter (15890): followRedirects: true
-I/flutter (15890): persistentConnection: true
-I/flutter (15890): connectTimeout: 0:00:30.000000
-I/flutter (15890): sendTimeout: 0:00:30.000000
-I/flutter (15890): receiveTimeout: 0:00:30.000000
-I/flutter (15890): receiveDataWhenStatusError: true
-I/flutter (15890): extra: {}
-I/flutter (15890): headers:
-I/flutter (15890):  Content-Type: application/json
-I/flutter (15890):  Accept: application/json
-I/flutter (15890): data:
-I/flutter (15890): null
-I/flutter (15890): 
-I/flutter (15890): [DioClient] Preparing auth header for "/api/cams/spaces/d0d258f5-3c74-457a-b17b-629f61d504d6/state": playbackScoped=true selectedToken=eyJhbGciOiJI...
-I/flutter (15890): [DioClient] [request-auth] path=/api/cams/spaces/d0d258f5-3c74-457a-b17b-629f61d504d6/state activeMode=manager hasManagerToken=true managerExpiry=2026-05-01T17:16:39.121913Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
-I/flutter (15890): *** Response ***
-I/flutter (15890): uri: https://logcams.cloud/api/cams/spaces/d0d258f5-3c74-457a-b17b-629f61d504d6/state
-I/flutter (15890): statusCode: 200
-I/flutter (15890): statusMessage: OK
-I/flutter (15890): headers:
-I/flutter (15890):  connection: keep-alive
-I/flutter (15890):  alt-svc: h3=":443"; ma=86400
-I/flutter (15890):  date: Fri, 01 May 2026 17:05:31 GMT
-I/flutter (15890):  transfer-encoding: chunked
-I/flutter (15890):  content-encoding: gzip
-I/flutter (15890):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
-I/flutter (15890):  cf-ray: 9f505f18cee19cb6-SIN
-I/flutter (15890):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=kGutwPN%2Fx8tsRsTwM6ApKq%2FpJrmfZVrToHqF6idFveB9DV2zvcz0yhiFNaC6m8wdts%2FObPn36Ikv0RNqnX6I%2F%2Bb3ynIgBsvHaM9Ai7ZYqoKfTR8RSXLm5JOgNX18CFiD"}]}
-I/flutter (15890):  cf-cache-status: DYNAMIC
-I/flutter (15890):  content-type: application/json; charset=utf-8
-I/flutter (15890):  server: cloudflare
-I/flutter (15890): Response Text:
-I/flutter (15890): {"isSuccess":true,"message":"Success","data":{"spaceId":"d0d258f5-3c74-457a-b17b-629f61d504d6","storeId":"d34ffedc-f11a-41f6-b485-efb6cf6181a5","brandId":"ff587081-083f-42ec-b43b-b3a6b2f4756d","currentQueueItemId":"82c0bca0-b0b7-4b13-ab5c-41ec4a2796f7","currentTrackName":"Track chung 3","hlsUrl":"https://ddbdgg08nzlz.cloudfront.net/audio/tracks/f4e046f6-5c3a-4f4a-b491-2539621778a5/v1/vuc-trong-guong-镜中渊-chu-lam-phong-zhou-lin-fengt-b334bf26ceca4362b703b9b5190e5634.m3u8","moodName":"Energetic","isManualOverride":false,"overrideMode":null,"overrideReason":null,"manualOverrideActivatedAtUtc":null,"manualOverrideExpiresAtUtc":null,"manualOverrideTtlSeconds":null,"manualOverrideRemainingSeconds":null,"isScheduling":false,"schedulingSlotId":null,"schedulingSlotOrigin":null,"schedulingEndsAtUtc":null,"schedulingRemainingSeconds":null,"startedAtUtc":"2026-05-01T16:34:31.572379Z","expectedEndAtUtc":null,"seekOffsetSeconds":99.46073500000011,"isPaused":true,"pausePositionSeconds":55,"pendingQueueItemId":null,"pe
-I/flutter (15890): 
-I/flutter (15890): *** Request ***
-I/flutter (15890): uri: https://logcams.cloud/api/cams/space/d0d258f5-3c74-457a-b17b-629f61d504d6/mood
-I/flutter (15890): method: GET
-I/flutter (15890): responseType: ResponseType.json
-I/flutter (15890): followRedirects: true
-I/flutter (15890): persistentConnection: true
-I/flutter (15890): connectTimeout: 0:00:30.000000
-I/flutter (15890): sendTimeout: 0:00:30.000000
-I/flutter (15890): receiveTimeout: 0:00:30.000000
-I/flutter (15890): receiveDataWhenStatusError: true
-I/flutter (15890): extra: {}
-I/flutter (15890): headers:
-I/flutter (15890):  Content-Type: application/json
-I/flutter (15890):  Accept: application/json
-I/flutter (15890): data:
-I/flutter (15890): null
-I/flutter (15890): 
-I/flutter (15890): [DioClient] Preparing auth header for "/api/cams/space/d0d258f5-3c74-457a-b17b-629f61d504d6/mood": playbackScoped=false selectedToken=eyJhbGciOiJI...
-I/flutter (15890): [DioClient] [request-auth] path=/api/cams/space/d0d258f5-3c74-457a-b17b-629f61d504d6/mood activeMode=manager hasManagerToken=true managerExpiry=2026-05-01T17:16:39.121913Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
-I/flutter (15890): *** Response ***
-I/flutter (15890): uri: https://logcams.cloud/api/cams/space/d0d258f5-3c74-457a-b17b-629f61d504d6/mood
-I/flutter (15890): statusCode: 200
-I/flutter (15890): statusMessage: OK
-I/flutter (15890): headers:
-I/flutter (15890):  connection: keep-alive
-I/flutter (15890):  alt-svc: h3=":443"; ma=86400
-I/flutter (15890):  date: Fri, 01 May 2026 17:05:31 GMT
-I/flutter (15890):  transfer-encoding: chunked
-I/flutter (15890):  content-encoding: gzip
-I/flutter (15890):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
-I/flutter (15890):  cf-ray: 9f505f1a2fec9cb6-SIN
-I/flutter (15890):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=KSB18tjRJ3KlWwS2z%2BYVmRiKDeJKCsCfCKc5Pr9eUR2faMOvi34vXHG7gC5U0wq0vP%2BzfRxbeP8ubMA5%2FkdKed55MKRIZuaEwcu0xZA0Z1bSvqrh6q9LAERbZDMZCXHA"}]}
-I/flutter (15890):  cf-cache-status: DYNAMIC
-I/flutter (15890):  content-type: application/json; charset=utf-8
-I/flutter (15890):  server: cloudflare
-I/flutter (15890): Response Text:
-I/flutter (15890): {"isSuccess":true,"message":"Success","data":{"spaceId":"d0d258f5-3c74-457a-b17b-629f61d504d6","spaceName":"Tầng trệt","currentMood":2,"currentMoodType":2,"moodName":"Energetic","bpmMin":120,"bpmMax":140,"lastAnalyzedAtUtc":"2026-04-29T05:08:48.270736Z","isFirstCycle":false}}
-I/flutter (15890): 
-I/flutter (15890): *** Request ***
-I/flutter (15890): uri: https://logcams.cloud/api/fuzzy-music-profiles/space/d0d258f5-3c74-457a-b17b-629f61d504d6
-I/flutter (15890): method: GET
-I/flutter (15890): responseType: ResponseType.json
-I/flutter (15890): followRedirects: true
-I/flutter (15890): persistentConnection: true
-I/flutter (15890): connectTimeout: 0:00:30.000000
-I/flutter (15890): sendTimeout: 0:00:30.000000
-I/flutter (15890): receiveTimeout: 0:00:30.000000
-I/flutter (15890): receiveDataWhenStatusError: true
-I/flutter (15890): extra: {}
-I/flutter (15890): headers:
-I/flutter (15890):  Content-Type: application/json
-I/flutter (15890):  Accept: application/json
-I/flutter (15890): data:
-I/flutter (15890): null
-I/flutter (15890): 
-I/flutter (15890): [DioClient] Preparing auth header for "/api/fuzzy-music-profiles/space/d0d258f5-3c74-457a-b17b-629f61d504d6": playbackScoped=false selectedToken=eyJhbGciOiJI...
-I/flutter (15890): [DioClient] [request-auth] path=/api/fuzzy-music-profiles/space/d0d258f5-3c74-457a-b17b-629f61d504d6 activeMode=manager hasManagerToken=true managerExpiry=2026-05-01T17:16:39.121913Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
-I/flutter (15890): *** Response ***
-I/flutter (15890): uri: https://logcams.cloud/api/fuzzy-music-profiles/space/d0d258f5-3c74-457a-b17b-629f61d504d6
-I/flutter (15890): statusCode: 200
-I/flutter (15890): statusMessage: OK
-I/flutter (15890): headers:
-I/flutter (15890):  connection: keep-alive
-I/flutter (15890):  alt-svc: h3=":443"; ma=86400
-I/flutter (15890):  date: Fri, 01 May 2026 17:05:31 GMT
-I/flutter (15890):  transfer-encoding: chunked
-I/flutter (15890):  content-encoding: gzip
-I/flutter (15890):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
-I/flutter (15890):  cf-ray: 9f505f1ad86a9cb6-SIN
-I/flutter (15890):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=ybQo%2BEhu5Jd4fiFYzvFC6UtRH0ZbVeE3EvTnV6JT3j%2FqmFVBsRpqgFZCjGWR03X8X%2BD5drT1tk%2Fvi0BWQ7TYbhG5BzDKR0TiuzK91KFtnDzQGrRKj7M1gsoxGOkT7K5W"}]}
-I/flutter (15890):  cf-cache-status: DYNAMIC
-I/flutter (15890):  content-type: application/json; charset=utf-8
-I/flutter (15890):  server: cloudflare
-I/flutter (15890): Response Text:
-I/flutter (15890): {"isSuccess":true,"message":"Success","data":{"id":"30730f31-a57f-4e9e-87e0-f3a9572993f8","brandId":"ff587081-083f-42ec-b43b-b3a6b2f4756d","storeId":null,"name":"Default Profile","templateKey":"Cafe","chillBpmMin":55,"chillBpmMax":78,"focusBpmMin":80,"focusBpmMax":100,"energeticBpmMin":110,"energeticBpmMax":130,"noiseQuietMaxDb":50,"noiseLoudMinDb":75,"defaultDecibelWhenNull":60,"autoVolumeEnabled":true,"autoVolumeQuietPercent":45,"autoVolumeModeratePercent":60,"autoVolumeLoudPercent":75,"autoVolumeMinPercent":30,"autoVolumeMaxPercent":90,"autoVolumeDeadbandPercent":5,"chillMoodCandidates":null,"focusMoodCandidates":null,"energeticMoodCandidates":null}}
-I/flutter (15890): 
-I/flutter (15890): *** Request ***
-I/flutter (15890): uri: https://logcams.cloud/api/cms/suno/generations/4e86cf82-f2f8-475a-9ccd-b503aeb94ff3
-I/flutter (15890): method: GET
-I/flutter (15890): responseType: ResponseType.json
-I/flutter (15890): followRedirects: true
-I/flutter (15890): persistentConnection: true
-I/flutter (15890): connectTimeout: 0:00:30.000000
-I/flutter (15890): sendTimeout: 0:00:30.000000
-I/flutter (15890): receiveTimeout: 0:00:30.000000
-I/flutter (15890): receiveDataWhenStatusError: true
-I/flutter (15890): extra: {}
-I/flutter (15890): headers:
-I/flutter (15890):  Content-Type: application/json
-I/flutter (15890):  Accept: application/json
-I/flutter (15890): data:
-I/flutter (15890): null
-I/flutter (15890): 
-I/flutter (15890): [DioClient] Preparing auth header for "/api/cms/suno/generations/4e86cf82-f2f8-475a-9ccd-b503aeb94ff3": playbackScoped=false selectedToken=eyJhbGciOiJI...
-I/flutter (15890): [DioClient] [request-auth] path=/api/cms/suno/generations/4e86cf82-f2f8-475a-9ccd-b503aeb94ff3 activeMode=manager hasManagerToken=true managerExpiry=2026-05-01T17:16:39.121913Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
-I/flutter (15890): *** Response ***
-I/flutter (15890): uri: https://logcams.cloud/api/cms/suno/generations/4e86cf82-f2f8-475a-9ccd-b503aeb94ff3
-I/flutter (15890): statusCode: 200
-I/flutter (15890): statusMessage: OK
-I/flutter (15890): headers:
-I/flutter (15890):  connection: keep-alive
-I/flutter (15890):  alt-svc: h3=":443"; ma=86400
-I/flutter (15890):  date: Fri, 01 May 2026 17:05:32 GMT
-I/flutter (15890):  transfer-encoding: chunked
-I/flutter (15890):  content-encoding: gzip
-I/flutter (15890):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
-I/flutter (15890):  cf-ray: 9f505f229f459cb6-SIN
-I/flutter (15890):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=iyZQlP9j3ZnYU9FfnYsqkF8Ee19JI0rrwf4Q6fkMwqsi9IwaLnBZ7zNz5OcWMjlsnADQC8sSa3n6sAg%2BJq1XDad1APBuUBtzYpuZO%2Bm8YuqzIAPxQf7TAFOa65MDHX6E"}]}
-I/flutter (15890):  cf-cache-status: DYNAMIC
-I/flutter (15890):  content-type: application/json; charset=utf-8
-I/flutter (15890):  server: cloudflare
-I/flutter (15890): Response Text:
-I/flutter (15890): {"isSuccess":true,"message":"Success","data":{"id":"4e86cf82-f2f8-475a-9ccd-b503aeb94ff3","brandId":"ff587081-083f-42ec-b43b-b3a6b2f4756d","generationMode":2,"generationStatus":1,"progressPercent":15,"prompt":"Create royalty-free instrumental background music for a commercial space using the brand's CAMS music profile (template: Cafe).\n\nPrimary direction: Focus / steady zone — neutral, concentration-friendly instrumental music. Use roughly the 80-100 BPM range as a tempo guide (do not speak BPM numbers to the listener).\n\nPalette: also allow calm (55-78 BPM feel) and high-energy (110-130 BPM feel) for consistency with the same brand — this track should emphasize the focus zone.\n\nVenue traffic context from brand profile: light load up to 2 concurrent guests, busy peak from 5 upward (inform the energy curve only; do not mention numbers in lyrics).\n\nWorking title: new music.\n\nKeep dynamics smooth for in-store playback; loop-friendly; no vocals unless the genre hint clearly requires subtle vocal tex
-I/flutter (15890): 
-I/flutter (15890): *** Request ***
-I/flutter (15890): uri: https://logcams.cloud/api/cms/suno/generations/4e86cf82-f2f8-475a-9ccd-b503aeb94ff3
-I/flutter (15890): method: GET
-I/flutter (15890): responseType: ResponseType.json
-I/flutter (15890): followRedirects: true
-I/flutter (15890): persistentConnection: true
-I/flutter (15890): connectTimeout: 0:00:30.000000
-I/flutter (15890): sendTimeout: 0:00:30.000000
-I/flutter (15890): receiveTimeout: 0:00:30.000000
-I/flutter (15890): receiveDataWhenStatusError: true
-I/flutter (15890): extra: {}
-I/flutter (15890): headers:
-I/flutter (15890):  Content-Type: application/json
-I/flutter (15890):  Accept: application/json
-I/flutter (15890): data:
-I/flutter (15890): null
-I/flutter (15890): 
-I/flutter (15890): [DioClient] Preparing auth header for "/api/cms/suno/generations/4e86cf82-f2f8-475a-9ccd-b503aeb94ff3": playbackScoped=false selectedToken=eyJhbGciOiJI...
-I/flutter (15890): [DioClient] [request-auth] path=/api/cms/suno/generations/4e86cf82-f2f8-475a-9ccd-b503aeb94ff3 activeMode=manager hasManagerToken=true managerExpiry=2026-05-01T17:16:39.121913Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
-I/flutter (15890): *** Response ***
-I/flutter (15890): uri: https://logcams.cloud/api/cms/suno/generations/4e86cf82-f2f8-475a-9ccd-b503aeb94ff3
-I/flutter (15890): statusCode: 200
-I/flutter (15890): statusMessage: OK
-I/flutter (15890): headers:
-I/flutter (15890):  connection: keep-alive
-I/flutter (15890):  alt-svc: h3=":443"; ma=86400
-I/flutter (15890):  date: Fri, 01 May 2026 17:05:37 GMT
-I/flutter (15890):  transfer-encoding: chunked
-I/flutter (15890):  content-encoding: gzip
-I/flutter (15890):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
-I/flutter (15890):  cf-ray: 9f505f437b950519-SIN
-I/flutter (15890):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=RQkqZAb1c0y5dgI2ZlTzlQY7ayPuDO4XpV9FyQZV9NKdznluSzxHVcKj73nbSg9SX3WquXLUE%2FDq9VMIofxZ%2FizdR6rlovVUhzXm4QbZMjOmdqdwvi095j07TIe6DN%2FE"}]}
-I/flutter (15890):  cf-cache-status: DYNAMIC
-I/flutter (15890):  content-type: application/json; charset=utf-8
-I/flutter (15890):  server: cloudflare
-I/flutter (15890): Response Text:
-I/flutter (15890): {"isSuccess":true,"message":"Success","data":{"id":"4e86cf82-f2f8-475a-9ccd-b503aeb94ff3","brandId":"ff587081-083f-42ec-b43b-b3a6b2f4756d","generationMode":2,"generationStatus":1,"progressPercent":15,"prompt":"Create royalty-free instrumental background music for a commercial space using the brand's CAMS music profile (template: Cafe).\n\nPrimary direction: Focus / steady zone — neutral, concentration-friendly instrumental music. Use roughly the 80-100 BPM range as a tempo guide (do not speak BPM numbers to the listener).\n\nPalette: also allow calm (55-78 BPM feel) and high-energy (110-130 BPM feel) for consistency with the same brand — this track should emphasize the focus zone.\n\nVenue traffic context from brand profile: light load up to 2 concurrent guests, busy peak from 5 upward (inform the energy curve only; do not mention numbers in lyrics).\n\nWorking title: new music.\n\nKeep dynamics smooth for in-store playback; loop-friendly; no vocals unless the genre hint clearly requires subtle vocal tex
-I/flutter (15890): 
-I/flutter (15890): *** Request ***
-I/flutter (15890): uri: https://logcams.cloud/api/cms/suno/generations/4e86cf82-f2f8-475a-9ccd-b503aeb94ff3
-I/flutter (15890): method: GET
-I/flutter (15890): responseType: ResponseType.json
-I/flutter (15890): followRedirects: true
-I/flutter (15890): persistentConnection: true
-I/flutter (15890): connectTimeout: 0:00:30.000000
-I/flutter (15890): sendTimeout: 0:00:30.000000
-I/flutter (15890): receiveTimeout: 0:00:30.000000
-I/flutter (15890): receiveDataWhenStatusError: true
-I/flutter (15890): extra: {}
-I/flutter (15890): headers:
-I/flutter (15890):  Content-Type: application/json
-I/flutter (15890):  Accept: application/json
-I/flutter (15890): data:
-I/flutter (15890): null
-I/flutter (15890): 
-I/flutter (15890): [DioClient] Preparing auth header for "/api/cms/suno/generations/4e86cf82-f2f8-475a-9ccd-b503aeb94ff3": playbackScoped=false selectedToken=eyJhbGciOiJI...
-I/flutter (15890): [DioClient] [request-auth] path=/api/cms/suno/generations/4e86cf82-f2f8-475a-9ccd-b503aeb94ff3 activeMode=manager hasManagerToken=true managerExpiry=2026-05-01T17:16:39.121913Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
-I/flutter (15890): *** Response ***
-I/flutter (15890): uri: https://logcams.cloud/api/cms/suno/generations/4e86cf82-f2f8-475a-9ccd-b503aeb94ff3
-I/flutter (15890): statusCode: 200
-I/flutter (15890): statusMessage: OK
-I/flutter (15890): headers:
-I/flutter (15890):  connection: keep-alive
-I/flutter (15890):  alt-svc: h3=":443"; ma=86400
-I/flutter (15890):  date: Fri, 01 May 2026 17:05:43 GMT
-I/flutter (15890):  transfer-encoding: chunked
-I/flutter (15890):  content-encoding: gzip
-I/flutter (15890):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
-I/flutter (15890):  cf-ray: 9f505f6478b88f82-SIN
-I/flutter (15890):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=ii9dWIfFsp5vSCIYTxFDGy7NNbQLyA4IJDpBDBahaQwal%2B2tJz8JDL00JZA4jQiHm0lvXzcv4BJ9LtU%2F%2BFocKxoXA1KuvLvCHi3PdoW252VN0rChfAY0FBs0vIkmOqBZ"}]}
-I/flutter (15890):  cf-cache-status: DYNAMIC
-I/flutter (15890):  content-type: application/json; charset=utf-8
-I/flutter (15890):  server: cloudflare
+I/flutter ( 3993): *** Request ***
+I/flutter ( 3993): uri: https://logcams.cloud/api/cms/config/stores/governance-mode
+I/flutter ( 3993): method: PATCH
+I/flutter ( 3993): responseType: ResponseType.json
+I/flutter ( 3993): followRedirects: true
+I/flutter ( 3993): persistentConnection: true
+I/flutter ( 3993): connectTimeout: 0:00:30.000000
+I/flutter ( 3993): sendTimeout: 0:00:30.000000
+I/flutter ( 3993): receiveTimeout: 0:00:30.000000
+I/flutter ( 3993): receiveDataWhenStatusError: true
+I/flutter ( 3993): extra: {}
+I/flutter ( 3993): headers:
+I/flutter ( 3993):  Content-Type: application/json
+I/flutter ( 3993):  Accept: application/json
+I/flutter ( 3993): data:
+I/flutter ( 3993): {storeIds: [9a2de664-687d-4954-8c2d-a0bfdc46868f], mode: 1}
+I/flutter ( 3993): 
+I/flutter ( 3993): [DioClient] Preparing auth header for "/api/cms/config/stores/governance-mode": playbackScoped=false selectedToken=eyJhbGciOiJI...
+I/flutter ( 3993): [DioClient] [request-auth] path=/api/cms/config/stores/governance-mode activeMode=manager hasManagerToken=true managerExpiry=2026-05-02T14:16:38.890040Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
+I/flutter ( 3993): *** Response ***
+I/flutter ( 3993): uri: https://logcams.cloud/api/cms/config/stores/governance-mode
+I/flutter ( 3993): statusCode: 200
+I/flutter ( 3993): statusMessage: OK
+I/flutter ( 3993): headers:
+I/flutter ( 3993):  connection: keep-alive
+I/flutter ( 3993):  alt-svc: h3=":443"; ma=86400
+I/flutter ( 3993):  date: Sat, 02 May 2026 13:18:44 GMT
+I/flutter ( 3993):  transfer-encoding: chunked
+I/flutter ( 3993):  content-encoding: gzip
+I/flutter ( 3993):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+I/flutter ( 3993):  cf-ray: 9f5750455abbc8d1-SIN
+I/flutter ( 3993):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=0CRezlao%2BRK4Lquanse9188bzjhvUM%2FdezWSjpefcWzYLgOLfYpq%2FZUiQbEYLImZShX62IwGNyincYRNs4Ele7kUAndt3LaCwE%2B4itZwU5Q8B8FE%2FA99OfCoTnnsH6Gv"}]}
+I/flutter ( 3993):  cf-cache-status: DYNAMIC
+I/flutter ( 3993):  content-type: application/json; charset=utf-8
+I/flutter ( 3993):  server: cloudflare
+I/flutter ( 3993): Response Text:
+I/flutter ( 3993): {"isSuccess":true,"message":"Success","data":["9a2de664-687d-4954-8c2d-a0bfdc46868f"]}
+I/flutter ( 3993): 
+I/flutter ( 3993): *** Request ***
+I/flutter ( 3993): uri: https://logcams.cloud/api/cms/config/stores/governance-mode
+I/flutter ( 3993): method: PATCH
+I/flutter ( 3993): responseType: ResponseType.json
+I/flutter ( 3993): followRedirects: true
+I/flutter ( 3993): persistentConnection: true
+I/flutter ( 3993): connectTimeout: 0:00:30.000000
+I/flutter ( 3993): sendTimeout: 0:00:30.000000
+I/flutter ( 3993): receiveTimeout: 0:00:30.000000
+I/flutter ( 3993): receiveDataWhenStatusError: true
+I/flutter ( 3993): extra: {}
+I/flutter ( 3993): headers:
+I/flutter ( 3993):  Content-Type: application/json
+I/flutter ( 3993):  Accept: application/json
+I/flutter ( 3993): data:
+I/flutter ( 3993): {storeIds: [d34ffedc-f11a-41f6-b485-efb6cf6181a5], mode: 3}
+I/flutter ( 3993): 
+I/flutter ( 3993): [DioClient] Preparing auth header for "/api/cms/config/stores/governance-mode": playbackScoped=false selectedToken=eyJhbGciOiJI...
+I/flutter ( 3993): [DioClient] [request-auth] path=/api/cms/config/stores/governance-mode activeMode=manager hasManagerToken=true managerExpiry=2026-05-02T14:16:38.890040Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
+I/flutter ( 3993): *** Response ***
+I/flutter ( 3993): uri: https://logcams.cloud/api/cms/config/stores/governance-mode
+I/flutter ( 3993): statusCode: 200
+I/flutter ( 3993): statusMessage: OK
+I/flutter ( 3993): headers:
+I/flutter ( 3993):  connection: keep-alive
+I/flutter ( 3993):  alt-svc: h3=":443"; ma=86400
+I/flutter ( 3993):  date: Sat, 02 May 2026 13:18:44 GMT
+I/flutter ( 3993):  transfer-encoding: chunked
+I/flutter ( 3993):  content-encoding: gzip
+I/flutter ( 3993):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+I/flutter ( 3993):  cf-ray: 9f5750466d28c8d1-SIN
+I/flutter ( 3993):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=GFmh%2BqGJxVwn2hENl3uDVvxcAleEONT%2FlIHiZ4n7FISrNzxsY%2BjJKZTZzvTzH4o4SaojPDs2YDYPJirHjzi6ryfynqdwjNH%2FzjNxOfSK48movBetbD%2BqBQSEU2q1ZbTT"}]}
+I/flutter ( 3993):  cf-cache-status: DYNAMIC
+I/flutter ( 3993):  content-type: application/json; charset=utf-8
+I/flutter ( 3993):  server: cloudflare
+I/flutter ( 3993): Response Text:
+I/flutter ( 3993): {"isSuccess":true,"message":"Success","data":["d34ffedc-f11a-41f6-b485-efb6cf6181a5"]}
+I/flutter ( 3993): 
+I/flutter ( 3993): *** Request ***
+I/flutter ( 3993): uri: https://logcams.cloud/api/stores/d34ffedc-f11a-41f6-b485-efb6cf6181a5
+I/flutter ( 3993): method: GET
+I/flutter ( 3993): responseType: ResponseType.json
+I/flutter ( 3993): followRedirects: true
+I/flutter ( 3993): persistentConnection: true
+I/flutter ( 3993): connectTimeout: 0:00:30.000000
+I/flutter ( 3993): sendTimeout: 0:00:30.000000
+I/flutter ( 3993): receiveTimeout: 0:00:30.000000
+I/flutter ( 3993): receiveDataWhenStatusError: true
+I/flutter ( 3993): extra: {}
+I/flutter ( 3993): headers:
+I/flutter ( 3993):  Content-Type: application/json
+I/flutter ( 3993):  Accept: application/json
+I/flutter ( 3993): data:
+I/flutter ( 3993): null
+I/flutter ( 3993): 
+I/flutter ( 3993): [DioClient] Preparing auth header for "/api/stores/d34ffedc-f11a-41f6-b485-efb6cf6181a5": playbackScoped=false selectedToken=eyJhbGciOiJI...
+I/flutter ( 3993): [DioClient] [request-auth] path=/api/stores/d34ffedc-f11a-41f6-b485-efb6cf6181a5 activeMode=manager hasManagerToken=true managerExpiry=2026-05-02T14:16:38.890040Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
+I/flutter ( 3993): *** Response ***
+I/flutter ( 3993): uri: https://logcams.cloud/api/stores/d34ffedc-f11a-41f6-b485-efb6cf6181a5
+I/flutter ( 3993): statusCode: 200
+I/flutter ( 3993): statusMessage: OK
+I/flutter ( 3993): headers:
+I/flutter ( 3993):  connection: keep-alive
+I/flutter ( 3993):  alt-svc: h3=":443"; ma=86400
+I/flutter ( 3993):  date: Sat, 02 May 2026 13:18:44 GMT
+I/flutter ( 3993):  transfer-encoding: chunked
+I/flutter ( 3993):  content-encoding: gzip
+I/flutter ( 3993):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+I/flutter ( 3993):  cf-ray: 9f5750474f78c8d1-SIN
+I/flutter ( 3993):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=z9Wf%2BsHUWyN2UaZHJpwDWxCynFsz0NLOcBAjSH5BU0Lo01SM7uw8DrJZ7BaiEZChRXfRuD%2B%2BzoxAzpvtNsglMo16vchXg81QgabhF9ZuS%2F%2FIOAkWjbrE3ff0guIOa9ut"}]}
+I/flutter ( 3993):  cf-cache-status: DYNAMIC
+I/flutter ( 3993):  content-type: application/json; charset=utf-8
+I/flutter ( 3993):  server: cloudflare
+I/flutter ( 3993): Response Text:
+I/flutter ( 3993): {"isSuccess":true,"message":"Store retrieved successfully","data":{"latitude":10.941117,"longitude":106.7214,"mapUrl":"https://maps.google.com/?q=10.941117084088187,106.72139490331593","timeZone":"SE Asia Standard Time","areaSquareMeters":200,"maxCapacity":50,"firestoreCollectionPath":null,"currentMood":2,"lastMoodUpdateAt":"2026-04-29T04:33:48.299784Z","activeFuzzyMusicProfileId":null,"activeFuzzyProfileName":null,"chillBpmMin":null,"chillBpmMax":null,"focusBpmMin":null,"focusBpmMax":null,"energeticBpmMin":null,"energeticBpmMax":null,"pressureLowMax":null,"pressureCriticalMin":null,"stressComfortableMax":null,"stressHighMin":null,"densitySparseMax":null,"densityCrowdedMin":null,"spaceCapacity":null,"defaultDensityRatioWhenNull":null,"chillMoodCandidates":null,"focusMoodCandidates":null,"energeticMoodCandidates":null,"allowedPlaylistIds":null,"brandId":"ff587081-083f-42ec-b43b-b3a6b2f4756d","name":"Deer Quận 1","contactNumber":"+84868076753","address":"Đường DA8, Hoà Lân 2, Phường Thuận Giao, Th
+I/flutter ( 3993): 
+I/flutter ( 3993): *** Request ***
+I/flutter ( 3993): uri: https://logcams.cloud/api/spaces?storeId=d34ffedc-f11a-41f6-b485-efb6cf6181a5
+I/flutter ( 3993): method: GET
+I/flutter ( 3993): responseType: ResponseType.json
+I/flutter ( 3993): followRedirects: true
+I/flutter ( 3993): persistentConnection: true
+I/flutter ( 3993): connectTimeout: 0:00:30.000000
+I/flutter ( 3993): sendTimeout: 0:00:30.000000
+I/flutter ( 3993): receiveTimeout: 0:00:30.000000
+I/flutter ( 3993): receiveDataWhenStatusError: true
+I/flutter ( 3993): extra: {}
+I/flutter ( 3993): headers:
+I/flutter ( 3993):  Content-Type: application/json
+I/flutter ( 3993):  Accept: application/json
+I/flutter ( 3993): data:
+I/flutter ( 3993): null
+I/flutter ( 3993): 
+I/flutter ( 3993): [DioClient] Preparing auth header for "/api/spaces": playbackScoped=false selectedToken=eyJhbGciOiJI...
+I/flutter ( 3993): [DioClient] [request-auth] path=/api/spaces activeMode=manager hasManagerToken=true managerExpiry=2026-05-02T14:16:38.890040Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
+Another exception was thrown: HTTP request failed, statusCode: 404,
+https://logaicams-bucket.s3.ap-southeast-1.amazonaws.com/uploads/avatars/gemini_generated_image_hgb83y
+hgb83yhgb8-48612dfbb1a449de9361e9abd6f099a6.png?X-Amz-Expires=3600&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-
+Amz-Credential=AKIATL6VKTUC2S2NFLN2%2F20260502%2Fap-southeast-1%2Fs3%2Faws4_request&X-Amz-Date=2026050
+2T131639Z&X-Amz-SignedHeaders=host&X-Amz-Signature=65e5265d72277fc4ee52ef5d4f2dfb4a189a9ef88d0cedb730c
+37309c633c87d
+I/flutter ( 3993): *** Response ***
+I/flutter ( 3993): uri: https://logcams.cloud/api/spaces?storeId=d34ffedc-f11a-41f6-b485-efb6cf6181a5
+I/flutter ( 3993): statusCode: 200
+I/flutter ( 3993): statusMessage: OK
+I/flutter ( 3993): headers:
+I/flutter ( 3993):  connection: keep-alive
+I/flutter ( 3993):  alt-svc: h3=":443"; ma=86400
+I/flutter ( 3993):  date: Sat, 02 May 2026 13:18:44 GMT
+I/flutter ( 3993):  transfer-encoding: chunked
+I/flutter ( 3993):  content-encoding: gzip
+I/flutter ( 3993):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+I/flutter ( 3993):  cf-ray: 9f575047e904c8d1-SIN
+I/flutter ( 3993):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=x2WCiZcgHMbYKJlbWTFxLXk469RjwXu%2B7giSoBnPifQazPTvo7qxI%2F0LGge0SFDX%2BA0WUcrGsnf8DNbJzxJQ1erTz96IqhoQvpWT%2Bo%2FeWQwewMsYFUTYUx7cN8OEFdFI"}]}
+I/flutter ( 3993):  cf-cache-status: DYNAMIC
+I/flutter ( 3993):  content-type: application/json; charset=utf-8
+I/flutter ( 3993):  server: cloudflare
+I/flutter ( 3993): Response Text:
+I/flutter ( 3993): {"currentPage":1,"pageSize":10,"totalItems":3,"totalPages":1,"hasPrevious":false,"hasNext":false,"items":[{"storeId":"d34ffedc-f11a-41f6-b485-efb6cf6181a5","name":"Tầng trệt","type":0,"description":null,"id":"d0d258f5-3c74-457a-b17b-629f61d504d6","createdAt":"2026-03-16T14:58:00.392154Z","updatedAt":"2026-04-16T14:24:58.521294Z","createdBy":"68d7d558-4f96-486a-bf69-f3799f1142ab","updatedBy":"32979701-cd49-421a-a712-c623ed596849","status":1},{"storeId":"d34ffedc-f11a-41f6-b485-efb6cf6181a5","name":"Ban Công","type":0,"description":null,"id":"489b0b03-11c5-44ed-b724-6ba83a46c068","createdAt":"2026-03-16T14:57:32.774169Z","updatedAt":"2026-04-23T15:11:41.233462Z","createdBy":"68d7d558-4f96-486a-bf69-f3799f1142ab","updatedBy":"0d3b9c9e-058f-40af-9e63-02275e9208af","status":1},{"storeId":"d34ffedc-f11a-41f6-b485-efb6cf6181a5","name":"Lầu 1","type":0,"description":null,"id":"9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908","createdAt":"2026-04-23T15:09:57.250673Z","updatedAt":"2026-04-23T15:14:06.436582Z","createdBy":
+I/flutter ( 3993): 
+I/flutter ( 3993): *** Request ***
+I/flutter ( 3993): uri: https://logcams.cloud/api/stores/d34ffedc-f11a-41f6-b485-efb6cf6181a5/context-logs?page=1&pageSize=200
+I/flutter ( 3993): method: GET
+I/flutter ( 3993): responseType: ResponseType.json
+I/flutter ( 3993): followRedirects: true
+I/flutter ( 3993): persistentConnection: true
+I/flutter ( 3993): connectTimeout: 0:00:30.000000
+I/flutter ( 3993): sendTimeout: 0:00:30.000000
+I/flutter ( 3993): receiveTimeout: 0:00:30.000000
+I/flutter ( 3993): receiveDataWhenStatusError: true
+I/flutter ( 3993): extra: {}
+I/flutter ( 3993): headers:
+I/flutter ( 3993):  Content-Type: application/json
+I/flutter ( 3993):  Accept: application/json
+I/flutter ( 3993): data:
+I/flutter ( 3993): null
+I/flutter ( 3993): 
+I/flutter ( 3993): [DioClient] Preparing auth header for "/api/stores/d34ffedc-f11a-41f6-b485-efb6cf6181a5/context-logs": playbackScoped=false selectedToken=eyJhbGciOiJI...
+I/flutter ( 3993): [DioClient] [request-auth] path=/api/stores/d34ffedc-f11a-41f6-b485-efb6cf6181a5/context-logs activeMode=manager hasManagerToken=true managerExpiry=2026-05-02T14:16:38.890040Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
+I/flutter ( 3993): *** Response ***
+I/flutter ( 3993): uri: https://logcams.cloud/api/stores/d34ffedc-f11a-41f6-b485-efb6cf6181a5/context-logs?page=1&pageSize=200
+I/flutter ( 3993): statusCode: 200
+I/flutter ( 3993): statusMessage: OK
+I/flutter ( 3993): headers:
+I/flutter ( 3993):  connection: keep-alive
+I/flutter ( 3993):  alt-svc: h3=":443"; ma=86400
+I/flutter ( 3993):  date: Sat, 02 May 2026 13:18:44 GMT
+I/flutter ( 3993):  transfer-encoding: chunked
+I/flutter ( 3993):  content-encoding: gzip
+I/flutter ( 3993):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+I/flutter ( 3993):  cf-ray: 9f5750489a54c8d1-SIN
+I/flutter ( 3993):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=DNs%2BjdBHYPAmTm9vy%2BCl4OOfzbNOyDBudOs4IFv75JmXH5%2Fe7oN%2BkMAxbSIT9ew2dhA6Ao0N4dZr3t5B7i%2BkRIlDnE099XJPORkRd0dOslMZYtbPsCnNmc18FSd5pfBq"}]}
+I/flutter ( 3993):  cf-cache-status: DYNAMIC
+I/flutter ( 3993):  content-type: application/json; charset=utf-8
+I/flutter ( 3993):  server: cloudflare
+I/flutter ( 3993): Response Text:
+I/flutter ( 3993): {"currentPage":1,"pageSize":200,"totalItems":0,"totalPages":0,"hasPrevious":false,"hasNext":false,"items":[],"isSuccess":true,"message":"Store context raw logs."}
+I/flutter ( 3993): 
+I/flutter ( 3993): *** Request ***
+I/flutter ( 3993): uri: https://logcams.cloud/api/cams/spaces/d0d258f5-3c74-457a-b17b-629f61d504d6/state
+I/flutter ( 3993): method: GET
+I/flutter ( 3993): responseType: ResponseType.json
+I/flutter ( 3993): followRedirects: true
+I/flutter ( 3993): persistentConnection: true
+I/flutter ( 3993): connectTimeout: 0:00:30.000000
+I/flutter ( 3993): sendTimeout: 0:00:30.000000
+I/flutter ( 3993): receiveTimeout: 0:00:30.000000
+I/flutter ( 3993): receiveDataWhenStatusError: true
+I/flutter ( 3993): extra: {}
+I/flutter ( 3993): headers:
+I/flutter ( 3993):  Content-Type: application/json
+I/flutter ( 3993):  Accept: application/json
+I/flutter ( 3993): data:
+I/flutter ( 3993): null
+I/flutter ( 3993): 
+I/flutter ( 3993): *** Request ***
+I/flutter ( 3993): uri: https://logcams.cloud/api/cams/spaces/489b0b03-11c5-44ed-b724-6ba83a46c068/state
+I/flutter ( 3993): method: GET
+I/flutter ( 3993): responseType: ResponseType.json
+I/flutter ( 3993): followRedirects: true
+I/flutter ( 3993): persistentConnection: true
+I/flutter ( 3993): connectTimeout: 0:00:30.000000
+I/flutter ( 3993): sendTimeout: 0:00:30.000000
+I/flutter ( 3993): receiveTimeout: 0:00:30.000000
+I/flutter ( 3993): receiveDataWhenStatusError: true
+I/flutter ( 3993): extra: {}
+I/flutter ( 3993): headers:
+I/flutter ( 3993):  Content-Type: application/json
+I/flutter ( 3993):  Accept: application/json
+I/flutter ( 3993): data:
+I/flutter ( 3993): null
+I/flutter ( 3993): 
+I/flutter ( 3993): *** Request ***
+I/flutter ( 3993): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/state
+I/flutter ( 3993): method: GET
+I/flutter ( 3993): responseType: ResponseType.json
+I/flutter ( 3993): followRedirects: true
+I/flutter ( 3993): persistentConnection: true
+I/flutter ( 3993): connectTimeout: 0:00:30.000000
+I/flutter ( 3993): sendTimeout: 0:00:30.000000
+I/flutter ( 3993): receiveTimeout: 0:00:30.000000
+I/flutter ( 3993): receiveDataWhenStatusError: true
+I/flutter ( 3993): extra: {}
+I/flutter ( 3993): headers:
+I/flutter ( 3993):  Content-Type: application/json
+I/flutter ( 3993):  Accept: application/json
+I/flutter ( 3993): data:
+I/flutter ( 3993): null
+I/flutter ( 3993): 
+I/flutter ( 3993): [DioClient] Preparing auth header for "/api/cams/spaces/d0d258f5-3c74-457a-b17b-629f61d504d6/state": playbackScoped=true selectedToken=eyJhbGciOiJI...
+I/flutter ( 3993): [DioClient] [request-auth] path=/api/cams/spaces/d0d258f5-3c74-457a-b17b-629f61d504d6/state activeMode=manager hasManagerToken=true managerExpiry=2026-05-02T14:16:38.890040Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
+I/flutter ( 3993): [DioClient] Preparing auth header for "/api/cams/spaces/489b0b03-11c5-44ed-b724-6ba83a46c068/state": playbackScoped=true selectedToken=eyJhbGciOiJI...
+I/flutter ( 3993): [DioClient] [request-auth] path=/api/cams/spaces/489b0b03-11c5-44ed-b724-6ba83a46c068/state activeMode=manager hasManagerToken=true managerExpiry=2026-05-02T14:16:38.890040Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
+I/flutter ( 3993): [DioClient] Preparing auth header for "/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/state": playbackScoped=true selectedToken=eyJhbGciOiJI...
+I/flutter ( 3993): [DioClient] [request-auth] path=/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/state activeMode=manager hasManagerToken=true managerExpiry=2026-05-02T14:16:38.890040Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
+I/flutter ( 3993): *** Response ***
+I/flutter ( 3993): uri: https://logcams.cloud/api/cams/spaces/d0d258f5-3c74-457a-b17b-629f61d504d6/state
+I/flutter ( 3993): statusCode: 200
+I/flutter ( 3993): statusMessage: OK
+I/flutter ( 3993): headers:
+I/flutter ( 3993):  connection: keep-alive
+I/flutter ( 3993):  alt-svc: h3=":443"; ma=86400
+I/flutter ( 3993):  date: Sat, 02 May 2026 13:18:44 GMT
+I/flutter ( 3993):  transfer-encoding: chunked
+I/flutter ( 3993):  content-encoding: gzip
+I/flutter ( 3993):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+I/flutter ( 3993):  cf-ray: 9f5750494c34c8d1-SIN
+I/flutter ( 3993):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=dFHpM0HDSqSBE67TpDfqNKu%2BuJRNHzbbJIqgNCY2Vh8tNKXFBbuhAZVWSJvTW7lVEsLoUYfjhLV3whuklFDwfns%2Bg4SoIYv5kKuSFocJzKFwkKwrkwkuaphRNBWGOjNG"}]}
+I/flutter ( 3993):  cf-cache-status: DYNAMIC
+I/flutter ( 3993):  content-type: application/json; charset=utf-8
+I/flutter ( 3993):  server: cloudflare
+I/flutter ( 3993): Response Text:
+I/flutter ( 3993): {"isSuccess":true,"message":"Success","data":{"spaceId":"d0d258f5-3c74-457a-b17b-629f61d504d6","storeId":"d34ffedc-f11a-41f6-b485-efb6cf6181a5","brandId":"ff587081-083f-42ec-b43b-b3a6b2f4756d","currentQueueItemId":"82c0bca0-b0b7-4b13-ab5c-41ec4a2796f7","currentTrackName":"Track chung 3","hlsUrl":"https://ddbdgg08nzlz.cloudfront.net/audio/tracks/f4e046f6-5c3a-4f4a-b491-2539621778a5/v1/vuc-trong-guong-镜中渊-chu-lam-phong-zhou-lin-fengt-b334bf26ceca4362b703b9b5190e5634.m3u8","moodName":"Energetic","isManualOverride":false,"overrideMode":null,"overrideReason":null,"manualOverrideActivatedAtUtc":null,"manualOverrideExpiresAtUtc":null,"manualOverrideTtlSeconds":null,"manualOverrideRemainingSeconds":null,"isScheduling":false,"schedulingSlotId":null,"schedulingSlotOrigin":null,"schedulingEndsAtUtc":null,"schedulingRemainingSeconds":null,"startedAtUtc":"2026-05-01T16:34:31.572379Z","expectedEndAtUtc":null,"seekOffsetSeconds":29.139733899995917,"isPaused":true,"pausePositionSeconds":122,"pendingQueueItemId":null,"
+I/flutter ( 3993): 
+I/flutter ( 3993): *** Request ***
+I/flutter ( 3993): uri: https://logcams.cloud/api/cams/space/d0d258f5-3c74-457a-b17b-629f61d504d6/mood
+I/flutter ( 3993): method: GET
+I/flutter ( 3993): responseType: ResponseType.json
+I/flutter ( 3993): followRedirects: true
+I/flutter ( 3993): persistentConnection: true
+I/flutter ( 3993): connectTimeout: 0:00:30.000000
+I/flutter ( 3993): sendTimeout: 0:00:30.000000
+I/flutter ( 3993): receiveTimeout: 0:00:30.000000
+I/flutter ( 3993): receiveDataWhenStatusError: true
+I/flutter ( 3993): extra: {}
+I/flutter ( 3993): headers:
+I/flutter ( 3993):  Content-Type: application/json
+I/flutter ( 3993):  Accept: application/json
+I/flutter ( 3993): data:
+I/flutter ( 3993): null
+I/flutter ( 3993): 
+I/flutter ( 3993): [DioClient] Preparing auth header for "/api/cams/space/d0d258f5-3c74-457a-b17b-629f61d504d6/mood": playbackScoped=false selectedToken=eyJhbGciOiJI...
+I/flutter ( 3993): [DioClient] [request-auth] path=/api/cams/space/d0d258f5-3c74-457a-b17b-629f61d504d6/mood activeMode=manager hasManagerToken=true managerExpiry=2026-05-02T14:16:38.890040Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
+I/flutter ( 3993): *** Response ***
+I/flutter ( 3993): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/state
+I/flutter ( 3993): statusCode: 200
+I/flutter ( 3993): statusMessage: OK
+I/flutter ( 3993): headers:
+I/flutter ( 3993):  connection: keep-alive
+I/flutter ( 3993):  alt-svc: h3=":443"; ma=86400
+I/flutter ( 3993):  date: Sat, 02 May 2026 13:18:44 GMT
+I/flutter ( 3993):  transfer-encoding: chunked
+I/flutter ( 3993):  content-encoding: gzip
+I/flutter ( 3993):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+I/flutter ( 3993):  cf-ray: 9f57504a0c851e93-SIN
+I/flutter ( 3993):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=8u2QvTRAPUhRIwpEVTfpCvVu3ppGWwZVQk3WTBxgCF1aPzUW2vlaD%2FgkJSf%2BBEqkTNAK4ZSJDJJtk%2FAIIVD%2BgL7UNQgilFddoULR1TK7mSfhscdTwK2%2B9fyZDEAClBgfvHFWH5xuQRDgWuZJ"}]}
+I/flutter ( 3993):  cf-cache-status: DYNAMIC
+I/flutter ( 3993):  content-type: application/json; charset=utf-8
+I/flutter ( 3993):  server: cloudflare
+I/flutter ( 3993): Response Text:
+I/flutter ( 3993): {"isSuccess":true,"message":"Success","data":{"spaceId":"9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908","storeId":"d34ffedc-f11a-41f6-b485-efb6cf6181a5","brandId":"ff587081-083f-42ec-b43b-b3a6b2f4756d","currentQueueItemId":"f7d1b529-3c29-4f27-bdf2-76cd1b61061e","currentTrackName":"Track chung 5","hlsUrl":"https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8","moodName":"Energetic","isManualOverride":false,"overrideMode":null,"overrideReason":null,"manualOverrideActivatedAtUtc":null,"manualOverrideExpiresAtUtc":null,"manualOverrideTtlSeconds":null,"manualOverrideRemainingSeconds":null,"isScheduling":false,"schedulingSlotId":null,"schedulingSlotOrigin":null,"schedulingEndsAtUtc":null,"schedulingRemainingSeconds":null,"startedAtUtc":"2026-05-02T08:47:54.549686Z","expectedEndAtUtc":null,"seekOffsetSeconds":62.28575049999927,"isPaused":true,"pausePositionSeconds":43,"pendingQueueItemId":null,"pendingOverrideReason":null,"volumePercent":
+I/flutter ( 3993): 
+I/flutter ( 3993): *** Response ***
+I/flutter ( 3993): uri: https://logcams.cloud/api/cams/space/d0d258f5-3c74-457a-b17b-629f61d504d6/mood
+I/flutter ( 3993): statusCode: 200
+I/flutter ( 3993): statusMessage: OK
+I/flutter ( 3993): headers:
+I/flutter ( 3993):  connection: keep-alive
+I/flutter ( 3993):  alt-svc: h3=":443"; ma=86400
+I/flutter ( 3993):  date: Sat, 02 May 2026 13:18:44 GMT
+I/flutter ( 3993):  transfer-encoding: chunked
+I/flutter ( 3993):  content-encoding: gzip
+I/flutter ( 3993):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+I/flutter ( 3993):  cf-ray: 9f57504a9ef0c8d1-SIN
+I/flutter ( 3993):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=QoBRxMrY8xdbzg0toS6BYLkZN7SCpXvZZeY0NgaHHL3%2B7y0s3tRGC5c%2FbOeJwAYMIgzpDCvbxSdSzmn4UNX6u%2B95f1jKnUmTa%2Bp%2F5w7FFnUlee6DD6%2FqfhX1vUeXkFrd"}]}
+I/flutter ( 3993):  cf-cache-status: DYNAMIC
+I/flutter ( 3993):  content-type: application/json; charset=utf-8
+I/flutter ( 3993):  server: cloudflare
+I/flutter ( 3993): Response Text:
+I/flutter ( 3993): {"isSuccess":true,"message":"Success","data":{"spaceId":"d0d258f5-3c74-457a-b17b-629f61d504d6","spaceName":"Tầng trệt","currentMood":2,"currentMoodType":2,"moodName":"Energetic","bpmMin":120,"bpmMax":140,"lastAnalyzedAtUtc":"2026-04-29T05:08:48.270736Z","isFirstCycle":false}}
+I/flutter ( 3993): 
+I/flutter ( 3993): *** Request ***
+I/flutter ( 3993): uri: https://logcams.cloud/api/cams/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/mood
+I/flutter ( 3993): method: GET
+I/flutter ( 3993): responseType: ResponseType.json
+I/flutter ( 3993): followRedirects: true
+I/flutter ( 3993): persistentConnection: true
+I/flutter ( 3993): connectTimeout: 0:00:30.000000
+I/flutter ( 3993): sendTimeout: 0:00:30.000000
+I/flutter ( 3993): receiveTimeout: 0:00:30.000000
+I/flutter ( 3993): receiveDataWhenStatusError: true
+I/flutter ( 3993): extra: {}
+I/flutter ( 3993): headers:
+I/flutter ( 3993):  Content-Type: application/json
+I/flutter ( 3993):  Accept: application/json
+I/flutter ( 3993): data:
+I/flutter ( 3993): null
+I/flutter ( 3993): 
+I/flutter ( 3993): *** Response ***
+I/flutter ( 3993): uri: https://logcams.cloud/api/cams/spaces/489b0b03-11c5-44ed-b724-6ba83a46c068/state
+I/flutter ( 3993): statusCode: 200
+I/flutter ( 3993): statusMessage: OK
+I/flutter ( 3993): headers:
+I/flutter ( 3993):  connection: keep-alive
+I/flutter ( 3993):  alt-svc: h3=":443"; ma=86400
+I/flutter ( 3993):  date: Sat, 02 May 2026 13:18:44 GMT
+I/flutter ( 3993):  transfer-encoding: chunked
+I/flutter ( 3993):  content-encoding: gzip
+I/flutter ( 3993):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+I/flutter ( 3993):  cf-ray: 9f57504a1ca3ce23-SIN
+I/flutter ( 3993):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=9nXWKhckJTfBSQqN2Q1lvj6A5p7kQGEuLb50%2Fj9fxNOkSDfjaJFBR2v5OBiQfsCuBi9m8GT2egiuGiaDITqhZcHar7kITsrfEwGOXXmrWYpt04CCBQUbDKRSCCavGpFkHQq0wIo4dFYmOiNb"}]}
+I/flutter ( 3993):  cf-cache-status: DYNAMIC
+I/flutter ( 3993):  content-type: application/json; charset=utf-8
+I/flutter ( 3993):  server: cloudflare
+I/flutter ( 3993): Response Text:
+I/flutter ( 3993): {"isSuccess":true,"message":"Success","data":{"spaceId":"489b0b03-11c5-44ed-b724-6ba83a46c068","storeId":"d34ffedc-f11a-41f6-b485-efb6cf6181a5","brandId":"ff587081-083f-42ec-b43b-b3a6b2f4756d","currentQueueItemId":"e2278c38-176b-4217-b670-58212cd75f3f","currentTrackName":"Untitled","hlsUrl":"https://ddbdgg08nzlz.cloudfront.net/audio/tracks/a967dd2c-9005-4b02-979e-d5320e2ef8b1/v1/a2f2b491428a49c0b2c192e242620373.m3u8","moodName":"Focus","isManualOverride":false,"overrideMode":null,"overrideReason":null,"manualOverrideActivatedAtUtc":null,"manualOverrideExpiresAtUtc":null,"manualOverrideTtlSeconds":null,"manualOverrideRemainingSeconds":null,"isScheduling":false,"schedulingSlotId":null,"schedulingSlotOrigin":null,"schedulingEndsAtUtc":null,"schedulingRemainingSeconds":null,"startedAtUtc":"2026-05-02T08:46:36.620422Z","expectedEndAtUtc":null,"seekOffsetSeconds":128.22199600000022,"isPaused":true,"pausePositionSeconds":172,"pendingQueueItemId":null,"pendingOverrideReason":null,"volumePercent":45,"isIotDeviceOffli
+I/flutter ( 3993): 
+I/flutter ( 3993): [DioClient] Preparing auth header for "/api/cams/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/mood": playbackScoped=false selectedToken=eyJhbGciOiJI...
+I/flutter ( 3993): [DioClient] [request-auth] path=/api/cams/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/mood activeMode=manager hasManagerToken=true managerExpiry=2026-05-02T14:16:38.890040Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
+I/flutter ( 3993): *** Request ***
+I/flutter ( 3993): uri: https://logcams.cloud/api/cams/space/489b0b03-11c5-44ed-b724-6ba83a46c068/mood
+I/flutter ( 3993): method: GET
+I/flutter ( 3993): responseType: ResponseType.json
+I/flutter ( 3993): followRedirects: true
+I/flutter ( 3993): persistentConnection: true
+I/flutter ( 3993): connectTimeout: 0:00:30.000000
+I/flutter ( 3993): sendTimeout: 0:00:30.000000
+I/flutter ( 3993): receiveTimeout: 0:00:30.000000
+I/flutter ( 3993): receiveDataWhenStatusError: true
+I/flutter ( 3993): extra: {}
+I/flutter ( 3993): headers:
+I/flutter ( 3993):  Content-Type: application/json
+I/flutter ( 3993):  Accept: application/json
+I/flutter ( 3993): data:
+I/flutter ( 3993): null
+I/flutter ( 3993): 
+I/flutter ( 3993): [DioClient] Preparing auth header for "/api/cams/space/489b0b03-11c5-44ed-b724-6ba83a46c068/mood": playbackScoped=false selectedToken=eyJhbGciOiJI...
+I/flutter ( 3993): [DioClient] [request-auth] path=/api/cams/space/489b0b03-11c5-44ed-b724-6ba83a46c068/mood activeMode=manager hasManagerToken=true managerExpiry=2026-05-02T14:16:38.890040Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
+I/flutter ( 3993): *** Response ***
+I/flutter ( 3993): uri: https://logcams.cloud/api/cams/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/mood
+I/flutter ( 3993): statusCode: 200
+I/flutter ( 3993): statusMessage: OK
+I/flutter ( 3993): headers:
+I/flutter ( 3993):  connection: keep-alive
+I/flutter ( 3993):  alt-svc: h3=":443"; ma=86400
+I/flutter ( 3993):  date: Sat, 02 May 2026 13:18:45 GMT
+I/flutter ( 3993):  transfer-encoding: chunked
+I/flutter ( 3993):  content-encoding: gzip
+I/flutter ( 3993):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+I/flutter ( 3993):  cf-ray: 9f57504b4847ce23-SIN
+I/flutter ( 3993):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=fpnNXsJ3q7mNTmtUwD34npeqRX%2BQDFLZmeLmdgUmb8MM%2FC3hcbk43Sng94W0kw%2BDpXjQnygzE993sxwRb9NBO4eEiEX8TpFqSoTN64CMJd7hZqP1Uybl2od5X%2F7U9bGGaDFWhbdWE%2F8fw%2BWy"}]}
+I/flutter ( 3993):  cf-cache-status: DYNAMIC
+I/flutter ( 3993):  content-type: application/json; charset=utf-8
+I/flutter ( 3993):  server: cloudflare
+I/flutter ( 3993): Response Text:
+I/flutter ( 3993): {"isSuccess":true,"message":"Success","data":{"spaceId":"9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908","spaceName":"Lầu 1","currentMood":2,"currentMoodType":2,"moodName":"Energetic","bpmMin":120,"bpmMax":140,"lastAnalyzedAtUtc":"2026-04-25T14:11:40.580102Z","isFirstCycle":false}}
+I/flutter ( 3993): 
+I/flutter ( 3993): *** Response ***
+I/flutter ( 3993): uri: https://logcams.cloud/api/cams/space/489b0b03-11c5-44ed-b724-6ba83a46c068/mood
+I/flutter ( 3993): statusCode: 200
+I/flutter ( 3993): statusMessage: OK
+I/flutter ( 3993): headers:
+I/flutter ( 3993):  connection: keep-alive
+I/flutter ( 3993):  alt-svc: h3=":443"; ma=86400
+I/flutter ( 3993):  date: Sat, 02 May 2026 13:18:45 GMT
+I/flutter ( 3993):  transfer-encoding: chunked
+I/flutter ( 3993):  content-encoding: gzip
+I/flutter ( 3993):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+I/flutter ( 3993):  cf-ray: 9f57504b5fc41e93-SIN
+I/flutter ( 3993):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=zDonTrX9QQXqr7hSyAGrdTMbUnDcyssfIdVmEY1r8eagU%2FIEzCs2pETEWwpAMrXYeZ3sNOMTxr23LBuTzR6xJkv0qY9fdNu4SOpzoS80N1DSocQ9amNRw221FB0uGgIBBtb%2FkjQ8aul4GwC1"}]}
+I/flutter ( 3993):  cf-cache-status: DYNAMIC
+I/flutter ( 3993):  content-type: application/json; charset=utf-8
+I/flutter ( 3993):  server: cloudflare
+I/flutter ( 3993): Response Text:
+I/flutter ( 3993): {"isSuccess":true,"message":"Success","data":{"spaceId":"489b0b03-11c5-44ed-b724-6ba83a46c068","spaceName":"Ban Công","currentMood":1,"currentMoodType":3,"moodName":"Focus","bpmMin":85,"bpmMax":105,"lastAnalyzedAtUtc":"2026-04-21T04:23:34.390404Z","isFirstCycle":false}}
+I/flutter ( 3993): 
+Another exception was thrown: HTTP request failed, statusCode: 404,
+https://logaicams-bucket.s3.ap-southeast-1.amazonaws.com/uploads/avatars/gemini_generated_image_hgb83y
+hgb83yhgb8-48612dfbb1a449de9361e9abd6f099a6.png?X-Amz-Expires=3600&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-
+Amz-Credential=AKIATL6VKTUC2S2NFLN2%2F20260502%2Fap-southeast-1%2Fs3%2Faws4_request&X-Amz-Date=2026050
+2T131639Z&X-Amz-SignedHeaders=host&X-Amz-Signature=65e5265d72277fc4ee52ef5d4f2dfb4a189a9ef88d0cedb730c
+37309c633c87d
+Another exception was thrown: HTTP request failed, statusCode: 404,
+https://logaicams-bucket.s3.ap-southeast-1.amazonaws.com/uploads/avatars/gemini_generated_image_hgb83y
+hgb83yhgb8-48612dfbb1a449de9361e9abd6f099a6.png?X-Amz-Expires=3600&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-
+Amz-Credential=AKIATL6VKTUC2S2NFLN2%2F20260502%2Fap-southeast-1%2Fs3%2Faws4_request&X-Amz-Date=2026050
+2T131639Z&X-Amz-SignedHeaders=host&X-Amz-Signature=65e5265d72277fc4ee52ef5d4f2dfb4a189a9ef88d0cedb730c
+37309c633c87d
