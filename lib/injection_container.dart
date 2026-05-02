@@ -334,6 +334,7 @@ Future<void> initializeDependencies() async {
       upsertSpaceHubBinding: sl(),
       deleteSpaceHubBinding: sl(),
       restartSpaceHub: sl(),
+      getPairedSpace: sl(),
       updateSpace: sl(),
       bleProvisioningService: sl(),
       blePermissionService: sl(),
