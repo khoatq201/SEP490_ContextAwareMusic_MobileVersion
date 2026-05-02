@@ -59,7 +59,7 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
   final _nvrPasswordController = TextEditingController();
   final _nvrHostController = TextEditingController();
   final _nvrPortController = TextEditingController(text: '80');
-  final _nvrChannelController = TextEditingController(text: '1');
+  String _selectedCameraVendor = 'auto';
   final _secretCodeFocusNode = FocusNode();
   final _ssidFocusNode = FocusNode();
   final _passwordFocusNode = FocusNode();
@@ -67,7 +67,6 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
   final _nvrPasswordFocusNode = FocusNode();
   final _nvrHostFocusNode = FocusNode();
   final _nvrPortFocusNode = FocusNode();
-  final _nvrChannelFocusNode = FocusNode();
   final _secretCodeFieldKey = GlobalKey();
   final _ssidFieldKey = GlobalKey();
   final _passwordFieldKey = GlobalKey();
@@ -75,7 +74,6 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
   final _nvrPasswordFieldKey = GlobalKey();
   final _nvrHostFieldKey = GlobalKey();
   final _nvrPortFieldKey = GlobalKey();
-  final _nvrChannelFieldKey = GlobalKey();
   bool _obscureSecretCode = true;
   bool _obscurePassword = true;
   bool _obscureNvrPassword = true;
@@ -89,7 +87,6 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
     _attachFocusListener(_nvrPasswordFocusNode, _nvrPasswordFieldKey);
     _attachFocusListener(_nvrHostFocusNode, _nvrHostFieldKey);
     _attachFocusListener(_nvrPortFocusNode, _nvrPortFieldKey);
-    _attachFocusListener(_nvrChannelFocusNode, _nvrChannelFieldKey);
   }
 
   @override
@@ -102,7 +99,6 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
     _nvrPasswordController.dispose();
     _nvrHostController.dispose();
     _nvrPortController.dispose();
-    _nvrChannelController.dispose();
     _secretCodeFocusNode.dispose();
     _ssidFocusNode.dispose();
     _passwordFocusNode.dispose();
@@ -110,7 +106,6 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
     _nvrPasswordFocusNode.dispose();
     _nvrHostFocusNode.dispose();
     _nvrPortFocusNode.dispose();
-    _nvrChannelFocusNode.dispose();
     super.dispose();
   }
 
@@ -357,6 +352,7 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
           _NvrConfigCard(
             palette: palette,
             deviceId: state.resolvedIdentity?.deviceId,
+            selectedVendor: _selectedCameraVendor,
             usernameFieldKey: _nvrUsernameFieldKey,
             usernameController: _nvrUsernameController,
             usernameFocusNode: _nvrUsernameFocusNode,
@@ -370,6 +366,9 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
             portController: _nvrPortController,
             portFocusNode: _nvrPortFocusNode,
             obscurePassword: _obscureNvrPassword,
+            onVendorChanged: (value) {
+              setState(() => _selectedCameraVendor = value);
+            },
             onTogglePassword: () {
               setState(() => _obscureNvrPassword = !_obscureNvrPassword);
             },
@@ -413,9 +412,9 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
         return [
           _ProgressCard(
             palette: palette,
-            title: 'Saving selected camera view',
+            title: 'Finalizing IoT device sync',
             subtitle:
-                'The ESP32 will use this channel for snapshots and people counting.',
+                'The app is reading the IoT device ID and saving it to the backend.',
           ),
         ];
       case HubProvisioningPhase.resolvingLocation:
@@ -524,8 +523,8 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
     _nvrPasswordController.clear();
     _nvrHostController.clear();
     _nvrPortController.text = '80';
-    _nvrChannelController.text = '1';
     setState(() {
+      _selectedCameraVendor = 'auto';
       _obscureSecretCode = true;
       _obscurePassword = true;
       _obscureNvrPassword = true;
@@ -545,8 +544,8 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
     _nvrPasswordController.clear();
     _nvrHostController.clear();
     _nvrPortController.text = '80';
-    _nvrChannelController.text = '1';
     setState(() {
+      _selectedCameraVendor = 'auto';
       _obscureSecretCode = true;
       _obscurePassword = true;
       _obscureNvrPassword = true;
@@ -629,7 +628,6 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
     final password = _nvrPasswordController.text;
     final host = _nvrHostController.text.trim();
     final port = int.tryParse(_nvrPortController.text.trim()) ?? 80;
-
     if (username.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -651,10 +649,12 @@ class _SpaceHubPageState extends State<SpaceHubPage> {
     context.read<HubProvisioningBloc>().add(
           HubProvisioningNvrConfigSubmitted(
             mode: 'direct',
+            vendor: _selectedCameraVendor,
             username: username,
             password: password,
             host: host,
             port: port,
+            selectedChannel: 1,
           ),
         );
   }
@@ -1311,6 +1311,7 @@ class _NvrConfigCard extends StatelessWidget {
   const _NvrConfigCard({
     required this.palette,
     required this.deviceId,
+    required this.selectedVendor,
     required this.usernameFieldKey,
     required this.usernameController,
     required this.usernameFocusNode,
@@ -1324,12 +1325,14 @@ class _NvrConfigCard extends StatelessWidget {
     required this.portController,
     required this.portFocusNode,
     required this.obscurePassword,
+    required this.onVendorChanged,
     required this.onTogglePassword,
     required this.onSubmit,
   });
 
   final _HubPalette palette;
   final String? deviceId;
+  final String selectedVendor;
   final GlobalKey usernameFieldKey;
   final TextEditingController usernameController;
   final FocusNode usernameFocusNode;
@@ -1343,6 +1346,7 @@ class _NvrConfigCard extends StatelessWidget {
   final TextEditingController portController;
   final FocusNode portFocusNode;
   final bool obscurePassword;
+  final ValueChanged<String> onVendorChanged;
   final VoidCallback onTogglePassword;
   final VoidCallback onSubmit;
 
@@ -1372,11 +1376,38 @@ class _NvrConfigCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            'Enter the camera host and port. The ESP32 will connect to that single feed directly.',
+            'Enter the camera host and port. The ESP32 will use one fixed direct feed and skip preview discovery.',
             style: GoogleFonts.inter(
               color: palette.textMuted,
               fontSize: 13,
               height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            initialValue: selectedVendor,
+            items: const [
+              DropdownMenuItem(
+                value: 'auto',
+                child: Text('Auto detect'),
+              ),
+              DropdownMenuItem(
+                value: 'imou',
+                child: Text('Imou / Dahua'),
+              ),
+              DropdownMenuItem(
+                value: 'hikvision',
+                child: Text('Hikvision'),
+              ),
+            ],
+            onChanged: (value) {
+              if (value != null) {
+                onVendorChanged(value);
+              }
+            },
+            decoration: const InputDecoration(
+              labelText: 'Camera type',
+              hintText: 'Choose the camera vendor',
             ),
           ),
           const SizedBox(height: 12),
@@ -1444,9 +1475,8 @@ class _NvrConfigCard extends StatelessWidget {
               controller: portController,
               focusNode: portFocusNode,
               keyboardType: TextInputType.number,
-              textInputAction: TextInputAction.done,
+              textInputAction: TextInputAction.next,
               scrollPadding: const EdgeInsets.only(bottom: 180),
-              onSubmitted: (_) => onSubmit(),
               decoration: const InputDecoration(
                 labelText: 'Camera port',
                 hintText: '80 or forwarded port such as 18080',
