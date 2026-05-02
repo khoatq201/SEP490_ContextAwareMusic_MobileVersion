@@ -21,7 +21,12 @@ void main() {
       expect(tokens.bgBase, AppColors.lightBgBase);
       expect(tokens.bgContainer, AppColors.lightBgContainer);
       expect(tokens.alertErrorBg, AppColors.lightAlertErrorBg);
+      expect(tokens.moodCalm, AppColors.moodCalm);
+      expect(tokens.moodEnergetic, AppColors.moodEnergetic);
       expect(tokens.moodFocus, AppColors.lightTechAccent);
+      expect(tokens.moodSocial, AppColors.moodSocial);
+      expect(tokens.moodRomantic, AppColors.moodRomantic);
+      expect(tokens.moodUplifting, AppColors.moodUplifting);
     });
 
     test('dark theme exposes red primary and dark surface stack', () {
@@ -38,7 +43,12 @@ void main() {
       expect(tokens.bgContainer, AppColors.darkBgContainer);
       expect(tokens.bgElevated, AppColors.darkBgElevated);
       expect(tokens.alertInfoBg, AppColors.darkAlertInfoBg);
+      expect(tokens.moodCalm, AppColors.moodCalm);
+      expect(tokens.moodEnergetic, AppColors.moodEnergetic);
       expect(tokens.moodFocus, AppColors.darkTechAccent);
+      expect(tokens.moodSocial, AppColors.moodSocial);
+      expect(tokens.moodRomantic, AppColors.moodRomantic);
+      expect(tokens.moodUplifting, AppColors.moodUplifting);
     });
   });
 }

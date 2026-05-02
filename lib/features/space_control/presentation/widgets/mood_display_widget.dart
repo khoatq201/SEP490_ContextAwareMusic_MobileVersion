@@ -14,16 +14,24 @@ class MoodDisplayWidget extends StatelessWidget {
 
   IconData _getMoodIcon(String? mood) {
     switch (mood?.toLowerCase()) {
-      case 'happy':
-        return Icons.sentiment_very_satisfied;
+      case 'calm':
       case 'chill':
+      case 'relax':
+      case 'relaxed':
         return Icons.spa;
       case 'energetic':
+      case 'energy':
         return Icons.bolt;
+      case 'focus':
+      case 'focused':
+        return Icons.psychology;
+      case 'social':
+        return Icons.groups_rounded;
       case 'romantic':
         return Icons.favorite;
-      case 'focus':
-        return Icons.psychology;
+      case 'uplifting':
+      case 'happy':
+        return Icons.sentiment_very_satisfied;
       default:
         return Icons.mood;
     }
@@ -31,16 +39,24 @@ class MoodDisplayWidget extends StatelessWidget {
 
   Color _getMoodColor(String? mood, CamsThemeTokens tokens) {
     switch (mood?.toLowerCase()) {
-      case 'happy':
-        return tokens.warning;
+      case 'calm':
       case 'chill':
-        return tokens.moodChill;
+      case 'relax':
+      case 'relaxed':
+        return tokens.moodCalm;
       case 'energetic':
+      case 'energy':
         return tokens.moodEnergetic;
-      case 'romantic':
-        return tokens.brandPrimaryHover;
       case 'focus':
+      case 'focused':
         return tokens.moodFocus;
+      case 'social':
+        return tokens.moodSocial;
+      case 'romantic':
+        return tokens.moodRomantic;
+      case 'uplifting':
+      case 'happy':
+        return tokens.moodUplifting;
       default:
         return tokens.moodDefault;
     }

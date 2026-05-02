@@ -104,15 +104,26 @@ class AppColors {
   // ==========================================
   // MOOD-SPECIFIC COLORS - Music Context
   // ==========================================
-  static const Color moodChill = Color(0xFF10B981);
-  static const Color moodFocus = darkTechAccent;
+  static const Color moodCalm = Color(0xFF10B981);
   static const Color moodEnergetic = warning;
+  static const Color moodFocus = darkTechAccent;
+  static const Color moodSocial = Color(0xFF14B8A6);
+  static const Color moodRomantic = Color(0xFFEC4899);
+  static const Color moodUplifting = Color(0xFF8B5CF6);
   static const Color moodDefault = Color(0xFF818CF8);
 
-  static const Color moodChillGlow = Color(0x6610B981);
-  static const Color moodFocusGlow = Color(0x663B82F6);
+  static const Color moodCalmGlow = Color(0x6610B981);
   static const Color moodEnergeticGlow = Color(0x66F59E0B);
+  static const Color moodFocusGlow = Color(0x663B82F6);
+  static const Color moodSocialGlow = Color(0x6614B8A6);
+  static const Color moodRomanticGlow = Color(0x66EC4899);
+  static const Color moodUpliftingGlow = Color(0x668B5CF6);
   static const Color moodDefaultGlow = Color(0x66818CF8);
+
+  @Deprecated('Use moodCalm instead')
+  static const Color moodChill = moodCalm;
+  @Deprecated('Use moodCalmGlow instead')
+  static const Color moodChillGlow = moodCalmGlow;
 
   // ==========================================
   // DEFAULT SEMANTIC ALIASES (LIGHT)
@@ -245,18 +256,18 @@ class AppColors {
   @Deprecated('Use darkBgBase instead')
   static const Color backgroundDark = darkBgBase;
 
-  @Deprecated('Use moodDefault instead')
-  static const Color moodHappy = moodDefault;
+  @Deprecated('Use moodUplifting instead')
+  static const Color moodHappy = moodUplifting;
   @Deprecated('Use moodEnergetic instead')
   static const Color energeticColor = moodEnergetic;
   @Deprecated('Use moodFocus instead')
   static const Color focusColor = moodFocus;
-  @Deprecated('Use moodChill instead')
-  static const Color chillColor = moodChill;
-  @Deprecated('Use moodDefault instead')
-  static const Color upliftingColor = moodDefault;
-  @Deprecated('Use success instead')
-  static const Color moodRelaxed = success;
+  @Deprecated('Use moodCalm instead')
+  static const Color chillColor = moodCalm;
+  @Deprecated('Use moodUplifting instead')
+  static const Color upliftingColor = moodUplifting;
+  @Deprecated('Use moodCalm instead')
+  static const Color moodRelaxed = moodCalm;
   @Deprecated('Use moodFocus instead')
   static const Color moodFocused = moodFocus;
 
@@ -297,16 +308,24 @@ class AppColors {
 
   static Color getMoodColor(String mood) {
     switch (mood.toLowerCase()) {
+      case 'calm':
       case 'chill':
       case 'relax':
       case 'relaxed':
-        return moodChill;
-      case 'focus':
-      case 'focused':
-        return moodFocus;
+        return moodCalm;
       case 'energetic':
       case 'energy':
         return moodEnergetic;
+      case 'focus':
+      case 'focused':
+        return moodFocus;
+      case 'social':
+        return moodSocial;
+      case 'romantic':
+        return moodRomantic;
+      case 'uplifting':
+      case 'happy':
+        return moodUplifting;
       default:
         return moodDefault;
     }

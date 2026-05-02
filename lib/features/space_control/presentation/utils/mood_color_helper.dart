@@ -8,10 +8,18 @@ class MoodColorHelper {
   static LinearGradient gradientFor(String? mood, CamsThemeTokens tokens) {
     final key = mood?.trim().toLowerCase() ?? '';
     final colors = switch (key) {
-      'energetic' => [tokens.moodEnergetic, tokens.success],
-      'chill' => [tokens.moodChill, tokens.techAccent],
-      'focus' => [tokens.moodFocus, tokens.techAccent],
-      'happy' => [tokens.moodDefault, tokens.moodEnergetic],
+      'calm' || 'chill' || 'relax' || 'relaxed' => [
+          tokens.moodCalm,
+          tokens.moodSocial,
+        ],
+      'energetic' || 'energy' => [tokens.moodEnergetic, tokens.warning],
+      'focus' || 'focused' => [tokens.moodFocus, tokens.techAccent],
+      'social' => [tokens.moodSocial, tokens.moodCalm],
+      'romantic' => [tokens.moodRomantic, tokens.moodUplifting],
+      'uplifting' || 'happy' => [
+          tokens.moodUplifting,
+          tokens.moodEnergetic,
+        ],
       _ => [tokens.textTertiary, tokens.borderSecondary],
     };
     return LinearGradient(

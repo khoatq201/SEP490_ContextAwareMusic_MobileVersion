@@ -209,15 +209,13 @@ class _SpaceMoodTheme {
           caption: 'Focused',
           color: tokens.moodFocus,
         );
-      case 'chill':
       case 'calm':
+      case 'chill':
       case 'relaxed':
-      case 'welcoming':
-      case 'social':
         return _SpaceMoodTheme(
-          label: 'CHILL',
-          caption: 'Conversational',
-          color: tokens.moodChill,
+          label: 'CALM',
+          caption: 'Peaceful',
+          color: tokens.moodCalm,
         );
       case 'energetic':
       case 'energy':
@@ -225,6 +223,26 @@ class _SpaceMoodTheme {
           label: 'ENERGETIC',
           caption: 'High Energy',
           color: tokens.moodEnergetic,
+        );
+      case 'social':
+      case 'welcoming':
+        return _SpaceMoodTheme(
+          label: 'SOCIAL',
+          caption: 'Conversational',
+          color: tokens.moodSocial,
+        );
+      case 'romantic':
+        return _SpaceMoodTheme(
+          label: 'ROMANTIC',
+          caption: 'Intimate',
+          color: tokens.moodRomantic,
+        );
+      case 'uplifting':
+      case 'happy':
+        return _SpaceMoodTheme(
+          label: 'UPLIFT',
+          caption: 'Positive',
+          color: tokens.moodUplifting,
         );
       default:
         return _SpaceMoodTheme(

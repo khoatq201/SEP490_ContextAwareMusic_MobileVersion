@@ -35,13 +35,19 @@ class CamsThemeTokens extends ThemeExtension<CamsThemeTokens> {
     required this.alertInfoBg,
     required this.trackBg,
     required this.trackHover,
-    required this.moodChill,
-    required this.moodFocus,
+    required this.moodCalm,
     required this.moodEnergetic,
+    required this.moodFocus,
+    required this.moodSocial,
+    required this.moodRomantic,
+    required this.moodUplifting,
     required this.moodDefault,
-    required this.moodChillGlow,
-    required this.moodFocusGlow,
+    required this.moodCalmGlow,
     required this.moodEnergeticGlow,
+    required this.moodFocusGlow,
+    required this.moodSocialGlow,
+    required this.moodRomanticGlow,
+    required this.moodUpliftingGlow,
     required this.moodDefaultGlow,
   });
 
@@ -75,14 +81,23 @@ class CamsThemeTokens extends ThemeExtension<CamsThemeTokens> {
   final Color alertInfoBg;
   final Color trackBg;
   final Color trackHover;
-  final Color moodChill;
-  final Color moodFocus;
+  final Color moodCalm;
   final Color moodEnergetic;
+  final Color moodFocus;
+  final Color moodSocial;
+  final Color moodRomantic;
+  final Color moodUplifting;
   final Color moodDefault;
-  final Color moodChillGlow;
-  final Color moodFocusGlow;
+  final Color moodCalmGlow;
   final Color moodEnergeticGlow;
+  final Color moodFocusGlow;
+  final Color moodSocialGlow;
+  final Color moodRomanticGlow;
+  final Color moodUpliftingGlow;
   final Color moodDefaultGlow;
+
+  Color get moodChill => moodCalm;
+  Color get moodChillGlow => moodCalmGlow;
 
   static const CamsThemeTokens light = CamsThemeTokens(
     bgBase: AppColors.lightBgBase,
@@ -115,13 +130,19 @@ class CamsThemeTokens extends ThemeExtension<CamsThemeTokens> {
     alertInfoBg: AppColors.lightAlertInfoBg,
     trackBg: AppColors.lightTrackBg,
     trackHover: AppColors.lightTrackHover,
-    moodChill: AppColors.moodChill,
-    moodFocus: AppColors.lightTechAccent,
+    moodCalm: AppColors.moodCalm,
     moodEnergetic: AppColors.moodEnergetic,
+    moodFocus: AppColors.lightTechAccent,
+    moodSocial: AppColors.moodSocial,
+    moodRomantic: AppColors.moodRomantic,
+    moodUplifting: AppColors.moodUplifting,
     moodDefault: AppColors.moodDefault,
-    moodChillGlow: AppColors.moodChillGlow,
-    moodFocusGlow: AppColors.moodFocusGlow,
+    moodCalmGlow: AppColors.moodCalmGlow,
     moodEnergeticGlow: AppColors.moodEnergeticGlow,
+    moodFocusGlow: AppColors.moodFocusGlow,
+    moodSocialGlow: AppColors.moodSocialGlow,
+    moodRomanticGlow: AppColors.moodRomanticGlow,
+    moodUpliftingGlow: AppColors.moodUpliftingGlow,
     moodDefaultGlow: AppColors.moodDefaultGlow,
   );
 
@@ -156,13 +177,19 @@ class CamsThemeTokens extends ThemeExtension<CamsThemeTokens> {
     alertInfoBg: AppColors.darkAlertInfoBg,
     trackBg: AppColors.darkTrackBg,
     trackHover: AppColors.darkTrackHover,
-    moodChill: AppColors.moodChill,
-    moodFocus: AppColors.darkTechAccent,
+    moodCalm: AppColors.moodCalm,
     moodEnergetic: AppColors.moodEnergetic,
+    moodFocus: AppColors.darkTechAccent,
+    moodSocial: AppColors.moodSocial,
+    moodRomantic: AppColors.moodRomantic,
+    moodUplifting: AppColors.moodUplifting,
     moodDefault: AppColors.moodDefault,
-    moodChillGlow: AppColors.moodChillGlow,
-    moodFocusGlow: AppColors.moodFocusGlow,
+    moodCalmGlow: AppColors.moodCalmGlow,
     moodEnergeticGlow: AppColors.moodEnergeticGlow,
+    moodFocusGlow: AppColors.moodFocusGlow,
+    moodSocialGlow: AppColors.moodSocialGlow,
+    moodRomanticGlow: AppColors.moodRomanticGlow,
+    moodUpliftingGlow: AppColors.moodUpliftingGlow,
     moodDefaultGlow: AppColors.moodDefaultGlow,
   );
 
@@ -198,13 +225,19 @@ class CamsThemeTokens extends ThemeExtension<CamsThemeTokens> {
     Color? alertInfoBg,
     Color? trackBg,
     Color? trackHover,
-    Color? moodChill,
-    Color? moodFocus,
+    Color? moodCalm,
     Color? moodEnergetic,
+    Color? moodFocus,
+    Color? moodSocial,
+    Color? moodRomantic,
+    Color? moodUplifting,
     Color? moodDefault,
-    Color? moodChillGlow,
-    Color? moodFocusGlow,
+    Color? moodCalmGlow,
     Color? moodEnergeticGlow,
+    Color? moodFocusGlow,
+    Color? moodSocialGlow,
+    Color? moodRomanticGlow,
+    Color? moodUpliftingGlow,
     Color? moodDefaultGlow,
   }) {
     return CamsThemeTokens(
@@ -238,13 +271,19 @@ class CamsThemeTokens extends ThemeExtension<CamsThemeTokens> {
       alertInfoBg: alertInfoBg ?? this.alertInfoBg,
       trackBg: trackBg ?? this.trackBg,
       trackHover: trackHover ?? this.trackHover,
-      moodChill: moodChill ?? this.moodChill,
-      moodFocus: moodFocus ?? this.moodFocus,
+      moodCalm: moodCalm ?? this.moodCalm,
       moodEnergetic: moodEnergetic ?? this.moodEnergetic,
+      moodFocus: moodFocus ?? this.moodFocus,
+      moodSocial: moodSocial ?? this.moodSocial,
+      moodRomantic: moodRomantic ?? this.moodRomantic,
+      moodUplifting: moodUplifting ?? this.moodUplifting,
       moodDefault: moodDefault ?? this.moodDefault,
-      moodChillGlow: moodChillGlow ?? this.moodChillGlow,
-      moodFocusGlow: moodFocusGlow ?? this.moodFocusGlow,
+      moodCalmGlow: moodCalmGlow ?? this.moodCalmGlow,
       moodEnergeticGlow: moodEnergeticGlow ?? this.moodEnergeticGlow,
+      moodFocusGlow: moodFocusGlow ?? this.moodFocusGlow,
+      moodSocialGlow: moodSocialGlow ?? this.moodSocialGlow,
+      moodRomanticGlow: moodRomanticGlow ?? this.moodRomanticGlow,
+      moodUpliftingGlow: moodUpliftingGlow ?? this.moodUpliftingGlow,
       moodDefaultGlow: moodDefaultGlow ?? this.moodDefaultGlow,
     );
   }
@@ -286,13 +325,19 @@ class CamsThemeTokens extends ThemeExtension<CamsThemeTokens> {
       alertInfoBg: lerpColor(alertInfoBg, other.alertInfoBg),
       trackBg: lerpColor(trackBg, other.trackBg),
       trackHover: lerpColor(trackHover, other.trackHover),
-      moodChill: lerpColor(moodChill, other.moodChill),
-      moodFocus: lerpColor(moodFocus, other.moodFocus),
+      moodCalm: lerpColor(moodCalm, other.moodCalm),
       moodEnergetic: lerpColor(moodEnergetic, other.moodEnergetic),
+      moodFocus: lerpColor(moodFocus, other.moodFocus),
+      moodSocial: lerpColor(moodSocial, other.moodSocial),
+      moodRomantic: lerpColor(moodRomantic, other.moodRomantic),
+      moodUplifting: lerpColor(moodUplifting, other.moodUplifting),
       moodDefault: lerpColor(moodDefault, other.moodDefault),
-      moodChillGlow: lerpColor(moodChillGlow, other.moodChillGlow),
-      moodFocusGlow: lerpColor(moodFocusGlow, other.moodFocusGlow),
+      moodCalmGlow: lerpColor(moodCalmGlow, other.moodCalmGlow),
       moodEnergeticGlow: lerpColor(moodEnergeticGlow, other.moodEnergeticGlow),
+      moodFocusGlow: lerpColor(moodFocusGlow, other.moodFocusGlow),
+      moodSocialGlow: lerpColor(moodSocialGlow, other.moodSocialGlow),
+      moodRomanticGlow: lerpColor(moodRomanticGlow, other.moodRomanticGlow),
+      moodUpliftingGlow: lerpColor(moodUpliftingGlow, other.moodUpliftingGlow),
       moodDefaultGlow: lerpColor(moodDefaultGlow, other.moodDefaultGlow),
     );
   }
