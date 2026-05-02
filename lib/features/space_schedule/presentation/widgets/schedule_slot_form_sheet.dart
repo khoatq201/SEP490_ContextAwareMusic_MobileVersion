@@ -165,6 +165,15 @@ class _ScheduleSlotFormSheetState extends State<ScheduleSlotFormSheet> {
                     style: TextStyle(color: theme.colorScheme.error),
                   ),
                 ],
+                const SizedBox(height: 12),
+                const _SlotBehaviorNotice(
+                  text: 'Queue end behavior uses the backend default: Stop.',
+                ),
+                const SizedBox(height: 8),
+                const _SlotBehaviorNotice(
+                  text:
+                      'Slot times must fit within the store operating hours; the backend will reject times outside that window.',
+                ),
                 const SizedBox(height: 22),
                 SizedBox(
                   width: double.infinity,
@@ -246,6 +255,37 @@ class _TimeButton extends StatelessWidget {
       onPressed: onTap,
       icon: const Icon(Icons.schedule_rounded),
       label: Text('$label ${_formatTime(time)}'),
+    );
+  }
+}
+
+class _SlotBehaviorNotice extends StatelessWidget {
+  const _SlotBehaviorNotice({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          Icons.info_outline_rounded,
+          size: 16,
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              height: 1.25,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

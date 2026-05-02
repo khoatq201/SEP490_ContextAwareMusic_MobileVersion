@@ -1545,7 +1545,7 @@ class _StrictSyncStoresSheetState extends State<_StrictSyncStoresSheet> {
                   ),
                   const SizedBox(height: 6),
                   const Text(
-                    'Selected stores must follow brand scheduling. Stores removed from this list are moved to Freedom mode.',
+                    'Selected stores will follow the chosen brand template. Clearing a store here only excludes it from this bulk Strict Sync update.',
                   ),
                 ],
               ),

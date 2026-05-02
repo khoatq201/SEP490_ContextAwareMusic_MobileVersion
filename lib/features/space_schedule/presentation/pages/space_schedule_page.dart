@@ -14,6 +14,7 @@ import '../../../cams/domain/entities/space_playback_state.dart';
 import '../../../cams/presentation/bloc/cams_playback_bloc.dart';
 import '../../../cams/presentation/bloc/cams_playback_event.dart';
 import '../../../cams/presentation/bloc/cams_playback_state.dart';
+import '../../../space_control/presentation/utils/mood_color_helper.dart';
 import '../../domain/entities/schedule_music_item.dart';
 import '../../domain/entities/schedule_slot.dart';
 import '../../domain/entities/schedule_source.dart';
@@ -701,7 +702,7 @@ class _ScheduleSourcePickerView extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Browse what\'s available and change what\'s playing in your zone schedule.',
+                      'Library schedules are copied into this space. Brand templates are applied through Strict Sync governance.',
                       style: GoogleFonts.inter(
                         color: palette.textMuted,
                         fontSize: 14,
@@ -1237,13 +1238,13 @@ class _ScheduleModeControlsState extends State<_ScheduleModeControls> {
             palette: palette,
             title: widget.isBrandControlled
                 ? 'Brand-controlled scheduling'
-                : 'Space-level scheduling',
+                : 'Schedule configuration',
             semanticLabel: 'Schedule configuration toggle',
             subtitle: widget.isBrandControlled
-                ? 'This store is in Strict Sync. Local slots are read-only.'
+                ? 'Strict Sync suppresses local space jobs and registers brand schedule jobs.'
                 : widget.configEnabled
-                    ? 'Weekly slots are enabled for this space.'
-                    : 'Weekly slots are saved but disabled.',
+                    ? 'Weekly slots are saved and synced as recurring jobs.'
+                    : 'Weekly slots are saved, but recurring jobs are disabled.',
             value: widget.configEnabled,
             enabled: !widget.isSaving && !widget.isBrandControlled,
             onChanged: widget.onConfigChanged,
@@ -1257,9 +1258,9 @@ class _ScheduleModeControlsState extends State<_ScheduleModeControls> {
             controlKey: const ValueKey('schedule-runtime-toggle'),
             semanticLabel: 'Scheduling runtime toggle',
             subtitle: widget.isBrandControlled
-                ? 'Runtime is activated by the brand schedule from backend.'
+                ? 'Live playback is controlled by the Strict Sync brand template.'
                 : runtimeDetails.isEmpty
-                    ? 'CAMS will report the active slot when scheduling takes ownership.'
+                    ? 'This is the current CAMS playback handoff state, separate from saved schedule config.'
                     : runtimeDetails.join('  |  '),
             value: runtimeEnabled,
             enabled: !widget.isSaving &&
@@ -1644,7 +1645,7 @@ class _ScheduleTimeline extends StatelessWidget {
                         ),
                       ),
                     ),
-                  for (final slot in slots) _buildPositionedSlot(slot),
+                  for (final slot in slots) _buildPositionedSlot(context, slot),
                 ],
               ),
             ),
@@ -1654,8 +1655,17 @@ class _ScheduleTimeline extends StatelessWidget {
     );
   }
 
-  Widget _buildPositionedSlot(ScheduleSlot slot) {
+  Widget _buildPositionedSlot(BuildContext context, ScheduleSlot slot) {
+    final tokens = context.camsTokens;
     final music = _findMusic(musicCatalog, slot.musicId);
+    final moodGradient = MoodColorHelper.gradientFor(
+      music?.collection,
+      tokens,
+    );
+    final shadowColor = MoodColorHelper.shadowColorFor(
+      music?.collection,
+      tokens,
+    );
     final startMinutes = _minutesOfDay(slot.startTime);
     final endMinutes = _minutesOfDay(slot.endTime);
     final top = ((startMinutes - (_startHour * 60)) / 60) * _hourHeight;
@@ -1684,18 +1694,10 @@ class _ScheduleTimeline extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                _colorFromHex(music?.primaryHex ?? '#491183'),
-                _colorFromHex(music?.secondaryHex ?? '#7B44C3'),
-              ],
-            ),
+            gradient: moodGradient,
             boxShadow: [
               BoxShadow(
-                color: _colorFromHex(music?.secondaryHex ?? '#7B44C3')
-                    .withValues(alpha: 0.2),
+                color: shadowColor.withValues(alpha: 0.42),
                 blurRadius: 18,
                 offset: const Offset(0, 10),
               ),
@@ -1707,8 +1709,8 @@ class _ScheduleTimeline extends StatelessWidget {
               children: [
                 _MiniArtwork(
                   label: music?.artworkLabel ?? 'Add\nMusic',
-                  primaryHex: music?.primaryHex ?? '#3F3F3F',
-                  secondaryHex: music?.secondaryHex ?? '#666666',
+                  primaryHex: _hexFromColor(moodGradient.colors.first),
+                  secondaryHex: _hexFromColor(moodGradient.colors.last),
                   width: artworkWidth,
                   height: artworkHeight,
                 ),
@@ -2191,4 +2193,9 @@ Color _colorFromHex(String value) {
   if (hex.length == 6) buffer.write('ff');
   buffer.write(hex);
   return Color(int.parse(buffer.toString(), radix: 16));
+}
+
+String _hexFromColor(Color color) {
+  final value = color.toARGB32() & 0x00FFFFFF;
+  return '#${value.toRadixString(16).padLeft(6, '0').toUpperCase()}';
 }

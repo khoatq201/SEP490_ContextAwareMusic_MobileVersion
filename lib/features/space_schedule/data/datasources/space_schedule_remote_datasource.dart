@@ -498,20 +498,39 @@ class SpaceScheduleRemoteDataSourceImpl
     if (errorCode == 'Cams_Error_TemplateSourceNotApplicable') {
       return 'Template sources cannot be applied directly. Use Strict Sync governance to link a template.';
     }
+    if (_mentionsOperatingHours(errorCode) ||
+        _mentionsOperatingHours(payload['message']?.toString())) {
+      return 'This schedule slot must stay within the store operating hours.';
+    }
     final errors = payload['errors'];
     if (errors is List && errors.isNotEmpty) {
       final detail = errors.first.toString();
+      if (_mentionsOperatingHours(detail)) {
+        return 'This schedule slot must stay within the store operating hours.';
+      }
       if (detail.trim().isNotEmpty) return detail;
     }
     if (errors is Map<String, dynamic> && errors.isNotEmpty) {
       final firstValue = errors.values.first;
       if (firstValue is List && firstValue.isNotEmpty) {
         final detail = firstValue.first.toString();
+        if (_mentionsOperatingHours(detail)) {
+          return 'This schedule slot must stay within the store operating hours.';
+        }
         if (detail.trim().isNotEmpty) return detail;
       }
     }
     final message = payload['message']?.toString();
     if (message != null && message.trim().isNotEmpty) return message;
     return 'Schedule request failed.';
+  }
+
+  bool _mentionsOperatingHours(String? value) {
+    final normalized = value?.toLowerCase() ?? '';
+    return normalized.contains('operating') ||
+        normalized.contains('open time') ||
+        normalized.contains('closetime') ||
+        normalized.contains('close time') ||
+        normalized.contains('ops.');
   }
 }

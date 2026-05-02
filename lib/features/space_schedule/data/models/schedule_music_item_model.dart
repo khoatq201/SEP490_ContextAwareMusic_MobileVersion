@@ -19,7 +19,7 @@ class ScheduleMusicItemModel extends ScheduleMusicItem {
       id: json['id']?.toString() ?? '',
       title: title,
       artist: artist,
-      collection: json['collection']?.toString(),
+      collection: (json['collection'] ?? json['moodName'])?.toString(),
       artworkLabel: json['artworkLabel']?.toString() ?? title,
       primaryHex: json['primaryHex']?.toString() ?? '#2E5BFF',
       secondaryHex: json['secondaryHex']?.toString() ?? '#00B8A9',

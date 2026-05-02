@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../../../core/widgets/cams_skeleton.dart';
+import '../../../space_control/presentation/utils/mood_color_helper.dart';
 import '../../data/datasources/space_schedule_remote_datasource.dart';
 import '../../domain/entities/schedule_music_item.dart';
 import '../../domain/entities/schedule_slot.dart';
@@ -322,12 +323,55 @@ class _BrandScheduleEditorSheetState extends State<BrandScheduleEditorSheet> {
     );
     if (!mounted || payload == null) return;
 
+    final validationMessage = _validateBrandSlot(source, payload);
+    if (validationMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(validationMessage),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     await _runMutation(
       () => widget.remoteDataSource.upsertBrandSlot(
         sourceId: source.id,
         slot: payload,
       ),
     );
+  }
+
+  String? _validateBrandSlot(ScheduleSource source, ScheduleSlot slot) {
+    final hasMusic = widget.musicCatalog.any((item) => item.id == slot.musicId);
+    if (!hasMusic) {
+      return 'Please select a playlist for this brand schedule slot.';
+    }
+
+    final start = _minutesOfDay(slot.startTime);
+    final end = _minutesOfDay(slot.endTime);
+    if (end <= start) {
+      return 'End time must be later than start time.';
+    }
+
+    for (final other in source.schedule.slots) {
+      if (other.id == slot.id) continue;
+      if (!_sharesAnyDay(slot.daysOfWeek, other.daysOfWeek)) continue;
+      final otherStart = _minutesOfDay(other.startTime);
+      final otherEnd = _minutesOfDay(other.endTime);
+      if (start < otherEnd && otherStart < end) {
+        return 'This brand schedule slot overlaps another slot on the same day.';
+      }
+    }
+
+    return null;
+  }
+
+  bool _sharesAnyDay(List<int> a, List<int> b) {
+    for (final day in a) {
+      if (b.contains(day)) return true;
+    }
+    return false;
   }
 
   Future<void> _deleteSlot(ScheduleSource source, ScheduleSlot slot) async {
@@ -431,7 +475,7 @@ class _BrandScheduleEditorSheetState extends State<BrandScheduleEditorSheet> {
                           ),
                           SizedBox(height: 4),
                           Text(
-                            'Manage templates and reusable library schedules.',
+                            'Templates power Strict Sync. Library schedules can be copied into spaces.',
                             style: TextStyle(fontSize: 13),
                           ),
                         ],
@@ -996,14 +1040,21 @@ class _BrandScheduleTimeline extends StatelessWidget {
   }
 
   Widget _buildPositionedSlot(BuildContext context, ScheduleSlot slot) {
+    final tokens = context.camsTokens;
     final music = _findMusic(musicCatalog, slot.musicId);
+    final moodGradient = MoodColorHelper.gradientFor(
+      music?.collection,
+      tokens,
+    );
+    final shadowColor = MoodColorHelper.shadowColorFor(
+      music?.collection,
+      tokens,
+    );
     final startMinutes = _minutesOfDay(slot.startTime);
     final endMinutes = _minutesOfDay(slot.endTime);
     final top = ((startMinutes - (_startHour * 60)) / 60) * _hourHeight;
     final rawHeight = ((endMinutes - startMinutes) / 60) * _hourHeight;
     final height = rawHeight < 72 ? 72.0 : rawHeight;
-    final primary = _colorFromHex(music?.primaryHex ?? '#335C67');
-    final secondary = _colorFromHex(music?.secondaryHex ?? '#2A9D8F');
 
     return Positioned(
       top:
@@ -1018,14 +1069,10 @@ class _BrandScheduleTimeline extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
-            gradient: LinearGradient(
-              colors: [primary, secondary],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            gradient: moodGradient,
             boxShadow: [
               BoxShadow(
-                color: secondary.withValues(alpha: 0.18),
+                color: shadowColor.withValues(alpha: 0.42),
                 blurRadius: 14,
                 offset: const Offset(0, 8),
               ),
@@ -1242,14 +1289,6 @@ String _initials(String value) {
         .toUpperCase();
   }
   return '${words[0][0]}${words[1][0]}'.toUpperCase();
-}
-
-Color _colorFromHex(String value) {
-  final sanitized = value.replaceAll('#', '').trim();
-  final hex = sanitized.length == 6 ? 'FF$sanitized' : sanitized;
-  final parsed = int.tryParse(hex, radix: 16);
-  if (parsed == null) return const Color(0xFF335C67);
-  return Color(parsed);
 }
 
 String _sourceTypeLabel(ScheduleSourceType type) {
