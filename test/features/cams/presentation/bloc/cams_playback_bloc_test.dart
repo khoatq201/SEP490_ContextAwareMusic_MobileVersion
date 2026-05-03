@@ -7,6 +7,7 @@ import 'package:cams_store_manager/core/enums/app_mode.dart';
 import 'package:cams_store_manager/core/enums/playback_command_enum.dart';
 import 'package:cams_store_manager/core/enums/queue_insert_mode_enum.dart';
 import 'package:cams_store_manager/core/enums/entity_status_enum.dart';
+import 'package:cams_store_manager/core/enums/mood_type_enum.dart';
 import 'package:cams_store_manager/core/enums/space_type_enum.dart';
 import 'package:cams_store_manager/core/enums/transition_type_enum.dart';
 import 'package:cams_store_manager/core/enums/user_role.dart';
@@ -1382,6 +1383,75 @@ void main() {
         'queue-remote-1',
       );
     });
+
+    test('reconnects StoreHub for playback device bootstrap', () async {
+      sessionCubit.setPlaybackMode(
+        store: const Store(
+          id: 'store-1',
+          name: 'Store 1',
+          brandId: 'brand-1',
+        ),
+        space: const Space(
+          id: 'space-1',
+          name: 'Space 1',
+          storeId: 'store-1',
+          type: SpaceTypeEnum.hall,
+          status: EntityStatusEnum.active,
+        ),
+        deviceId: 'device-1',
+      );
+      await storeHubService.connect();
+
+      bloc.add(const CamsInitPlayback(spaceId: 'space-1'));
+      await _waitUntil(
+        () =>
+            bloc.state.spaceId == 'space-1' &&
+            bloc.state.status != CamsStatus.initial &&
+            bloc.state.status != CamsStatus.loading,
+      );
+
+      expect(storeHubService.reconnectCallCount, 1);
+      expect(storeHubService.joinedSpaces, ['space-1']);
+    });
+
+    test('loads available moods for playback device bootstrap', () async {
+      final moods = MoodTypeEnum.values
+          .map((type) => Mood(
+                id: 'mood-${type.name}',
+                moodType: type,
+                name: type.displayName,
+                createdAt: DateTime.utc(2026),
+              ))
+          .toList(growable: false);
+      moodRepository.result = Right(moods);
+      sessionCubit.setPlaybackMode(
+        store: const Store(
+          id: 'store-1',
+          name: 'Store 1',
+          brandId: 'brand-1',
+        ),
+        space: const Space(
+          id: 'space-1',
+          name: 'Space 1',
+          storeId: 'store-1',
+          type: SpaceTypeEnum.hall,
+          status: EntityStatusEnum.active,
+        ),
+        deviceId: 'device-1',
+      );
+
+      await _initBloc(bloc);
+
+      expect(moodRepository.getMoodsCallCount, 1);
+      expect(bloc.state.moods.map((mood) => mood.name), [
+        'Calm',
+        'Energetic',
+        'Focus',
+        'Social',
+        'Romantic',
+        'Uplifting',
+      ]);
+    });
   });
 }
 
@@ -1413,6 +1483,8 @@ class _FakeStoreHubService extends StoreHubService {
   final _stopPlaybackController = StreamController<void>.broadcast();
   final _connectionController = StreamController<ConnectionStatus>.broadcast();
   ConnectionStatus _status = ConnectionStatus.disconnected;
+  int reconnectCallCount = 0;
+  final List<String> joinedSpaces = <String>[];
 
   @override
   Stream<PlayStreamEvent> get onPlayStream => _playStreamController.stream;
@@ -1451,7 +1523,16 @@ class _FakeStoreHubService extends StoreHubService {
   }
 
   @override
-  Future<void> joinSpace(String spaceId) async {}
+  Future<void> reconnect() async {
+    reconnectCallCount += 1;
+    await disconnect();
+    await connect();
+  }
+
+  @override
+  Future<void> joinSpace(String spaceId) async {
+    joinedSpaces.add(spaceId);
+  }
 
   @override
   Future<void> leaveSpace(String spaceId) async {}
@@ -1494,9 +1575,13 @@ class _FakeStoreHubService extends StoreHubService {
 
 class _FakeMoodRepository implements MoodRepository {
   Either<Failure, List<Mood>> result = const Right([]);
+  int getMoodsCallCount = 0;
 
   @override
-  Future<Either<Failure, List<Mood>>> getMoods() async => result;
+  Future<Either<Failure, List<Mood>>> getMoods() async {
+    getMoodsCallCount += 1;
+    return result;
+  }
 }
 
 class _FakeCamsRepository implements CamsRepository {

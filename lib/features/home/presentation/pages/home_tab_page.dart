@@ -26,6 +26,17 @@ import '../../../moods/domain/entities/mood.dart';
 import '../bloc/home_cubit.dart';
 import '../bloc/home_state.dart';
 
+String? _firstNonEmptyString(Iterable<String?>? values) {
+  if (values == null) return null;
+  for (final value in values) {
+    final trimmed = value?.trim();
+    if (trimmed != null && trimmed.isNotEmpty) {
+      return trimmed;
+    }
+  }
+  return null;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Entry point — wraps the page with its own HomeCubit (DI-resolved)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -66,16 +77,17 @@ class HomeTabPage extends StatelessWidget {
   }) async {
     await cubit.load(
       includeCatalog: true,
-      loadMoods: !isPlaybackDevice,
+      loadMoods: true,
       storeId: storeId,
       spaceId: spaceId,
     );
     await cubit.syncForSpace(
       spaceId,
       storeId: storeId,
-      loadMoods: !isPlaybackDevice,
+      loadMoods: true,
       usePlaybackDeviceScope: isPlaybackDevice,
     );
+    cubit.syncAvailableMoods(camsPlaybackBloc.state.moods);
     _applyCurrentRuntimeState(
       camsPlaybackBloc: camsPlaybackBloc,
       cubit: cubit,
@@ -129,9 +141,10 @@ class _HomeDashboardView extends StatelessWidget {
               await homeCubit.syncForSpace(
                 sessionState.currentSpace?.id,
                 storeId: sessionState.currentStore?.id,
-                loadMoods: !isPlaybackDevice,
+                loadMoods: true,
                 usePlaybackDeviceScope: isPlaybackDevice,
               );
+              homeCubit.syncAvailableMoods(camsPlaybackBloc.state.moods);
               final runtimePlayback = camsPlaybackBloc.state.playbackState;
               if (runtimePlayback == null ||
                   runtimePlayback.spaceId != sessionState.currentSpace?.id) {
@@ -143,8 +156,10 @@ class _HomeDashboardView extends StatelessWidget {
         ),
         BlocListener<CamsPlaybackBloc, CamsPlaybackState>(
           listenWhen: (previous, current) =>
-              previous.playbackState != current.playbackState,
+              previous.playbackState != current.playbackState ||
+              previous.moods != current.moods,
           listener: (context, camsState) {
+            context.read<HomeCubit>().syncAvailableMoods(camsState.moods);
             final runtimePlayback = camsState.playbackState;
             if (runtimePlayback == null) return;
             context
@@ -157,6 +172,36 @@ class _HomeDashboardView extends StatelessWidget {
         backgroundColor: palette.bg,
         body: BlocBuilder<HomeCubit, HomeState>(
           builder: (context, state) {
+            final playerTrack = context.select(
+              (PlayerBloc bloc) => bloc.state.currentTrack,
+            );
+            final playerSpaceId = context.select(
+              (PlayerBloc bloc) => bloc.state.activeSpaceId,
+            );
+            final playerIsPlaying = context.select(
+              (PlayerBloc bloc) => bloc.state.isPlaying,
+            );
+            final canUsePlayerFallback = isPlaybackDevice ||
+                (state.activeSpaceId != null &&
+                    state.activeSpaceId == playerSpaceId);
+            final playerTrackMood = _firstNonEmptyString(
+              canUsePlayerFallback ? playerTrack?.moodTags : null,
+            );
+            final playbackLabel = _firstNonEmptyString([
+              state.currentPlaybackName,
+              if (canUsePlayerFallback) playerTrack?.title,
+            ]);
+            final moodLabel = buildPlaybackMoodLabel(
+                  isManualOverride: state.isManualOverride,
+                  primaryMoodName: state.currentMoodName,
+                  fallbackMoodNames: [playerTrackMood],
+                ) ??
+                (playbackLabel == null
+                    ? null
+                    : state.isManualOverride
+                        ? 'Manual override'
+                        : 'Now playing');
+
             if (state.status == HomeStatus.loading ||
                 state.status == HomeStatus.initial) {
               return const CamsSkeletonDashboard(
@@ -172,7 +217,7 @@ class _HomeDashboardView extends StatelessWidget {
                   final session = context.read<SessionCubit>().state;
                   context.read<HomeCubit>().load(
                         includeCatalog: true,
-                        loadMoods: !isPlaybackDevice,
+                        loadMoods: true,
                         storeId: session.currentStore?.id,
                         spaceId: session.currentSpace?.id,
                       );
@@ -185,7 +230,7 @@ class _HomeDashboardView extends StatelessWidget {
                 final session = context.read<SessionCubit>().state;
                 await context.read<HomeCubit>().refresh(
                       includeCatalog: true,
-                      loadMoods: !isPlaybackDevice,
+                      loadMoods: true,
                       storeId: session.currentStore?.id,
                       spaceId: session.currentSpace?.id,
                     );
@@ -199,17 +244,13 @@ class _HomeDashboardView extends StatelessWidget {
                   _HomeSliverAppBar(palette: palette),
 
                   // 2. Current Mood Chip
-                  if (buildPlaybackMoodLabel(
-                    isManualOverride: state.isManualOverride,
-                    primaryMoodName: state.currentMoodName,
-                  )
-                      case final moodLabel?)
+                  if (moodLabel != null)
                     SliverToBoxAdapter(
                       child: _CurrentMoodChip(
                         moodName: moodLabel,
                         isManualOverride: state.isManualOverride,
-                        playbackLabel: state.currentPlaybackName,
-                        isStreaming: state.isStreaming,
+                        playbackLabel: playbackLabel,
+                        isStreaming: state.isStreaming || playerIsPlaying,
                         palette: palette,
                       ).animate().fadeIn(duration: 320.ms).slideY(begin: 0.04),
                     ),

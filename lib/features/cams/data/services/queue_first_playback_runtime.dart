@@ -146,7 +146,11 @@ class QueueFirstPlaybackRuntime {
     _isBootstrapping = true;
 
     try {
-      await storeHubService.connect();
+      if (usePlaybackDeviceScope) {
+        await storeHubService.reconnect();
+      } else {
+        await storeHubService.connect();
+      }
       await storeHubService.joinSpace(spaceId);
       if (managerStoreId != null && managerStoreId.isNotEmpty) {
         await storeHubService.joinManagerRoom(managerStoreId);

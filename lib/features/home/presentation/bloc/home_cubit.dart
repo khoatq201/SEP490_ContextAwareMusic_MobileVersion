@@ -236,6 +236,11 @@ class HomeCubit extends Cubit<HomeState> {
     );
   }
 
+  void syncAvailableMoods(List<Mood> moods) {
+    if (moods.isEmpty) return;
+    emit(state.copyWith(moods: moods));
+  }
+
   void openManualSelection() {
     final spaceId = state.activeSpaceId;
     if (spaceId == null || state.isApplyingOverride) return;

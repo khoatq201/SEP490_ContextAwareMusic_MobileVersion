@@ -31,6 +31,63 @@ String _queueModeLabel(QueueInsertModeEnum mode) {
   }
 }
 
+Future<List<ApiTrack>> _loadPlaybackDeviceTracksFromPlaylists({
+  String? storeId,
+}) async {
+  final playlistRepository = sl<PlaylistRepository>();
+  final playlistsResult = await playlistRepository.getPlaylists(
+    page: 1,
+    pageSize: 50,
+    storeId: storeId,
+  );
+
+  var playlists = const <ApiPlaylist>[];
+  playlistsResult.fold(
+    (_) {},
+    (response) {
+      playlists = response.items
+          .where(
+            (playlist) =>
+                playlist.status == EntityStatusEnum.active &&
+                playlist.trackCount > 0,
+          )
+          .toList();
+    },
+  );
+
+  final tracksById = <String, ApiTrack>{};
+  for (final playlist in playlists) {
+    final detailResult = await playlistRepository.getPlaylistById(playlist.id);
+    detailResult.fold(
+      (_) {},
+      (detail) {
+        final playlistTracks = detail.tracks ?? const [];
+        for (final item in playlistTracks) {
+          final title = item.title?.trim();
+          tracksById.putIfAbsent(
+            item.trackId,
+            () => ApiTrack(
+              id: item.trackId,
+              title: title == null || title.isEmpty ? 'Untitled track' : title,
+              artist: item.artist,
+              moodId: detail.moodId,
+              moodName: detail.moodName,
+              durationSec: item.actualDurationSec ?? item.durationSec,
+              hlsUrl: item.hlsUrl,
+              coverImageUrl: item.coverImageUrl,
+              status: EntityStatusEnum.active,
+              createdAt: DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+            ),
+          );
+        }
+      },
+    );
+  }
+
+  return tracksById.values.toList()
+    ..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+}
+
 class _SheetPalette {
   const _SheetPalette({
     required this.card,
@@ -143,22 +200,31 @@ class _NowPlayingAddToQueueSheetState extends State<NowPlayingAddToQueueSheet> {
       _tracksError = null;
     });
 
+    final sessionState = context.read<SessionCubit>().state;
+    final isPlaybackDevice = sessionState.isPlaybackDevice;
+    final storeId = sessionState.currentStore?.id;
     final result = await sl<GetTracks>()(page: 1, pageSize: 50);
     if (!mounted) return;
 
-    result.fold(
-      (failure) {
+    await result.fold(
+      (failure) async {
         setState(() {
           _isLoadingTracks = false;
           _tracksError = failure.message;
         });
       },
-      (response) {
-        final items = response.items
+      (response) async {
+        List<ApiTrack> items = response.items
             .where((track) => track.status == EntityStatusEnum.active)
-            .toList()
-          ..sort(
-              (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+            .toList();
+        if (items.isEmpty && isPlaybackDevice) {
+          items = await _loadPlaybackDeviceTracksFromPlaylists(
+            storeId: storeId,
+          );
+          if (!mounted) return;
+        }
+        items.sort(
+            (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
         setState(() {
           _isLoadingTracks = false;
           _tracks = items;
@@ -769,22 +835,31 @@ class _NowPlayingOverrideMusicSheetState
       _tracksError = null;
     });
 
+    final sessionState = context.read<SessionCubit>().state;
+    final isPlaybackDevice = sessionState.isPlaybackDevice;
+    final storeId = sessionState.currentStore?.id;
     final result = await sl<GetTracks>()(page: 1, pageSize: 50);
     if (!mounted) return;
 
-    result.fold(
-      (failure) {
+    await result.fold(
+      (failure) async {
         setState(() {
           _isLoadingTracks = false;
           _tracksError = failure.message;
         });
       },
-      (response) {
-        final items = response.items
+      (response) async {
+        List<ApiTrack> items = response.items
             .where((track) => track.status == EntityStatusEnum.active)
-            .toList()
-          ..sort(
-              (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+            .toList();
+        if (items.isEmpty && isPlaybackDevice) {
+          items = await _loadPlaybackDeviceTracksFromPlaylists(
+            storeId: storeId,
+          );
+          if (!mounted) return;
+        }
+        items.sort(
+            (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
         setState(() {
           _isLoadingTracks = false;
           _tracks = items;

@@ -265,6 +265,26 @@ void main() {
       expect(camsRepository.lastManualOverrideTtlSeconds, 1800);
       expect(camsRepository.lastIsCutOver, isTrue);
     });
+
+    test('syncAvailableMoods hydrates manual override choices', () {
+      final moods = [
+        Mood(
+          id: 'mood-calm',
+          name: 'Calm',
+          createdAt: DateTime.utc(2026),
+        ),
+        Mood(
+          id: 'mood-focus',
+          name: 'Focus',
+          createdAt: DateTime.utc(2026),
+        ),
+      ];
+
+      cubit.syncAvailableMoods(moods);
+
+      expect(cubit.state.moods, moods);
+      expect(cubit.state.showMoodPicker, isFalse);
+    });
   });
 }
 

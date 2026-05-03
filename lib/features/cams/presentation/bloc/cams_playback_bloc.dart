@@ -93,13 +93,11 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
       clearLastCommand: true,
     ));
 
-    if (!sessionCubit.state.isPlaybackDevice) {
-      final moodsResult = await getMoods();
-      moodsResult.fold(
-        (_) {},
-        (moods) => emit(state.copyWith(moods: moods)),
-      );
-    }
+    final moodsResult = await getMoods();
+    moodsResult.fold(
+      (_) {},
+      (moods) => emit(state.copyWith(moods: moods)),
+    );
 
     final bootstrapResult = await runtime.bootstrap(
       spaceId: event.spaceId,

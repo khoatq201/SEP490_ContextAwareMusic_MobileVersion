@@ -109,6 +109,16 @@ class StoreHubService {
     }
   }
 
+  /// Rebuild the websocket so SignalR authenticates with the latest token.
+  ///
+  /// This matters after pairing/re-pairing a playback device: REST calls use
+  /// the fresh token immediately, but an already-open websocket keeps the old
+  /// server-side auth principal until it reconnects.
+  Future<void> reconnect() async {
+    await disconnect();
+    await connect();
+  }
+
   Future<void> _connect() async {
     if (_connection != null) {
       try {
