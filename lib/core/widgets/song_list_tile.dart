@@ -30,6 +30,8 @@ class SongListTile extends StatelessWidget {
     this.enableGoToAlbum = false,
     this.enableGoToArtist = false,
     this.forwardPlayNowToOptionHandler = false,
+    this.enabled = true,
+    this.badge,
   });
 
   final SongEntity song;
@@ -49,8 +51,11 @@ class SongListTile extends StatelessWidget {
   final bool enableGoToAlbum;
   final bool enableGoToArtist;
   final bool forwardPlayNowToOptionHandler;
+  final bool enabled;
+  final Widget? badge;
 
   void _openOptions(BuildContext context) {
+    if (!enabled) return;
     showModalBottomSheet<SongOption>(
       context: context,
       useRootNavigator: true,
@@ -101,70 +106,83 @@ class SongListTile extends StatelessWidget {
     final mutedColor = tokens.textSecondary;
     final primaryColor = tokens.textPrimary;
 
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
-          children: [
-            // ── Leading: album art ───────────────────────────────────────
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: SizedBox(
-                width: 48,
-                height: 48,
-                child: song.coverUrl != null
-                    ? Image.network(
-                        song.coverUrl!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const _ArtFallback(),
-                      )
-                    : const _ArtFallback(),
+    return Opacity(
+      opacity: enabled ? 1 : 0.58,
+      child: InkWell(
+        onTap: enabled ? onTap : null,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              // ── Leading: album art ───────────────────────────────────────
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: song.coverUrl != null
+                      ? Image.network(
+                          song.coverUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const _ArtFallback(),
+                        )
+                      : const _ArtFallback(),
+                ),
               ),
-            ),
 
-            const SizedBox(width: 14),
+              const SizedBox(width: 14),
 
-            // ── Title + Subtitle ─────────────────────────────────────────
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    song.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                      color: primaryColor,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
+              // ── Title + Subtitle ─────────────────────────────────────────
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      song.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        color: primaryColor,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    song.artist,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                      color: mutedColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            song.artist,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(
+                              color: mutedColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        if (badge != null) ...[
+                          const SizedBox(width: 8),
+                          badge!,
+                        ],
+                      ],
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
 
-            // ── Trailing: more options ───────────────────────────────────
-            IconButton(
-              icon: Icon(Icons.more_vert, color: mutedColor, size: 20),
-              splashRadius: 20,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-              onPressed: () => _openOptions(context),
-            ),
-          ],
+              // ── Trailing: more options ───────────────────────────────────
+              IconButton(
+                icon: Icon(Icons.more_vert, color: mutedColor, size: 20),
+                splashRadius: 20,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                onPressed: enabled ? () => _openOptions(context) : null,
+              ),
+            ],
+          ),
         ),
       ),
     );

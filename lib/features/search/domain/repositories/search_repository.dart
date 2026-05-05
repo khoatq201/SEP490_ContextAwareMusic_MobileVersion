@@ -10,12 +10,16 @@ import '../entities/search_result.dart';
 abstract class SearchRepository {
   Future<Either<Failure, List<SearchCategory>>> getCategories();
 
-  Future<Either<Failure, List<SearchResult>>> search(String query);
+  Future<Either<Failure, List<SearchResult>>> search(
+    String query, {
+    bool playableTracksOnly = false,
+  });
 
   Future<Either<Failure, List<SearchResult>>> searchByType(
     String query,
-    SearchResultType type,
-  );
+    SearchResultType type, {
+    bool playableTracksOnly = false,
+  });
 
   Future<Either<Failure, ArtistEntity>> getArtistDetail(String artistId);
 
@@ -26,6 +30,11 @@ abstract class SearchRepository {
   Future<Either<Failure, List<PlaylistEntity>>> getCategoryPlaylists(
     String categoryId,
   );
+
+  Future<Either<Failure, List<SearchResult>>> getCategoryTracks(
+    String categoryId, {
+    bool playableTracksOnly = false,
+  });
 
   Future<Either<Failure, List<PlaylistEntity>>> getFeaturedPlaylists();
 }

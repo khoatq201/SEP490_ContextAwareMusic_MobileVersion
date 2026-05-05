@@ -22,6 +22,8 @@ enum _MusicSourceTab {
   mood,
 }
 
+const int _trackPageSize = 10;
+
 String _queueModeLabel(QueueInsertModeEnum mode) {
   switch (mode) {
     case QueueInsertModeEnum.playNow:
@@ -33,7 +35,10 @@ String _queueModeLabel(QueueInsertModeEnum mode) {
   }
 }
 
-TrackFilter _playableTrackFilter({int page = 1, int pageSize = 50}) {
+TrackFilter _playableTrackFilter({
+  int page = 1,
+  int pageSize = _trackPageSize,
+}) {
   return TrackFilter(
     page: page,
     pageSize: pageSize,
@@ -151,6 +156,7 @@ class NowPlayingAddToQueueSheet extends StatefulWidget {
 class _NowPlayingAddToQueueSheetState extends State<NowPlayingAddToQueueSheet> {
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _reasonController = TextEditingController();
+  final ScrollController _trackScrollController = ScrollController();
 
   _MusicSourceTab _sourceTab = _MusicSourceTab.tracks;
   QueueInsertModeEnum _queueMode = QueueInsertModeEnum.addToQueue;
@@ -159,11 +165,14 @@ class _NowPlayingAddToQueueSheetState extends State<NowPlayingAddToQueueSheet> {
   List<ApiTrack> _tracks = const <ApiTrack>[];
   List<ApiPlaylist> _playlists = const <ApiPlaylist>[];
   bool _isLoadingTracks = true;
+  bool _isLoadingMoreTracks = false;
+  bool _hasMoreTracks = true;
   bool _isLoadingPlaylists = true;
   String? _tracksError;
   String? _playlistsError;
   final Set<String> _selectedTrackIds = <String>{};
   String? _selectedPlaylistId;
+  int _trackPage = 0;
 
   @override
   void initState() {
@@ -172,12 +181,15 @@ class _NowPlayingAddToQueueSheetState extends State<NowPlayingAddToQueueSheet> {
     if (initialTrackId != null && initialTrackId.isNotEmpty) {
       _selectedTrackIds.add(initialTrackId);
     }
+    _trackScrollController.addListener(_handleTrackScroll);
     _loadTracks();
     _loadPlaylists();
   }
 
   @override
   void dispose() {
+    _trackScrollController.removeListener(_handleTrackScroll);
+    _trackScrollController.dispose();
     _searchController.dispose();
     _reasonController.dispose();
     super.dispose();
@@ -208,40 +220,80 @@ class _NowPlayingAddToQueueSheetState extends State<NowPlayingAddToQueueSheet> {
     }).toList();
   }
 
-  Future<void> _loadTracks() async {
+  void _handleTrackScroll() {
+    if (!_trackScrollController.hasClients ||
+        _isLoadingTracks ||
+        _isLoadingMoreTracks ||
+        !_hasMoreTracks ||
+        _searchController.text.trim().isNotEmpty) {
+      return;
+    }
+
+    final position = _trackScrollController.position;
+    if (position.pixels >= position.maxScrollExtent - 96) {
+      _loadTracks(reset: false);
+    }
+  }
+
+  Future<void> _loadTracks({bool reset = true}) async {
+    if (!reset && (!_hasMoreTracks || _isLoadingMoreTracks)) return;
+
     setState(() {
-      _isLoadingTracks = true;
-      _tracksError = null;
+      if (reset) {
+        _isLoadingTracks = true;
+        _tracksError = null;
+        _trackPage = 0;
+        _hasMoreTracks = true;
+      } else {
+        _isLoadingMoreTracks = true;
+      }
     });
 
     final sessionState = context.read<SessionCubit>().state;
     final isPlaybackDevice = sessionState.isPlaybackDevice;
     final storeId = sessionState.currentStore?.id;
+    final nextPage = reset ? 1 : _trackPage + 1;
     final result = await sl<GetTracks>()(
-      filter: _playableTrackFilter(page: 1, pageSize: 50),
+      filter: _playableTrackFilter(page: nextPage),
     );
     if (!mounted) return;
 
     await result.fold(
       (failure) async {
         setState(() {
-          _isLoadingTracks = false;
-          _tracksError = failure.message;
+          if (reset) {
+            _isLoadingTracks = false;
+            _tracksError = failure.message;
+          } else {
+            _isLoadingMoreTracks = false;
+          }
         });
       },
       (response) async {
         List<ApiTrack> items = response.items.toList();
-        if (items.isEmpty && isPlaybackDevice) {
+        var hasMore = response.hasNext;
+        if (reset && items.isEmpty && isPlaybackDevice) {
           items = await _loadPlaybackDeviceTracksFromPlaylists(
             storeId: storeId,
           );
           if (!mounted) return;
+          hasMore = false;
         }
-        items.sort(
-            (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+        final tracksById = <String, ApiTrack>{
+          if (!reset)
+            for (final track in _tracks) track.id: track,
+          for (final track in items) track.id: track,
+        };
+        final mergedTracks = tracksById.values.toList()
+          ..sort(
+            (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()),
+          );
         setState(() {
           _isLoadingTracks = false;
-          _tracks = items;
+          _isLoadingMoreTracks = false;
+          _tracks = mergedTracks;
+          _trackPage = response.currentPage;
+          _hasMoreTracks = hasMore;
         });
       },
     );
@@ -474,10 +526,27 @@ class _NowPlayingAddToQueueSheetState extends State<NowPlayingAddToQueueSheet> {
     return ConstrainedBox(
       constraints: const BoxConstraints(maxHeight: 280),
       child: ListView.separated(
+        controller: _trackScrollController,
+        primary: false,
         shrinkWrap: true,
-        itemCount: tracks.length,
+        itemCount: tracks.length + (_isLoadingMoreTracks ? 1 : 0),
         separatorBuilder: (_, __) => Divider(color: palette.border),
         itemBuilder: (context, index) {
+          if (index >= tracks.length) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: palette.accent,
+                  ),
+                ),
+              ),
+            );
+          }
           final track = tracks[index];
           final selected = _selectedTrackIds.contains(track.id);
           return CheckboxListTile(
@@ -765,11 +834,14 @@ class _NowPlayingOverrideMusicSheetState
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _reasonController = TextEditingController();
   final TextEditingController _ttlController = TextEditingController();
+  final ScrollController _trackScrollController = ScrollController();
 
   _MusicSourceTab _sourceTab = _MusicSourceTab.tracks;
   List<ApiTrack> _tracks = const <ApiTrack>[];
   List<ApiPlaylist> _playlists = const <ApiPlaylist>[];
   bool _isLoadingTracks = true;
+  bool _isLoadingMoreTracks = false;
+  bool _hasMoreTracks = true;
   bool _isLoadingPlaylists = true;
   String? _tracksError;
   String? _playlistsError;
@@ -778,11 +850,13 @@ class _NowPlayingOverrideMusicSheetState
   String? _selectedMoodId;
   bool _clearManagerSelectedQueues = false;
   bool _isCutOver = false;
+  int _trackPage = 0;
 
   @override
   void initState() {
     super.initState();
     _ttlController.addListener(_handleTtlChanged);
+    _trackScrollController.addListener(_handleTrackScroll);
     _loadTracks();
     _loadPlaylists();
   }
@@ -790,6 +864,8 @@ class _NowPlayingOverrideMusicSheetState
   @override
   void dispose() {
     _ttlController.removeListener(_handleTtlChanged);
+    _trackScrollController.removeListener(_handleTrackScroll);
+    _trackScrollController.dispose();
     _searchController.dispose();
     _reasonController.dispose();
     _ttlController.dispose();
@@ -843,40 +919,80 @@ class _NowPlayingOverrideMusicSheetState
     return items;
   }
 
-  Future<void> _loadTracks() async {
+  void _handleTrackScroll() {
+    if (!_trackScrollController.hasClients ||
+        _isLoadingTracks ||
+        _isLoadingMoreTracks ||
+        !_hasMoreTracks ||
+        _searchController.text.trim().isNotEmpty) {
+      return;
+    }
+
+    final position = _trackScrollController.position;
+    if (position.pixels >= position.maxScrollExtent - 96) {
+      _loadTracks(reset: false);
+    }
+  }
+
+  Future<void> _loadTracks({bool reset = true}) async {
+    if (!reset && (!_hasMoreTracks || _isLoadingMoreTracks)) return;
+
     setState(() {
-      _isLoadingTracks = true;
-      _tracksError = null;
+      if (reset) {
+        _isLoadingTracks = true;
+        _tracksError = null;
+        _trackPage = 0;
+        _hasMoreTracks = true;
+      } else {
+        _isLoadingMoreTracks = true;
+      }
     });
 
     final sessionState = context.read<SessionCubit>().state;
     final isPlaybackDevice = sessionState.isPlaybackDevice;
     final storeId = sessionState.currentStore?.id;
+    final nextPage = reset ? 1 : _trackPage + 1;
     final result = await sl<GetTracks>()(
-      filter: _playableTrackFilter(page: 1, pageSize: 50),
+      filter: _playableTrackFilter(page: nextPage),
     );
     if (!mounted) return;
 
     await result.fold(
       (failure) async {
         setState(() {
-          _isLoadingTracks = false;
-          _tracksError = failure.message;
+          if (reset) {
+            _isLoadingTracks = false;
+            _tracksError = failure.message;
+          } else {
+            _isLoadingMoreTracks = false;
+          }
         });
       },
       (response) async {
         List<ApiTrack> items = response.items.toList();
-        if (items.isEmpty && isPlaybackDevice) {
+        var hasMore = response.hasNext;
+        if (reset && items.isEmpty && isPlaybackDevice) {
           items = await _loadPlaybackDeviceTracksFromPlaylists(
             storeId: storeId,
           );
           if (!mounted) return;
+          hasMore = false;
         }
-        items.sort(
-            (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+        final tracksById = <String, ApiTrack>{
+          if (!reset)
+            for (final track in _tracks) track.id: track,
+          for (final track in items) track.id: track,
+        };
+        final mergedTracks = tracksById.values.toList()
+          ..sort(
+            (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()),
+          );
         setState(() {
           _isLoadingTracks = false;
-          _tracks = items;
+          _isLoadingMoreTracks = false;
+          _tracks = mergedTracks;
+          _trackPage = response.currentPage;
+          _hasMoreTracks = hasMore;
         });
       },
     );
@@ -1147,10 +1263,27 @@ class _NowPlayingOverrideMusicSheetState
     return ConstrainedBox(
       constraints: const BoxConstraints(maxHeight: 280),
       child: ListView.separated(
+        controller: _trackScrollController,
+        primary: false,
         shrinkWrap: true,
-        itemCount: tracks.length,
+        itemCount: tracks.length + (_isLoadingMoreTracks ? 1 : 0),
         separatorBuilder: (_, __) => Divider(color: palette.border),
         itemBuilder: (context, index) {
+          if (index >= tracks.length) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: palette.accent,
+                  ),
+                ),
+              ),
+            );
+          }
           final track = tracks[index];
           return CheckboxListTile(
             value: _selectedTrackIds.contains(track.id),

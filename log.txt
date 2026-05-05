@@ -1,594 +1,103 @@
-a.nel.cloudflare.com/report/v4?s=48z0i3Znok6924e%2BkvENQ8HbeYehOP9pWgRMNiDVyIo5BMDhkKZR6ANKL%2B9BjAw7hRohxaFb%2FynMqxpu0BPfiyH3CgRyovn2nFNRAbKBfWd4eplpQd%2FrT%2BwZMYuUVxdg"}]}
-I/flutter (15944):  cf-cache-status: DYNAMIC
-I/flutter (15944):  content-type: application/json; charset=utf-8
-I/flutter (15944):  server: cloudflare
-I/flutter (15944): Response Text:
-I/flutter (15944): {"isSuccess":true,"message":"Success","data":{"id":"e9a03651-4546-47bc-8e4c-572f2db4c021","brandId":"ff587081-083f-42ec-b43b-b3a6b2f4756d","storeId":"d34ffedc-f11a-41f6-b485-efb6cf6181a5","name":"Lầu 1 - Space Fuzzy Override","templateKey":"SpaceOverride","chillBpmMin":60,"chillBpmMax":80,"focusBpmMin":85,"focusBpmMax":105,"energeticBpmMin":120,"energeticBpmMax":140,"noiseQuietMaxDb":50,"noiseLoudMinDb":75,"defaultDecibelWhenNull":60,"autoVolumeEnabled":true,"autoVolumeQuietPercent":45,"autoVolumeModeratePercent":60,"autoVolumeLoudPercent":75,"autoVolumeMinPercent":30,"autoVolumeMaxPercent":90,"autoVolumeDeadbandPercent":5,"chillMoodCandidates":null,"focusMoodCandidates":null,"energeticMoodCandidates":null}}
-I/flutter (15944): 
-I/flutter (15944): [QueueFirstV2] hub SpaceStateSync raw -> space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=5ec5339c-2257-4b40-8056-ac8c495a6782 pending=- track=Track chung 5 hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8 manual=true scheduling=false paused=false queueCount=1 queue=[1:Track chung 5:1]
-I/flutter (15944): [QueueFirstV2] hub SpaceStateSync raw -> space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=5ec5339c-2257-4b40-8056-ac8c495a6782 pending=- track=Track chung 5 hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8 manual=true scheduling=false paused=false queueCount=1 queue=[1:Track chung 5:1]
-I/flutter (15944): [QueueFirstV2] join in-flight queue hydration key=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908|manager|5ec5339c-2257-4b40-8056-ac8c495a6782||https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8
-I/flutter (15944): [QueueFirstV2] join in-flight queue hydration key=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908|manager|5ec5339c-2257-4b40-8056-ac8c495a6782||https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8
-I/flutter (15944): *** Request ***
-I/flutter (15944): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue
-I/flutter (15944): method: GET
-I/flutter (15944): responseType: ResponseType.json
-I/flutter (15944): followRedirects: true
-I/flutter (15944): persistentConnection: true
-I/flutter (15944): connectTimeout: 0:00:30.000000
-I/flutter (15944): sendTimeout: 0:00:30.000000
-I/flutter (15944): receiveTimeout: 0:00:30.000000
-I/flutter (15944): receiveDataWhenStatusError: true
-I/flutter (15944): extra: {}
-I/flutter (15944): headers:
-I/flutter (15944):  Content-Type: application/json
-I/flutter (15944):  Accept: application/json
-I/flutter (15944): data:
-I/flutter (15944): null
-I/flutter (15944): 
-D/AidlBufferPool(15944): bufferpool2 0xb4000076313b9618 : 5(40960 size) total buffers - 5(40960 size) used buffers - 737/742 (recycle/alloc) - 5/734 (fetch/transfer)
-I/flutter (15944): [DioClient] Preparing auth header for "/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue": playbackScoped=true selectedToken=eyJhbGciOiJI...
-I/flutter (15944): [DioClient] [request-auth] path=/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue activeMode=manager hasManagerToken=true managerExpiry=2026-05-05T04:41:08.571893Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
-I/flutter (15944): *** Response ***
-I/flutter (15944): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue
-I/flutter (15944): statusCode: 200
-I/flutter (15944): statusMessage: OK
-I/flutter (15944): headers:
-I/flutter (15944):  connection: keep-alive
-I/flutter (15944):  alt-svc: h3=":443"; ma=86400
-I/flutter (15944):  date: Tue, 05 May 2026 04:30:21 GMT
-I/flutter (15944):  transfer-encoding: chunked
-I/flutter (15944):  content-encoding: gzip
-I/flutter (15944):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
-I/flutter (15944):  cf-ray: 9f6d0266cd1dcbe1-SIN
-I/flutter (15944):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=4CaRrQmaMz%2FHN7hT%2F6ySeQJWqvozEqh0ZHuxKjDmbWaMvj0Gysud58aEvhceWL0WZTuvqa7JC5RoN%2BOAHkOx8gMrkK3FMxaqZnB7yNGNzhh3yGsyJm3ifPjs%2BrBuPev2"}]}
-I/flutter (15944):  cf-cache-status: DYNAMIC
-I/flutter (15944):  content-type: application/json; charset=utf-8
-I/flutter (15944):  server: cloudflare
-I/flutter (15944): Response Text:
-I/flutter (15944): {"isSuccess":true,"message":"Success","data":[{"queueItemId":"5ec5339c-2257-4b40-8056-ac8c495a6782","trackId":"40f925ac-4eee-4e7f-949e-cb07fb582e4a","trackName":"Track chung 5","artist":null,"position":1,"queueStatus":1,"source":0,"hlsUrl":"https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8","coverImageUrl":null,"isReadyToStream":true}]}
-I/flutter (15944): 
-I/flutter (15944): [QueueFirstV2] preserve previous queue snapshot while refreshed queue is partial incomingCount=1 currentCount=4 currentQueueItemId=5ec5339c-2257-4b40-8056-ac8c495a6782
-I/flutter (15944): [QueueFirstV2] emitState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=5ec5339c-2257-4b40-8056-ac8c495a6782 pending=- track=Track chung 5 hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8 manual=true scheduling=false paused=false queueCount=4 queue=[7:Attention:3 | 8:Cô gái này du lịch đến dubai:3 | 9:Track chung 3:3 | 10:Track chung 5:1]
-I/flutter (15944): [QueueFirstV2] preserve previous queue snapshot while refreshed queue is partial incomingCount=1 currentCount=4 currentQueueItemId=5ec5339c-2257-4b40-8056-ac8c495a6782
-I/flutter (15944): [QueueFirstV2] emitState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=5ec5339c-2257-4b40-8056-ac8c495a6782 pending=- track=Track chung 5 hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8 manual=true scheduling=false paused=false queueCount=4 queue=[7:Attention:3 | 8:Cô gái này du lịch đến dubai:3 | 9:Track chung 3:3 | 10:Track chung 5:1]
-I/flutter (15944): [QueueFirstV2] preserve previous queue snapshot while refreshed queue is partial incomingCount=1 currentCount=4 currentQueueItemId=5ec5339c-2257-4b40-8056-ac8c495a6782
-I/flutter (15944): [QueueFirstV2] emitState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=5ec5339c-2257-4b40-8056-ac8c495a6782 pending=- track=Track chung 5 hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8 manual=true scheduling=false paused=false queueCount=4 queue=[7:Attention:3 | 8:Cô gái này du lịch đến dubai:3 | 9:Track chung 3:3 | 10:Track chung 5:1]
-I/flutter (15944): [CamsPlaybackBlocV2] runtimeState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 currentQueueItemId=5ec5339c-2257-4b40-8056-ac8c495a6782 pendingQueueItemId=- currentTrack=Track chung 5 hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8 manual=true scheduling=false queueCount=4 queue=[7:Attention:3 | 8:Cô gái này du lịch đến dubai:3 | 9:Track chung 3:3]
-I/flutter (15944): [AppPlaybackCoordinatorV2] syncCamsState status=active playback=space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=5ec5339c-2257-4b40-8056-ac8c495a6782 pending=- track=Track chung 5 hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8 queueCount=4 queue=[7:Attention:3 | 8:Cô gái này du lịch đến dubai:3 | 9:Track chung 3:3 | 10:Track chung 5:1] playerTrack=Track chung 5 playerHls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8
-I/flutter (15944): [AppPlaybackCoordinatorV2] same remote HLS snapshot -> keep current player queueItemId=5ec5339c-2257-4b40-8056-ac8c495a6782 drift=0.23
-I/flutter (15944): [CamsPlaybackBlocV2] runtimeState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 currentQueueItemId=5ec5339c-2257-4b40-8056-ac8c495a6782 pendingQueueItemId=- currentTrack=Track chung 5 hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8 manual=true scheduling=false queueCount=4 queue=[7:Attention:3 | 8:Cô gái này du lịch đến dubai:3 | 9:Track chung 3:3]
-I/flutter (15944): [AppPlaybackCoordinatorV2] syncCamsState status=active playback=space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=5ec5339c-2257-4b40-8056-ac8c495a6782 pending=- track=Track chung 5 hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8 queueCount=4 queue=[7:Attention:3 | 8:Cô gái này du lịch đến dubai:3 | 9:Track chung 3:3 | 10:Track chung 5:1] playerTrack=Track chung 5 playerHls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8
-I/flutter (15944): [AppPlaybackCoordinatorV2] same remote HLS snapshot -> keep current player queueItemId=5ec5339c-2257-4b40-8056-ac8c495a6782 drift=0.23
-I/flutter (15944): [CamsPlaybackBlocV2] runtimeState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 currentQueueItemId=5ec5339c-2257-4b40-8056-ac8c495a6782 pendingQueueItemId=- currentTrack=Track chung 5 hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8 manual=true scheduling=false queueCount=4 queue=[7:Attention:3 | 8:Cô gái này du lịch đến dubai:3 | 9:Track chung 3:3]
-I/flutter (15944): [AppPlaybackCoordinatorV2] syncCamsState status=active playback=space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=5ec5339c-2257-4b40-8056-ac8c495a6782 pending=- track=Track chung 5 hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8 queueCount=4 queue=[7:Attention:3 | 8:Cô gái này du lịch đến dubai:3 | 9:Track chung 3:3 | 10:Track chung 5:1] playerTrack=Track chung 5 playerHls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8
-I/flutter (15944): [AppPlaybackCoordinatorV2] same remote HLS snapshot -> keep current player queueItemId=5ec5339c-2257-4b40-8056-ac8c495a6782 drift=0.41
-D/AudioTrack(15944): stop(43878): called with 578560 frames delivered
-I/flutter (15944): [AppPlaybackCoordinatorV2] expected end reached -> refresh state signature=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908|5ec5339c-2257-4b40-8056-ac8c495a6782|https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8|2026-05-05T04:30:23.154195Z
-I/flutter (15944): *** Request ***
-I/flutter (15944): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/state
-I/flutter (15944): method: GET
-I/flutter (15944): responseType: ResponseType.json
-I/flutter (15944): followRedirects: true
-I/flutter (15944): persistentConnection: true
-I/flutter (15944): connectTimeout: 0:00:30.000000
-I/flutter (15944): sendTimeout: 0:00:30.000000
-I/flutter (15944): receiveTimeout: 0:00:30.000000
-I/flutter (15944): receiveDataWhenStatusError: true
-I/flutter (15944): extra: {}
-I/flutter (15944): headers:
-I/flutter (15944):  Content-Type: application/json
-I/flutter (15944):  Accept: application/json
-I/flutter (15944): data:
-I/flutter (15944): null
-I/flutter (15944): 
-I/flutter (15944): [DioClient] Preparing auth header for "/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/state": playbackScoped=true selectedToken=eyJhbGciOiJI...
-I/flutter (15944): [DioClient] [request-auth] path=/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/state activeMode=manager hasManagerToken=true managerExpiry=2026-05-05T04:41:08.571893Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
-I/flutter (15944): *** Response ***
-I/flutter (15944): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/state
-I/flutter (15944): statusCode: 200
-I/flutter (15944): statusMessage: OK
-I/flutter (15944): headers:
-I/flutter (15944):  connection: keep-alive
-I/flutter (15944):  alt-svc: h3=":443"; ma=86400
-I/flutter (15944):  date: Tue, 05 May 2026 04:30:23 GMT
-I/flutter (15944):  transfer-encoding: chunked
-I/flutter (15944):  content-encoding: gzip
-I/flutter (15944):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
-I/flutter (15944):  cf-ray: 9f6d02740bb8cbe1-SIN
-I/flutter (15944):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=vhVz%2Ff2jiW8mceoVa4DSIH9miMhJ8tPlMlhkdPxaTMeoD9aPRPkbAeC69%2B5QJ9mC1nMBuy2pUA%2B%2BUDAx%2FPWk9zW7XRS9knY3kThJZfBqMK8hnf1hUiSrT%2Bp7e1cz7gHL"}]}
-I/flutter (15944):  cf-cache-status: DYNAMIC
-I/flutter (15944):  content-type: application/json; charset=utf-8
-I/flutter (15944):  server: cloudflare
-I/flutter (15944): Response Text:
-I/flutter (15944): {"isSuccess":true,"message":"Success","data":{"spaceId":"9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908","storeId":"d34ffedc-f11a-41f6-b485-efb6cf6181a5","brandId":"ff587081-083f-42ec-b43b-b3a6b2f4756d","currentQueueItemId":"5ec5339c-2257-4b40-8056-ac8c495a6782","currentTrackName":"Track chung 5","currentArtist":null,"hlsUrl":"https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8","moodName":null,"isManualOverride":true,"overrideMode":null,"overrideReason":null,"manualOverrideActivatedAtUtc":"2026-05-05T04:30:20.470419Z","manualOverrideExpiresAtUtc":"2026-05-05T04:34:08.470419Z","manualOverrideTtlSeconds":228,"manualOverrideRemainingSeconds":226,"isScheduling":false,"schedulingSlotId":null,"schedulingSlotOrigin":null,"schedulingEndsAtUtc":null,"schedulingRemainingSeconds":null,"startedAtUtc":"2026-05-05T04:26:35.154193Z","expectedEndAtUtc":"2026-05-05T04:30:23.154195Z","seekOffsetSeconds":0.25886399999998844,"isPaused":false,"pausePo
-I/flutter (15944): 
-I/flutter (15944): *** Request ***
-I/flutter (15944): uri: https://logcams.cloud/api/cams/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/mood
-I/flutter (15944): method: GET
-I/flutter (15944): responseType: ResponseType.json
-I/flutter (15944): followRedirects: true
-I/flutter (15944): persistentConnection: true
-I/flutter (15944): connectTimeout: 0:00:30.000000
-I/flutter (15944): sendTimeout: 0:00:30.000000
-I/flutter (15944): receiveTimeout: 0:00:30.000000
-I/flutter (15944): receiveDataWhenStatusError: true
-I/flutter (15944): extra: {}
-I/flutter (15944): headers:
-I/flutter (15944):  Content-Type: application/json
-I/flutter (15944):  Accept: application/json
-I/flutter (15944): data:
-I/flutter (15944): null
-I/flutter (15944): 
-I/flutter (15944): [DioClient] Preparing auth header for "/api/cams/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/mood": playbackScoped=false selectedToken=eyJhbGciOiJI...
-I/flutter (15944): [DioClient] [request-auth] path=/api/cams/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/mood activeMode=manager hasManagerToken=true managerExpiry=2026-05-05T04:41:08.571893Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
-I/flutter (15944): *** Response ***
-I/flutter (15944): uri: https://logcams.cloud/api/cams/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/mood
-I/flutter (15944): statusCode: 200
-I/flutter (15944): statusMessage: OK
-I/flutter (15944): headers:
-I/flutter (15944):  connection: keep-alive
-I/flutter (15944):  alt-svc: h3=":443"; ma=86400
-I/flutter (15944):  date: Tue, 05 May 2026 04:30:23 GMT
-I/flutter (15944):  transfer-encoding: chunked
-I/flutter (15944):  content-encoding: gzip
-I/flutter (15944):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
-I/flutter (15944):  cf-ray: 9f6d02754f17cbe1-SIN
-I/flutter (15944):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=RQ5Ez2uGJW47QVyk5rxsoDYPUD0rJcNmEWlAheBM%2Fpuqocbvmi7LrI6Lk7SMKyV8UjGxk5Cht5V5V8W9rNfvSUMUMp5JJ8szOmf9eYw%2BZJLJf9lbblWEqoR0pJwRw%2FnS"}]}
-I/flutter (15944):  cf-cache-status: DYNAMIC
-I/flutter (15944):  content-type: application/json; charset=utf-8
-I/flutter (15944):  server: cloudflare
-I/flutter (15944): Response Text:
-I/flutter (15944): {"isSuccess":true,"message":"Success","data":{"spaceId":"9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908","spaceName":"Lầu 1","currentMood":2,"currentMoodType":2,"moodName":"Energetic","bpmMin":120,"bpmMax":140,"lastAnalyzedAtUtc":"2026-05-05T04:30:12.151727Z","isFirstCycle":false}}
-I/flutter (15944): 
-I/flutter (15944): *** Request ***
-I/flutter (15944): uri: https://logcams.cloud/api/fuzzy-music-profiles/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908
-I/flutter (15944): method: GET
-I/flutter (15944): responseType: ResponseType.json
-I/flutter (15944): followRedirects: true
-I/flutter (15944): persistentConnection: true
-I/flutter (15944): connectTimeout: 0:00:30.000000
-I/flutter (15944): sendTimeout: 0:00:30.000000
-I/flutter (15944): receiveTimeout: 0:00:30.000000
-I/flutter (15944): receiveDataWhenStatusError: true
-I/flutter (15944): extra: {}
-I/flutter (15944): headers:
-I/flutter (15944):  Content-Type: application/json
-I/flutter (15944):  Accept: application/json
-I/flutter (15944): data:
-I/flutter (15944): null
-I/flutter (15944): 
-I/flutter (15944): [DioClient] Preparing auth header for "/api/fuzzy-music-profiles/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908": playbackScoped=false selectedToken=eyJhbGciOiJI...
-I/flutter (15944): [DioClient] [request-auth] path=/api/fuzzy-music-profiles/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 activeMode=manager hasManagerToken=true managerExpiry=2026-05-05T04:41:08.571893Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
-I/flutter (15944): *** Response ***
-I/flutter (15944): uri: https://logcams.cloud/api/fuzzy-music-profiles/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908
-I/flutter (15944): statusCode: 200
-I/flutter (15944): statusMessage: OK
-I/flutter (15944): headers:
-I/flutter (15944):  connection: keep-alive
-I/flutter (15944):  alt-svc: h3=":443"; ma=86400
-I/flutter (15944):  date: Tue, 05 May 2026 04:30:23 GMT
-I/flutter (15944):  transfer-encoding: chunked
-I/flutter (15944):  content-encoding: gzip
-I/flutter (15944):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
-I/flutter (15944):  cf-ray: 9f6d0275c88ccbe1-SIN
-I/flutter (15944):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=ATkfwVBD0gdPalmIrgkbTeIv53qKgE1V7HiavDSnuwCVUtkQbh%2FbVoirznUKXjim%2B5thQwKDfVLJxJtQ4JDz235y8bZ%2FTmP4dgkxw%2FLAeiafiFIS4azBJ8CZBhst3PTU"}]}
-I/flutter (15944):  cf-cache-status: DYNAMIC
-I/flutter (15944):  content-type: application/json; charset=utf-8
-I/flutter (15944):  server: cloudflare
-I/flutter (15944): Response Text:
-I/flutter (15944): {"isSuccess":true,"message":"Success","data":{"id":"e9a03651-4546-47bc-8e4c-572f2db4c021","brandId":"ff587081-083f-42ec-b43b-b3a6b2f4756d","storeId":"d34ffedc-f11a-41f6-b485-efb6cf6181a5","name":"Lầu 1 - Space Fuzzy Override","templateKey":"SpaceOverride","chillBpmMin":60,"chillBpmMax":80,"focusBpmMin":85,"focusBpmMax":105,"energeticBpmMin":120,"energeticBpmMax":140,"noiseQuietMaxDb":50,"noiseLoudMinDb":75,"defaultDecibelWhenNull":60,"autoVolumeEnabled":true,"autoVolumeQuietPercent":45,"autoVolumeModeratePercent":60,"autoVolumeLoudPercent":75,"autoVolumeMinPercent":30,"autoVolumeMaxPercent":90,"autoVolumeDeadbandPercent":5,"chillMoodCandidates":null,"focusMoodCandidates":null,"energeticMoodCandidates":null}}
-I/flutter (15944): 
-I/flutter (15944): *** Request ***
-I/flutter (15944): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue
-I/flutter (15944): method: GET
-I/flutter (15944): responseType: ResponseType.json
-I/flutter (15944): followRedirects: true
-I/flutter (15944): persistentConnection: true
-I/flutter (15944): connectTimeout: 0:00:30.000000
-I/flutter (15944): sendTimeout: 0:00:30.000000
-I/flutter (15944): receiveTimeout: 0:00:30.000000
-I/flutter (15944): receiveDataWhenStatusError: true
-I/flutter (15944): extra: {}
-I/flutter (15944): headers:
-I/flutter (15944):  Content-Type: application/json
-I/flutter (15944):  Accept: application/json
-I/flutter (15944): data:
-I/flutter (15944): null
-I/flutter (15944): 
-I/flutter (15944): [DioClient] Preparing auth header for "/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue": playbackScoped=true selectedToken=eyJhbGciOiJI...
-I/flutter (15944): [DioClient] [request-auth] path=/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue activeMode=manager hasManagerToken=true managerExpiry=2026-05-05T04:41:08.571893Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
-I/flutter (15944): *** Response ***
-I/flutter (15944): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue
-I/flutter (15944): statusCode: 200
-I/flutter (15944): statusMessage: OK
-I/flutter (15944): headers:
-I/flutter (15944):  connection: keep-alive
-I/flutter (15944):  alt-svc: h3=":443"; ma=86400
-I/flutter (15944):  date: Tue, 05 May 2026 04:30:23 GMT
-I/flutter (15944):  transfer-encoding: chunked
-I/flutter (15944):  content-encoding: gzip
-I/flutter (15944):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
-I/flutter (15944):  cf-ray: 9f6d02767b1ccbe1-SIN
-I/flutter (15944):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=DUKhMgYLXbB7%2BT8kzr9%2BgBrQhPHubd1hYAgYAmzGVwX76pk%2Bv5TeWXqwjHxxBNzywKVSNHgsGuPh0ZahF1RUmV8iC49VDUiNv6QTnQ1f6QPuWZFoPG%2FFRFdHVTjCJD3l"}]}
-I/flutter (15944):  cf-cache-status: DYNAMIC
-I/flutter (15944):  content-type: application/json; charset=utf-8
-I/flutter (15944):  server: cloudflare
-I/flutter (15944): Response Text:
-I/flutter (15944): {"isSuccess":true,"message":"Success","data":[{"queueItemId":"5ec5339c-2257-4b40-8056-ac8c495a6782","trackId":"40f925ac-4eee-4e7f-949e-cb07fb582e4a","trackName":"Track chung 5","artist":null,"position":1,"queueStatus":1,"source":0,"hlsUrl":"https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8","coverImageUrl":null,"isReadyToStream":true}]}
-I/flutter (15944): 
-I/flutter (15944): [QueueFirstV2] preserve previous queue snapshot while refreshed queue is partial incomingCount=1 currentCount=4 currentQueueItemId=5ec5339c-2257-4b40-8056-ac8c495a6782
-I/flutter (15944): [QueueFirstV2] emitState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=5ec5339c-2257-4b40-8056-ac8c495a6782 pending=- track=Track chung 5 hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8 manual=true scheduling=false paused=false queueCount=4 queue=[7:Attention:3 | 8:Cô gái này du lịch đến dubai:3 | 9:Track chung 3:3 | 10:Track chung 5:1]
-I/flutter (15944): [CamsPlaybackBlocV2] runtimeState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 currentQueueItemId=5ec5339c-2257-4b40-8056-ac8c495a6782 pendingQueueItemId=- currentTrack=Track chung 5 hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8 manual=true scheduling=false queueCount=4 queue=[7:Attention:3 | 8:Cô gái này du lịch đến dubai:3 | 9:Track chung 3:3]
-I/flutter (15944): [AppPlaybackCoordinatorV2] syncCamsState status=active playback=space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=5ec5339c-2257-4b40-8056-ac8c495a6782 pending=- track=Track chung 5 hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8 queueCount=4 queue=[7:Attention:3 | 8:Cô gái này du lịch đến dubai:3 | 9:Track chung 3:3 | 10:Track chung 5:1] playerTrack=Track chung 5 playerHls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8
-I/flutter (15944): [AppPlaybackCoordinatorV2] playback window expired for current HLS -> wait for next identity/HLS queueItemId=5ec5339c-2257-4b40-8056-ac8c495a6782 hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8 expectedEnd=2026-05-05T04:30:23.154195Z
-D/AidlBufferPool(15944): bufferpool2 0xb4000076313b9618 : 5(40960 size) total buffers - 3(24576 size) used buffers - 795/800 (recycle/alloc) - 5/790 (fetch/transfer)
-D/AidlBufferPoolAcc(15944): evictor expired: 1, evicted: 1
-I/VRI[MainActivity]@7b964f(15944): call setFrameRateCategory for touch hint category=no preference, reason=boost timeout, vri=VRI[MainActivity]@7b964f
-I/VRI[MainActivity]@7b964f(15944): call setFrameRateCategory for touch hint category=high hint, reason=touch, vri=VRI[MainActivity]@7b964f
-I/VRI[MainActivity]@7b964f(15944): call setFrameRateCategory for touch hint category=no preference, reason=boost timeout, vri=VRI[MainActivity]@7b964f
-I/flutter (15944): [QueueFirstV2] hub SpaceStateSync raw -> space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=5ec5339c-2257-4b40-8056-ac8c495a6782 pending=- track=Track chung 5 hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8 manual=true scheduling=false paused=false queueCount=1 queue=[1:Track chung 5:1]
-I/flutter (15944): [QueueFirstV2] hub PlayStream spaceId=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 transition=immediate queueItemId=- trackId=40f925ac-4eee-4e7f-949e-cb07fb582e4a trackName=Track chung 5 hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8
-I/flutter (15944): [QueueFirstV2] reconcile after mutation started
-I/flutter (15944): [QueueFirstV2] hub SpaceStateSync raw -> space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=5ec5339c-2257-4b40-8056-ac8c495a6782 pending=- track=Track chung 5 hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8 manual=true scheduling=false paused=false queueCount=1 queue=[1:Track chung 5:1]
-I/flutter (15944): [QueueFirstV2] join in-flight queue hydration key=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908|manager|5ec5339c-2257-4b40-8056-ac8c495a6782||https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8
-I/flutter (15944): *** Request ***
-I/flutter (15944): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue
-I/flutter (15944): method: GET
-I/flutter (15944): responseType: ResponseType.json
-I/flutter (15944): followRedirects: true
-I/flutter (15944): persistentConnection: true
-I/flutter (15944): connectTimeout: 0:00:30.000000
-I/flutter (15944): sendTimeout: 0:00:30.000000
-I/flutter (15944): receiveTimeout: 0:00:30.000000
-I/flutter (15944): receiveDataWhenStatusError: true
-I/flutter (15944): extra: {}
-I/flutter (15944): headers:
-I/flutter (15944):  Content-Type: application/json
-I/flutter (15944):  Accept: application/json
-I/flutter (15944): data:
-I/flutter (15944): null
-I/flutter (15944): 
-I/flutter (15944): *** Request ***
-I/flutter (15944): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/state
-I/flutter (15944): method: GET
-I/flutter (15944): responseType: ResponseType.json
-I/flutter (15944): followRedirects: true
-I/flutter (15944): persistentConnection: true
-I/flutter (15944): connectTimeout: 0:00:30.000000
-I/flutter (15944): sendTimeout: 0:00:30.000000
-I/flutter (15944): receiveTimeout: 0:00:30.000000
-I/flutter (15944): receiveDataWhenStatusError: true
-I/flutter (15944): extra: {}
-I/flutter (15944): headers:
-I/flutter (15944):  Content-Type: application/json
-I/flutter (15944):  Accept: application/json
-I/flutter (15944): data:
-I/flutter (15944): null
-I/flutter (15944): 
-I/flutter (15944): [DioClient] Preparing auth header for "/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue": playbackScoped=true selectedToken=eyJhbGciOiJI...
-I/flutter (15944): [DioClient] [request-auth] path=/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue activeMode=manager hasManagerToken=true managerExpiry=2026-05-05T04:41:08.571893Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
-I/flutter (15944): [DioClient] Preparing auth header for "/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/state": playbackScoped=true selectedToken=eyJhbGciOiJI...
-I/flutter (15944): [DioClient] [request-auth] path=/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/state activeMode=manager hasManagerToken=true managerExpiry=2026-05-05T04:41:08.571893Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
-I/flutter (15944): [QueueFirstV2] hub SpaceStateSync raw -> space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=5ec5339c-2257-4b40-8056-ac8c495a6782 pending=- track=Track chung 5 hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8 manual=true scheduling=false paused=false queueCount=1 queue=[1:Track chung 5:1]
-I/flutter (15944): [QueueFirstV2] join in-flight queue hydration key=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908|manager|5ec5339c-2257-4b40-8056-ac8c495a6782||https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8
-I/flutter (15944): [QueueFirstV2] hub SpaceStateSync raw -> space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=5ec5339c-2257-4b40-8056-ac8c495a6782 pending=- track=Track chung 5 hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8 manual=true scheduling=false paused=false queueCount=1 queue=[1:Track chung 5:1]
-I/flutter (15944): [QueueFirstV2] join in-flight queue hydration key=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908|manager|5ec5339c-2257-4b40-8056-ac8c495a6782||https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8
-I/flutter (15944): *** Response ***
-I/flutter (15944): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue
-I/flutter (15944): statusCode: 200
-I/flutter (15944): statusMessage: OK
-I/flutter (15944): headers:
-I/flutter (15944):  connection: keep-alive
-I/flutter (15944):  alt-svc: h3=":443"; ma=86400
-I/flutter (15944):  date: Tue, 05 May 2026 04:30:35 GMT
-I/flutter (15944):  transfer-encoding: chunked
-I/flutter (15944):  content-encoding: gzip
-I/flutter (15944):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
-I/flutter (15944):  cf-ray: 9f6d02c19ed5ac10-SIN
-I/flutter (15944):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=reSCdEcz%2B8EEyAQQoTHjN06xmqFps2dQA49MYB2zeC2MfEB9FuIvPrDKzhdaQam3OgtS9wN%2BeNOfgBzV9Mh1r1yX5EmlarBRlm59A2F16%2FHLeKbERtl4D4Nq91y8%2Fzqk"}]}
-I/flutter (15944):  cf-cache-status: DYNAMIC
-I/flutter (15944):  content-type: application/json; charset=utf-8
-I/flutter (15944):  server: cloudflare
-I/flutter (15944): Response Text:
-I/flutter (15944): {"isSuccess":true,"message":"Success","data":[{"queueItemId":"5ec5339c-2257-4b40-8056-ac8c495a6782","trackId":"40f925ac-4eee-4e7f-949e-cb07fb582e4a","trackName":"Track chung 5","artist":null,"position":1,"queueStatus":1,"source":0,"hlsUrl":"https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8","coverImageUrl":null,"isReadyToStream":true}]}
-I/flutter (15944): 
-I/flutter (15944): [QueueFirstV2] preserve previous queue snapshot while refreshed queue is partial incomingCount=1 currentCount=4 currentQueueItemId=5ec5339c-2257-4b40-8056-ac8c495a6782
-I/flutter (15944): [QueueFirstV2] emitState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=5ec5339c-2257-4b40-8056-ac8c495a6782 pending=- track=Track chung 5 hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8 manual=true scheduling=false paused=false queueCount=4 queue=[7:Attention:3 | 8:Cô gái này du lịch đến dubai:3 | 9:Track chung 3:3 | 10:Track chung 5:1]
-I/flutter (15944): [QueueFirstV2] preserve previous queue snapshot while refreshed queue is partial incomingCount=1 currentCount=4 currentQueueItemId=5ec5339c-2257-4b40-8056-ac8c495a6782
-I/flutter (15944): [QueueFirstV2] emitState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=5ec5339c-2257-4b40-8056-ac8c495a6782 pending=- track=Track chung 5 hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8 manual=true scheduling=false paused=false queueCount=4 queue=[7:Attention:3 | 8:Cô gái này du lịch đến dubai:3 | 9:Track chung 3:3 | 10:Track chung 5:1]
-I/flutter (15944): [QueueFirstV2] preserve previous queue snapshot while refreshed queue is partial incomingCount=1 currentCount=4 currentQueueItemId=5ec5339c-2257-4b40-8056-ac8c495a6782
-I/flutter (15944): [QueueFirstV2] emitState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=5ec5339c-2257-4b40-8056-ac8c495a6782 pending=- track=Track chung 5 hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8 manual=true scheduling=false paused=false queueCount=4 queue=[7:Attention:3 | 8:Cô gái này du lịch đến dubai:3 | 9:Track chung 3:3 | 10:Track chung 5:1]
-I/flutter (15944): [QueueFirstV2] preserve previous queue snapshot while refreshed queue is partial incomingCount=1 currentCount=4 currentQueueItemId=5ec5339c-2257-4b40-8056-ac8c495a6782
-I/flutter (15944): [QueueFirstV2] emitState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=5ec5339c-2257-4b40-8056-ac8c495a6782 pending=- track=Track chung 5 hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8 manual=true scheduling=false paused=false queueCount=4 queue=[7:Attention:3 | 8:Cô gái này du lịch đến dubai:3 | 9:Track chung 3:3 | 10:Track chung 5:1]
-I/flutter (15944): [CamsPlaybackBlocV2] runtimeState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 currentQueueItemId=5ec5339c-2257-4b40-8056-ac8c495a6782 pendingQueueItemId=- currentTrack=Track chung 5 hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8 manual=true scheduling=false queueCount=4 queue=[7:Attention:3 | 8:Cô gái này du lịch đến dubai:3 | 9:Track chung 3:3]
-I/flutter (15944): [AppPlaybackCoordinatorV2] syncCamsState status=active playback=space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=5ec5339c-2257-4b40-8056-ac8c495a6782 pending=- track=Track chung 5 hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8 queueCount=4 queue=[7:Attention:3 | 8:Cô gái này du lịch đến dubai:3 | 9:Track chung 3:3 | 10:Track chung 5:1] playerTrack=Track chung 5 playerHls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8
-I/flutter (15944): [AppPlaybackCoordinatorV2] same remote HLS snapshot -> apply resume without restarting player queueItemId=5ec5339c-2257-4b40-8056-ac8c495a6782 drift=0.22
-I/flutter (15944): [CamsPlaybackBlocV2] runtimeState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 currentQueueItemId=5ec5339c-2257-4b40-8056-ac8c495a6782 pendingQueueItemId=- currentTrack=Track chung 5 hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8 manual=true scheduling=false queueCount=4 queue=[7:Attention:3 | 8:Cô gái này du lịch đến dubai:3 | 9:Track chung 3:3]
-I/flutter (15944): [AppPlaybackCoordinatorV2] syncCamsState status=active playback=space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=5ec5339c-2257-4b40-8056-ac8c495a6782 pending=- track=Track chung 5 hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8 queueCount=4 queue=[7:Attention:3 | 8:Cô gái này du lịch đến dubai:3 | 9:Track chung 3:3 | 10:Track chung 5:1] playerTrack=Track chung 5 playerHls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8
-I/flutter (15944): [AppPlaybackCoordinatorV2] same remote HLS snapshot -> keep current player queueItemId=5ec5339c-2257-4b40-8056-ac8c495a6782 drift=0.22
-I/flutter (15944): [CamsPlaybackBlocV2] runtimeState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 currentQueueItemId=5ec5339c-2257-4b40-8056-ac8c495a6782 pendingQueueItemId=- currentTrack=Track chung 5 hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8 manual=true scheduling=false queueCount=4 queue=[7:Attention:3 | 8:Cô gái này du lịch đến dubai:3 | 9:Track chung 3:3]
-I/flutter (15944): [AppPlaybackCoordinatorV2] syncCamsState status=active playback=space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=5ec5339c-2257-4b40-8056-ac8c495a6782 pending=- track=Track chung 5 hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8 queueCount=4 queue=[7:Attention:3 | 8:Cô gái này du lịch đến dubai:3 | 9:Track chung 3:3 | 10:Track chung 5:1] playerTrack=Track chung 5 playerHls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8
-I/flutter (15944): [AppPlaybackCoordinatorV2] same remote HLS snapshot -> keep current player queueItemId=5ec5339c-2257-4b40-8056-ac8c495a6782 drift=0.39
-I/flutter (15944): [CamsPlaybackBlocV2] runtimeState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 currentQueueItemId=5ec5339c-2257-4b40-8056-ac8c495a6782 pendingQueueItemId=- currentTrack=Track chung 5 hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8 manual=true scheduling=false queueCount=4 queue=[7:Attention:3 | 8:Cô gái này du lịch đến dubai:3 | 9:Track chung 3:3]
-I/flutter (15944): [AppPlaybackCoordinatorV2] syncCamsState status=active playback=space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=5ec5339c-2257-4b40-8056-ac8c495a6782 pending=- track=Track chung 5 hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8 queueCount=4 queue=[7:Attention:3 | 8:Cô gái này du lịch đến dubai:3 | 9:Track chung 3:3 | 10:Track chung 5:1] playerTrack=Track chung 5 playerHls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8
-I/flutter (15944): [AppPlaybackCoordinatorV2] same remote HLS snapshot -> keep current player queueItemId=5ec5339c-2257-4b40-8056-ac8c495a6782 drift=0.39
-D/AudioTrack(15944): getTimestamp_l(43878): device stall time corrected using current time 1634723615957101
-W/DefaultAudioSink(15944): Spurious audio timestamp (frame position mismatch): 4294967296, 1634723615957, 1634723615907, 13119274, 578560, 578560
-I/flutter (15944): *** Response ***
-I/flutter (15944): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/state
-I/flutter (15944): statusCode: 200
-I/flutter (15944): statusMessage: OK
-I/flutter (15944): headers:
-I/flutter (15944):  connection: keep-alive
-I/flutter (15944):  alt-svc: h3=":443"; ma=86400
-I/flutter (15944):  date: Tue, 05 May 2026 04:30:35 GMT
-I/flutter (15944):  transfer-encoding: chunked
-I/flutter (15944):  content-encoding: gzip
-I/flutter (15944):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
-I/flutter (15944):  cf-ray: 9f6d02c19db8712c-SIN
-I/flutter (15944):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=msnrzfXxiyfsT%2Bqwap4loEEJNxKzMcwK43RQWjILfg2hJ524WpQNxlQ388W8pQgpoSA2%2B44iIiMZ1m0fF%2F9BU3Uncqywp7BpdRiQNUlNSxBRe05i7gbWXwLiPH5QYTL6"}]}
-I/flutter (15944):  cf-cache-status: DYNAMIC
-I/flutter (15944):  content-type: application/json; charset=utf-8
-I/flutter (15944):  server: cloudflare
-I/flutter (15944): Response Text:
-I/flutter (15944): {"isSuccess":true,"message":"Success","data":{"spaceId":"9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908","storeId":"d34ffedc-f11a-41f6-b485-efb6cf6181a5","brandId":"ff587081-083f-42ec-b43b-b3a6b2f4756d","currentQueueItemId":"5ec5339c-2257-4b40-8056-ac8c495a6782","currentTrackName":"Track chung 5","currentArtist":null,"hlsUrl":"https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8","moodName":null,"isManualOverride":true,"overrideMode":null,"overrideReason":null,"manualOverrideActivatedAtUtc":"2026-05-05T04:30:20.470419Z","manualOverrideExpiresAtUtc":"2026-05-05T04:34:08.470419Z","manualOverrideTtlSeconds":228,"manualOverrideRemainingSeconds":213,"isScheduling":false,"schedulingSlotId":null,"schedulingSlotOrigin":null,"schedulingEndsAtUtc":null,"schedulingRemainingSeconds":null,"startedAtUtc":"2026-05-05T04:30:35.332382Z","expectedEndAtUtc":"2026-05-05T04:34:23.332382Z","seekOffsetSeconds":0.4979945,"isPaused":false,"pausePositionSeco
-I/flutter (15944): 
-I/flutter (15944): *** Request ***
-I/flutter (15944): uri: https://logcams.cloud/api/cams/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/mood
-I/flutter (15944): method: GET
-I/flutter (15944): responseType: ResponseType.json
-I/flutter (15944): followRedirects: true
-I/flutter (15944): persistentConnection: true
-I/flutter (15944): connectTimeout: 0:00:30.000000
-I/flutter (15944): sendTimeout: 0:00:30.000000
-I/flutter (15944): receiveTimeout: 0:00:30.000000
-I/flutter (15944): receiveDataWhenStatusError: true
-I/flutter (15944): extra: {}
-I/flutter (15944): headers:
-I/flutter (15944):  Content-Type: application/json
-I/flutter (15944):  Accept: application/json
-I/flutter (15944): data:
-I/flutter (15944): null
-I/flutter (15944): 
-I/flutter (15944): [DioClient] Preparing auth header for "/api/cams/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/mood": playbackScoped=false selectedToken=eyJhbGciOiJI...
-I/flutter (15944): [DioClient] [request-auth] path=/api/cams/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/mood activeMode=manager hasManagerToken=true managerExpiry=2026-05-05T04:41:08.571893Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
-I/flutter (15944): *** Response ***
-I/flutter (15944): uri: https://logcams.cloud/api/cams/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/mood
-I/flutter (15944): statusCode: 200
-I/flutter (15944): statusMessage: OK
-I/flutter (15944): headers:
-I/flutter (15944):  connection: keep-alive
-I/flutter (15944):  alt-svc: h3=":443"; ma=86400
-I/flutter (15944):  date: Tue, 05 May 2026 04:30:35 GMT
-I/flutter (15944):  transfer-encoding: chunked
-I/flutter (15944):  content-encoding: gzip
-I/flutter (15944):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
-I/flutter (15944):  cf-ray: 9f6d02c2d963712c-SIN
-I/flutter (15944):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=K%2BfmhkGTDGMq1i7d9tAqGuOQuwRQxj2WBQsUYBHCq3f3JIryasbttV4UQvvsjG1nchyRlKwmO6hz%2BRWAfnGxGSrLfXfmp4teBPyRgPdW7cOAHjQWY22yLSJCoCYSAOYj"}]}
-I/flutter (15944):  cf-cache-status: DYNAMIC
-I/flutter (15944):  content-type: application/json; charset=utf-8
-I/flutter (15944):  server: cloudflare
-I/flutter (15944): Response Text:
-I/flutter (15944): {"isSuccess":true,"message":"Success","data":{"spaceId":"9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908","spaceName":"Lầu 1","currentMood":2,"currentMoodType":2,"moodName":"Energetic","bpmMin":120,"bpmMax":140,"lastAnalyzedAtUtc":"2026-05-05T04:30:12.151727Z","isFirstCycle":false}}
-I/flutter (15944): 
-I/flutter (15944): *** Request ***
-I/flutter (15944): uri: https://logcams.cloud/api/fuzzy-music-profiles/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908
-I/flutter (15944): method: GET
-I/flutter (15944): responseType: ResponseType.json
-I/flutter (15944): followRedirects: true
-I/flutter (15944): persistentConnection: true
-I/flutter (15944): connectTimeout: 0:00:30.000000
-I/flutter (15944): sendTimeout: 0:00:30.000000
-I/flutter (15944): receiveTimeout: 0:00:30.000000
-I/flutter (15944): receiveDataWhenStatusError: true
-I/flutter (15944): extra: {}
-I/flutter (15944): headers:
-I/flutter (15944):  Content-Type: application/json
-I/flutter (15944):  Accept: application/json
-I/flutter (15944): data:
-I/flutter (15944): null
-I/flutter (15944): 
-I/flutter (15944): [DioClient] Preparing auth header for "/api/fuzzy-music-profiles/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908": playbackScoped=false selectedToken=eyJhbGciOiJI...
-I/flutter (15944): [DioClient] [request-auth] path=/api/fuzzy-music-profiles/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 activeMode=manager hasManagerToken=true managerExpiry=2026-05-05T04:41:08.571893Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
-I/flutter (15944): [PlaybackTrace] LOCAL_COMPLETED isHlsMode=true queueItemId=5ec5339c-2257-4b40-8056-ac8c495a6782 trackId=40f925ac-4eee-4e7f-949e-cb07fb582e4a trackTitle=Track chung 5 position=797.00 duration=228 hasNext=false
-I/flutter (15944): *** Response ***
-I/flutter (15944): uri: https://logcams.cloud/api/fuzzy-music-profiles/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908
-I/flutter (15944): statusCode: 200
-I/flutter (15944): statusMessage: OK
-I/flutter (15944): headers:
-I/flutter (15944):  connection: keep-alive
-I/flutter (15944):  alt-svc: h3=":443"; ma=86400
-I/flutter (15944):  date: Tue, 05 May 2026 04:30:36 GMT
-I/flutter (15944):  transfer-encoding: chunked
-I/flutter (15944):  content-encoding: gzip
-I/flutter (15944):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
-I/flutter (15944):  cf-ray: 9f6d02c36ac5712c-SIN
-I/flutter (15944):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=yN%2FrX7fyAbvcXw6sljuFEA%2FNgXDondzuRYMDF22VPkBJ9p12LKO4y2met7Spet7YzqUpMktS%2Frem8HkQAMBH%2Fjm0OF%2BwpeLdlz87LE4mfAsa8LY2MtQpgQsYOr7jXEO6"}]}
-I/flutter (15944):  cf-cache-status: DYNAMIC
-I/flutter (15944):  content-type: application/json; charset=utf-8
-I/flutter (15944):  server: cloudflare
-I/flutter (15944): Response Text:
-I/flutter (15944): {"isSuccess":true,"message":"Success","data":{"id":"e9a03651-4546-47bc-8e4c-572f2db4c021","brandId":"ff587081-083f-42ec-b43b-b3a6b2f4756d","storeId":"d34ffedc-f11a-41f6-b485-efb6cf6181a5","name":"Lầu 1 - Space Fuzzy Override","templateKey":"SpaceOverride","chillBpmMin":60,"chillBpmMax":80,"focusBpmMin":85,"focusBpmMax":105,"energeticBpmMin":120,"energeticBpmMax":140,"noiseQuietMaxDb":50,"noiseLoudMinDb":75,"defaultDecibelWhenNull":60,"autoVolumeEnabled":true,"autoVolumeQuietPercent":45,"autoVolumeModeratePercent":60,"autoVolumeLoudPercent":75,"autoVolumeMinPercent":30,"autoVolumeMaxPercent":90,"autoVolumeDeadbandPercent":5,"chillMoodCandidates":null,"focusMoodCandidates":null,"energeticMoodCandidates":null}}
-I/flutter (15944): 
-I/flutter (15944): [QueueFirstV2] reuse hydrated queue snapshot key=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908|manager|5ec5339c-2257-4b40-8056-ac8c495a6782||https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8
-I/flutter (15944): [QueueFirstV2] preserve previous queue snapshot while refreshed queue is partial incomingCount=1 currentCount=4 currentQueueItemId=5ec5339c-2257-4b40-8056-ac8c495a6782
-I/flutter (15944): [QueueFirstV2] emitState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=5ec5339c-2257-4b40-8056-ac8c495a6782 pending=- track=Track chung 5 hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8 manual=true scheduling=false paused=false queueCount=4 queue=[7:Attention:3 | 8:Cô gái này du lịch đến dubai:3 | 9:Track chung 3:3 | 10:Track chung 5:1]
-I/NotificationManager(15944): com.example.cams_store_manager: notify(1124, null, Notification(channel=com.example.cams_store_manager.playback_controls shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=0 color=0x00000000 category=transport actions=2 vis=PUBLIC semFlags=0x0 semPriority=0 semMissedCount=0)) as user
-D/NotificationManager(15944): BOOTING pkg =com.example.cams_store_manager mBlockedChannelsForOverflowNoti=[]
-I/flutter (15944): [QueueFirstV2] reconcile detected immediate state change
-I/flutter (15944): [CamsPlaybackBlocV2] runtimeState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 currentQueueItemId=5ec5339c-2257-4b40-8056-ac8c495a6782 pendingQueueItemId=- currentTrack=Track chung 5 hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8 manual=true scheduling=false queueCount=4 queue=[7:Attention:3 | 8:Cô gái này du lịch đến dubai:3 | 9:Track chung 3:3]
-I/flutter (15944): [AppPlaybackCoordinatorV2] syncCamsState status=active playback=space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=5ec5339c-2257-4b40-8056-ac8c495a6782 pending=- track=Track chung 5 hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8 queueCount=4 queue=[7:Attention:3 | 8:Cô gái này du lịch đến dubai:3 | 9:Track chung 3:3 | 10:Track chung 5:1] playerTrack=Track chung 5 playerHls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8
-I/flutter (15944): [AppPlaybackCoordinatorV2] same remote HLS snapshot -> apply resume without restarting player queueItemId=5ec5339c-2257-4b40-8056-ac8c495a6782 drift=0.50
-I/flutter (15944): *** Request ***
-I/flutter (15944): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/state
-I/flutter (15944): method: GET
-I/flutter (15944): responseType: ResponseType.json
-I/flutter (15944): followRedirects: true
-I/flutter (15944): persistentConnection: true
-I/flutter (15944): connectTimeout: 0:00:30.000000
-I/flutter (15944): sendTimeout: 0:00:30.000000
-I/flutter (15944): receiveTimeout: 0:00:30.000000
-I/flutter (15944): receiveDataWhenStatusError: true
-I/flutter (15944): extra: {}
-I/flutter (15944): headers:
-I/flutter (15944):  Content-Type: application/json
-I/flutter (15944):  Accept: application/json
-I/flutter (15944): data:
-I/flutter (15944): null
-I/flutter (15944): 
-I/flutter (15944): [DioClient] Preparing auth header for "/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/state": playbackScoped=true selectedToken=eyJhbGciOiJI...
-I/flutter (15944): [DioClient] [request-auth] path=/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/state activeMode=manager hasManagerToken=true managerExpiry=2026-05-05T04:41:08.571893Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
-I/flutter (15944): *** Response ***
-I/flutter (15944): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/state
-I/flutter (15944): statusCode: 200
-I/flutter (15944): statusMessage: OK
-I/flutter (15944): headers:
-I/flutter (15944):  connection: keep-alive
-I/flutter (15944):  alt-svc: h3=":443"; ma=86400
-I/flutter (15944):  date: Tue, 05 May 2026 04:30:54 GMT
-I/flutter (15944):  transfer-encoding: chunked
-I/flutter (15944):  content-encoding: gzip
-I/flutter (15944):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
-I/flutter (15944):  cf-ray: 9f6d03356bd79e1e-SIN
-I/flutter (15944):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=eaCXUVUB2Sbt9kAQX%2ByK7IlMX1riHzDKkvY66QXQ33FFK%2FEZH3rpOdAHvaFDg8bCn0iRDzEVtsJ4PFA8SgCNOhbI3d9CDLeoUkI9D%2BQKdJkiJOm9mJcd0Ti1RLgVu9UC"}]}
-I/flutter (15944):  cf-cache-status: DYNAMIC
-I/flutter (15944):  content-type: application/json; charset=utf-8
-I/flutter (15944):  server: cloudflare
-I/flutter (15944): Response Text:
-I/flutter (15944): {"isSuccess":true,"message":"Success","data":{"spaceId":"9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908","storeId":"d34ffedc-f11a-41f6-b485-efb6cf6181a5","brandId":"ff587081-083f-42ec-b43b-b3a6b2f4756d","currentQueueItemId":"5ec5339c-2257-4b40-8056-ac8c495a6782","currentTrackName":"Track chung 5","currentArtist":null,"hlsUrl":"https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8","moodName":null,"isManualOverride":true,"overrideMode":null,"overrideReason":null,"manualOverrideActivatedAtUtc":"2026-05-05T04:30:20.470419Z","manualOverrideExpiresAtUtc":"2026-05-05T04:34:08.470419Z","manualOverrideTtlSeconds":228,"manualOverrideRemainingSeconds":195,"isScheduling":false,"schedulingSlotId":null,"schedulingSlotOrigin":null,"schedulingEndsAtUtc":null,"schedulingRemainingSeconds":null,"startedAtUtc":"2026-05-05T04:30:35.332382Z","expectedEndAtUtc":"2026-05-05T04:34:23.332382Z","seekOffsetSeconds":19.020186,"isPaused":false,"pausePositionSeco
-I/flutter (15944): 
-I/flutter (15944): *** Request ***
-I/flutter (15944): uri: https://logcams.cloud/api/cams/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/mood
-I/flutter (15944): method: GET
-I/flutter (15944): responseType: ResponseType.json
-I/flutter (15944): followRedirects: true
-I/flutter (15944): persistentConnection: true
-I/flutter (15944): connectTimeout: 0:00:30.000000
-I/flutter (15944): sendTimeout: 0:00:30.000000
-I/flutter (15944): receiveTimeout: 0:00:30.000000
-I/flutter (15944): receiveDataWhenStatusError: true
-I/flutter (15944): extra: {}
-I/flutter (15944): headers:
-I/flutter (15944):  Content-Type: application/json
-I/flutter (15944):  Accept: application/json
-I/flutter (15944): data:
-I/flutter (15944): null
-I/flutter (15944): 
-I/flutter (15944): [DioClient] Preparing auth header for "/api/cams/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/mood": playbackScoped=false selectedToken=eyJhbGciOiJI...
-I/flutter (15944): [DioClient] [request-auth] path=/api/cams/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/mood activeMode=manager hasManagerToken=true managerExpiry=2026-05-05T04:41:08.571893Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
-I/flutter (15944): *** Response ***
-I/flutter (15944): uri: https://logcams.cloud/api/cams/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/mood
-I/flutter (15944): statusCode: 200
-I/flutter (15944): statusMessage: OK
-I/flutter (15944): headers:
-I/flutter (15944):  connection: keep-alive
-I/flutter (15944):  alt-svc: h3=":443"; ma=86400
-I/flutter (15944):  date: Tue, 05 May 2026 04:30:54 GMT
-I/flutter (15944):  transfer-encoding: chunked
-I/flutter (15944):  content-encoding: gzip
-I/flutter (15944):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
-I/flutter (15944):  cf-ray: 9f6d0336a84e9e1e-SIN
-I/flutter (15944):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=v68s%2BabOpsEojJhm8R7lRbFng2SjbooOAwLaUilrk%2B8rEEHPZxTus8rDgCxCY3znBYMmG8vRz4uviWsPrfUplzl1JsgbA1qtF1UoS7yvexyU%2B6nGd1nDJalpAn9GK3dX"}]}
-I/flutter (15944):  cf-cache-status: DYNAMIC
-I/flutter (15944):  content-type: application/json; charset=utf-8
-I/flutter (15944):  server: cloudflare
-I/flutter (15944): Response Text:
-I/flutter (15944): {"isSuccess":true,"message":"Success","data":{"spaceId":"9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908","spaceName":"Lầu 1","currentMood":2,"currentMoodType":2,"moodName":"Energetic","bpmMin":120,"bpmMax":140,"lastAnalyzedAtUtc":"2026-05-05T04:30:12.151727Z","isFirstCycle":false}}
-I/flutter (15944): 
-I/flutter (15944): *** Request ***
-I/flutter (15944): uri: https://logcams.cloud/api/fuzzy-music-profiles/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908
-I/flutter (15944): method: GET
-I/flutter (15944): responseType: ResponseType.json
-I/flutter (15944): followRedirects: true
-I/flutter (15944): persistentConnection: true
-I/flutter (15944): connectTimeout: 0:00:30.000000
-I/flutter (15944): sendTimeout: 0:00:30.000000
-I/flutter (15944): receiveTimeout: 0:00:30.000000
-I/flutter (15944): receiveDataWhenStatusError: true
-I/flutter (15944): extra: {}
-I/flutter (15944): headers:
-I/flutter (15944):  Content-Type: application/json
-I/flutter (15944):  Accept: application/json
-I/flutter (15944): data:
-I/flutter (15944): null
-I/flutter (15944): 
-I/flutter (15944): [DioClient] Preparing auth header for "/api/fuzzy-music-profiles/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908": playbackScoped=false selectedToken=eyJhbGciOiJI...
-I/flutter (15944): [DioClient] [request-auth] path=/api/fuzzy-music-profiles/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 activeMode=manager hasManagerToken=true managerExpiry=2026-05-05T04:41:08.571893Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
-I/flutter (15944): *** Response ***
-I/flutter (15944): uri: https://logcams.cloud/api/fuzzy-music-profiles/space/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908
-I/flutter (15944): statusCode: 200
-I/flutter (15944): statusMessage: OK
-I/flutter (15944): headers:
-I/flutter (15944):  connection: keep-alive
-I/flutter (15944):  alt-svc: h3=":443"; ma=86400
-I/flutter (15944):  date: Tue, 05 May 2026 04:30:54 GMT
-I/flutter (15944):  transfer-encoding: chunked
-I/flutter (15944):  content-encoding: gzip
-I/flutter (15944):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
-I/flutter (15944):  cf-ray: 9f6d033709649e1e-SIN
-I/flutter (15944):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=5wPPE%2FJDbKy23oSJ8SoXZvf6UTTqVdAH3MpEzuAJh%2FU%2FKQgsdPpdahKFIlmjdKGdXEH4CpR3cQhxAPC5llFxUeDnIOfpINZJvVQEyrmth1%2BaFCk171qFQXcXFNexusfl"}]}
-I/flutter (15944):  cf-cache-status: DYNAMIC
-I/flutter (15944):  content-type: application/json; charset=utf-8
-I/flutter (15944):  server: cloudflare
-I/flutter (15944): Response Text:
-I/flutter (15944): {"isSuccess":true,"message":"Success","data":{"id":"e9a03651-4546-47bc-8e4c-572f2db4c021","brandId":"ff587081-083f-42ec-b43b-b3a6b2f4756d","storeId":"d34ffedc-f11a-41f6-b485-efb6cf6181a5","name":"Lầu 1 - Space Fuzzy Override","templateKey":"SpaceOverride","chillBpmMin":60,"chillBpmMax":80,"focusBpmMin":85,"focusBpmMax":105,"energeticBpmMin":120,"energeticBpmMax":140,"noiseQuietMaxDb":50,"noiseLoudMinDb":75,"defaultDecibelWhenNull":60,"autoVolumeEnabled":true,"autoVolumeQuietPercent":45,"autoVolumeModeratePercent":60,"autoVolumeLoudPercent":75,"autoVolumeMinPercent":30,"autoVolumeMaxPercent":90,"autoVolumeDeadbandPercent":5,"chillMoodCandidates":null,"focusMoodCandidates":null,"energeticMoodCandidates":null}}
-I/flutter (15944): 
-I/flutter (15944): *** Request ***
-I/flutter (15944): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue
-I/flutter (15944): method: GET
-I/flutter (15944): responseType: ResponseType.json
-I/flutter (15944): followRedirects: true
-I/flutter (15944): persistentConnection: true
-I/flutter (15944): connectTimeout: 0:00:30.000000
-I/flutter (15944): sendTimeout: 0:00:30.000000
-I/flutter (15944): receiveTimeout: 0:00:30.000000
-I/flutter (15944): receiveDataWhenStatusError: true
-I/flutter (15944): extra: {}
-I/flutter (15944): headers:
-I/flutter (15944):  Content-Type: application/json
-I/flutter (15944):  Accept: application/json
-I/flutter (15944): data:
-I/flutter (15944): null
-I/flutter (15944): 
-I/flutter (15944): [DioClient] Preparing auth header for "/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue": playbackScoped=true selectedToken=eyJhbGciOiJI...
-I/flutter (15944): [DioClient] [request-auth] path=/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue activeMode=manager hasManagerToken=true managerExpiry=2026-05-05T04:41:08.571893Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
-I/flutter (15944): *** Response ***
-I/flutter (15944): uri: https://logcams.cloud/api/cams/spaces/9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908/queue
-I/flutter (15944): statusCode: 200
-I/flutter (15944): statusMessage: OK
-I/flutter (15944): headers:
-I/flutter (15944):  connection: keep-alive
-I/flutter (15944):  alt-svc: h3=":443"; ma=86400
-I/flutter (15944):  date: Tue, 05 May 2026 04:30:54 GMT
-I/flutter (15944):  transfer-encoding: chunked
-I/flutter (15944):  content-encoding: gzip
-I/flutter (15944):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
-I/flutter (15944):  cf-ray: 9f6d03378a929e1e-SIN
-I/flutter (15944):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=ZagsvRXetfkkL8MoqZeKxoyIttHRzlrAzawzrfjweMc2LRX8ZTUJtGT3gYPhCRfO0abnz1c4YAAW14FuxY49j2eYzMJgpBSngNND%2BKikBWwLuZpmqZw6EFJph4tAXYqq"}]}
-I/flutter (15944):  cf-cache-status: DYNAMIC
-I/flutter (15944):  content-type: application/json; charset=utf-8
-I/flutter (15944):  server: cloudflare
-I/flutter (15944): Response Text:
-I/flutter (15944): {"isSuccess":true,"message":"Success","data":[{"queueItemId":"5ec5339c-2257-4b40-8056-ac8c495a6782","trackId":"40f925ac-4eee-4e7f-949e-cb07fb582e4a","trackName":"Track chung 5","artist":null,"position":1,"queueStatus":1,"source":0,"hlsUrl":"https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8","coverImageUrl":null,"isReadyToStream":true}]}
-I/flutter (15944): 
-I/flutter (15944): [QueueFirstV2] preserve previous queue snapshot while refreshed queue is partial incomingCount=1 currentCount=4 currentQueueItemId=5ec5339c-2257-4b40-8056-ac8c495a6782
-I/flutter (15944): [QueueFirstV2] emitState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=5ec5339c-2257-4b40-8056-ac8c495a6782 pending=- track=Track chung 5 hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8 manual=true scheduling=false paused=false queueCount=4 queue=[7:Attention:3 | 8:Cô gái này du lịch đến dubai:3 | 9:Track chung 3:3 | 10:Track chung 5:1]
-I/flutter (15944): [CamsPlaybackBlocV2] runtimeState space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 currentQueueItemId=5ec5339c-2257-4b40-8056-ac8c495a6782 pendingQueueItemId=- currentTrack=Track chung 5 hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8 manual=true scheduling=false queueCount=4 queue=[7:Attention:3 | 8:Cô gái này du lịch đến dubai:3 | 9:Track chung 3:3]
-I/flutter (15944): [AppPlaybackCoordinatorV2] syncCamsState status=active playback=space=9c0b10f2-ecb2-4b7a-9cbb-e003f27d5908 current=5ec5339c-2257-4b40-8056-ac8c495a6782 pending=- track=Track chung 5 hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8 queueCount=4 queue=[7:Attention:3 | 8:Cô gái này du lịch đến dubai:3 | 9:Track chung 3:3 | 10:Track chung 5:1] playerTrack=Track chung 5 playerHls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/40f925ac-4eee-4e7f-949e-cb07fb582e4a/v1/shade-of-you-a86a02f0385e458ba140dd0585ae9555.m3u8
-I/flutter (15944): [AppPlaybackCoordinatorV2] same remote HLS snapshot -> seek correction without restart queueItemId=5ec5339c-2257-4b40-8056-ac8c495a6782 target=19.18 drift=19.18
-I/CCodec  (15944): [c2.android.aac.decoder] state->set(FLUSHING)
-I/CCodec  (15944): [c2.android.aac.decoder] state->set(FLUSHED)
-D/MediaCodec(15944): keep callback message for reclaim
-I/CCodec  (15944): [c2.android.aac.decoder] state->set(RESUMING)
-I/CCodecConfig(15944): query failed after returning 21 values (BAD_INDEX)
-D/AidlBufferPool(15944): bufferpool2 0xb4000076313b9618 : 3(24576 size) total buffers - 1(8192 size) used buffers - 796/801 (recycle/alloc) - 5/790 (fetch/transfer)
-I/CCodecBufferChannel(15944): [c2.android.aac.decoder#560] 4 initial input buffers available
-I/CCodec  (15944): [c2.android.aac.decoder] state->set(RUNNING)
-D/AidlBufferPool(15944): bufferpool2 0xb4000076313def58 : 0(0 size) total buffers - 0(0 size) used buffers - 3048/3058 (recycle/alloc) - 20/2982 (fetch/transfer)
-D/AidlBufferPool(15944): Destruction - bufferpool2 0xb4000076313def58 cached: 0/0M, 0/0% in use; allocs: 3058, 100% recycled; transfers: 2982, 99% unfetched
-W/s_store_manager(15944): AIBinder_linkToDeath is being called with a non-null cookie and no onUnlink callback set. This might not be intended. AIBinder_DeathRecipient_setOnUnlinked should be called first.
-D/AudioTrack(15944): setVolume(0.750000, 0.750000) pid : 15944
-D/AidlBufferPool(15944): bufferpool2 0xb4000076313b9618 : 5(40960 size) total buffers - 1(8192 size) used buffers - 1034/1041 (recycle/alloc) - 10/1029 (fetch/transfer)
-D/AidlBufferPoolAcc(15944): evictor expired: 1, evicted: 0
-D/AidlBufferPool(15944): bufferpool2 0xb4000076313b9618 : 5(40960 si
+I/flutter (18073): 
+I/flutter (18073): 
+I/CCodec  (18073): [c2.android.aac.decoder] state->set(FLUSHING)
+I/CCodec  (18073): [c2.android.aac.decoder] state->set(FLUSHED)
+D/MediaCodec(18073): keep callback message for reclaim
+I/CCodec  (18073): [c2.android.aac.decoder] state->set(RESUMING)
+I/CCodecConfig(18073): query failed after returning 21 values (BAD_INDEX)
+I/CCodecBufferChannel(18073): [c2.android.aac.decoder#617] 4 initial input buffers available
+I/CCodec  (18073): [c2.android.aac.decoder] state->set(RUNNING)
+D/AudioTrack(18073): setVolume(1.000000, 1.000000) pid : 18073
+I/NotificationManager(18073): com.example.cams_store_manager: notify(1124, null, Notification(channel=com.example.cams_store_manager.playback_controls shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=0 color=0x00000000 category=transport actions=2 vis=PUBLIC semFlags=0x0 semPriority=0 semMissedCount=0)) as user
+I/flutter (18073): [QueueFirstV2] reconcile after mutation started
+I/flutter (18073): [PlaybackTrace] API_COMMAND_ACK spaceId=00213f88-98e2-4772-9fef-77eaeace7d55 command=seek
+I/flutter (18073): [CamsPlaybackBlocV2] runtimeState space=00213f88-98e2-4772-9fef-77eaeace7d55 currentQueueItemId=86dc7422-f7b2-4b4e-a19c-c900046c55c6 pendingQueueItemId=- currentTrack=Baby hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/489a3b15-0ee5-461f-ab91-58596a237523/v1/baby-18d05076331146d39b39a77f82feecf8.m3u8 manual=false scheduling=false queueCount=7 queue=[3:Baby:1 | 4:Attention:0 | 5:Something Just Like This:0]
+I/flutter (18073): [AppPlaybackCoordinatorV2] syncCamsState status=active playback=space=00213f88-98e2-4772-9fef-77eaeace7d55 current=86dc7422-f7b2-4b4e-a19c-c900046c55c6 pending=- track=Baby hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/489a3b15-0ee5-461f-ab91-58596a237523/v1/baby-18d05076331146d39b39a77f82feecf8.m3u8 queueCount=7 queue=[3:Baby:1 | 4:Attention:0 | 5:Something Just Like This:0 | 6:Em của ngày hôm qua:0] playerTrack=Baby playerHls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/489a3b15-0ee5-461f-ab91-58596a237523/v1/baby-18d05076331146d39b39a77f82feecf8.m3u8
+I/flutter (18073): [AppPlaybackCoordinatorV2] same remote HLS snapshot -> keep current player queueItemId=86dc7422-f7b2-4b4e-a19c-c900046c55c6 drift=0.00
+I/flutter (18073): [DioClient] Preparing auth header for "/api/cams/spaces/state": playbackScoped=true selectedToken=eyJhbGciOiJI...
+I/flutter (18073): [DioClient] [request-auth] path=/api/cams/spaces/state activeMode=playback_device hasManagerToken=false managerExpiry=null hasDeviceAccessToken=true deviceAccessExpiry=2026-05-05T09:42:45.359617Z hasDeviceRefreshToken=true deviceSessionKeys=deviceAccessToken,deviceRefreshToken,accessTokenExpiresAt,brandId,storeId,spaceId,storeName,spaceName,deviceId,manufacturer,model,osVersion,appVersion
+I/flutter (18073): [DioClient] Preparing auth header for "/api/cams/space/00213f88-98e2-4772-9fef-77eaeace7d55/mood": playbackScoped=false selectedToken=eyJhbGciOiJI...
+I/flutter (18073): [DioClient] [request-auth] path=/api/cams/space/00213f88-98e2-4772-9fef-77eaeace7d55/mood activeMode=playback_device hasManagerToken=false managerExpiry=null hasDeviceAccessToken=true deviceAccessExpiry=2026-05-05T09:42:45.359617Z hasDeviceRefreshToken=true deviceSessionKeys=deviceAccessToken,deviceRefreshToken,accessTokenExpiresAt,brandId,storeId,spaceId,storeName,spaceName,deviceId,manufacturer,model,osVersion,appVersion
+I/flutter (18073): [DioClient] Preparing auth header for "/api/cams/spaces/00213f88-98e2-4772-9fef-77eaeace7d55/mood": playbackScoped=false selectedToken=eyJhbGciOiJI...
+I/flutter (18073): [DioClient] [request-auth] path=/api/cams/spaces/00213f88-98e2-4772-9fef-77eaeace7d55/mood activeMode=playback_device hasManagerToken=false managerExpiry=null hasDeviceAccessToken=true deviceAccessExpiry=2026-05-05T09:42:45.359617Z hasDeviceRefreshToken=true deviceSessionKeys=deviceAccessToken,deviceRefreshToken,accessTokenExpiresAt,brandId,storeId,spaceId,storeName,spaceName,deviceId,manufacturer,model,osVersion,appVersion
+I/flutter (18073): [DioClient] Preparing auth header for "/api/fuzzy-music-profiles/space/00213f88-98e2-4772-9fef-77eaeace7d55": playbackScoped=false selectedToken=eyJhbGciOiJI...
+I/flutter (18073): [DioClient] [request-auth] path=/api/fuzzy-music-profiles/space/00213f88-98e2-4772-9fef-77eaeace7d55 activeMode=playback_device hasManagerToken=false managerExpiry=null hasDeviceAccessToken=true deviceAccessExpiry=2026-05-05T09:42:45.359617Z hasDeviceRefreshToken=true deviceSessionKeys=deviceAccessToken,deviceRefreshToken,accessTokenExpiresAt,brandId,storeId,spaceId,storeName,spaceName,deviceId,manufacturer,model,osVersion,appVersion
+I/flutter (18073): [DioClient] Preparing auth header for "/api/fuzzy-music-profiles/store/f864d11d-0db7-4b80-a374-a93ab2a7afe0": playbackScoped=false selectedToken=eyJhbGciOiJI...
+I/flutter (18073): [DioClient] [request-auth] path=/api/fuzzy-music-profiles/store/f864d11d-0db7-4b80-a374-a93ab2a7afe0 activeMode=playback_device hasManagerToken=false managerExpiry=null hasDeviceAccessToken=true deviceAccessExpiry=2026-05-05T09:42:45.359617Z hasDeviceRefreshToken=true deviceSessionKeys=deviceAccessToken,deviceRefreshToken,accessTokenExpiresAt,brandId,storeId,spaceId,storeName,spaceName,deviceId,manufacturer,model,osVersion,appVersion
+I/flutter (18073): [DioClient] Preparing auth header for "/api/fuzzy-music-profiles/store": playbackScoped=false selectedToken=eyJhbGciOiJI...
+I/flutter (18073): [DioClient] [request-auth] path=/api/fuzzy-music-profiles/store activeMode=playback_device hasManagerToken=false managerExpiry=null hasDeviceAccessToken=true deviceAccessExpiry=2026-05-05T09:42:45.359617Z hasDeviceRefreshToken=true deviceSessionKeys=deviceAccessToken,deviceRefreshToken,accessTokenExpiresAt,brandId,storeId,spaceId,storeName,spaceName,deviceId,manufacturer,model,osVersion,appVersion
+I/flutter (18073): [QueueFirstV2] reuse hydrated queue snapshot key=00213f88-98e2-4772-9fef-77eaeace7d55|device|86dc7422-f7b2-4b4e-a19c-c900046c55c6||https://ddbdgg08nzlz.cloudfront.net/audio/tracks/489a3b15-0ee5-461f-ab91-58596a237523/v1/baby-18d05076331146d39b39a77f82feecf8.m3u8
+I/flutter (18073): [PlaybackTrace] STATE_SYNC_AFTER_SEEK source=http-refresh ageMs=431 command=seek seekRequest=0.00 targetQueueItemId=- targetTrackId=- space=00213f88-98e2-4772-9fef-77eaeace7d55 current=86dc7422-f7b2-4b4e-a19c-c900046c55c6 pending=- track=Baby hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/489a3b15-0ee5-461f-ab91-58596a237523/v1/baby-18d05076331146d39b39a77f82feecf8.m3u8 manual=false scheduling=false paused=true queueCount=7 queue=[3:Baby:1 | 4:Attention:0 | 5:Something Just Like This:0 | 6:Em của ngày hôm qua:0]
+I/flutter (18073): [QueueFirstV2] emitState space=00213f88-98e2-4772-9fef-77eaeace7d55 current=86dc7422-f7b2-4b4e-a19c-c900046c55c6 pending=- track=Baby hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/489a3b15-0ee5-461f-ab91-58596a237523/v1/baby-18d05076331146d39b39a77f82feecf8.m3u8 manual=false scheduling=false paused=true queueCount=7 queue=[3:Baby:1 | 4:Attention:0 | 5:Something Just Like This:0 | 6:Em của ngày hôm qua:0]
+I/flutter (18073): [QueueFirstV2] reconcile detected immediate state change
+I/flutter (18073): [CamsPlaybackBlocV2] runtimeState space=00213f88-98e2-4772-9fef-77eaeace7d55 currentQueueItemId=86dc7422-f7b2-4b4e-a19c-c900046c55c6 pendingQueueItemId=- currentTrack=Baby hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/489a3b15-0ee5-461f-ab91-58596a237523/v1/baby-18d05076331146d39b39a77f82feecf8.m3u8 manual=false scheduling=false queueCount=7 queue=[3:Baby:1 | 4:Attention:0 | 5:Something Just Like This:0]
+I/flutter (18073): [AppPlaybackCoordinatorV2] syncCamsState status=active playback=space=00213f88-98e2-4772-9fef-77eaeace7d55 current=86dc7422-f7b2-4b4e-a19c-c900046c55c6 pending=- track=Baby hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/489a3b15-0ee5-461f-ab91-58596a237523/v1/baby-18d05076331146d39b39a77f82feecf8.m3u8 queueCount=7 queue=[3:Baby:1 | 4:Attention:0 | 5:Something Just Like This:0 | 6:Em của ngày hôm qua:0] playerTrack=Baby playerHls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/489a3b15-0ee5-461f-ab91-58596a237523/v1/baby-18d05076331146d39b39a77f82feecf8.m3u8
+I/flutter (18073): [AppPlaybackCoordinatorV2] same remote HLS snapshot -> seek correction without restart queueItemId=86dc7422-f7b2-4b4e-a19c-c900046c55c6 target=0.00 drift=43.00
+I/VRI[MainActivity]@7b964f(18073): call setFrameRateCategory for touch hint category=no preference, reason=boost timeout, vri=VRI[MainActivity]@7b964f
+I/VRI[MainActivity]@7b964f(18073): call setFrameRateCategory for touch hint category=high hint, reason=touch, vri=VRI[MainActivity]@7b964f
+I/flutter (18073): [PlaybackTrace] API_COMMAND_SENT spaceId=00213f88-98e2-4772-9fef-77eaeace7d55 command=resume seek=- targetQueueItemId=- targetTrackId=-
+I/flutter (18073): [PlaybackTrace] API_COMMAND_PIPELINE spaceId=00213f88-98e2-4772-9fef-77eaeace7d55 scope=playback_device command=resume seek=- targetQueueItemId=- targetTrackId=-
+I/flutter (18073): *** Request ***
+I/flutter (18073): uri: https://logcams.cloud/api/cams/spaces/playback
+I/flutter (18073): method: POST
+I/flutter (18073): responseType: ResponseType.json
+I/flutter (18073): followRedirects: true
+I/flutter (18073): persistentConnection: true
+I/flutter (18073): connectTimeout: 0:00:30.000000
+I/flutter (18073): sendTimeout: 0:00:30.000000
+I/flutter (18073): receiveTimeout: 0:00:30.000000
+I/flutter (18073): receiveDataWhenStatusError: true
+I/flutter (18073): extra: {}
+I/flutter (18073): headers:
+I/flutter (18073):  Content-Type: application/json
+I/flutter (18073):  Accept: application/json
+I/flutter (18073): data:
+I/flutter (18073): {command: 2}
+I/flutter (18073): 
+I/flutter (18073): [DioClient] Preparing auth header for "/api/cams/spaces/playback": playbackScoped=true selectedToken=eyJhbGciOiJI...
+I/flutter (18073): [DioClient] [request-auth] path=/api/cams/spaces/playback activeMode=playback_device hasManagerToken=false managerExpiry=null hasDeviceAccessToken=true deviceAccessExpiry=2026-05-05T09:42:45.359617Z hasDeviceRefreshToken=true deviceSessionKeys=deviceAccessToken,deviceRefreshToken,accessTokenExpiresAt,brandId,storeId,spaceId,storeName,spaceName,deviceId,manufacturer,model,osVersion,appVersion
+D/AudioTrack(18073): getTimestamp_l(44057): device stall time corrected using current time 1653124314225070
+I/flutter (18073): *** DioException ***:
+I/flutter (18073): uri: https://logcams.cloud/api/cams/spaces/playback
+I/flutter (18073): DioException [bad response]: This exception was thrown because the response has a status code of 422 and RequestOptions.validateStatus was configured to throw for this status code.
+I/flutter (18073): The status code of 422 has the following meaning: "Client error - the request contains bad syntax or cannot be fulfilled"
+I/flutter (18073): Read more about status codes at https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
+I/flutter (18073): In order to resolve this exception you typically have either to verify and fix your request code or you have to fix the server code.
+I/flutter (18073): *** Response ***
+I/flutter (18073): uri: https://logcams.cloud/api/cams/spaces/playback
+I/flutter (18073): statusCode: 422
+I/flutter (18073): statusMessage: Unprocessable Entity
+I/flutter (18073): headers:
+I/flutter (18073):  connection: keep-alive
+I/flutter (18073):  alt-svc: h3=":443"; ma=86400
+I/flutter (18073):  date: Tue, 05 May 2026 09:37:16 GMT
+I/flutter (18073):  transfer-encoding: chunked
+I/flutter (18073):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+I/flutter (18073):  cf-ray: 9f6ec3ff0e35ec6b-SIN
+I/flutter (18073):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=i7njyKcaA17w3kzblgls4tJpN7czAcQ3g6ThFleFqbrdxJ1%2BQFzYhA2wVIxjI62IrV5%2Fm6S0tH7%2Buq9GhfEUxxeGFW%2BA0m%2FyndfkInfJzdVe7ifNmg2zAEu4WHznfv9s"}]}
+I/flutter (18073):  cf-cache-status: DYNAMIC
+I/flutter (18073):  content-type: application/json; charset=utf-8
+I/flutter (18073):  server: cloudflare
+I/flutter (18073): Response Text:
+I/flutter (18073): {"isSuccess":false,"message":"Brand wallet balance is negative from a previous period. Please top up to continue.","errorCode":"BusinessRuleViolation"}
+I/flutter (18073): 
+I/flutter (18073): 
+I/flutter (18073): [PlaybackTrace] API_COMMAND_HTTP_FAIL spaceId=00213f88-98e2-4772-9fef-77eaeace7d55 command=resume message=Failed to send playback command: DioException [bad response]: This exception was thrown because the response has a status code of 422 and RequestOptions.validateStatus was configured to throw for this status code.
+I/flutter (18073): The status code of 422 has the following meaning: "Client error - the request contains bad syntax or cannot be fulfilled"
+I/flutter (18073): Read more about status codes at https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
+I/flutter (18073): In order to resolve this exception you typically have either to verify and fix your request code or you have to fix the server code.
+I/flutter (18073): 
+I/flutter (18073): [PlaybackTrace] API_COMMAND_FAIL spaceId=00213f88-98e2-4772-9fef-77eaeace7d55 command=resume kind=server status=- backendCode=- retryable=true message="Failed to send playback command: DioException [bad response]: This exception was thrown because the response has a status code of 422 and RequestOptions.validateStatus was configured to throw for this status code.
+I/flutter (18073): The status code of 422 has the following meaning: "Client error - the request contains bad syntax or cannot be fulfilled"
+I/flutter (18073): Read more about status codes at https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
+I/flutter (18073): In order to resolve this exception you typically have either to verify and fix your request code or you have to fix the server code.
+I/flutter (18073): "
+D/AidlBufferPool(18073): bufferpool2 0xb4000076314e56d8 : 5(40960 size) total buffers - 1(8192 size) used buffers - 152/157 (recycle/alloc) - 5/150 (fetch/transfer)
+D/AidlBufferPool(18073): bufferpool2 0xb4000076314386c8 : 0(0 size) total buffers - 0(0 size) used buffers - 857/862 (recycle/alloc) - 7/856 (fetch/transfer)
+D/AidlBufferPoolAcc(18073): evictor expired: 2, evicted: 1
+I/VRI[MainActivity]@7b964f(18073): call setFrameRateCategory for touch hint category=no preference, reason=boost timeout, vri=VRI[MainActivity]@7b964f
+D/AidlBufferPool(18073): bufferpool2 0xb4000076314e56d8 : 5(40960 size) total buffers - 1(8192 size) used buffers - 387/392 (recycle/alloc) - 7/385 (fetch/transfer)
+D/AidlBufferPool(18073): bufferpool2 0xb4000076314e56d8 : 5(40960 size) total buffers - 1(8192 size) used buffers - 627/632 (recycle/alloc) - 7/626 (fetch/transfer)
+D/AidlBufferPool(18073): bufferpool2 0xb4000076314e56d8 : 5(40960 size) total buffers - 1(8192 size) used buffers - 843/848 (recycle/alloc) - 8/841 (fetch/transfer)
+D/AidlBufferPool(18073): bufferpool2 0xb4000076314e56d8 : 5(40960 size) total buffers - 1(8192 size) used buffers - 1074/1079 (recycle/alloc) - 9/1072 (fetch/transfer)
+D/AidlBufferPool(18073): bufferpool2 0xb4000076314e56d8 : 5(40960 size) total buffers - 1

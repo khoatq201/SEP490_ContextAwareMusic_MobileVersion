@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/error/error_mapper.dart';
 import '../../../../core/error/failures.dart';
+import '../../../../core/enums/entity_status_enum.dart';
 import '../../../home/domain/entities/playlist_entity.dart';
 import '../../../home/domain/entities/song_entity.dart';
 import '../../../moods/data/datasources/mood_remote_datasource.dart';
@@ -10,6 +11,8 @@ import '../../../playlists/data/models/api_playlist_model.dart';
 import '../../../playlists/data/datasources/playlist_remote_datasource.dart';
 import '../../../tracks/data/models/api_track_model.dart';
 import '../../../tracks/data/datasources/track_remote_datasource.dart';
+import '../../../tracks/domain/entities/track_copyright_clearance_status.dart';
+import '../../../tracks/domain/entities/track_filter.dart';
 import '../../domain/entities/album_entity.dart';
 import '../../domain/entities/artist_entity.dart';
 import '../../domain/entities/search_category.dart';
@@ -79,7 +82,10 @@ class SearchRepositoryImpl implements SearchRepository {
   }
 
   @override
-  Future<Either<Failure, List<SearchResult>>> search(String query) async {
+  Future<Either<Failure, List<SearchResult>>> search(
+    String query, {
+    bool playableTracksOnly = false,
+  }) async {
     if (query.isEmpty) {
       return const Right(<SearchResult>[]);
     }
@@ -99,9 +105,12 @@ class SearchRepositoryImpl implements SearchRepository {
       );
 
       final trackResp = await trackDataSource.getTracks(
-        page: 1,
-        pageSize: 20,
-        search: query,
+        filter: _trackSearchFilter(
+          page: 1,
+          pageSize: 20,
+          search: query,
+          playableTracksOnly: playableTracksOnly,
+        ),
       );
 
       _addTrackResults(results, trackResp.items);
@@ -133,8 +142,11 @@ class SearchRepositoryImpl implements SearchRepository {
 
       if (!hasTrackHit || matchingArtistTracks.isEmpty) {
         final fallbackTrackResp = await trackDataSource.getTracks(
-          page: 1,
-          pageSize: _fallbackTrackSearchPageSize,
+          filter: _trackSearchFilter(
+            page: 1,
+            pageSize: _fallbackTrackSearchPageSize,
+            playableTracksOnly: playableTracksOnly,
+          ),
         );
         final fallbackTracks = fallbackTrackResp.items
             .where((track) => _matchesTrackQuery(track, normalizedQuery))
@@ -163,9 +175,13 @@ class SearchRepositoryImpl implements SearchRepository {
   @override
   Future<Either<Failure, List<SearchResult>>> searchByType(
     String query,
-    SearchResultType type,
-  ) async {
-    final result = await search(query);
+    SearchResultType type, {
+    bool playableTracksOnly = false,
+  }) async {
+    final result = await search(
+      query,
+      playableTracksOnly: playableTracksOnly,
+    );
     return result.map(
       (items) => items.where((item) => item.type == type).toList(),
     );
@@ -297,6 +313,35 @@ class SearchRepositoryImpl implements SearchRepository {
   }
 
   @override
+  Future<Either<Failure, List<SearchResult>>> getCategoryTracks(
+    String categoryId, {
+    bool playableTracksOnly = false,
+  }) async {
+    try {
+      final resp = await trackDataSource.getTracks(
+        filter: _trackSearchFilter(
+          page: 1,
+          pageSize: 20,
+          moodId: categoryId,
+          playableTracksOnly: playableTracksOnly,
+        ),
+      );
+
+      final results = <String, SearchResult>{};
+      _addTrackResults(results, resp.items);
+      return Right(results.values.toList(growable: false));
+    } catch (error, stackTrace) {
+      return Left(
+        ErrorMapper.toFailure(
+          error,
+          fallbackMessage: 'We could not load tracks for this category.',
+          stackTrace: stackTrace,
+        ),
+      );
+    }
+  }
+
+  @override
   Future<Either<Failure, List<PlaylistEntity>>> getFeaturedPlaylists() async {
     try {
       final resp = await playlistDataSource.getPlaylists(
@@ -370,9 +415,33 @@ class SearchRepositoryImpl implements SearchRepository {
           duration: track.formattedDuration,
           durationSeconds: track.durationSec,
           streamUrl: track.hlsUrl,
+          copyrightClearanceStatus: track.copyrightClearanceStatus,
+          trackStatus: track.status,
         ),
       );
     }
+  }
+
+  TrackFilter _trackSearchFilter({
+    required int page,
+    required int pageSize,
+    String? search,
+    String? moodId,
+    required bool playableTracksOnly,
+  }) {
+    return TrackFilter(
+      page: page,
+      pageSize: pageSize,
+      search: search,
+      moodId: moodId,
+      status: playableTracksOnly ? EntityStatusEnum.active : null,
+      copyrightClearanceStatuses: playableTracksOnly
+          ? const [
+              TrackCopyrightClearanceStatus.notApplicable,
+              TrackCopyrightClearanceStatus.cleared,
+            ]
+          : null,
+    );
   }
 
   void _addArtistResults(

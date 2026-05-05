@@ -257,6 +257,51 @@ void main() {
       expect(find.byType(NowPlayingAddToQueueSheet), findsNothing);
     },
   );
+
+  testWidgets(
+    'add-to-queue sheet loads tracks in pages of 10 while scrolling',
+    (tester) async {
+      final trackRepository = _FakeTrackRepository(_manyTracks(12));
+      sl.registerSingleton<GetTracks>(GetTracks(trackRepository));
+      sl.registerSingleton<PlaylistRepository>(
+        _FakePlaylistRepository(_samplePlaylists),
+      );
+
+      final sessionCubit = SessionCubit(
+        localStorage: _InMemoryLocalStorageService(),
+      );
+      sessionCubit.changeStore(
+        const Store(
+          id: 'store-1',
+          name: 'Store 1',
+          brandId: 'brand-1',
+        ),
+      );
+      addTearDown(sessionCubit.close);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: BlocProvider<SessionCubit>.value(
+            value: sessionCubit,
+            child: const Scaffold(
+              body: NowPlayingAddToQueueSheet(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(trackRepository.requestedFilters.single.page, 1);
+      expect(trackRepository.requestedFilters.single.pageSize, 10);
+
+      await tester.drag(find.byType(ListView).first, const Offset(0, -700));
+      await tester.pumpAndSettle();
+
+      expect(trackRepository.requestedFilters.length, 2);
+      expect(trackRepository.requestedFilters.last.page, 2);
+      expect(trackRepository.requestedFilters.last.pageSize, 10);
+    },
+  );
 }
 
 class _InMemoryLocalStorageService extends LocalStorageService {
@@ -280,6 +325,7 @@ class _FakeTrackRepository implements TrackRepository {
   _FakeTrackRepository(this.tracks);
 
   final List<ApiTrackModel> tracks;
+  final List<TrackFilter> requestedFilters = <TrackFilter>[];
 
   @override
   Future<Either<Failure, TrackListResponse>> getTracks({
@@ -290,14 +336,25 @@ class _FakeTrackRepository implements TrackRepository {
     String? genre,
     TrackFilter? filter,
   }) async {
+    final resolvedPage = filter?.page ?? page;
+    final resolvedPageSize = filter?.pageSize ?? pageSize;
+    if (filter != null) {
+      requestedFilters.add(filter);
+    }
+    final start = (resolvedPage - 1) * resolvedPageSize;
+    final end = (start + resolvedPageSize).clamp(0, tracks.length).toInt();
+    final pageItems = start >= tracks.length
+        ? const <ApiTrackModel>[]
+        : tracks.sublist(start, end);
+
     return Right(
       TrackListResponse(
-        items: tracks,
-        currentPage: page,
-        totalPages: 1,
+        items: pageItems,
+        currentPage: resolvedPage,
+        totalPages: (tracks.length / resolvedPageSize).ceil().clamp(1, 999),
         totalItems: tracks.length,
-        hasNext: false,
-        hasPrevious: false,
+        hasNext: end < tracks.length,
+        hasPrevious: resolvedPage > 1,
       ),
     );
   }
@@ -447,6 +504,21 @@ final List<ApiTrackModel> _sampleTracks = [
     createdAt: DateTime.utc(2025, 1, 2),
   ),
 ];
+
+List<ApiTrackModel> _manyTracks(int count) {
+  return List<ApiTrackModel>.generate(
+    count,
+    (index) {
+      final number = index + 1;
+      return ApiTrackModel(
+        id: 'track-$number',
+        title: 'Track ${number.toString().padLeft(2, '0')}',
+        artist: 'Artist $number',
+        createdAt: DateTime.utc(2025, 1, number),
+      );
+    },
+  );
+}
 
 final List<ApiPlaylistModel> _samplePlaylists = [
   ApiPlaylistModel(

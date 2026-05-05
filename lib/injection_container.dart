@@ -849,6 +849,7 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(() => GetAlbumDetailUseCase(sl()));
   sl.registerLazySingleton(() => GetPlaylistDetailUseCase(sl()));
   sl.registerLazySingleton(() => GetCategoryPlaylistsUseCase(sl()));
+  sl.registerLazySingleton(() => GetCategoryTracksUseCase(sl()));
   sl.registerLazySingleton(() => GetFeaturedPlaylistsUseCase(sl()));
 
   // BLoCs / Cubits
@@ -859,6 +860,7 @@ Future<void> initializeDependencies() async {
       searchByType: sl(),
       getFeaturedPlaylists: sl(),
       sessionDataCache: sl(),
+      sessionCubit: sl(),
     ),
   );
 
@@ -871,6 +873,10 @@ Future<void> initializeDependencies() async {
   );
 
   sl.registerFactory(
-    () => CategoryDetailCubit(getCategoryPlaylists: sl()),
+    () => CategoryDetailCubit(
+      getCategoryPlaylists: sl(),
+      getCategoryTracks: sl(),
+      sessionCubit: sl(),
+    ),
   );
 }

@@ -8,10 +8,7 @@ import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/constants/app_typography.dart';
 import '../../../../core/enums/queue_insert_mode_enum.dart';
 import '../../../../core/player/player_bloc.dart';
-import '../../../../core/player/player_event.dart';
-import '../../../../core/player/local_preview_feedback.dart';
 import '../../../../core/presentation/shell_layout_metrics.dart';
-import '../../../../core/session/session_cubit.dart';
 import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../../../core/utils/cams_queue_actions.dart';
 import '../../../../core/widgets/app_error_view.dart';
@@ -24,7 +21,6 @@ import '../../../../core/widgets/song_options_bottom_sheet.dart';
 import '../../../../injection_container.dart';
 import '../../../home/domain/entities/playlist_entity.dart';
 import '../../../home/domain/entities/song_entity.dart';
-import '../../../space_control/domain/entities/track.dart';
 import '../../domain/entities/search_category.dart';
 import '../../domain/entities/search_filter_tag.dart';
 import '../../domain/entities/search_result.dart';
@@ -47,51 +43,51 @@ class SearchTabPage extends StatelessWidget {
   }
 }
 
+bool _isSearchSongPlayable(SearchResult result) => result.isPlayableTrack;
+
+String _searchPlaybackTagLabel(SearchResult result) {
+  return result.copyrightClearanceStatus?.displayName ?? 'Unknown';
+}
+
+String _searchSongPlaybackMessage(SearchResult result) {
+  final clearance = result.copyrightClearanceStatus;
+  if (clearance == null) {
+    return 'This track is missing playback clearance data.';
+  }
+  if (!clearance.isPlayable) {
+    return 'This track cannot be played until copyright clearance is ${clearance.displayName.toLowerCase()}.';
+  }
+  final trackStatus = result.trackStatus;
+  if (trackStatus == null || !trackStatus.isActive) {
+    return 'This track is not active.';
+  }
+  return 'This track is not available for playback.';
+}
+
+void _showSearchSongPlaybackBlocked(
+  BuildContext context,
+  SearchResult result,
+) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text(_searchSongPlaybackMessage(result))),
+  );
+}
+
 void _playSearchSongOrShowMessage(
   BuildContext context,
   SearchResult result,
 ) {
-  final session = context.read<SessionCubit>().state;
-  if (!session.isPlaybackDevice) {
-    showTrackQueueModePickerAndQueue(
-      context,
-      trackId: result.id,
-      title: result.title,
-      source: 'Search tap',
-    );
+  if (!_isSearchSongPlayable(result)) {
+    _showSearchSongPlaybackBlocked(context, result);
     return;
   }
 
-  final streamUrl = result.streamUrl;
-  if (streamUrl == null || streamUrl.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('This search result does not include a stream URL yet.'),
-      ),
-    );
-    return;
-  }
-
-  showLocalPreviewStartedSnackBar(
+  showTrackQueueModePickerAndQueue(
     context,
-    spaceName: session.currentSpace?.name,
+    trackId: result.id,
+    title: result.title,
+    source: 'Search tap',
   );
-
-  context.read<PlayerBloc>().add(PlayerPlaylistStarted(
-        tracks: [
-          Track(
-            id: result.id,
-            title: result.title,
-            artist: result.subtitle,
-            fileUrl: streamUrl,
-            moodTags: const [],
-            duration: result.durationSeconds ?? 0,
-            albumArt: result.imageUrl ?? result.thumbnailUrl,
-          ),
-        ],
-        startIndex: 0,
-        playlistName: result.title,
-      ));
 }
 
 SongEntity _searchResultToSongEntity(SearchResult result) {
@@ -110,6 +106,11 @@ Future<void> _handleSearchSongOption(
   SearchResult result,
   SongOption option,
 ) async {
+  if (option != SongOption.addToPlaylist && !_isSearchSongPlayable(result)) {
+    _showSearchSongPlaybackBlocked(context, result);
+    return;
+  }
+
   final song = _searchResultToSongEntity(result);
 
   switch (option) {
@@ -170,6 +171,11 @@ Future<void> _openSearchSongOptions(
   BuildContext context,
   SearchResult result,
 ) async {
+  if (!_isSearchSongPlayable(result)) {
+    _showSearchSongPlaybackBlocked(context, result);
+    return;
+  }
+
   final option = await showModalBottomSheet<SongOption>(
     context: context,
     useRootNavigator: true,
@@ -529,11 +535,11 @@ class _FilterTagRow extends StatelessWidget {
           horizontal: AppDimensions.spacingMd,
           vertical: AppDimensions.spacingSm,
         ),
-        itemCount: SearchFilterTag.values.length,
+        itemCount: _visibleTags.length,
         separatorBuilder: (_, __) =>
             const SizedBox(width: AppDimensions.spacingSm),
         itemBuilder: (context, index) {
-          final tag = SearchFilterTag.values[index];
+          final tag = _visibleTags[index];
           final isActive = tag == activeTag;
 
           return GestureDetector(
@@ -566,6 +572,14 @@ class _FilterTagRow extends StatelessWidget {
       ),
     );
   }
+
+  static const List<SearchFilterTag> _visibleTags = [
+    SearchFilterTag.all,
+    SearchFilterTag.featuring,
+    SearchFilterTag.playlists,
+    SearchFilterTag.artists,
+    SearchFilterTag.songs,
+  ];
 }
 
 // ===========================================================================
@@ -815,6 +829,10 @@ class _ResultTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final tokens = context.camsTokens;
+    final isPlayableSong =
+        result.type == SearchResultType.song && _isSearchSongPlayable(result);
+    final isDisabledSong =
+        result.type == SearchResultType.song && !isPlayableSong;
     Widget? trailing;
     if (result.type == SearchResultType.song) {
       trailing = SizedBox(
@@ -838,7 +856,9 @@ class _ResultTile extends StatelessWidget {
                 size: 18,
               ),
               splashRadius: 18,
-              onPressed: () => _openSearchSongOptions(context, result),
+              onPressed: isPlayableSong
+                  ? () => _openSearchSongOptions(context, result)
+                  : null,
             ),
           ],
         ),
@@ -865,55 +885,108 @@ class _ResultTile extends StatelessWidget {
       );
     }
 
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(
-        vertical: AppDimensions.spacingXs,
-      ),
-      leading: ClipRRect(
-        borderRadius: BorderRadius.circular(
-          result.type == SearchResultType.artist ? 24 : 8,
+    return Opacity(
+      opacity: isDisabledSong ? 0.58 : 1,
+      child: ListTile(
+        enabled: !isDisabledSong,
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: AppDimensions.spacingXs,
         ),
-        child: SizedBox(
-          width: 48,
-          height: 48,
-          child: result.imageUrl != null
-              ? Image.network(
-                  result.imageUrl!,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
+        leading: ClipRRect(
+          borderRadius: BorderRadius.circular(
+            result.type == SearchResultType.artist ? 24 : 8,
+          ),
+          child: SizedBox(
+            width: 48,
+            height: 48,
+            child: result.imageUrl != null
+                ? Image.network(
+                    result.imageUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: colorScheme.primary.withValues(alpha: 0.12),
+                      child: Icon(_fallbackIcon,
+                          color: colorScheme.primary, size: 24),
+                    ),
+                  )
+                : Container(
                     color: colorScheme.primary.withValues(alpha: 0.12),
                     child: Icon(_fallbackIcon,
                         color: colorScheme.primary, size: 24),
                   ),
-                )
-              : Container(
-                  color: colorScheme.primary.withValues(alpha: 0.12),
-                  child:
-                      Icon(_fallbackIcon, color: colorScheme.primary, size: 24),
+          ),
+        ),
+        title: Text(
+          result.title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: tokens.textPrimary,
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
+        ),
+        subtitle: Row(
+          children: [
+            Expanded(
+              child: Text(
+                result.type == SearchResultType.song
+                    ? result.subtitle
+                    : _typeLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: tokens.textSecondary,
+                  fontSize: 12,
                 ),
+              ),
+            ),
+            if (result.type == SearchResultType.song) ...[
+              const SizedBox(width: 8),
+              _SearchPlaybackTag(
+                label: _searchPlaybackTagLabel(result),
+                isPlayable: isPlayableSong,
+              ),
+            ],
+          ],
         ),
+        trailing: trailing,
+        onTap: isDisabledSong ? null : () => _onTap(context),
       ),
-      title: Text(
-        result.title,
+    );
+  }
+}
+
+class _SearchPlaybackTag extends StatelessWidget {
+  const _SearchPlaybackTag({
+    required this.label,
+    required this.isPlayable,
+  });
+
+  final String label;
+  final bool isPlayable;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
+    final accent = isPlayable ? tokens.success : tokens.error;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: accent.withValues(alpha: 0.45)),
+      ),
+      child: Text(
+        label,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          color: tokens.textPrimary,
-          fontWeight: FontWeight.w600,
-          fontSize: 14,
+        style: GoogleFonts.inter(
+          color: accent,
+          fontSize: 10.5,
+          fontWeight: FontWeight.w700,
         ),
       ),
-      subtitle: Text(
-        result.type == SearchResultType.song ? result.subtitle : _typeLabel,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          color: tokens.textSecondary,
-          fontSize: 12,
-        ),
-      ),
-      trailing: trailing,
-      onTap: () => _onTap(context),
     );
   }
 }
@@ -1173,11 +1246,17 @@ class _SongListSliver extends StatelessWidget {
               coverUrl: r.imageUrl,
               streamUrl: r.streamUrl,
             );
+            final isPlayable = _isSearchSongPlayable(r);
             return SongListTile(
               song: song,
+              enabled: isPlayable,
+              badge: _SearchPlaybackTag(
+                label: _searchPlaybackTagLabel(r),
+                isPlayable: isPlayable,
+              ),
               onTap: () => _playSearchSongOrShowMessage(context, r),
               showPlayNext: true,
-              enableAddToQueue: true,
+              enableAddToQueue: isPlayable,
               addToQueueLabel: 'Add to space queue',
               forwardPlayNowToOptionHandler: true,
               onOptionSelected: (option) =>

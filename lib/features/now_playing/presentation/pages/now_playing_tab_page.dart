@@ -55,7 +55,6 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
   static const int _minimumRemoteVolumePercent = 30;
 
   double _volume = 0.6;
-  bool _isShuffleOn = false;
   late final AnimationController _discRotationController;
 
   @override
@@ -559,18 +558,26 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
                 // â”€â”€ Controls row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 _ControlsRow(
                   isPlaying: isPlaying,
-                  isShuffleOn: _isShuffleOn,
                   volume: effectiveVolume,
                   palette: palette,
                   accentColor: trackMoodAccent,
                   actionsEnabled: playbackActionsEnabled,
+                  queueEndBehavior:
+                      camsState.playbackState?.queueEndBehavior ?? 0,
+                  canChangeQueueEndBehavior:
+                      useRemoteControls && camsState.playbackState != null,
                   hasNext: hasNextForControls,
                   hasPrevious: playbackActionsEnabled &&
                       (useRemoteControls
                           ? playerState.hasTrack ||
                               (camsState.playbackState?.hasPlayableHls ?? false)
                           : playerState.hasPrevious || displayPosition > 3),
-                  onShuffle: () => setState(() => _isShuffleOn = !_isShuffleOn),
+                  onQueueEndBehaviorChanged: (behavior) {
+                    _dispatchAudioStatePatch(
+                      context,
+                      queueEndBehavior: behavior.value,
+                    );
+                  },
                   onPlayPause: () {
                     if (useRemoteControls) {
                       context.read<CamsPlaybackBloc>().add(CamsSendCommand(
@@ -1379,7 +1386,6 @@ class _QueueSheetState extends State<_QueueSheet> {
                               palette: palette,
                               volumePercent: playback.volumePercent,
                               isMuted: playback.isMuted,
-                              queueEndBehavior: playback.queueEndBehavior,
                               onToggleMute: (nextMuted) {
                                 _applyMuteIntent(
                                   context,
@@ -1404,12 +1410,6 @@ class _QueueSheetState extends State<_QueueSheet> {
                                 _applyVolumeIntent(
                                   context,
                                   requestedVolumePercent: volumePercent,
-                                );
-                              },
-                              onQueueEndBehaviorChanged: (behavior) {
-                                _dispatchAudioStatePatch(
-                                  context,
-                                  queueEndBehavior: behavior.value,
                                 );
                               },
                             ),
@@ -1639,21 +1639,17 @@ class _QueueAudioControls extends StatefulWidget {
     required this.palette,
     required this.volumePercent,
     required this.isMuted,
-    required this.queueEndBehavior,
     required this.onToggleMute,
     required this.onVolumePreviewChanged,
     required this.onVolumeChanged,
-    required this.onQueueEndBehaviorChanged,
   });
 
   final _NPPalette palette;
   final int volumePercent;
   final bool isMuted;
-  final int queueEndBehavior;
   final ValueChanged<bool> onToggleMute;
   final ValueChanged<int> onVolumePreviewChanged;
   final ValueChanged<int> onVolumeChanged;
-  final ValueChanged<QueueEndBehaviorEnum> onQueueEndBehaviorChanged;
 
   @override
   State<_QueueAudioControls> createState() => _QueueAudioControlsState();
@@ -1685,8 +1681,6 @@ class _QueueAudioControlsState extends State<_QueueAudioControls> {
         (_draftVolumePercent ?? _effectiveVolumePercent.toDouble())
             .clamp(0.0, 100.0)
             .toDouble();
-    final selectedBehavior =
-        QueueEndBehaviorEnum.fromValue(widget.queueEndBehavior);
 
     return Container(
       width: double.infinity,
@@ -1779,34 +1773,6 @@ class _QueueAudioControlsState extends State<_QueueAudioControls> {
                 widget.onVolumeChanged(roundedVolume);
               },
             ),
-          ),
-          const SizedBox(height: 4),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: QueueEndBehaviorEnum.values.map((behavior) {
-              final selected = behavior == selectedBehavior;
-              return ChoiceChip(
-                label: Text(
-                  behavior.label,
-                  style: GoogleFonts.inter(
-                    color: selected
-                        ? widget.palette.textOnAccent
-                        : widget.palette.textPrimary,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                selected: selected,
-                selectedColor: widget.palette.accent,
-                backgroundColor: widget.palette.card,
-                side: BorderSide(
-                  color:
-                      selected ? widget.palette.accent : widget.palette.border,
-                ),
-                onSelected: (_) => widget.onQueueEndBehaviorChanged(behavior),
-              );
-            }).toList(),
           ),
         ],
       ),
@@ -2282,42 +2248,78 @@ class _ProgressBarState extends State<_ProgressBar> {
 class _ControlsRow extends StatelessWidget {
   const _ControlsRow({
     required this.isPlaying,
-    required this.isShuffleOn,
     required this.volume,
     required this.palette,
     required this.accentColor,
     required this.actionsEnabled,
+    required this.queueEndBehavior,
+    required this.canChangeQueueEndBehavior,
     required this.hasNext,
     required this.hasPrevious,
-    required this.onShuffle,
+    required this.onQueueEndBehaviorChanged,
     required this.onPlayPause,
     required this.onSkipBack,
     required this.onSkip,
     required this.onVolumeChanged,
   });
-  final bool isPlaying, isShuffleOn;
+  final bool isPlaying;
   final bool actionsEnabled;
+  final bool canChangeQueueEndBehavior;
   final bool hasNext, hasPrevious;
+  final int queueEndBehavior;
   final double volume;
   final _NPPalette palette;
   final Color accentColor;
-  final VoidCallback onShuffle, onPlayPause, onSkipBack, onSkip;
+  final ValueChanged<QueueEndBehaviorEnum> onQueueEndBehaviorChanged;
+  final VoidCallback onPlayPause, onSkipBack, onSkip;
   final ValueChanged<double> onVolumeChanged;
+
+  QueueEndBehaviorEnum _nextQueueEndBehavior(QueueEndBehaviorEnum current) {
+    switch (current) {
+      case QueueEndBehaviorEnum.stop:
+        return QueueEndBehaviorEnum.repeatAll;
+      case QueueEndBehaviorEnum.repeatAll:
+        return QueueEndBehaviorEnum.repeatOne;
+      case QueueEndBehaviorEnum.repeatOne:
+        return QueueEndBehaviorEnum.stop;
+    }
+  }
+
+  IconData _queueEndBehaviorIcon(QueueEndBehaviorEnum behavior) {
+    switch (behavior) {
+      case QueueEndBehaviorEnum.stop:
+        return Icons.repeat_rounded;
+      case QueueEndBehaviorEnum.repeatAll:
+        return Icons.repeat_rounded;
+      case QueueEndBehaviorEnum.repeatOne:
+        return Icons.repeat_one_rounded;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final selectedQueueEndBehavior =
+        QueueEndBehaviorEnum.fromValue(queueEndBehavior);
+    final queueEndBehaviorEnabled = actionsEnabled && canChangeQueueEndBehavior;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Shuffle
         _ControlButton(
-          icon: LucideIcons.shuffle,
-          color: actionsEnabled
-              ? (isShuffleOn ? accentColor : palette.textMuted)
+          icon: _queueEndBehaviorIcon(selectedQueueEndBehavior),
+          tooltip: selectedQueueEndBehavior.label,
+          color: queueEndBehaviorEnabled
+              ? (selectedQueueEndBehavior == QueueEndBehaviorEnum.stop
+                  ? palette.textMuted
+                  : accentColor)
               : palette.textMuted.withValues(alpha: 0.4),
           size: 22,
-          onTap: actionsEnabled ? onShuffle : null,
+          onTap: queueEndBehaviorEnabled
+              ? () => onQueueEndBehaviorChanged(
+                    _nextQueueEndBehavior(selectedQueueEndBehavior),
+                  )
+              : null,
         ),
         const SizedBox(width: 14),
         // Skip Previous
@@ -2383,11 +2385,13 @@ class _ControlButton extends StatelessWidget {
     required this.color,
     required this.size,
     required this.onTap,
+    this.tooltip,
   });
   final IconData icon;
   final Color color;
   final double size;
   final VoidCallback? onTap;
+  final String? tooltip;
 
   @override
   Widget build(BuildContext context) {
@@ -2397,6 +2401,7 @@ class _ControlButton extends StatelessWidget {
       child: IconButton(
         padding: EdgeInsets.zero,
         constraints: const BoxConstraints(),
+        tooltip: tooltip,
         icon: Icon(icon, color: color, size: size),
         onPressed: onTap,
       ),

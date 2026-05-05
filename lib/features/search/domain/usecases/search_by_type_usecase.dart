@@ -11,7 +11,12 @@ class SearchByTypeUseCase {
 
   Future<Either<Failure, List<SearchResult>>> call(
     String query,
-    SearchResultType type,
-  ) =>
-      repository.searchByType(query, type);
+    SearchResultType type, {
+    bool playableTracksOnly = false,
+  }) =>
+      repository.searchByType(
+        query,
+        type,
+        playableTracksOnly: playableTracksOnly,
+      );
 }

@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/services/session_data_cache.dart';
+import '../../../../core/session/session_cubit.dart';
+import '../../../../core/enums/user_role.dart';
 import '../../../home/domain/entities/playlist_entity.dart';
 import '../../domain/entities/search_filter_tag.dart';
 import '../../domain/entities/search_category.dart';
@@ -21,11 +23,13 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
     required SearchByTypeUseCase searchByType,
     required GetFeaturedPlaylistsUseCase getFeaturedPlaylists,
     SessionDataCache? sessionDataCache,
+    SessionCubit? sessionCubit,
   })  : _getCategories = getCategories,
         _searchMusic = searchMusic,
         _searchByType = searchByType,
         _getFeaturedPlaylists = getFeaturedPlaylists,
         _sessionDataCache = sessionDataCache,
+        _sessionCubit = sessionCubit,
         super(const SearchState()) {
     on<LoadCategoriesEvent>(_onLoadCategories);
     on<QueryChangedEvent>(_onQueryChanged);
@@ -40,7 +44,22 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
   final SearchByTypeUseCase _searchByType;
   final GetFeaturedPlaylistsUseCase _getFeaturedPlaylists;
   final SessionDataCache? _sessionDataCache;
+  final SessionCubit? _sessionCubit;
   int _querySequence = 0;
+
+  bool get _playableTracksOnly {
+    final session = _sessionCubit?.state;
+    if (session == null) return false;
+    return session.isPlaybackDevice ||
+        session.currentRole != UserRole.brandManager;
+  }
+
+  String get _searchScopeCacheKey {
+    final session = _sessionCubit?.state;
+    if (session == null) return 'unknown';
+    if (session.isPlaybackDevice) return UserRole.playbackDevice.value;
+    return session.currentRole.value;
+  }
 
   Future<void> _onLoadCategories(
     LoadCategoriesEvent event,
@@ -114,7 +133,9 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
     );
 
     final tag = state.activeTag;
-    final cacheKey = 'search.results.${tag.name}.$query';
+    final playableTracksOnly = _playableTracksOnly;
+    final cacheKey =
+        'search.results.v3.$_searchScopeCacheKey.${tag.name}.$query';
     if (!event.forceRefresh) {
       final cached = _sessionDataCache?.get<List<SearchResult>>(cacheKey);
       if (cached != null) {
@@ -140,8 +161,15 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
 
     final result =
         tag == SearchFilterTag.all || tag == SearchFilterTag.featuring
-            ? await _searchMusic(query)
-            : await _searchByType(query, typeMap[tag]!);
+            ? await _searchMusic(
+                query,
+                playableTracksOnly: playableTracksOnly,
+              )
+            : await _searchByType(
+                query,
+                typeMap[tag]!,
+                playableTracksOnly: playableTracksOnly,
+              );
 
     result.fold(
       (failure) => emit(

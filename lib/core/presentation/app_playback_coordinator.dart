@@ -815,6 +815,16 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
       volumePercent: playbackState.volumePercent,
       isMuted: playbackState.isMuted,
     ));
+
+    // The remote command/state pipeline can arrive while PlayerBloc already
+    // matches CAMS, so no PlayerBloc emission is produced. Push the
+    // authoritative pause/resume state to the media notification anyway.
+    _syncNotification(
+      session: session,
+      playerState: playerState.copyWith(isPlaying: shouldBePlaying),
+      immediate: true,
+    );
+
     if (_shouldUseSyntheticRemoteProgress(session)) {
       _pushManagerPositionSnapshot(playbackState);
     }

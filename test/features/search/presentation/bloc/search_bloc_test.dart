@@ -135,6 +135,7 @@ class _FakeSearchRepository implements SearchRepository {
   Either<Failure, List<PlaylistEntity>> categoryPlaylistsResult = const Right(
     [],
   );
+  Either<Failure, List<SearchResult>> categoryTracksResult = const Right([]);
   Either<Failure, List<PlaylistEntity>> featuredResult = const Right([]);
 
   String? lastTypeQuery;
@@ -161,6 +162,13 @@ class _FakeSearchRepository implements SearchRepository {
       categoryPlaylistsResult;
 
   @override
+  Future<Either<Failure, List<SearchResult>>> getCategoryTracks(
+    String categoryId, {
+    bool playableTracksOnly = false,
+  }) async =>
+      categoryTracksResult;
+
+  @override
   Future<Either<Failure, List<PlaylistEntity>>> getFeaturedPlaylists() async =>
       featuredResult;
 
@@ -171,7 +179,10 @@ class _FakeSearchRepository implements SearchRepository {
       playlistResult;
 
   @override
-  Future<Either<Failure, List<SearchResult>>> search(String query) async {
+  Future<Either<Failure, List<SearchResult>>> search(
+    String query, {
+    bool playableTracksOnly = false,
+  }) async {
     searchCallCount += 1;
     return searchResult;
   }
@@ -179,8 +190,9 @@ class _FakeSearchRepository implements SearchRepository {
   @override
   Future<Either<Failure, List<SearchResult>>> searchByType(
     String query,
-    SearchResultType type,
-  ) async {
+    SearchResultType type, {
+    bool playableTracksOnly = false,
+  }) async {
     lastTypeQuery = query;
     lastType = type;
     return searchByTypeResult;

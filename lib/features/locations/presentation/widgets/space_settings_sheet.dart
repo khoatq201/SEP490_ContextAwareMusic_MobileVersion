@@ -498,15 +498,15 @@ class SpaceSettingsSheet extends StatelessWidget {
                           _comingSoon(context, 'Recently played songs'),
                     ),
                     const SizedBox(height: 10),
-                    _NavTile(
-                      icon: LucideIcons.ban,
-                      iconColor: AppColors.error,
-                      label: 'Blocked songs',
-                      subtitle:
-                          'Manage tracks that should never play in this space.',
-                      palette: palette,
-                      onTap: () => _comingSoon(context, 'Blocked songs'),
-                    ),
+                    // _NavTile(
+                    //   icon: LucideIcons.ban,
+                    //   iconColor: AppColors.error,
+                    //   label: 'Blocked songs',
+                    //   subtitle:
+                    //       'Manage tracks that should never play in this space.',
+                    //   palette: palette,
+                    //   onTap: () => _comingSoon(context, 'Blocked songs'),
+                    // ),
                   ],
                 ),
               ),
@@ -561,34 +561,34 @@ class SpaceSettingsSheet extends StatelessWidget {
                   ),
                 ),
               ],
-              if (!isPlaybackDevice) ...[
-                const SizedBox(height: 16),
-                _SectionLabel(
-                  palette: palette,
-                  label: 'CAMS REMOTE',
-                ),
-                const SizedBox(height: 8),
-                _SectionCard(
-                  palette: palette,
-                  child: _NavTile(
-                    icon: LucideIcons.smartphone,
-                    iconColor: palette.accent,
-                    label: 'CAMS Remote',
-                    subtitle:
-                        'Quick remote controls and companion tools for this space.',
-                    trailing: Text(
-                      'Enabled',
-                      style: GoogleFonts.inter(
-                        color: palette.textMuted,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    palette: palette,
-                    onTap: () => _comingSoon(context, 'CAMS Remote'),
-                  ),
-                ),
-              ],
+              // if (!isPlaybackDevice) ...[
+              //   const SizedBox(height: 16),
+              //   _SectionLabel(
+              //     palette: palette,
+              //     label: 'CAMS REMOTE',
+              //   ),
+              //   const SizedBox(height: 8),
+              //   _SectionCard(
+              //     palette: palette,
+              //     child: _NavTile(
+              //       icon: LucideIcons.smartphone,
+              //       iconColor: palette.accent,
+              //       label: 'CAMS Remote',
+              //       subtitle:
+              //           'Quick remote controls and companion tools for this space.',
+              //       trailing: Text(
+              //         'Enabled',
+              //         style: GoogleFonts.inter(
+              //           color: palette.textMuted,
+              //           fontSize: 14,
+              //           fontWeight: FontWeight.w600,
+              //         ),
+              //       ),
+              //       palette: palette,
+              //       onTap: () => _comingSoon(context, 'CAMS Remote'),
+              //     ),
+              //   ),
+              // ],
             ],
           ),
         ),

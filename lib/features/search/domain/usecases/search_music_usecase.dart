@@ -9,6 +9,12 @@ class SearchMusicUseCase {
 
   final SearchRepository repository;
 
-  Future<Either<Failure, List<SearchResult>>> call(String query) =>
-      repository.search(query);
+  Future<Either<Failure, List<SearchResult>>> call(
+    String query, {
+    bool playableTracksOnly = false,
+  }) =>
+      repository.search(
+        query,
+        playableTracksOnly: playableTracksOnly,
+      );
 }

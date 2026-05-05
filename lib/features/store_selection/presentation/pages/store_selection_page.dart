@@ -737,13 +737,14 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
   Widget _buildStoreGrid(List<StoreSummary> stores) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        final bottomPadding = MediaQuery.viewPaddingOf(context).bottom + 40;
         final useListLayout =
             _isBulkSelectionMode || constraints.maxWidth < 600;
 
         if (useListLayout) {
           return ListView.separated(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(34, 0, 34, 32),
+            padding: EdgeInsets.fromLTRB(34, 0, 34, bottomPadding),
             itemCount: stores.length,
             separatorBuilder: (_, __) => const SizedBox(height: 28),
             itemBuilder: (context, index) => _buildStoreListCard(stores[index]),
@@ -769,7 +770,7 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
 
         return GridView.builder(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.fromLTRB(16, 16, 16, bottomPadding),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossAxisCount,
             crossAxisSpacing: gridSpacing,

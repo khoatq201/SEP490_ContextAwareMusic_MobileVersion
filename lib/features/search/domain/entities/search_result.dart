@@ -1,3 +1,6 @@
+import '../../../../core/enums/entity_status_enum.dart';
+import '../../../tracks/domain/entities/track_copyright_clearance_status.dart';
+
 /// A lightweight result item returned by a song/artist search.
 class SearchResult {
   final String id;
@@ -11,6 +14,8 @@ class SearchResult {
   final String? duration;
   final int? durationSeconds;
   final String? streamUrl;
+  final TrackCopyrightClearanceStatus? copyrightClearanceStatus;
+  final EntityStatusEnum? trackStatus;
 
   const SearchResult({
     required this.id,
@@ -22,7 +27,15 @@ class SearchResult {
     this.duration,
     this.durationSeconds,
     this.streamUrl,
+    this.copyrightClearanceStatus,
+    this.trackStatus,
   });
+
+  bool get isPlayableTrack {
+    if (type != SearchResultType.song) return false;
+    return trackStatus == EntityStatusEnum.active &&
+        copyrightClearanceStatus?.isPlayable == true;
+  }
 }
 
 enum SearchResultType { song, artist, playlist, album, category }
