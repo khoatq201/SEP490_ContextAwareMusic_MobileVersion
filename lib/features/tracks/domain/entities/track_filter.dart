@@ -1,5 +1,6 @@
 import '../../../../core/enums/entity_status_enum.dart';
 import '../../../../core/enums/music_provider_enum.dart';
+import 'track_copyright_clearance_status.dart';
 
 class TrackFilter {
   final int page;
@@ -9,6 +10,7 @@ class TrackFilter {
   final String? genre;
   final MusicProviderEnum? provider;
   final bool? isAiGenerated;
+  final List<TrackCopyrightClearanceStatus>? copyrightClearanceStatuses;
   final EntityStatusEnum? status;
   final DateTime? createdFrom;
   final DateTime? createdTo;
@@ -21,6 +23,7 @@ class TrackFilter {
     this.genre,
     this.provider,
     this.isAiGenerated,
+    this.copyrightClearanceStatuses,
     this.status,
     this.createdFrom,
     this.createdTo,
@@ -35,6 +38,12 @@ class TrackFilter {
       if (genre != null && genre!.trim().isNotEmpty) 'genre': genre!.trim(),
       if (provider != null) 'provider': provider!.value,
       if (isAiGenerated != null) 'isAiGenerated': isAiGenerated,
+      if (copyrightClearanceStatuses != null &&
+          copyrightClearanceStatuses!.isNotEmpty)
+        'copyrightClearanceStatuses': copyrightClearanceStatuses!
+            .map((status) => status.value)
+            .whereType<int>()
+            .toList(growable: false),
       if (status != null) 'status': status!.value,
       if (createdFrom != null)
         'createdFrom': createdFrom!.toUtc().toIso8601String(),
@@ -50,6 +59,7 @@ class TrackFilter {
     String? genre,
     MusicProviderEnum? provider,
     bool? isAiGenerated,
+    List<TrackCopyrightClearanceStatus>? copyrightClearanceStatuses,
     EntityStatusEnum? status,
     DateTime? createdFrom,
     DateTime? createdTo,
@@ -62,6 +72,8 @@ class TrackFilter {
       genre: genre ?? this.genre,
       provider: provider ?? this.provider,
       isAiGenerated: isAiGenerated ?? this.isAiGenerated,
+      copyrightClearanceStatuses:
+          copyrightClearanceStatuses ?? this.copyrightClearanceStatuses,
       status: status ?? this.status,
       createdFrom: createdFrom ?? this.createdFrom,
       createdTo: createdTo ?? this.createdTo,

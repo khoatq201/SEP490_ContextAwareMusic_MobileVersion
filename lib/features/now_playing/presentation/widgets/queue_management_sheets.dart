@@ -11,6 +11,8 @@ import '../../../../features/moods/domain/entities/mood.dart';
 import '../../../../features/playlists/data/repositories/playlist_repository_impl.dart';
 import '../../../../features/playlists/domain/entities/api_playlist.dart';
 import '../../../../features/tracks/domain/entities/api_track.dart';
+import '../../../../features/tracks/domain/entities/track_copyright_clearance_status.dart';
+import '../../../../features/tracks/domain/entities/track_filter.dart';
 import '../../../../features/tracks/domain/usecases/track_usecases.dart';
 import '../../../../injection_container.dart';
 
@@ -29,6 +31,18 @@ String _queueModeLabel(QueueInsertModeEnum mode) {
     case QueueInsertModeEnum.addToQueue:
       return 'Add to queue';
   }
+}
+
+TrackFilter _playableTrackFilter({int page = 1, int pageSize = 50}) {
+  return TrackFilter(
+    page: page,
+    pageSize: pageSize,
+    status: EntityStatusEnum.active,
+    copyrightClearanceStatuses: const [
+      TrackCopyrightClearanceStatus.notApplicable,
+      TrackCopyrightClearanceStatus.cleared,
+    ],
+  );
 }
 
 Future<List<ApiTrack>> _loadPlaybackDeviceTracksFromPlaylists({
@@ -203,7 +217,9 @@ class _NowPlayingAddToQueueSheetState extends State<NowPlayingAddToQueueSheet> {
     final sessionState = context.read<SessionCubit>().state;
     final isPlaybackDevice = sessionState.isPlaybackDevice;
     final storeId = sessionState.currentStore?.id;
-    final result = await sl<GetTracks>()(page: 1, pageSize: 50);
+    final result = await sl<GetTracks>()(
+      filter: _playableTrackFilter(page: 1, pageSize: 50),
+    );
     if (!mounted) return;
 
     await result.fold(
@@ -214,9 +230,7 @@ class _NowPlayingAddToQueueSheetState extends State<NowPlayingAddToQueueSheet> {
         });
       },
       (response) async {
-        List<ApiTrack> items = response.items
-            .where((track) => track.status == EntityStatusEnum.active)
-            .toList();
+        List<ApiTrack> items = response.items.toList();
         if (items.isEmpty && isPlaybackDevice) {
           items = await _loadPlaybackDeviceTracksFromPlaylists(
             storeId: storeId,
@@ -838,7 +852,9 @@ class _NowPlayingOverrideMusicSheetState
     final sessionState = context.read<SessionCubit>().state;
     final isPlaybackDevice = sessionState.isPlaybackDevice;
     final storeId = sessionState.currentStore?.id;
-    final result = await sl<GetTracks>()(page: 1, pageSize: 50);
+    final result = await sl<GetTracks>()(
+      filter: _playableTrackFilter(page: 1, pageSize: 50),
+    );
     if (!mounted) return;
 
     await result.fold(
@@ -849,9 +865,7 @@ class _NowPlayingOverrideMusicSheetState
         });
       },
       (response) async {
-        List<ApiTrack> items = response.items
-            .where((track) => track.status == EntityStatusEnum.active)
-            .toList();
+        List<ApiTrack> items = response.items.toList();
         if (items.isEmpty && isPlaybackDevice) {
           items = await _loadPlaybackDeviceTracksFromPlaylists(
             storeId: storeId,

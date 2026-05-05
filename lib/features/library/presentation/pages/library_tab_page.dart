@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../../core/enums/ai_generation_mode_enum.dart';
+import '../../../../core/enums/entity_status_enum.dart';
 import '../../../../core/enums/music_provider_enum.dart';
 import '../../../../core/enums/queue_insert_mode_enum.dart';
 import '../../../../core/enums/user_role.dart';
@@ -81,6 +82,7 @@ class LibraryTabPage extends StatefulWidget {
 class _LibraryTabPageState extends State<LibraryTabPage> {
   _LibraryFilter _filter = _LibraryFilter.playlists;
   _TrackProviderScope _trackProviderScope = _TrackProviderScope.all;
+  TrackCopyrightClearanceStatus? _copyrightStatusFilter;
   bool _showAiOnly = false;
 
   List<PlaylistEntity> _savedPlaylists = [];
@@ -213,11 +215,25 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
         provider = MusicProviderEnum.suno;
     }
 
+    final session = context.read<SessionCubit>().state;
+    final isBrandManager = !session.isPlaybackDevice &&
+        session.currentRole == UserRole.brandManager;
+    final clearanceStatuses = isBrandManager
+        ? (_copyrightStatusFilter == null
+            ? null
+            : <TrackCopyrightClearanceStatus>[_copyrightStatusFilter!])
+        : const <TrackCopyrightClearanceStatus>[
+            TrackCopyrightClearanceStatus.notApplicable,
+            TrackCopyrightClearanceStatus.cleared,
+          ];
+
     return TrackFilter(
       page: 1,
       pageSize: 50,
       provider: provider,
       isAiGenerated: _showAiOnly ? true : null,
+      copyrightClearanceStatuses: clearanceStatuses,
+      status: isBrandManager ? null : EntityStatusEnum.active,
     );
   }
 
@@ -225,7 +241,13 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
     bool silent = false,
     bool forceRefresh = false,
   }) async {
-    final cacheKey = 'library.tracks.${_trackProviderScope.name}.$_showAiOnly';
+    final session = context.read<SessionCubit>().state;
+    final roleKey = session.isPlaybackDevice
+        ? UserRole.playbackDevice.value
+        : session.currentRole.value;
+    final clearanceKey = _copyrightStatusFilter?.name ?? 'playable-or-all';
+    final cacheKey =
+        'library.tracks.$roleKey.${_trackProviderScope.name}.$_showAiOnly.$clearanceKey';
     if (!forceRefresh) {
       final cached = _cache.get<List<ApiTrack>>(cacheKey);
       if (cached != null) {
@@ -1050,6 +1072,38 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
                               unawaited(_loadTracks());
                             },
                           ),
+                          if (canManageTracks) ...[
+                            _buildTrackScopeChip(
+                              palette: palette,
+                              label: 'All Statuses',
+                              selected: _copyrightStatusFilter == null,
+                              onTap: () {
+                                setState(() => _copyrightStatusFilter = null);
+                                unawaited(_loadTracks(forceRefresh: true));
+                              },
+                            ),
+                            ...TrackCopyrightClearanceStatus.values
+                                .where(
+                                  (status) =>
+                                      status !=
+                                      TrackCopyrightClearanceStatus.unknown,
+                                )
+                                .map(
+                                  (status) => _buildTrackScopeChip(
+                                    palette: palette,
+                                    label: status.displayName,
+                                    selected: _copyrightStatusFilter == status,
+                                    onTap: () {
+                                      setState(
+                                        () => _copyrightStatusFilter = status,
+                                      );
+                                      unawaited(
+                                        _loadTracks(forceRefresh: true),
+                                      );
+                                    },
+                                  ),
+                                ),
+                          ],
                           if (canManageTracks)
                             _buildTrackScopeChip(
                               palette: palette,
@@ -1630,9 +1684,13 @@ Color _copyrightClearanceColorValue(
   _Palette palette,
 ) {
   switch (status) {
-    case TrackCopyrightClearanceStatus.pending:
+    case TrackCopyrightClearanceStatus.notApplicable:
+      return palette.neutral;
+    case TrackCopyrightClearanceStatus.pendingScan:
       return palette.warning;
-    case TrackCopyrightClearanceStatus.approved:
+    case TrackCopyrightClearanceStatus.pendingReview:
+      return palette.warning;
+    case TrackCopyrightClearanceStatus.cleared:
       return palette.success;
     case TrackCopyrightClearanceStatus.rejected:
       return palette.error;

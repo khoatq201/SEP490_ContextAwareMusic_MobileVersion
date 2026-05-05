@@ -103,7 +103,7 @@ void main() {
         'title': 'Manual Upload',
         'createdAt': '2026-03-24T08:00:00Z',
         'copyrightScan': {
-          'trackCopyrightClearanceStatus': 'Pending',
+          'trackCopyrightClearanceStatus': 'PendingReview',
           'policyOutcome': 'Manual',
           'matchedTitle': 'Reference Track',
           'matchedArtist': 'Reference Artist',
@@ -113,7 +113,7 @@ void main() {
 
       expect(
         model.copyrightClearanceStatus,
-        TrackCopyrightClearanceStatus.pending,
+        TrackCopyrightClearanceStatus.pendingReview,
       );
       expect(
         model.copyrightScanPolicyOutcome,

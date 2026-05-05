@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cams_store_manager/core/enums/entity_status_enum.dart';
 import 'package:cams_store_manager/core/enums/music_provider_enum.dart';
+import 'package:cams_store_manager/features/tracks/domain/entities/track_copyright_clearance_status.dart';
 import 'package:cams_store_manager/features/tracks/domain/entities/track_filter.dart';
 
 void main() {
@@ -15,6 +16,10 @@ void main() {
         genre: ' lounge ',
         provider: MusicProviderEnum.suno,
         isAiGenerated: true,
+        copyrightClearanceStatuses: const [
+          TrackCopyrightClearanceStatus.notApplicable,
+          TrackCopyrightClearanceStatus.cleared,
+        ],
         status: EntityStatusEnum.active,
         createdFrom: DateTime.parse('2026-03-01T00:00:00Z'),
         createdTo: DateTime.parse('2026-03-31T23:59:59Z'),
@@ -27,6 +32,7 @@ void main() {
         'genre': 'lounge',
         'provider': 1,
         'isAiGenerated': true,
+        'copyrightClearanceStatuses': [0, 3],
         'status': 1,
         'createdFrom': '2026-03-01T00:00:00.000Z',
         'createdTo': '2026-03-31T23:59:59.000Z',
