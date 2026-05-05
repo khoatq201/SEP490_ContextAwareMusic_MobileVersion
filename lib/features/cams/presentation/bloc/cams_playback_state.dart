@@ -64,7 +64,10 @@ class CamsPlaybackState extends Equatable {
   bool get isPreparing => playbackState?.hasPendingPlayback ?? false;
 
   /// Whether override is currently active.
-  bool get hasActiveOverride => playbackState?.hasActiveOverride ?? false;
+  ///
+  /// Some backend snapshots mark manual override with `isManualOverride`
+  /// before an override mode is available. The UI should still expose cancel.
+  bool get hasActiveOverride => playbackState?.isManualOverride ?? false;
 
   /// Current HLS URL (from playback state).
   String? get hlsUrl => playbackState?.effectiveHlsUrl;

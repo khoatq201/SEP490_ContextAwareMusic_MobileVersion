@@ -80,6 +80,68 @@ void main() {
       expect(bloc.state.isPlaying, isFalse);
     });
 
+    test('force reload allows repeat-one HLS restart after completion',
+        () async {
+      final queue = [
+        const Track(
+          id: 'track-1',
+          queueItemId: 'queue-1',
+          title: 'Track 1',
+          artist: 'Artist',
+          fileUrl: '',
+          moodTags: [],
+          duration: 180,
+          seekOffsetSeconds: 0,
+        ),
+      ];
+
+      bloc.add(PlayerQueueSeeded(
+        tracks: queue,
+        playlistId: 'playlist-1',
+        force: true,
+      ));
+      await _tick();
+
+      bloc.add(const PlayerHlsStarted(
+        hlsUrl: 'https://stream.example.com/live.m3u8',
+        playlistId: 'playlist-1',
+        queueItemId: 'queue-1',
+        trackId: 'track-1',
+        trackName: 'Track 1',
+        seekOffsetSeconds: 90,
+      ));
+      await _tick();
+      bloc.add(const PlayerTrackCompleted());
+      await _tick();
+
+      audioService.setProcessingState(ProcessingState.completed);
+      final loadCallCount = audioService.loadCallCount;
+      final seekCallCount = audioService.seekCalls.length;
+      final playCallCount = audioService.playCallCount;
+
+      bloc.add(PlayerHlsStarted(
+        hlsUrl: 'https://stream.example.com/live.m3u8',
+        playlistId: 'playlist-1',
+        queueItemId: 'queue-1',
+        trackId: 'track-1',
+        trackName: 'Track 1',
+        seekOffsetSeconds: 0,
+        startedAtUtc: DateTime.now().toUtc(),
+        forceReload: true,
+      ));
+      await _tick();
+
+      expect(audioService.loadCallCount, loadCallCount + 1);
+      expect(audioService.seekCalls.length, seekCallCount + 1);
+      expect(
+        audioService.seekCalls.last.inMilliseconds,
+        lessThanOrEqualTo(50),
+      );
+      expect(audioService.playCallCount, playCallCount + 1);
+      expect(bloc.state.currentQueueItemId, 'queue-1');
+      expect(bloc.state.isPlaying, isTrue);
+    });
+
     test(
         'maps local HLS position updates for later queue items back to absolute queue offsets',
         () async {
@@ -828,6 +890,8 @@ class _FakeAudioPlayerService extends AudioPlayerService {
   final Duration _bufferedPosition = Duration.zero;
   ProcessingState _processingState = ProcessingState.idle;
   double? lastSetVolume;
+  int loadCallCount = 0;
+  int playCallCount = 0;
   int stopCallCount = 0;
 
   @override
@@ -854,13 +918,16 @@ class _FakeAudioPlayerService extends AudioPlayerService {
 
   @override
   Future<Duration?> loadUrl(String url) async {
+    loadCallCount += 1;
     _loadedUrl = url;
     _processingState = ProcessingState.ready;
     return null;
   }
 
   @override
-  Future<void> play() async {}
+  Future<void> play() async {
+    playCallCount += 1;
+  }
 
   @override
   Future<void> pause() async {}
@@ -880,6 +947,10 @@ class _FakeAudioPlayerService extends AudioPlayerService {
 
   void emitDuration(Duration? duration) {
     _durationController.add(duration);
+  }
+
+  void setProcessingState(ProcessingState processingState) {
+    _processingState = processingState;
   }
 
   @override

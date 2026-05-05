@@ -647,7 +647,8 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     // it entirely. This closes the race-condition timing gap where stale
     // SpaceStateSync snapshots arrive before the AppPlaybackCoordinator
     // BlocListener has set its `_trackEndedQueueItemId` guard.
-    if (_audioService.processingState == ProcessingState.completed) {
+    if (!event.forceReload &&
+        _audioService.processingState == ProcessingState.completed) {
       final isSameQueueItem = event.queueItemId != null &&
           event.queueItemId!.isNotEmpty &&
           event.queueItemId == state.currentQueueItemId;

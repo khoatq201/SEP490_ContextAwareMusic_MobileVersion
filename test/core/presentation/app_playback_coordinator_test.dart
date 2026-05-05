@@ -414,6 +414,154 @@ void main() {
     });
 
     testWidgets(
+        'resumes local player when identical remote snapshot is playing',
+        (tester) async {
+      addTearDown(() async {
+        await _disposeHarness(tester);
+      });
+      sessionCubit.setPlaybackMode(
+        store: const Store(
+          id: 'store-1',
+          name: 'Store 1',
+          brandId: 'brand-1',
+        ),
+        space: const Space(
+          id: 'space-1',
+          name: 'Space 1',
+          storeId: 'store-1',
+          type: SpaceTypeEnum.hall,
+          status: EntityStatusEnum.active,
+        ),
+        deviceId: 'device-1',
+      );
+      final startedAtUtc =
+          DateTime.now().toUtc().subtract(const Duration(seconds: 4));
+      final playbackState = SpacePlaybackState(
+        spaceId: 'space-1',
+        storeId: 'store-1',
+        currentQueueItemId: 'queue-1',
+        currentTrackName: 'Track One',
+        hlsUrl: 'https://stream.example.com/t1.m3u8',
+        startedAtUtc: startedAtUtc,
+        isPaused: false,
+        spaceQueueItems: const [
+          SpaceQueueStateItem(
+            queueItemId: 'queue-1',
+            trackId: 'track-1',
+            trackName: 'Track One',
+            position: 1,
+            queueStatus: 1,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/t1.m3u8',
+            isReadyToStream: true,
+          ),
+        ],
+      );
+
+      await _pumpCoordinator(
+          tester, notificationService, sessionCubit, playerBloc, camsBloc);
+      camsBloc.seed(playbackState);
+      await tester.pump();
+      await _waitUntil(
+        tester,
+        () =>
+            playerBloc.state.isSyncedCamsPlayback && playerBloc.state.isPlaying,
+      );
+
+      final loadCallCount = audioService.loadCallCount;
+      final playCallCount = audioService.playCallCount;
+
+      playerBloc.add(const PlayerRemoteCommandApplied(
+        command: PlaybackCommandEnum.pause,
+        playLocally: false,
+      ));
+      await tester.pump();
+      await _waitUntil(tester, () => playerBloc.state.isPlaying == false);
+
+      camsBloc.seed(playbackState.copyWith(volumePercent: 99));
+      await tester.pump();
+      await _waitUntil(tester, () => playerBloc.state.isPlaying);
+
+      expect(audioService.loadCallCount, loadCallCount);
+      expect(audioService.playCallCount, playCallCount + 1);
+    });
+
+    testWidgets('reloads local HLS when same queue item starts a new epoch',
+        (tester) async {
+      addTearDown(() async {
+        await _disposeHarness(tester);
+      });
+      sessionCubit.setPlaybackMode(
+        store: const Store(
+          id: 'store-1',
+          name: 'Store 1',
+          brandId: 'brand-1',
+        ),
+        space: const Space(
+          id: 'space-1',
+          name: 'Space 1',
+          storeId: 'store-1',
+          type: SpaceTypeEnum.hall,
+          status: EntityStatusEnum.active,
+        ),
+        deviceId: 'device-1',
+      );
+      final firstStartedAtUtc =
+          DateTime.now().toUtc().subtract(const Duration(seconds: 220));
+      final queueItems = const [
+        SpaceQueueStateItem(
+          queueItemId: 'queue-1',
+          trackId: 'track-1',
+          trackName: 'Track One',
+          position: 1,
+          queueStatus: 1,
+          source: 1,
+          hlsUrl: 'https://stream.example.com/t1.m3u8',
+          isReadyToStream: true,
+        ),
+      ];
+      final playbackState = SpacePlaybackState(
+        spaceId: 'space-1',
+        storeId: 'store-1',
+        currentQueueItemId: 'queue-1',
+        currentTrackName: 'Track One',
+        hlsUrl: 'https://stream.example.com/t1.m3u8',
+        startedAtUtc: firstStartedAtUtc,
+        expectedEndAtUtc: firstStartedAtUtc.add(const Duration(seconds: 228)),
+        isPaused: false,
+        spaceQueueItems: queueItems,
+      );
+
+      await _pumpCoordinator(
+          tester, notificationService, sessionCubit, playerBloc, camsBloc);
+      camsBloc.seed(playbackState);
+      await tester.pump();
+      await _waitUntil(
+        tester,
+        () =>
+            playerBloc.state.isSyncedCamsPlayback && playerBloc.state.isPlaying,
+      );
+
+      final loadCallCount = audioService.loadCallCount;
+      final newStartedAtUtc = DateTime.now().toUtc();
+
+      camsBloc.seed(playbackState.copyWith(
+        startedAtUtc: newStartedAtUtc,
+        expectedEndAtUtc: newStartedAtUtc.add(const Duration(seconds: 228)),
+      ));
+      await tester.pump();
+
+      await _waitUntil(
+        tester,
+        () => audioService.loadCallCount > loadCallCount,
+      );
+
+      expect(audioService.loadCallCount, loadCallCount + 1);
+      expect(playerBloc.state.currentQueueItemId, 'queue-1');
+      expect(playerBloc.state.isPlaying, isTrue);
+    });
+
+    testWidgets(
         'holds expired current HLS until server switches identity or HLS url',
         (tester) async {
       addTearDown(() async {

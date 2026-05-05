@@ -770,6 +770,17 @@ class QueueFirstPlaybackRuntime {
     if (incoming.spaceQueueItems.length >= current.spaceQueueItems.length) {
       return incoming;
     }
+    if (_isManualOverrideQueueClear(
+      incoming: incoming,
+      current: current,
+    )) {
+      _debugLog(
+        'accept shorter queue snapshot for manual override '
+        'incomingCount=${incoming.spaceQueueItems.length} '
+        'currentCount=${current.spaceQueueItems.length}',
+      );
+      return incoming;
+    }
 
     final incomingQueueIds = incoming.spaceQueueItems
         .map((item) => item.queueItemId)
@@ -798,6 +809,27 @@ class QueueFirstPlaybackRuntime {
       'currentQueueItemId=${incoming.currentQueueItemId ?? '-'}',
     );
     return incoming.copyWith(spaceQueueItems: current.spaceQueueItems);
+  }
+
+  bool _isManualOverrideQueueClear({
+    required SpacePlaybackState incoming,
+    required SpacePlaybackState current,
+  }) {
+    if (!incoming.isManualOverride) return false;
+
+    final overrideJustActivated = !current.isManualOverride;
+    final overrideEpochChanged =
+        incoming.manualOverrideActivatedAtUtc != null &&
+            incoming.manualOverrideActivatedAtUtc !=
+                current.manualOverrideActivatedAtUtc;
+    final overrideModeChanged = incoming.overrideMode != current.overrideMode;
+    final queueWasCleared =
+        incoming.spaceQueueItems.isEmpty && current.spaceQueueItems.isNotEmpty;
+
+    return queueWasCleared ||
+        overrideJustActivated ||
+        overrideEpochChanged ||
+        overrideModeChanged;
   }
 
   SpacePlaybackState _preserveExplainabilityFallback({

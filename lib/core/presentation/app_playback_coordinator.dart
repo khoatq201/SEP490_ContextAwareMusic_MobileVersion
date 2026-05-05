@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../audio/playback_notification_service.dart';
 import '../enums/playback_command_enum.dart';
+import '../enums/queue_end_behavior_enum.dart';
 import '../network/dio_client.dart';
 import '../player/playlist_queue_builder.dart';
 import '../../features/cams/presentation/bloc/cams_playback_bloc.dart';
@@ -56,6 +57,8 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
   DateTime? _lastHlsRecoveryAttemptAtUtc;
   double? _lastHealthyHlsPositionSeconds;
   String? _lastAppliedRemotePlaybackSignature;
+  String? _lastAppliedRemotePlaybackEpochSignature;
+  DateTime? _lastAppliedRemotePlaybackStartedAtUtc;
 
   /// Set when a trackEnded command fires; holds the queueItemId of the track
   /// that just finished. While this is non-null, stale SpaceStateSync
@@ -157,7 +160,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
       'app resumed -> rebootstrap realtime playback sync '
       'space=${space.id} playbackDevice=${session.isPlaybackDevice}',
     );
-    _lastAppliedRemotePlaybackSignature = null;
+    _clearAppliedRemotePlaybackSignatures();
     _forceRemotePlaybackResyncOnNextCamsState = session.isPlaybackDevice;
 
     _syncNotification(
@@ -216,7 +219,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
       _trackMetadataCache.clear();
       _trackMetadataInFlight.clear();
       _clearTrackEndedGuard();
-      _lastAppliedRemotePlaybackSignature = null;
+      _clearAppliedRemotePlaybackSignatures();
       _forceRemotePlaybackResyncOnNextCamsState = false;
       _stopManagerProgressTicker();
       _resetManagerWarmup();
@@ -232,7 +235,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
       _hydratedPlaylistId = null;
       _trackMetadataCache.clear();
       _trackMetadataInFlight.clear();
-      _lastAppliedRemotePlaybackSignature = null;
+      _clearAppliedRemotePlaybackSignatures();
       _trackEndedQueueItemId = null;
       _trackEndedHlsUrl = null;
       _trackEndedAtUtc = null;
@@ -289,6 +292,12 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
     final camsBloc = context.read<CamsPlaybackBloc>();
     if (camsBloc.isClosed) return;
     camsBloc.add(event);
+  }
+
+  void _clearAppliedRemotePlaybackSignatures() {
+    _lastAppliedRemotePlaybackSignature = null;
+    _lastAppliedRemotePlaybackEpochSignature = null;
+    _lastAppliedRemotePlaybackStartedAtUtc = null;
   }
 
   bool _shouldPlayRemoteAudioLocally(SessionState session) {
@@ -364,7 +373,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
         'active=$activeSessionSpaceId incoming=${playbackState.spaceId}',
       );
       _clearTrackEndedGuard();
-      _lastAppliedRemotePlaybackSignature = null;
+      _clearAppliedRemotePlaybackSignatures();
       _forceRemotePlaybackResyncOnNextCamsState = false;
       _stopManagerProgressTicker();
       _stopExpectedEndWatcher();
@@ -394,7 +403,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
 
     if (playbackState == null) {
       _clearTrackEndedGuard();
-      _lastAppliedRemotePlaybackSignature = null;
+      _clearAppliedRemotePlaybackSignatures();
       _forceRemotePlaybackResyncOnNextCamsState = false;
       return;
     }
@@ -479,7 +488,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
         unawaited(_hydrateQueueForPlayback(playbackState));
         final focusedQueueItem = _resolveFocusedQueueItem(playbackState);
         if (focusedQueueItem != null) {
-          _lastAppliedRemotePlaybackSignature = null;
+          _clearAppliedRemotePlaybackSignatures();
           _debugLog(
             'queue-only snapshot -> focus preview '
             'queueItemId=${focusedQueueItem.queueItemId} '
@@ -496,7 +505,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
             isMuted: playbackState.isMuted,
           ));
         } else if (playerBloc.state.isSyncedCamsPlayback) {
-          _lastAppliedRemotePlaybackSignature = null;
+          _clearAppliedRemotePlaybackSignatures();
           _debugLog(
             'queue snapshot contains no active/pending candidate -> stop local HLS playback',
           );
@@ -514,7 +523,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
       _hydratedPlaylistId = null;
       _stopPlaybackHealthTicker();
       _clearTrackEndedGuard();
-      _lastAppliedRemotePlaybackSignature = null;
+      _clearAppliedRemotePlaybackSignatures();
       _forceRemotePlaybackResyncOnNextCamsState = false;
       _debugLog('non-streaming snapshot with no queue identity -> stop player');
       _addPlayerEvent(const PlayerHlsStopped());
@@ -523,25 +532,37 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
 
     unawaited(_hydrateQueueForPlayback(playbackState));
 
+    var forceReloadForCompletedTrackRestart = false;
     if (_hasTrackEndedGuard()) {
       if (_matchesCompletedTrack(playbackState)) {
+        if (_isRepeatOneRestartAfterCompletedTrack(playbackState)) {
+          _debugLog(
+            'repeat-one restart arrived for completed track -> clearing guard '
+            'queueItemId=${playbackState.effectiveQueueItemId ?? '-'} '
+            'startedAt=${playbackState.startedAtUtc?.toUtc().toIso8601String() ?? '-'}',
+          );
+          _clearTrackEndedGuard();
+          forceReloadForCompletedTrackRestart = true;
+        } else {
+          _debugLog(
+            'ignoring stale HLS snapshot while waiting for next track '
+            'queueItemId=${playbackState.effectiveQueueItemId ?? '-'} '
+            'hls=${playbackState.effectiveHlsUrl ?? '-'}',
+          );
+          _addPlayerEvent(PlayerAudioSettingsApplied(
+            volumePercent: playbackState.volumePercent,
+            isMuted: playbackState.isMuted,
+          ));
+          return;
+        }
+      } else {
         _debugLog(
-          'ignoring stale HLS snapshot while waiting for next track '
-          'queueItemId=${playbackState.effectiveQueueItemId ?? '-'} '
-          'hls=${playbackState.effectiveHlsUrl ?? '-'}',
+          'new track identity/HLS arrived after completion -> clearing guard '
+          'oldQueueItemId=${_trackEndedQueueItemId ?? '-'} '
+          'newQueueItemId=${playbackState.effectiveQueueItemId ?? '-'}',
         );
-        _addPlayerEvent(PlayerAudioSettingsApplied(
-          volumePercent: playbackState.volumePercent,
-          isMuted: playbackState.isMuted,
-        ));
-        return;
+        _clearTrackEndedGuard();
       }
-      _debugLog(
-        'new track identity/HLS arrived after completion -> clearing guard '
-        'oldQueueItemId=${_trackEndedQueueItemId ?? '-'} '
-        'newQueueItemId=${playbackState.effectiveQueueItemId ?? '-'}',
-      );
-      _clearTrackEndedGuard();
     }
 
     // Legacy queue-item guard kept as a secondary safety net for the short
@@ -576,15 +597,31 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
     }
 
     final remotePlaybackSignature = _remotePlaybackSignatureFor(playbackState);
+    final remotePlaybackEpochSignature =
+        _remotePlaybackEpochSignatureFor(playbackState);
+    final remotePlaybackEpochChanged =
+        _hasRemotePlaybackEpochRestarted(playbackState);
     final forceRemotePlaybackResync =
         _forceRemotePlaybackResyncOnNextCamsState && session.isPlaybackDevice;
+    final forceReloadForPlaybackEpochRestart =
+        !forceRemotePlaybackResync && remotePlaybackEpochChanged;
     final canKeepCurrentRemoteStream = !forceRemotePlaybackResync &&
+        !forceReloadForPlaybackEpochRestart &&
         _canKeepCurrentRemoteStream(
           playerState: playerBloc.state,
           playbackState: playbackState,
         );
     if (_lastAppliedRemotePlaybackSignature == remotePlaybackSignature &&
-        !forceRemotePlaybackResync) {
+        !forceRemotePlaybackResync &&
+        !forceReloadForPlaybackEpochRestart) {
+      if (canKeepCurrentRemoteStream &&
+          _applySameRemoteStreamReconciliation(
+            session: session,
+            playerState: playerBloc.state,
+            playbackState: playbackState,
+          )) {
+        return;
+      }
       _addPlayerEvent(PlayerAudioSettingsApplied(
         volumePercent: playbackState.volumePercent,
         isMuted: playbackState.isMuted,
@@ -596,62 +633,22 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
     }
 
     if (canKeepCurrentRemoteStream) {
-      final shouldBePlaying = !playbackState.isPaused;
-      final driftSeconds = _remotePositionDriftSeconds(
+      _lastAppliedRemotePlaybackSignature = remotePlaybackSignature;
+      _lastAppliedRemotePlaybackEpochSignature = remotePlaybackEpochSignature;
+      _lastAppliedRemotePlaybackStartedAtUtc =
+          playbackState.startedAtUtc?.toUtc();
+      _applySameRemoteStreamReconciliation(
+        session: session,
         playerState: playerBloc.state,
         playbackState: playbackState,
       );
-      _lastAppliedRemotePlaybackSignature = remotePlaybackSignature;
-      final shouldCorrectPosition = _shouldPlayRemoteAudioLocally(session) &&
-          driftSeconds > _sameRemoteStreamSeekCorrectionSeconds;
-      var appliedSameStreamCommand = false;
-      if (playerBloc.state.isPlaying != shouldBePlaying) {
-        final command = playbackState.isPaused
-            ? PlaybackCommandEnum.pause
-            : PlaybackCommandEnum.resume;
-        _debugLog(
-          'same remote HLS snapshot -> apply ${command.name} without restarting player '
-          'queueItemId=${playbackState.effectiveQueueItemId ?? '-'} '
-          'drift=${driftSeconds.toStringAsFixed(2)}',
-        );
-        _addPlayerEvent(PlayerRemoteCommandApplied(
-          command: command,
-          playLocally: _shouldPlayRemoteAudioLocally(session),
-        ));
-        appliedSameStreamCommand = true;
-      }
-      if (shouldCorrectPosition) {
-        _debugLog(
-          'same remote HLS snapshot -> seek correction without restart '
-          'queueItemId=${playbackState.effectiveQueueItemId ?? '-'} '
-          'target=${playbackState.effectiveSeekOffset.toStringAsFixed(2)} '
-          'drift=${driftSeconds.toStringAsFixed(2)}',
-        );
-        _addPlayerEvent(PlayerRemoteCommandApplied(
-          command: PlaybackCommandEnum.seek,
-          positionSeconds: playbackState.effectiveSeekOffset,
-          playLocally: true,
-        ));
-        appliedSameStreamCommand = true;
-      }
-      if (!appliedSameStreamCommand) {
-        _debugLog(
-          'same remote HLS snapshot -> keep current player '
-          'queueItemId=${playbackState.effectiveQueueItemId ?? '-'} '
-          'drift=${driftSeconds.toStringAsFixed(2)}',
-        );
-      }
-      _addPlayerEvent(PlayerAudioSettingsApplied(
-        volumePercent: playbackState.volumePercent,
-        isMuted: playbackState.isMuted,
-      ));
-      if (_shouldUseSyntheticRemoteProgress(session)) {
-        _pushManagerPositionSnapshot(playbackState);
-      }
       return;
     }
 
     _lastAppliedRemotePlaybackSignature = remotePlaybackSignature;
+    _lastAppliedRemotePlaybackEpochSignature = remotePlaybackEpochSignature;
+    _lastAppliedRemotePlaybackStartedAtUtc =
+        playbackState.startedAtUtc?.toUtc();
     _forceRemotePlaybackResyncOnNextCamsState = false;
 
     _debugLog(
@@ -659,7 +656,8 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
       'queueItemId=${playbackState.effectiveQueueItemId ?? '-'} '
       'trackId=${_resolveCurrentTrackId(playbackState) ?? '-'} '
       'trackName=${playbackState.effectiveTrackName ?? '-'} '
-      'hls=${playbackState.effectiveHlsUrl}',
+      'hls=${playbackState.effectiveHlsUrl} '
+      'epochRestart=$forceReloadForPlaybackEpochRestart',
     );
 
     _addPlayerEvent(PlayerHlsStarted(
@@ -674,7 +672,9 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
       serverClockOffsetMs: SpacePlaybackState.serverClockOffsetMs,
       isPaused: playbackState.isPaused,
       playLocally: _shouldPlayRemoteAudioLocally(session),
-      forceReload: forceRemotePlaybackResync,
+      forceReload: forceRemotePlaybackResync ||
+          forceReloadForCompletedTrackRestart ||
+          forceReloadForPlaybackEpochRestart,
     ));
 
     _addPlayerEvent(PlayerAudioSettingsApplied(
@@ -696,6 +696,32 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
       playbackState.isPaused ? '1' : '0',
       playbackState.effectiveSeekOffset.round().toString(),
     ].join('|');
+  }
+
+  String _remotePlaybackEpochSignatureFor(SpacePlaybackState playbackState) {
+    return [
+      playbackState.spaceId.toLowerCase(),
+      playbackState.effectiveQueueItemId ?? '',
+      _resolveCurrentTrackId(playbackState) ?? '',
+      playbackState.effectiveHlsUrl ?? '',
+    ].join('|');
+  }
+
+  bool _hasRemotePlaybackEpochRestarted(SpacePlaybackState playbackState) {
+    if (_lastAppliedRemotePlaybackEpochSignature == null ||
+        _lastAppliedRemotePlaybackEpochSignature !=
+            _remotePlaybackEpochSignatureFor(playbackState)) {
+      return false;
+    }
+
+    final previousStartedAtUtc = _lastAppliedRemotePlaybackStartedAtUtc;
+    final currentStartedAtUtc = playbackState.startedAtUtc?.toUtc();
+    if (previousStartedAtUtc == null || currentStartedAtUtc == null) {
+      return false;
+    }
+
+    return currentStartedAtUtc
+        .isAfter(previousStartedAtUtc.add(const Duration(seconds: 2)));
   }
 
   bool _canKeepCurrentRemoteStream({
@@ -734,6 +760,65 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
     }
 
     return true;
+  }
+
+  bool _applySameRemoteStreamReconciliation({
+    required SessionState session,
+    required PlayerState playerState,
+    required SpacePlaybackState playbackState,
+  }) {
+    final shouldBePlaying = !playbackState.isPaused;
+    final driftSeconds = _remotePositionDriftSeconds(
+      playerState: playerState,
+      playbackState: playbackState,
+    );
+    final shouldCorrectPosition = _shouldPlayRemoteAudioLocally(session) &&
+        driftSeconds > _sameRemoteStreamSeekCorrectionSeconds;
+    var appliedSameStreamCommand = false;
+    if (playerState.isPlaying != shouldBePlaying) {
+      final command = playbackState.isPaused
+          ? PlaybackCommandEnum.pause
+          : PlaybackCommandEnum.resume;
+      _debugLog(
+        'same remote HLS snapshot -> apply ${command.name} without restarting player '
+        'queueItemId=${playbackState.effectiveQueueItemId ?? '-'} '
+        'drift=${driftSeconds.toStringAsFixed(2)}',
+      );
+      _addPlayerEvent(PlayerRemoteCommandApplied(
+        command: command,
+        playLocally: _shouldPlayRemoteAudioLocally(session),
+      ));
+      appliedSameStreamCommand = true;
+    }
+    if (shouldCorrectPosition) {
+      _debugLog(
+        'same remote HLS snapshot -> seek correction without restart '
+        'queueItemId=${playbackState.effectiveQueueItemId ?? '-'} '
+        'target=${playbackState.effectiveSeekOffset.toStringAsFixed(2)} '
+        'drift=${driftSeconds.toStringAsFixed(2)}',
+      );
+      _addPlayerEvent(PlayerRemoteCommandApplied(
+        command: PlaybackCommandEnum.seek,
+        positionSeconds: playbackState.effectiveSeekOffset,
+        playLocally: true,
+      ));
+      appliedSameStreamCommand = true;
+    }
+    if (!appliedSameStreamCommand) {
+      _debugLog(
+        'same remote HLS snapshot -> keep current player '
+        'queueItemId=${playbackState.effectiveQueueItemId ?? '-'} '
+        'drift=${driftSeconds.toStringAsFixed(2)}',
+      );
+    }
+    _addPlayerEvent(PlayerAudioSettingsApplied(
+      volumePercent: playbackState.volumePercent,
+      isMuted: playbackState.isMuted,
+    ));
+    if (_shouldUseSyntheticRemoteProgress(session)) {
+      _pushManagerPositionSnapshot(playbackState);
+    }
+    return appliedSameStreamCommand;
   }
 
   double _remotePositionDriftSeconds({
@@ -1265,6 +1350,25 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
     return false;
   }
 
+  bool _isRepeatOneRestartAfterCompletedTrack(
+    SpacePlaybackState playbackState,
+  ) {
+    if (QueueEndBehaviorEnum.fromValue(playbackState.queueEndBehavior) !=
+        QueueEndBehaviorEnum.repeatOne) {
+      return false;
+    }
+
+    final trackEndedAtUtc = _trackEndedAtUtc?.toUtc();
+    final startedAtUtc = playbackState.startedAtUtc?.toUtc();
+    if (trackEndedAtUtc == null || startedAtUtc == null) {
+      return false;
+    }
+
+    final restartTolerance =
+        trackEndedAtUtc.subtract(const Duration(seconds: 2));
+    return !playbackState.isPaused && !startedAtUtc.isBefore(restartTolerance);
+  }
+
   void _clearTrackEndedGuard() {
     _trackEndedQueueItemId = null;
     _trackEndedHlsUrl = null;
@@ -1686,7 +1790,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
             _trackEndedQueueItemId = playerState.currentQueueItemId;
             _trackEndedHlsUrl = playerState.hlsUrl;
             _trackEndedAtUtc = DateTime.now().toUtc();
-            _lastAppliedRemotePlaybackSignature = null;
+            _clearAppliedRemotePlaybackSignatures();
             _addCamsEvent(
               const CamsSendCommand(
                 command: PlaybackCommandEnum.trackEnded,

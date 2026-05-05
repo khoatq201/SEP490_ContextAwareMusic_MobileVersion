@@ -8,6 +8,7 @@ import 'package:cams_store_manager/core/enums/playback_command_enum.dart';
 import 'package:cams_store_manager/core/enums/queue_insert_mode_enum.dart';
 import 'package:cams_store_manager/core/enums/entity_status_enum.dart';
 import 'package:cams_store_manager/core/enums/mood_type_enum.dart';
+import 'package:cams_store_manager/core/enums/override_mode_enum.dart';
 import 'package:cams_store_manager/core/enums/space_type_enum.dart';
 import 'package:cams_store_manager/core/enums/transition_type_enum.dart';
 import 'package:cams_store_manager/core/enums/user_role.dart';
@@ -838,6 +839,87 @@ void main() {
             .toList(),
         ['queue-1', 'queue-2', 'queue-3'],
       );
+    });
+
+    test('accepts cleared queue snapshot when manual override starts',
+        () async {
+      const initialState = SpacePlaybackState(
+        spaceId: 'space-1',
+        currentQueueItemId: 'queue-ai-1',
+        currentTrackName: 'AI Track One',
+        hlsUrl: 'https://stream.example.com/ai-1.m3u8',
+        spaceQueueItems: [
+          SpaceQueueStateItem(
+            queueItemId: 'queue-ai-1',
+            trackId: 'track-ai-1',
+            trackName: 'AI Track One',
+            position: 1,
+            queueStatus: SpacePlaybackState.queueStatusPlaying,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/ai-1.m3u8',
+            isReadyToStream: true,
+          ),
+          SpaceQueueStateItem(
+            queueItemId: 'queue-ai-2',
+            trackId: 'track-ai-2',
+            trackName: 'AI Track Two',
+            position: 2,
+            queueStatus: SpacePlaybackState.queueStatusPending,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/ai-2.m3u8',
+            isReadyToStream: true,
+          ),
+          SpaceQueueStateItem(
+            queueItemId: 'queue-ai-3',
+            trackId: 'track-ai-3',
+            trackName: 'AI Track Three',
+            position: 3,
+            queueStatus: SpacePlaybackState.queueStatusPending,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/ai-3.m3u8',
+            isReadyToStream: true,
+          ),
+        ],
+      );
+
+      repository.getSpaceStateResult = const Right(initialState);
+      await _initBloc(bloc);
+      await _waitUntil(
+        () => bloc.state.playbackState?.spaceQueueItems.length == 3,
+      );
+
+      repository.getSpaceStateResult = Right(
+        SpacePlaybackState(
+          spaceId: 'space-1',
+          currentQueueItemId: 'override-1',
+          currentTrackName: 'Manual Track',
+          hlsUrl: 'https://stream.example.com/manual.m3u8',
+          isManualOverride: true,
+          overrideMode: OverrideModeEnum.trackListOverride,
+          manualOverrideActivatedAtUtc: DateTime.utc(2026, 5, 5, 4, 45),
+          spaceQueueItems: const [],
+        ),
+      );
+      repository.getQueueResult = const Right([]);
+
+      bloc.add(const CamsRefreshState());
+      await _waitUntil(
+        () => bloc.state.playbackState?.currentQueueItemId == 'override-1',
+      );
+
+      expect(bloc.state.hasActiveOverride, isTrue);
+      expect(bloc.state.playbackState?.spaceQueueItems, isEmpty);
+    });
+
+    test('treats isManualOverride as active override without mode', () {
+      const state = CamsPlaybackState(
+        playbackState: SpacePlaybackState(
+          spaceId: 'space-1',
+          isManualOverride: true,
+        ),
+      );
+
+      expect(state.hasActiveOverride, isTrue);
     });
 
     test(
