@@ -1514,7 +1514,19 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
         );
         return;
       case SongOption.goToAlbum:
+        return;
       case SongOption.goToArtist:
+        final artist = navigableSongArtist(song.artist);
+        if (artist == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('This track has no artist information.'),
+            ),
+          );
+          return;
+        }
+        context.go('/search/artist/${Uri.encodeComponent(artist)}');
+        return;
       case SongOption.block:
       case SongOption.share:
         return;

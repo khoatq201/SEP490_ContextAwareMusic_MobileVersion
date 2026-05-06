@@ -18,6 +18,7 @@ import '../../../../core/player/space_info.dart';
 import '../../../../core/presentation/app_feedback.dart';
 import '../../../../core/presentation/playback_mood_label.dart';
 import '../../../../core/theme/cams_theme_tokens.dart';
+import '../../../../core/widgets/select_playlist_bottom_sheet.dart';
 import '../../../../core/widgets/app_feedback_presenter.dart';
 import '../../../../core/widgets/cams_skeleton.dart';
 import '../../../../features/cams/data/models/override_response_model.dart';
@@ -25,6 +26,7 @@ import '../../../../features/cams/domain/entities/space_playback_state.dart';
 import '../../../../features/cams/presentation/bloc/cams_playback_bloc.dart';
 import '../../../../features/cams/presentation/bloc/cams_playback_event.dart';
 import '../../../../features/cams/presentation/bloc/cams_playback_state.dart';
+import '../../../../features/home/domain/entities/song_entity.dart';
 import '../../../../features/moods/domain/entities/mood.dart';
 import '../models/queue_sheet_view_data.dart';
 import '../widgets/queue_management_sheets.dart';
@@ -780,6 +782,16 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
   void _showSongOptionsSheet(
       BuildContext ctx, ps.PlayerState state, _NPPalette palette) {
     final track = state.currentTrack;
+    final song = track == null
+        ? null
+        : SongEntity(
+            id: track.id,
+            title: track.title,
+            artist: track.artist,
+            duration: track.duration ?? state.duration,
+            coverUrl: track.albumArt,
+            streamUrl: track.fileUrl,
+          );
     showModalBottomSheet(
       context: ctx,
       useRootNavigator: true,
@@ -862,7 +874,24 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
                   icon: LucideIcons.listPlus,
                   label: 'Add to playlist',
                   palette: palette,
-                  onTap: () => Navigator.pop(ctx)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    if (song == null) {
+                      ScaffoldMessenger.of(ctx).showSnackBar(
+                        const SnackBar(
+                          content: Text('No track is currently playing.'),
+                        ),
+                      );
+                      return;
+                    }
+                    showModalBottomSheet<void>(
+                      context: ctx,
+                      useRootNavigator: true,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (_) => SelectPlaylistBottomSheet(song: song),
+                    );
+                  }),
               // _SheetOption(
               //     icon: LucideIcons.ban,
               //     label: 'Block song',
@@ -893,7 +922,20 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
                   icon: LucideIcons.mic2,
                   label: 'Go to artist',
                   palette: palette,
-                  onTap: () => Navigator.pop(ctx)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    final artist = track?.artist.trim();
+                    if (artist == null || artist.isEmpty) {
+                      ScaffoldMessenger.of(ctx).showSnackBar(
+                        const SnackBar(
+                          content:
+                              Text('This track has no artist information.'),
+                        ),
+                      );
+                      return;
+                    }
+                    ctx.go('/search/artist/${Uri.encodeComponent(artist)}');
+                  }),
               const SizedBox(height: 16),
             ],
           ),

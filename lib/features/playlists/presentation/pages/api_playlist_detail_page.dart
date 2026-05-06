@@ -573,7 +573,20 @@ class _TrackTile extends StatelessWidget {
                     );
                     break;
                   case SongOption.goToAlbum:
+                    break;
                   case SongOption.goToArtist:
+                    final artist = navigableSongArtist(mappedSong.artist);
+                    if (artist == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content:
+                              Text('This track has no artist information.'),
+                        ),
+                      );
+                      break;
+                    }
+                    context.go('/search/artist/${Uri.encodeComponent(artist)}');
+                    break;
                   case SongOption.block:
                   case SongOption.share:
                     break;

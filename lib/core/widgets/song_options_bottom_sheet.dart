@@ -22,6 +22,18 @@ enum SongOption {
   share,
 }
 
+String? navigableSongArtist(String artist) {
+  final value = artist.trim();
+  if (value.isEmpty) return null;
+  final normalized = value.toLowerCase();
+  if (normalized == 'unknown' ||
+      normalized == 'unknown artist' ||
+      normalized == 'unknown artists') {
+    return null;
+  }
+  return value;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // SongOptionsBottomSheet
 //
@@ -45,7 +57,7 @@ class SongOptionsBottomSheet extends StatelessWidget {
     this.enableAddToQueue = false,
     this.addToQueueLabel = 'Add to queue',
     this.enableGoToAlbum = false,
-    this.enableGoToArtist = false,
+    this.enableGoToArtist = true,
   });
 
   final SongEntity song;
@@ -71,6 +83,8 @@ class SongOptionsBottomSheet extends StatelessWidget {
     final textPrimary = tokens.textPrimary;
     final textMuted = tokens.textSecondary;
     final dividerColor = tokens.divider;
+    final canGoToArtist =
+        enableGoToArtist && navigableSongArtist(song.artist) != null;
 
     return SafeArea(
       bottom: true,
@@ -225,11 +239,11 @@ class SongOptionsBottomSheet extends StatelessWidget {
             _OptionTile(
               icon: Icons.person_outline,
               label: 'Go to artist',
-              enabled: enableGoToArtist,
+              enabled: canGoToArtist,
               isDark: isDark,
               textPrimary: textPrimary,
               textMuted: textMuted,
-              onTap: enableGoToArtist
+              onTap: canGoToArtist
                   ? () => Navigator.pop(context, SongOption.goToArtist)
                   : null,
             ),

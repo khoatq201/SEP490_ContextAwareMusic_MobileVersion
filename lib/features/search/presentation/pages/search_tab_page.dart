@@ -45,6 +45,10 @@ class SearchTabPage extends StatelessWidget {
 
 bool _isSearchSongPlayable(SearchResult result) => result.isPlayableTrack;
 
+String? _searchResultArtistName(SearchResult result) {
+  return navigableSongArtist(result.subtitle);
+}
+
 String _searchPlaybackTagLabel(SearchResult result) {
   return result.copyrightClearanceStatus?.displayName ?? 'Unknown';
 }
@@ -106,6 +110,18 @@ Future<void> _handleSearchSongOption(
   SearchResult result,
   SongOption option,
 ) async {
+  if (option == SongOption.goToArtist) {
+    final artist = _searchResultArtistName(result);
+    if (artist == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This track has no artist information.')),
+      );
+      return;
+    }
+    context.go('/search/artist/${Uri.encodeComponent(artist)}');
+    return;
+  }
+
   if (option != SongOption.addToPlaylist && !_isSearchSongPlayable(result)) {
     _showSearchSongPlaybackBlocked(context, result);
     return;
@@ -171,11 +187,6 @@ Future<void> _openSearchSongOptions(
   BuildContext context,
   SearchResult result,
 ) async {
-  if (!_isSearchSongPlayable(result)) {
-    _showSearchSongPlaybackBlocked(context, result);
-    return;
-  }
-
   final option = await showModalBottomSheet<SongOption>(
     context: context,
     useRootNavigator: true,
@@ -185,8 +196,9 @@ Future<void> _openSearchSongOptions(
       song: _searchResultToSongEntity(result),
       showPlayNow: true,
       showPlayNext: true,
-      enableAddToQueue: true,
+      enableAddToQueue: _isSearchSongPlayable(result),
       addToQueueLabel: 'Add to space queue',
+      enableGoToArtist: _searchResultArtistName(result) != null,
     ),
   );
 
@@ -856,9 +868,7 @@ class _ResultTile extends StatelessWidget {
                 size: 18,
               ),
               splashRadius: 18,
-              onPressed: isPlayableSong
-                  ? () => _openSearchSongOptions(context, result)
-                  : null,
+              onPressed: () => _openSearchSongOptions(context, result),
             ),
           ],
         ),
@@ -1250,6 +1260,7 @@ class _SongListSliver extends StatelessWidget {
             return SongListTile(
               song: song,
               enabled: isPlayable,
+              optionsEnabled: true,
               badge: _SearchPlaybackTag(
                 label: _searchPlaybackTagLabel(r),
                 isPlayable: isPlayable,
@@ -1258,6 +1269,7 @@ class _SongListSliver extends StatelessWidget {
               showPlayNext: true,
               enableAddToQueue: isPlayable,
               addToQueueLabel: 'Add to space queue',
+              enableGoToArtist: _searchResultArtistName(r) != null,
               forwardPlayNowToOptionHandler: true,
               onOptionSelected: (option) =>
                   _handleSearchSongOption(context, r, option),

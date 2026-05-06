@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
@@ -28,9 +29,10 @@ class SongListTile extends StatelessWidget {
     this.enableAddToQueue = false,
     this.addToQueueLabel = 'Add to queue',
     this.enableGoToAlbum = false,
-    this.enableGoToArtist = false,
+    this.enableGoToArtist = true,
     this.forwardPlayNowToOptionHandler = false,
     this.enabled = true,
+    this.optionsEnabled,
     this.badge,
   });
 
@@ -52,10 +54,11 @@ class SongListTile extends StatelessWidget {
   final bool enableGoToArtist;
   final bool forwardPlayNowToOptionHandler;
   final bool enabled;
+  final bool? optionsEnabled;
   final Widget? badge;
 
   void _openOptions(BuildContext context) {
-    if (!enabled) return;
+    if (!(optionsEnabled ?? enabled)) return;
     showModalBottomSheet<SongOption>(
       context: context,
       useRootNavigator: true,
@@ -92,6 +95,11 @@ class SongListTile extends StatelessWidget {
           } else {
             onTap?.call();
           }
+          return;
+        case SongOption.goToArtist:
+          final artist = navigableSongArtist(song.artist);
+          if (artist == null) return;
+          context.go('/search/artist/${Uri.encodeComponent(artist)}');
           return;
         default:
           onOptionSelected?.call(option);
@@ -179,7 +187,9 @@ class SongListTile extends StatelessWidget {
                 splashRadius: 20,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                onPressed: enabled ? () => _openOptions(context) : null,
+                onPressed: (optionsEnabled ?? enabled)
+                    ? () => _openOptions(context)
+                    : null,
               ),
             ],
           ),

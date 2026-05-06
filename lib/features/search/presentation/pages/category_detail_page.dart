@@ -166,6 +166,10 @@ SongEntity _categoryTrackToSongEntity(SearchResult result) {
   );
 }
 
+String? _categoryTrackArtistName(SearchResult result) {
+  return navigableSongArtist(result.subtitle);
+}
+
 void _playCategoryTrackOrShowMessage(
   BuildContext context,
   SearchResult result,
@@ -188,6 +192,18 @@ Future<void> _handleCategoryTrackOption(
   SearchResult result,
   SongOption option,
 ) async {
+  if (option == SongOption.goToArtist) {
+    final artist = _categoryTrackArtistName(result);
+    if (artist == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This track has no artist information.')),
+      );
+      return;
+    }
+    context.go('/search/artist/${Uri.encodeComponent(artist)}');
+    return;
+  }
+
   if (!_isCategoryTrackPlayable(result)) {
     _showCategoryTrackPlaybackBlocked(context, result);
     return;
@@ -288,6 +304,7 @@ class _CategoryContent extends StatelessWidget {
                 return SongListTile(
                   song: song,
                   enabled: isPlayable,
+                  optionsEnabled: true,
                   badge: _CategoryPlaybackTag(
                     label: _categoryTrackPlaybackTagLabel(result),
                     isPlayable: isPlayable,
@@ -296,6 +313,7 @@ class _CategoryContent extends StatelessWidget {
                   showPlayNext: true,
                   enableAddToQueue: isPlayable,
                   addToQueueLabel: 'Add to space queue',
+                  enableGoToArtist: _categoryTrackArtistName(result) != null,
                   forwardPlayNowToOptionHandler: true,
                   onOptionSelected: (option) =>
                       _handleCategoryTrackOption(ctx, result, option),
