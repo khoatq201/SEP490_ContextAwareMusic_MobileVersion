@@ -15,6 +15,8 @@ import '../../../../core/session/session_cubit.dart';
 import '../../../../core/session/session_state.dart';
 import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../../../core/widgets/cams_skeleton.dart';
+import '../../../../core/widgets/playlist_cover_collage.dart';
+import '../../../../core/widgets/shared_catalog_badge.dart';
 import '../../../../injection_container.dart';
 import '../../../cams/domain/entities/space_playback_state.dart';
 import '../../../cams/presentation/bloc/cams_playback_bloc.dart';
@@ -1754,15 +1756,13 @@ class _PlaylistCard extends StatelessWidget {
             fit: StackFit.expand,
             children: [
               // Background cover image
-              if (playlist.coverUrl != null)
-                Image.network(
-                  playlist.coverUrl!,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) =>
-                      _FallbackCover(palette: palette),
-                )
-              else
-                _FallbackCover(palette: palette),
+              PlaylistCoverCollage(
+                coverUrls: playlist.trackCoverUrls,
+                fallbackCoverUrl: playlist.coverUrl,
+                backgroundColor: palette.card,
+                iconColor: palette.textMuted,
+                iconSize: 42,
+              ),
 
               // Gradient overlay — bottom ⅔
               Positioned.fill(
@@ -1787,23 +1787,32 @@ class _PlaylistCard extends StatelessWidget {
               Positioned(
                 top: 10,
                 right: 10,
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.50),
-                    borderRadius: BorderRadius.circular(10),
-                    border:
-                        Border.all(color: Colors.white.withValues(alpha: 0.15)),
-                  ),
-                  child: Text(
-                    '${playlist.totalTracks} tracks',
-                    style: GoogleFonts.inter(
-                      color: Colors.white.withValues(alpha: 0.90),
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.50),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.15)),
+                      ),
+                      child: Text(
+                        '${playlist.totalTracks} tracks',
+                        style: GoogleFonts.inter(
+                          color: Colors.white.withValues(alpha: 0.90),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
-                  ),
+                    if (playlist.isSharedCatalog) ...[
+                      const SizedBox(height: 6),
+                      const SharedCatalogBadge(compact: true),
+                    ],
+                  ],
                 ),
               ),
 
@@ -1854,19 +1863,6 @@ class _PlaylistCard extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _FallbackCover extends StatelessWidget {
-  const _FallbackCover({required this.palette});
-  final _Palette palette;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: palette.accent.withValues(alpha: 0.20),
-      child: Icon(LucideIcons.music4, color: palette.textMuted, size: 40),
     );
   }
 }

@@ -28,3 +28,18 @@ class GetCategoryTracksUseCase {
         playableTracksOnly: playableTracksOnly,
       );
 }
+
+class GetGenreTracksUseCase {
+  GetGenreTracksUseCase(this.repository);
+
+  final SearchRepository repository;
+
+  Future<Either<Failure, List<SearchResult>>> call(
+    String genre, {
+    bool playableTracksOnly = false,
+  }) =>
+      repository.getGenreTracks(
+        genre,
+        playableTracksOnly: playableTracksOnly,
+      );
+}

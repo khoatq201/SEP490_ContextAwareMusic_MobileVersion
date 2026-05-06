@@ -19,8 +19,10 @@ import '../../../../core/session/session_cubit.dart';
 import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../../../core/utils/cams_queue_actions.dart';
 import '../../../../core/widgets/cams_skeleton.dart';
+import '../../../../core/widgets/playlist_cover_collage.dart';
 import '../../../../core/widgets/queue_mode_picker_bottom_sheet.dart';
 import '../../../../core/widgets/select_playlist_bottom_sheet.dart';
+import '../../../../core/widgets/shared_catalog_badge.dart';
 import '../../../../core/widgets/song_options_bottom_sheet.dart';
 import '../../../../injection_container.dart';
 import '../../../cams/data/services/store_hub_service.dart';
@@ -31,6 +33,7 @@ import '../../../moods/domain/usecases/get_moods.dart';
 import '../../domain/create_library_playlist_usecase.dart';
 import '../../domain/playlist_creation_guard.dart';
 import '../../../playlists/data/datasources/playlist_remote_datasource.dart';
+import '../../../playlists/domain/entities/api_playlist.dart';
 import '../../../suno/data/datasources/suno_remote_datasource.dart';
 import '../../../suno/domain/entities/suno_brand_music_profile.dart';
 import '../../../suno/domain/entities/suno_config.dart';
@@ -160,23 +163,66 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
     try {
       final playlistDs = sl<PlaylistRemoteDataSource>();
       final resp = await playlistDs.getPlaylists(page: 1, pageSize: 50);
+      final detailsById = await _loadPlaylistDetails(playlistDs, resp.items);
       if (!mounted) return;
       setState(() {
         _savedPlaylists = resp.items
-            .map((p) => PlaylistEntity(
-                  id: p.id,
-                  title: p.name,
-                  description: p.description,
-                  coverUrl: null,
-                  songs: const [],
-                  overrideTrackCount: p.trackCount,
-                ))
+            .map((p) => _playlistEntityFromApi(p, detailsById[p.id]))
             .toList();
         _cache.put(cacheKey, _savedPlaylists);
       });
     } catch (_) {
       // Keep library usable even when playlists fail to load.
     }
+  }
+
+  Future<Map<String, ApiPlaylist>> _loadPlaylistDetails(
+    PlaylistRemoteDataSource playlistDs,
+    List<ApiPlaylist> playlists,
+  ) async {
+    final entries = await Future.wait(
+      playlists.map((playlist) async {
+        try {
+          final detail = await playlistDs.getPlaylistById(playlist.id);
+          return MapEntry(playlist.id, detail);
+        } catch (_) {
+          return null;
+        }
+      }),
+    );
+
+    return {
+      for (final entry in entries)
+        if (entry != null) entry.key: entry.value,
+    };
+  }
+
+  PlaylistEntity _playlistEntityFromApi(
+    ApiPlaylist playlist,
+    ApiPlaylist? detail,
+  ) {
+    final tracks = detail?.tracks ?? const [];
+    return PlaylistEntity(
+      id: playlist.id,
+      brandId: playlist.brandId,
+      title: playlist.name,
+      description: playlist.description,
+      coverUrl: null,
+      songs: tracks
+          .map(
+            (track) => SongEntity(
+              id: track.trackId,
+              brandId: track.brandId,
+              title: track.title ?? 'Unknown',
+              artist: track.artist ?? 'Unknown',
+              duration: track.effectiveDuration,
+              coverUrl: track.coverImageUrl,
+              streamUrl: track.hlsUrl,
+            ),
+          )
+          .toList(growable: false),
+      overrideTrackCount: playlist.trackCount,
+    );
   }
 
   Future<void> _loadMoods({bool forceRefresh = false}) async {
@@ -1441,6 +1487,7 @@ class _LibraryTabPageState extends State<LibraryTabPage> {
   SongEntity _songEntityForTrack(ApiTrack track) {
     return SongEntity(
       id: track.id,
+      brandId: track.brandId,
       title: track.title,
       artist: track.artist ?? 'Unknown artist',
       duration: track.durationSec ?? 0,
@@ -1587,14 +1634,13 @@ class _PlaylistTile extends StatelessWidget {
                 child: SizedBox(
                   width: 56,
                   height: 56,
-                  child: playlist.coverUrl != null
-                      ? Image.network(
-                          playlist.coverUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
-                              _CoverFallback(palette: palette),
-                        )
-                      : _CoverFallback(palette: palette),
+                  child: PlaylistCoverCollage(
+                    coverUrls: playlist.trackCoverUrls,
+                    fallbackCoverUrl: playlist.coverUrl,
+                    backgroundColor: palette.overlay,
+                    iconColor: palette.textMuted,
+                    iconSize: 22,
+                  ),
                 ),
               ),
               const SizedBox(width: 14),
@@ -1624,6 +1670,10 @@ class _PlaylistTile extends StatelessWidget {
                         fontSize: 12,
                       ),
                     ),
+                    if (playlist.isSharedCatalog) ...[
+                      const SizedBox(height: 6),
+                      const SharedCatalogBadge(compact: true),
+                    ],
                   ],
                 ),
               ),
@@ -1827,6 +1877,8 @@ class _TrackLibraryTile extends StatelessWidget {
                             label: 'AI',
                             accentColor: palette.accentAlt,
                           ),
+                        if (isSharedCatalogItem(track.brandId))
+                          const SharedCatalogBadge(compact: true),
                         if ((track.transcodeStatus ?? '').isNotEmpty)
                           _TrackBadge(
                             palette: palette,

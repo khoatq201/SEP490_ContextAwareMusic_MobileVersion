@@ -19,6 +19,7 @@ import '../../../../core/presentation/app_feedback.dart';
 import '../../../../core/presentation/playback_mood_label.dart';
 import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../../../core/widgets/select_playlist_bottom_sheet.dart';
+import '../../../../core/widgets/shared_catalog_badge.dart';
 import '../../../../core/widgets/app_feedback_presenter.dart';
 import '../../../../core/widgets/cams_skeleton.dart';
 import '../../../../features/cams/data/models/override_response_model.dart';
@@ -58,6 +59,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
 
   double _volume = 0.6;
   late final AnimationController _discRotationController;
+  bool? _lastDiscSpinIntent;
 
   @override
   void initState() {
@@ -75,14 +77,31 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
   }
 
   void _syncDiscRotation(bool shouldSpin) {
+    if (_lastDiscSpinIntent != shouldSpin) {
+      debugPrint(
+        '[NowPlayingArtworkDebug] discSpinIntent '
+        'shouldSpin=$shouldSpin '
+        'wasAnimating=${_discRotationController.isAnimating} '
+        'value=${_discRotationController.value.toStringAsFixed(3)}',
+      );
+      _lastDiscSpinIntent = shouldSpin;
+    }
     if (shouldSpin) {
       if (!_discRotationController.isAnimating) {
+        debugPrint(
+          '[NowPlayingArtworkDebug] discRotation repeat '
+          'from=${_discRotationController.value.toStringAsFixed(3)}',
+        );
         _discRotationController.repeat();
       }
       return;
     }
 
     if (_discRotationController.isAnimating) {
+      debugPrint(
+        '[NowPlayingArtworkDebug] discRotation stop '
+        'at=${_discRotationController.value.toStringAsFixed(3)}',
+      );
       _discRotationController.stop(canceled: false);
     }
   }
@@ -460,20 +479,23 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
 
                 // â”€â”€ Album art â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 Center(
-                  child: SizedBox.square(
-                    dimension: _discDimension(context),
-                    child: _SpinningAlbumDisc(
-                      artUrl: track?.albumArt,
-                      palette: palette,
-                      moodAccent: trackMoodAccent,
-                      rotation: _discRotationController,
-                      placeholder: _artPlaceholder(palette),
+                  child: RepaintBoundary(
+                    child: SizedBox.square(
+                      dimension: _discDimension(context),
+                      child: _SpinningAlbumDisc(
+                        artIdentity: track?.queueItemId ??
+                            playerState.currentQueueItemId ??
+                            track?.id ??
+                            playerState.currentTrackId,
+                        artUrl: track?.albumArt,
+                        palette: palette,
+                        moodAccent: trackMoodAccent,
+                        rotation: _discRotationController,
+                        placeholder: _artPlaceholder(palette),
+                      ),
                     ),
                   ),
-                )
-                    .animate()
-                    .fadeIn(duration: 380.ms)
-                    .scale(begin: const Offset(0.96, 0.96)),
+                ),
 
                 const SizedBox(height: 18),
 
@@ -490,15 +512,24 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  track?.artist ?? '',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
-                    color: palette.textMuted,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                  ),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(
+                      track?.artist ?? '',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        color: palette.textMuted,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    if (isSharedCatalogItem(track?.brandId))
+                      const SharedCatalogBadge(compact: true),
+                  ],
                 ),
                 if (playerState.playlistName != null &&
                     playerState.playlistName!.isNotEmpty) ...[
@@ -786,6 +817,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
         ? null
         : SongEntity(
             id: track.id,
+            brandId: track.brandId,
             title: track.title,
             artist: track.artist,
             duration: track.duration ?? state.duration,
@@ -1655,6 +1687,7 @@ class _QueueSheetState extends State<_QueueSheet> {
 
               return _QueueTrackTile(
                 title: queuedTrack.title,
+                brandId: queuedTrack.brandId,
                 artist: queuedTrack.artist,
                 artUrl: queuedTrack.artUrl,
                 isPlaying: queuedTrack.isCurrent,
@@ -1839,6 +1872,7 @@ class _QueueAudioControlsState extends State<_QueueAudioControls> {
 
 class _SpinningAlbumDisc extends StatelessWidget {
   const _SpinningAlbumDisc({
+    required this.artIdentity,
     required this.artUrl,
     required this.palette,
     required this.moodAccent,
@@ -1846,6 +1880,7 @@ class _SpinningAlbumDisc extends StatelessWidget {
     required this.placeholder,
   });
 
+  final String? artIdentity;
   final String? artUrl;
   final _NPPalette palette;
   final Color moodAccent;
@@ -1886,13 +1921,11 @@ class _SpinningAlbumDisc extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.all(10),
                     child: ClipOval(
-                      child: artUrl != null
-                          ? Image.network(
-                              artUrl!,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => placeholder,
-                            )
-                          : placeholder,
+                      child: _StableAlbumArtImage(
+                        identity: artIdentity,
+                        url: artUrl,
+                        placeholder: placeholder,
+                      ),
                     ),
                   ),
                 ),
@@ -1919,6 +1952,134 @@ class _SpinningAlbumDisc extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _StableAlbumArtImage extends StatefulWidget {
+  const _StableAlbumArtImage({
+    required this.identity,
+    required this.url,
+    required this.placeholder,
+  });
+
+  final String? identity;
+  final String? url;
+  final Widget placeholder;
+
+  @override
+  State<_StableAlbumArtImage> createState() => _StableAlbumArtImageState();
+}
+
+class _StableAlbumArtImageState extends State<_StableAlbumArtImage> {
+  String? _displayedIdentity;
+  String? _displayedUrl;
+  String? _displayedUrlSignature;
+  late Widget _displayedChild;
+  int _unchangedUpdateCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _displayedIdentity = widget.identity;
+    _displayedUrl = _cleanUrl(widget.url);
+    _displayedUrlSignature = _urlSignature(_displayedUrl);
+    _displayedChild = _buildDisplayedChild(_displayedIdentity, _displayedUrl);
+    _logArtwork(
+      'init identity=${_displayedIdentity ?? '-'} url=${_displayedUrl ?? '-'}',
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant _StableAlbumArtImage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final nextIdentity = widget.identity;
+    final nextUrl = _cleanUrl(widget.url);
+    final nextUrlSignature = _urlSignature(nextUrl);
+    final identityChanged =
+        nextIdentity != null && nextIdentity != _displayedIdentity;
+    final urlChanged = nextUrlSignature != _displayedUrlSignature;
+    final placeholderChanged = nextUrl == null &&
+        oldWidget.placeholder != widget.placeholder &&
+        _displayedUrl == null;
+
+    if (identityChanged || urlChanged || placeholderChanged) {
+      _logArtwork(
+        'change '
+        'identity=${_displayedIdentity ?? '-'} -> ${nextIdentity ?? '-'} '
+        'url=${_displayedUrl ?? '-'} -> ${nextUrl ?? '-'} '
+        'urlSignature=${_displayedUrlSignature ?? '-'} -> ${nextUrlSignature ?? '-'} '
+        'identityChanged=$identityChanged '
+        'urlChanged=$urlChanged '
+        'placeholderChanged=$placeholderChanged',
+      );
+      _unchangedUpdateCount = 0;
+      setState(() {
+        _displayedIdentity = nextIdentity;
+        _displayedUrl = nextUrl;
+        _displayedUrlSignature = nextUrlSignature;
+        _displayedChild = _buildDisplayedChild(_displayedIdentity, nextUrl);
+      });
+      return;
+    }
+
+    _unchangedUpdateCount += 1;
+    if (_unchangedUpdateCount == 1 || _unchangedUpdateCount % 10 == 0) {
+      _logArtwork(
+        'didUpdate unchanged count=$_unchangedUpdateCount '
+        'identity=${_displayedIdentity ?? '-'} '
+        'url=${_displayedUrl ?? '-'} '
+        'incomingUrl=${nextUrl ?? '-'}',
+      );
+    }
+  }
+
+  static String? _cleanUrl(String? value) {
+    final trimmed = value?.trim();
+    return trimmed == null || trimmed.isEmpty ? null : trimmed;
+  }
+
+  static String? _urlSignature(String? value) {
+    final cleaned = _cleanUrl(value);
+    if (cleaned == null) return null;
+    final uri = Uri.tryParse(cleaned);
+    if (uri == null || !uri.hasScheme) return cleaned;
+    return uri.replace(query: '', fragment: '').toString();
+  }
+
+  Widget _buildDisplayedChild(String? identity, String? url) {
+    final childKey = ValueKey('${identity ?? ''}|${url ?? ''}');
+    _logArtwork(
+      'buildDisplayedChild '
+      'type=${url == null ? 'placeholder' : 'network'} '
+      'key=${childKey.value}',
+    );
+    return url == null
+        ? KeyedSubtree(
+            key: childKey,
+            child: widget.placeholder,
+          )
+        : Image.network(
+            url,
+            key: childKey,
+            fit: BoxFit.cover,
+            gaplessPlayback: true,
+            filterQuality: FilterQuality.medium,
+            errorBuilder: (_, __, ___) => widget.placeholder,
+          );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 220),
+      switchInCurve: Curves.easeOut,
+      switchOutCurve: Curves.easeIn,
+      child: RepaintBoundary(child: _displayedChild),
+    );
+  }
+
+  void _logArtwork(String message) {
+    debugPrint('[NowPlayingArtworkDebug] $message');
   }
 }
 
@@ -2619,6 +2780,7 @@ class _SheetOption extends StatelessWidget {
 class _QueueTrackTile extends StatelessWidget {
   const _QueueTrackTile({
     required this.title,
+    this.brandId,
     required this.artist,
     this.artUrl,
     required this.isPlaying,
@@ -2631,6 +2793,7 @@ class _QueueTrackTile extends StatelessWidget {
     required this.palette,
   });
   final String title, artist;
+  final String? brandId;
   final String? artUrl;
   final bool isPlaying;
   final bool isPending;
@@ -2722,14 +2885,27 @@ class _QueueTrackTile extends StatelessWidget {
                           label: sourceLabel!,
                           palette: palette,
                         ),
+                      if (isSharedCatalogItem(brandId))
+                        const SharedCatalogBadge(compact: true),
                     ],
                   ),
                 ] else if (sourceLabel != null && sourceLabel!.isNotEmpty) ...[
                   const SizedBox(height: 4),
-                  _QueueSourceBadge(
-                    label: sourceLabel!,
-                    palette: palette,
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: [
+                      _QueueSourceBadge(
+                        label: sourceLabel!,
+                        palette: palette,
+                      ),
+                      if (isSharedCatalogItem(brandId))
+                        const SharedCatalogBadge(compact: true),
+                    ],
                   ),
+                ] else if (isSharedCatalogItem(brandId)) ...[
+                  const SizedBox(height: 4),
+                  const SharedCatalogBadge(compact: true),
                 ],
               ],
             ),
@@ -3011,6 +3187,7 @@ class _QueueReorderableTrackSliverState
           final key = ValueKey(item.queueItemId ?? '${item.trackId}-$index');
           final tile = _QueueTrackTile(
             title: item.title,
+            brandId: item.brandId,
             artist: item.artist,
             artUrl: item.artUrl,
             isPlaying: item.isCurrent,

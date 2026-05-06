@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/cams_theme_tokens.dart';
 
 /// Welcome / Landing screen — the first thing a new user sees.
@@ -416,15 +418,7 @@ class _BottomActions extends StatelessWidget {
                 ),
                 elevation: 0,
               ),
-              onPressed: () {
-                // TODO: launch https://your-website.com/signup
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Registration portal coming soon!'),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              },
+              onPressed: () => _openRegistrationPortal(context),
               child: Text('Sign up',
                   style: GoogleFonts.poppins(
                     fontSize: 16,
@@ -476,6 +470,21 @@ class _BottomActions extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _openRegistrationPortal(BuildContext context) async {
+    final opened = await launchUrl(
+      Uri.parse(AppConstants.registrationPortalUrl),
+      mode: LaunchMode.externalApplication,
+    );
+    if (opened || !context.mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(AppConstants.registrationPortalOpenError),
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }

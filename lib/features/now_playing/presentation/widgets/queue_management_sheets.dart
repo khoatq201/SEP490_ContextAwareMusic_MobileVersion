@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/enums/entity_status_enum.dart';
 import '../../../../core/enums/queue_insert_mode_enum.dart';
 import '../../../../core/session/session_cubit.dart';
+import '../../../../core/widgets/shared_catalog_badge.dart';
 import '../../../../features/cams/presentation/bloc/cams_playback_bloc.dart';
 import '../../../../features/cams/presentation/bloc/cams_playback_event.dart';
 import '../../../../features/moods/domain/entities/mood.dart';
@@ -87,6 +88,7 @@ Future<List<ApiTrack>> _loadPlaybackDeviceTracksFromPlaylists({
             item.trackId,
             () => ApiTrack(
               id: item.trackId,
+              brandId: item.brandId,
               title: title == null || title.isEmpty ? 'Untitled track' : title,
               artist: item.artist,
               moodId: detail.moodId,
@@ -565,16 +567,25 @@ class _NowPlayingAddToQueueSheetState extends State<NowPlayingAddToQueueSheet> {
                 fontWeight: FontWeight.w700,
               ),
             ),
-            subtitle: Text(
-              track.artist?.trim().isNotEmpty == true
-                  ? track.artist!
-                  : 'Unknown artist',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(
-                color: palette.textMuted,
-                fontSize: 12,
-              ),
+            subtitle: Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(
+                  track.artist?.trim().isNotEmpty == true
+                      ? track.artist!
+                      : 'Unknown artist',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    color: palette.textMuted,
+                    fontSize: 12,
+                  ),
+                ),
+                if (isSharedCatalogItem(track.brandId))
+                  const SharedCatalogBadge(compact: true),
+              ],
             ),
           );
         },
@@ -630,19 +641,30 @@ class _NowPlayingAddToQueueSheetState extends State<NowPlayingAddToQueueSheet> {
                 fontWeight: FontWeight.w700,
               ),
             ),
-            subtitle: Text(
-              '${playlist.trackCount} tracks',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(
-                color: palette.textMuted,
-                fontSize: 12,
-              ),
+            subtitle: Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(
+                  '${playlist.trackCount} tracks',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    color: palette.textMuted,
+                    fontSize: 12,
+                  ),
+                ),
+                if (isSharedCatalogItem(playlist.brandId))
+                  const SharedCatalogBadge(compact: true),
+              ],
             ),
             trailing: selected
                 ? Icon(Icons.check_circle, color: palette.accent)
                 : null,
-            onTap: () => setState(() => _selectedPlaylistId = playlist.id),
+            onTap: () => setState(() {
+              _selectedPlaylistId = playlist.id;
+            }),
           );
         },
       ),
@@ -1300,16 +1322,25 @@ class _NowPlayingOverrideMusicSheetState
                 fontWeight: FontWeight.w700,
               ),
             ),
-            subtitle: Text(
-              track.artist?.trim().isNotEmpty == true
-                  ? track.artist!
-                  : 'Unknown artist',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(
-                color: palette.textMuted,
-                fontSize: 12,
-              ),
+            subtitle: Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(
+                  track.artist?.trim().isNotEmpty == true
+                      ? track.artist!
+                      : 'Unknown artist',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    color: palette.textMuted,
+                    fontSize: 12,
+                  ),
+                ),
+                if (isSharedCatalogItem(track.brandId))
+                  const SharedCatalogBadge(compact: true),
+              ],
             ),
           );
         },
@@ -1365,14 +1396,23 @@ class _NowPlayingOverrideMusicSheetState
                 fontWeight: FontWeight.w700,
               ),
             ),
-            subtitle: Text(
-              '${playlist.trackCount} tracks',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(
-                color: palette.textMuted,
-                fontSize: 12,
-              ),
+            subtitle: Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(
+                  '${playlist.trackCount} tracks',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    color: palette.textMuted,
+                    fontSize: 12,
+                  ),
+                ),
+                if (isSharedCatalogItem(playlist.brandId))
+                  const SharedCatalogBadge(compact: true),
+              ],
             ),
             trailing: selected
                 ? Icon(Icons.check_circle, color: palette.accent)

@@ -4,6 +4,7 @@ import 'song_entity.dart';
 /// A curated playlist card shown inside a [CategoryEntity] row.
 class PlaylistEntity extends Equatable {
   final String id;
+  final String? brandId;
   final String title;
   final String? description;
 
@@ -21,6 +22,7 @@ class PlaylistEntity extends Equatable {
 
   const PlaylistEntity({
     required this.id,
+    this.brandId,
     required this.title,
     this.description,
     this.coverUrl,
@@ -29,7 +31,15 @@ class PlaylistEntity extends Equatable {
     this.overrideTrackCount,
   });
 
+  bool get isSharedCatalog => brandId == null || brandId!.trim().isEmpty;
+
   int get totalTracks => overrideTrackCount ?? songs.length;
+
+  List<String> get trackCoverUrls => songs
+      .map((song) => song.coverUrl?.trim())
+      .whereType<String>()
+      .where((url) => url.isNotEmpty)
+      .toList(growable: false);
 
   /// Total duration of all songs in seconds
   int get totalDuration => songs.fold(0, (sum, s) => sum + s.duration);
@@ -37,6 +47,7 @@ class PlaylistEntity extends Equatable {
   @override
   List<Object?> get props => [
         id,
+        brandId,
         title,
         description,
         coverUrl,
@@ -47,6 +58,7 @@ class PlaylistEntity extends Equatable {
 
   PlaylistEntity copyWith({
     String? id,
+    String? brandId,
     String? title,
     String? description,
     String? coverUrl,
@@ -56,6 +68,7 @@ class PlaylistEntity extends Equatable {
   }) =>
       PlaylistEntity(
         id: id ?? this.id,
+        brandId: brandId ?? this.brandId,
         title: title ?? this.title,
         description: description ?? this.description,
         coverUrl: coverUrl ?? this.coverUrl,

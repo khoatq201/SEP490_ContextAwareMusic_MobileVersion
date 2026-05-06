@@ -332,7 +332,7 @@ class SettingsPage extends StatelessWidget {
   void _showAbout(BuildContext context) {
     showAboutDialog(
       context: context,
-      applicationName: 'CAMS Store Manager',
+      applicationName: 'Context-aware Music',
       applicationVersion: '1.0.0',
       applicationLegalese: 'Connected Adaptive Music System',
     );

@@ -194,6 +194,7 @@ class _ArtistBody extends StatelessWidget {
                     final tracks = artist.popularSongs
                         .map((s) => Track(
                               id: s.id,
+                              brandId: s.brandId,
                               title: s.title,
                               artist: s.artist,
                               fileUrl: s.streamUrl ?? '',

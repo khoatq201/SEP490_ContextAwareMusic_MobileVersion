@@ -33,14 +33,17 @@ class CategoryDetailCubit extends Cubit<CategoryDetailState> {
   CategoryDetailCubit({
     required GetCategoryPlaylistsUseCase getCategoryPlaylists,
     required GetCategoryTracksUseCase getCategoryTracks,
+    required GetGenreTracksUseCase getGenreTracks,
     SessionCubit? sessionCubit,
   })  : _getCategoryPlaylists = getCategoryPlaylists,
         _getCategoryTracks = getCategoryTracks,
+        _getGenreTracks = getGenreTracks,
         _sessionCubit = sessionCubit,
         super(const CategoryDetailState());
 
   final GetCategoryPlaylistsUseCase _getCategoryPlaylists;
   final GetCategoryTracksUseCase _getCategoryTracks;
+  final GetGenreTracksUseCase _getGenreTracks;
   final SessionCubit? _sessionCubit;
 
   bool get _playableTracksOnly {
@@ -82,6 +85,29 @@ class CategoryDetailCubit extends Cubit<CategoryDetailState> {
         status: CategoryDetailStatus.loaded,
         playlists: playlists,
         tracks: tracks,
+      ),
+    );
+  }
+
+  Future<void> loadGenre(String genre) async {
+    emit(const CategoryDetailState(status: CategoryDetailStatus.loading));
+    final trackResult = await _getGenreTracks(
+      genre,
+      playableTracksOnly: _playableTracksOnly,
+    );
+
+    trackResult.fold(
+      (failure) => emit(
+        CategoryDetailState(
+          status: CategoryDetailStatus.error,
+          failure: failure,
+        ),
+      ),
+      (tracks) => emit(
+        CategoryDetailState(
+          status: CategoryDetailStatus.loaded,
+          tracks: tracks,
+        ),
       ),
     );
   }

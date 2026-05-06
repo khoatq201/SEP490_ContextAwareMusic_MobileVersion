@@ -6,6 +6,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../../features/home/domain/entities/song_entity.dart';
 import '../theme/cams_theme_tokens.dart';
 import 'select_playlist_bottom_sheet.dart';
+import 'shared_catalog_badge.dart';
 import 'song_options_bottom_sheet.dart';
 
 /// A reusable list-tile for displaying a [SongEntity] anywhere in the app
@@ -174,6 +175,10 @@ class SongListTile extends StatelessWidget {
                         if (badge != null) ...[
                           const SizedBox(width: 8),
                           badge!,
+                        ],
+                        if (song.isSharedCatalog) ...[
+                          const SizedBox(width: 8),
+                          const SharedCatalogBadge(compact: true),
                         ],
                       ],
                     ),

@@ -5,6 +5,7 @@ enum SearchFilterTag {
   playlists('Playlists'),
   artists('Artists'),
   songs('Songs'),
+  genres('Genres'),
   albums('Albums'),
   categories('Categories');
 

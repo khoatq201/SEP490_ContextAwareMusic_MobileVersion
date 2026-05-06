@@ -7,6 +7,7 @@ class SongEntity extends Equatable {
   final String id;
   final String title;
   final String artist;
+  final String? brandId;
 
   /// Duration in seconds
   final int duration;
@@ -21,10 +22,13 @@ class SongEntity extends Equatable {
     required this.id,
     required this.title,
     required this.artist,
+    this.brandId,
     required this.duration,
     this.coverUrl,
     this.streamUrl,
   });
+
+  bool get isSharedCatalog => brandId == null || brandId!.trim().isEmpty;
 
   /// Returns a formatted mm:ss string, e.g. "03:25"
   String get formattedDuration {
@@ -34,5 +38,6 @@ class SongEntity extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, title, artist, duration, coverUrl, streamUrl];
+  List<Object?> get props =>
+      [id, title, artist, brandId, duration, coverUrl, streamUrl];
 }

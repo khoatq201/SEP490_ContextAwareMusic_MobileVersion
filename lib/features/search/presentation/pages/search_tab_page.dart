@@ -14,8 +14,10 @@ import '../../../../core/utils/cams_queue_actions.dart';
 import '../../../../core/widgets/app_error_view.dart';
 import '../../../../core/widgets/app_inline_error_card.dart';
 import '../../../../core/widgets/cams_skeleton.dart';
+import '../../../../core/widgets/playlist_cover_collage.dart';
 import '../../../../core/widgets/queue_mode_picker_bottom_sheet.dart';
 import '../../../../core/widgets/select_playlist_bottom_sheet.dart';
+import '../../../../core/widgets/shared_catalog_badge.dart';
 import '../../../../core/widgets/song_list_tile.dart';
 import '../../../../core/widgets/song_options_bottom_sheet.dart';
 import '../../../../injection_container.dart';
@@ -48,6 +50,99 @@ bool _isSearchSongPlayable(SearchResult result) => result.isPlayableTrack;
 String? _searchResultArtistName(SearchResult result) {
   return navigableSongArtist(result.subtitle);
 }
+
+const List<SearchCategory> _popularGenres = [
+  SearchCategory(
+    id: 'Pop',
+    name: 'Pop',
+    color: Color(0xFFEF4444),
+    icon: Icons.auto_awesome,
+  ),
+  SearchCategory(
+    id: 'Rock',
+    name: 'Rock',
+    color: Color(0xFF7C2D12),
+    icon: Icons.music_note,
+  ),
+  SearchCategory(
+    id: 'Jazz',
+    name: 'Jazz',
+    color: Color(0xFFCA8A04),
+    icon: Icons.graphic_eq,
+  ),
+  SearchCategory(
+    id: 'Classical',
+    name: 'Classical',
+    color: Color(0xFF6D28D9),
+    icon: Icons.piano,
+  ),
+  SearchCategory(
+    id: 'Electronic',
+    name: 'Electronic',
+    color: Color(0xFF0891B2),
+    icon: Icons.speaker,
+  ),
+  SearchCategory(
+    id: 'Hip Hop',
+    name: 'Hip Hop',
+    color: Color(0xFFBE123C),
+    icon: Icons.mic,
+  ),
+  SearchCategory(
+    id: 'R&B',
+    name: 'R&B',
+    color: Color(0xFF9333EA),
+    icon: Icons.headphones,
+  ),
+  SearchCategory(
+    id: 'Country',
+    name: 'Country',
+    color: Color(0xFF15803D),
+    icon: Icons.place,
+  ),
+  SearchCategory(
+    id: 'Folk',
+    name: 'Folk',
+    color: Color(0xFFB45309),
+    icon: Icons.eco,
+  ),
+  SearchCategory(
+    id: 'Latin',
+    name: 'Latin',
+    color: Color(0xFFDB2777),
+    icon: Icons.local_fire_department,
+  ),
+  SearchCategory(
+    id: 'Ambient',
+    name: 'Ambient',
+    color: Color(0xFF0F766E),
+    icon: Icons.cloud,
+  ),
+  SearchCategory(
+    id: 'Lo-fi',
+    name: 'Lo-fi',
+    color: Color(0xFF475569),
+    icon: Icons.waves,
+  ),
+  SearchCategory(
+    id: 'Indie',
+    name: 'Indie',
+    color: Color(0xFF4D7C0F),
+    icon: Icons.album,
+  ),
+  SearchCategory(
+    id: 'Blues',
+    name: 'Blues',
+    color: Color(0xFF1D4ED8),
+    icon: Icons.queue_music,
+  ),
+  SearchCategory(
+    id: 'Reggae',
+    name: 'Reggae',
+    color: Color(0xFFF59E0B),
+    icon: Icons.wb_sunny,
+  ),
+];
 
 String _searchPlaybackTagLabel(SearchResult result) {
   return result.copyrightClearanceStatus?.displayName ?? 'Unknown';
@@ -97,6 +192,7 @@ void _playSearchSongOrShowMessage(
 SongEntity _searchResultToSongEntity(SearchResult result) {
   return SongEntity(
     id: result.id,
+    brandId: result.brandId,
     title: result.title,
     artist: result.subtitle,
     duration: result.durationSeconds ?? 0,
@@ -353,8 +449,14 @@ class _SearchViewState extends State<_SearchView> {
     final tokens = context.camsTokens;
     final tag = state.activeTag;
 
-    if (tag == SearchFilterTag.categories || tag == SearchFilterTag.all) {
+    if (tag == SearchFilterTag.all) {
+      return _BrowseAllSliver(state: state, isDark: isDark);
+    }
+    if (tag == SearchFilterTag.categories) {
       return _BrowseCategoriesSliver(state: state, isDark: isDark);
+    }
+    if (tag == SearchFilterTag.genres) {
+      return const _BrowseGenresSliver();
     }
     if (tag == SearchFilterTag.featuring) {
       return _FeaturedPlaylistsSliver(
@@ -445,6 +547,8 @@ class _SearchViewState extends State<_SearchView> {
         return _PlaylistGridSliver(
             results: state.playlistResults, isDark: isDark);
       case SearchFilterTag.songs:
+        return _SongListSliver(results: state.songResults, isDark: isDark);
+      case SearchFilterTag.genres:
         return _SongListSliver(results: state.songResults, isDark: isDark);
       case SearchFilterTag.albums:
         return _AlbumGridSliver(results: state.albumResults, isDark: isDark);
@@ -591,7 +695,59 @@ class _FilterTagRow extends StatelessWidget {
     SearchFilterTag.playlists,
     SearchFilterTag.artists,
     SearchFilterTag.songs,
+    SearchFilterTag.genres,
   ];
+}
+
+// ===========================================================================
+// Browse all sliver (moods + genres)
+// ===========================================================================
+class _BrowseAllSliver extends StatelessWidget {
+  final SearchState state;
+  final bool isDark;
+  const _BrowseAllSliver({required this.state, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
+
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spacingMd),
+      sliver: SliverList(
+        delegate: SliverChildListDelegate([
+          Text(
+            'Browse moods',
+            style: AppTypography.titleMedium.copyWith(
+              color: tokens.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: AppDimensions.spacingMd),
+          if (state.status == SearchStatus.loading)
+            const _CategoryGridSkeleton()
+          else if (state.status == SearchStatus.failure)
+            AppInlineErrorCard(
+              failure: state.failure,
+              title: 'Browse unavailable',
+              onRetry: () =>
+                  context.read<SearchBloc>().add(const LoadCategoriesEvent()),
+            )
+          else
+            _CategoryGrid(categories: state.categories, isDark: isDark),
+          const SizedBox(height: AppDimensions.spacingLg),
+          Text(
+            'Browse genres',
+            style: AppTypography.titleMedium.copyWith(
+              color: tokens.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: AppDimensions.spacingMd),
+          const _GenreGrid(),
+        ]),
+      ),
+    );
+  }
 }
 
 // ===========================================================================
@@ -611,7 +767,7 @@ class _BrowseCategoriesSliver extends StatelessWidget {
       sliver: SliverList(
         delegate: SliverChildListDelegate([
           Text(
-            'Browse all',
+            'Browse moods',
             style: AppTypography.titleMedium.copyWith(
               color: tokens.textPrimary,
               fontWeight: FontWeight.w700,
@@ -630,6 +786,96 @@ class _BrowseCategoriesSliver extends StatelessWidget {
           else
             _CategoryGrid(categories: state.categories, isDark: isDark),
         ]),
+      ),
+    );
+  }
+}
+
+class _BrowseGenresSliver extends StatelessWidget {
+  const _BrowseGenresSliver();
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.camsTokens;
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spacingMd),
+      sliver: SliverList(
+        delegate: SliverChildListDelegate([
+          Text(
+            'Browse genres',
+            style: AppTypography.titleMedium.copyWith(
+              color: tokens.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: AppDimensions.spacingMd),
+          const _GenreGrid(),
+        ]),
+      ),
+    );
+  }
+}
+
+class _GenreGrid extends StatelessWidget {
+  const _GenreGrid();
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.builder(
+      physics: const NeverScrollableScrollPhysics(),
+      shrinkWrap: true,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: AppDimensions.spacingSm,
+        mainAxisSpacing: AppDimensions.spacingSm,
+        childAspectRatio: 1.7,
+      ),
+      itemCount: _popularGenres.length,
+      itemBuilder: (ctx, i) => _GenreCard(genre: _popularGenres[i]),
+    );
+  }
+}
+
+class _GenreCard extends StatelessWidget {
+  final SearchCategory genre;
+  const _GenreCard({required this.genre});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () => context.push(
+        '/search/genre/${Uri.encodeComponent(genre.id)}',
+        extra: genre.name,
+      ),
+      borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+      child: Container(
+        decoration: BoxDecoration(
+          color: genre.color,
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+        ),
+        padding: const EdgeInsets.all(AppDimensions.spacingMd),
+        child: Stack(
+          clipBehavior: Clip.hardEdge,
+          children: [
+            Text(
+              genre.name,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+              ),
+            ),
+            Positioned(
+              bottom: -8,
+              right: -8,
+              child: Icon(
+                genre.icon,
+                size: 52,
+                color: Colors.white.withValues(alpha: 0.25),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -909,21 +1155,30 @@ class _ResultTile extends StatelessWidget {
           child: SizedBox(
             width: 48,
             height: 48,
-            child: result.imageUrl != null
-                ? Image.network(
-                    result.imageUrl!,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: colorScheme.primary.withValues(alpha: 0.12),
-                      child: Icon(_fallbackIcon,
-                          color: colorScheme.primary, size: 24),
-                    ),
+            child: result.type == SearchResultType.playlist
+                ? PlaylistCoverCollage(
+                    coverUrls: result.playlistCoverUrls,
+                    fallbackCoverUrl: result.imageUrl ?? result.thumbnailUrl,
+                    backgroundColor:
+                        colorScheme.primary.withValues(alpha: 0.12),
+                    iconColor: colorScheme.primary,
+                    iconSize: 24,
                   )
-                : Container(
-                    color: colorScheme.primary.withValues(alpha: 0.12),
-                    child: Icon(_fallbackIcon,
-                        color: colorScheme.primary, size: 24),
-                  ),
+                : result.imageUrl != null
+                    ? Image.network(
+                        result.imageUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          color: colorScheme.primary.withValues(alpha: 0.12),
+                          child: Icon(_fallbackIcon,
+                              color: colorScheme.primary, size: 24),
+                        ),
+                      )
+                    : Container(
+                        color: colorScheme.primary.withValues(alpha: 0.12),
+                        child: Icon(_fallbackIcon,
+                            color: colorScheme.primary, size: 24),
+                      ),
           ),
         ),
         title: Text(
@@ -957,6 +1212,12 @@ class _ResultTile extends StatelessWidget {
                 label: _searchPlaybackTagLabel(result),
                 isPlayable: isPlayableSong,
               ),
+            ],
+            if ((result.type == SearchResultType.song ||
+                    result.type == SearchResultType.playlist) &&
+                result.isSharedCatalog) ...[
+              const SizedBox(width: 8),
+              const SharedCatalogBadge(compact: true),
             ],
           ],
         ),
@@ -1138,13 +1399,13 @@ class _PlaylistGridSliver extends StatelessWidget {
                       child: ClipRRect(
                         borderRadius:
                             BorderRadius.circular(AppDimensions.radiusMd),
-                        child: r.imageUrl != null
-                            ? Image.network(r.imageUrl!,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) =>
-                                    _CoverFallback(isDark: isDark))
-                            : _CoverFallback(isDark: isDark),
+                        child: PlaylistCoverCollage(
+                          coverUrls: r.playlistCoverUrls,
+                          fallbackCoverUrl: r.imageUrl,
+                          backgroundColor: tokens.bgElevated,
+                          iconColor: tokens.textTertiary,
+                          iconSize: 34,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -1192,6 +1453,10 @@ class _PlaylistGridSliver extends StatelessWidget {
                         fontSize: 11,
                       ),
                     ),
+                    if (r.isSharedCatalog) ...[
+                      const SizedBox(height: 4),
+                      const SharedCatalogBadge(compact: true),
+                    ],
                   ],
                 ),
               );
@@ -1250,6 +1515,7 @@ class _SongListSliver extends StatelessWidget {
           ...results.map((r) {
             final song = SongEntity(
               id: r.id,
+              brandId: r.brandId,
               title: r.title,
               artist: r.subtitle,
               duration: r.durationSeconds ?? 0,
@@ -1511,15 +1777,13 @@ class _PlaylistCard extends StatelessWidget {
                     child: ClipRRect(
                       borderRadius:
                           BorderRadius.circular(AppDimensions.radiusMd),
-                      child: playlist.coverUrl != null
-                          ? Image.network(
-                              playlist.coverUrl!,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) =>
-                                  _CoverFallback(isDark: isDark),
-                            )
-                          : _CoverFallback(isDark: isDark),
+                      child: PlaylistCoverCollage(
+                        coverUrls: playlist.trackCoverUrls,
+                        fallbackCoverUrl: playlist.coverUrl,
+                        backgroundColor: tokens.bgElevated,
+                        iconColor: tokens.textTertiary,
+                        iconSize: 34,
+                      ),
                     ),
                   ),
                   Positioned(
@@ -1571,6 +1835,10 @@ class _PlaylistCard extends StatelessWidget {
                   fontSize: 11,
                 ),
               ),
+            if (playlist.isSharedCatalog) ...[
+              const SizedBox(height: 4),
+              const SharedCatalogBadge(compact: true),
+            ],
           ],
         ),
       ),

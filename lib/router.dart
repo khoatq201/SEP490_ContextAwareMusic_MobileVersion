@@ -366,6 +366,21 @@ class AppRouter {
                       );
                     },
                   ),
+                  GoRoute(
+                    path: 'genre/:genreValue',
+                    name: 'search-genre-detail',
+                    builder: (context, state) {
+                      final genreValue = Uri.decodeComponent(
+                        state.pathParameters['genreValue']!,
+                      );
+                      final genreName = state.extra as String?;
+                      return CategoryDetailPage(
+                        categoryId: genreValue,
+                        categoryName: genreName ?? genreValue,
+                        source: CategoryDetailSource.genre,
+                      );
+                    },
+                  ),
                 ],
               ),
               GoRoute(

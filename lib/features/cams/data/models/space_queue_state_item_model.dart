@@ -4,6 +4,7 @@ class SpaceQueueStateItemModel extends SpaceQueueStateItem {
   const SpaceQueueStateItemModel({
     required super.queueItemId,
     required super.trackId,
+    super.brandId,
     super.trackName,
     required super.position,
     required super.queueStatus,
@@ -17,6 +18,7 @@ class SpaceQueueStateItemModel extends SpaceQueueStateItem {
     return SpaceQueueStateItemModel(
       queueItemId: _readString(json, 'queueItemId') ?? '',
       trackId: _readString(json, 'trackId') ?? '',
+      brandId: _readString(json, 'brandId'),
       trackName: _readString(json, 'trackName'),
       position: _readNum(json, 'position')?.toInt() ?? 0,
       queueStatus: _readNum(json, 'queueStatus')?.toInt() ?? 0,
@@ -31,6 +33,7 @@ class SpaceQueueStateItemModel extends SpaceQueueStateItem {
     return {
       'queueItemId': queueItemId,
       'trackId': trackId,
+      'brandId': brandId,
       'trackName': trackName,
       'position': position,
       'queueStatus': queueStatus,

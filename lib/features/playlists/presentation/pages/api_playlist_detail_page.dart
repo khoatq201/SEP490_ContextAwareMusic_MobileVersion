@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -11,6 +10,7 @@ import '../../../../core/presentation/shell_layout_metrics.dart';
 import '../../../../core/session/session_cubit.dart';
 import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../../../core/widgets/select_playlist_bottom_sheet.dart';
+import '../../../../core/widgets/shared_catalog_badge.dart';
 import '../../../../core/widgets/song_options_bottom_sheet.dart';
 import '../../../../injection_container.dart';
 import '../../../home/domain/entities/song_entity.dart';
@@ -46,10 +46,7 @@ class ApiPlaylistDetailPage extends StatelessWidget {
         slivers: [
           _CoverSliverAppBar(playlist: playlist, palette: palette),
           SliverToBoxAdapter(
-            child: _PlaylistHeader(playlist: playlist, palette: palette)
-                .animate()
-                .fadeIn(duration: 320.ms)
-                .slideY(begin: 0.06),
+            child: _PlaylistHeader(playlist: playlist, palette: palette),
           ),
           if (playlist.tracks != null && playlist.tracks!.isNotEmpty)
             SliverList(
@@ -61,10 +58,7 @@ class ApiPlaylistDetailPage extends StatelessWidget {
                     index: index,
                     palette: palette,
                     playlist: playlist,
-                  )
-                      .animate()
-                      .fadeIn(duration: 280.ms, delay: (index * 40).ms)
-                      .slideX(begin: 0.05);
+                  );
                 },
                 childCount: playlist.tracks!.length,
               ),
@@ -132,11 +126,12 @@ class _CoverSliverAppBar extends StatelessWidget {
             fontWeight: FontWeight.w700,
           ),
         ),
-        background: Container(
-          color: palette.card,
-          child: Center(
-            child: Icon(Icons.music_note, color: palette.textMuted, size: 72),
-          ),
+        background: _DetailCoverCollage(
+          coverUrls: playlist.tracks
+                  ?.map((track) => track.coverImageUrl)
+                  .toList(growable: false) ??
+              const [],
+          palette: palette,
         ),
       ),
     );
@@ -146,6 +141,113 @@ class _CoverSliverAppBar extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // Header — title, description, metadata, Play All button
 // ─────────────────────────────────────────────────────────────────────────────
+class _DetailCoverCollage extends StatelessWidget {
+  const _DetailCoverCollage({
+    required this.coverUrls,
+    required this.palette,
+  });
+
+  final List<String?> coverUrls;
+  final _Palette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    final urls = _dedupeUrls(coverUrls).take(4).toList(growable: false);
+    if (urls.isEmpty) return _DetailCoverFallback(palette: palette);
+
+    Widget imageAt(int index) {
+      final url = urls[index % urls.length];
+      return Expanded(
+        child: Image.network(
+          url,
+          fit: BoxFit.cover,
+          gaplessPlayback: true,
+          errorBuilder: (_, __, ___) => _DetailCoverFallback(palette: palette),
+        ),
+      );
+    }
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Column(
+          children: [
+            Expanded(
+              child: Row(
+                children: [
+                  imageAt(0),
+                  const SizedBox(width: 1),
+                  imageAt(1),
+                ],
+              ),
+            ),
+            const SizedBox(height: 1),
+            Expanded(
+              child: Row(
+                children: [
+                  imageAt(2),
+                  const SizedBox(width: 1),
+                  imageAt(3),
+                ],
+              ),
+            ),
+          ],
+        ),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.black.withValues(alpha: 0.05),
+                Colors.black.withValues(alpha: 0.35),
+                palette.bg.withValues(alpha: 0.88),
+              ],
+              stops: const [0, 0.62, 1],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  static List<String> _dedupeUrls(List<String?> values) {
+    final seen = <String>{};
+    final urls = <String>[];
+    for (final value in values) {
+      final trimmed = value?.trim();
+      if (trimmed == null || trimmed.isEmpty) continue;
+      final uri = Uri.tryParse(trimmed);
+      final signature = uri == null || !uri.hasScheme
+          ? trimmed
+          : uri.replace(query: '', fragment: '').toString();
+      if (!seen.add(signature)) continue;
+      urls.add(trimmed);
+    }
+    return urls;
+  }
+}
+
+class _DetailCoverFallback extends StatelessWidget {
+  const _DetailCoverFallback({required this.palette});
+
+  final _Palette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: palette.card,
+      child: Center(
+        child: Icon(
+          Icons.queue_music_rounded,
+          color: palette.textMuted,
+          size: 72,
+        ),
+      ),
+    );
+  }
+}
+
 class _PlaylistHeader extends StatelessWidget {
   const _PlaylistHeader({required this.playlist, required this.palette});
   final ApiPlaylist playlist;
@@ -156,6 +258,7 @@ class _PlaylistHeader extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Title
@@ -217,6 +320,8 @@ class _PlaylistHeader extends StatelessWidget {
                   palette: palette,
                 ),
               ],
+              if (isSharedCatalogItem(playlist.brandId))
+                const SharedCatalogBadge(compact: true),
             ],
           ),
 
@@ -250,60 +355,59 @@ class _PlaylistHeader extends StatelessWidget {
               final hasSpace = session.currentSpace != null;
 
               return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                      icon: isOverriding
-                          ? SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: palette.textOnAccent),
-                            )
-                          : const Icon(LucideIcons.play, size: 18),
-                      label: Text(
-                        _primaryActionLabel(
-                          isPlaybackDevice: isPlaybackDevice,
-                          hasSpace: hasSpace,
-                          spaceName: session.currentSpace?.name,
-                        ),
-                        style: GoogleFonts.inter(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      onPressed: isOverriding
-                          ? null
-                          : () async {
-                              final requestedMode =
-                                  await _showQueueModePickerSheet(
-                                context: context,
-                                palette: palette,
-                                title: 'Choose playlist behavior',
-                                subtitle:
-                                    'Pick how "${playlist.name}" should be inserted into the space queue.',
-                                defaultMode: _defaultPlaylistActionMode(),
-                              );
-                              if (!context.mounted || requestedMode == null) {
-                                return;
-                              }
-
-                              _handlePlayAction(
-                                context: context,
-                                playlist: playlist,
-                                session: session,
-                                palette: palette,
-                                requestedMode: requestedMode,
-                              );
-                            },
                     ),
+                    icon: isOverriding
+                        ? SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: palette.textOnAccent),
+                          )
+                        : const Icon(LucideIcons.play, size: 18),
+                    label: Text(
+                      _primaryActionLabel(
+                        isPlaybackDevice: isPlaybackDevice,
+                        hasSpace: hasSpace,
+                        spaceName: session.currentSpace?.name,
+                      ),
+                      style: GoogleFonts.inter(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    onPressed: isOverriding
+                        ? null
+                        : () async {
+                            final requestedMode =
+                                await _showQueueModePickerSheet(
+                              context: context,
+                              palette: palette,
+                              title: 'Choose playlist behavior',
+                              subtitle:
+                                  'Pick how "${playlist.name}" should be inserted into the space queue.',
+                              defaultMode: _defaultPlaylistActionMode(),
+                            );
+                            if (!context.mounted || requestedMode == null) {
+                              return;
+                            }
+
+                            _handlePlayAction(
+                              context: context,
+                              playlist: playlist,
+                              session: session,
+                              palette: palette,
+                              requestedMode: requestedMode,
+                            );
+                          },
                   ),
                   if (isPlaybackDevice && hasSpace) ...[
                     const SizedBox(height: 6),
@@ -313,38 +417,6 @@ class _PlaylistHeader extends StatelessWidget {
                         color: palette.textMuted,
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ] else if (!isPlaybackDevice && hasSpace) ...[
-                    const SizedBox(height: 6),
-                    GestureDetector(
-                      onTap: () async {
-                        final requestedMode = await _showQueueModePickerSheet(
-                          context: context,
-                          palette: palette,
-                          title: 'Choose playlist behavior',
-                          subtitle:
-                              'Pick how "${playlist.name}" should be inserted into another space queue.',
-                          defaultMode: _defaultPlaylistActionMode(),
-                        );
-                        if (!context.mounted || requestedMode == null) {
-                          return;
-                        }
-                        _showSpacePickerSheet(
-                          context: context,
-                          playlist: playlist,
-                          palette: palette,
-                          requestedMode: requestedMode,
-                        );
-                      },
-                      child: Text(
-                        'Change space',
-                        style: GoogleFonts.inter(
-                          color: palette.accent,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          decoration: TextDecoration.underline,
-                        ),
                       ),
                     ),
                   ],
@@ -421,6 +493,7 @@ class _TrackTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final mappedSong = SongEntity(
       id: track.trackId,
+      brandId: track.brandId,
       title: track.title ?? 'Unknown Track',
       artist: track.artist ?? 'Unknown Artist',
       duration: track.effectiveDuration,
@@ -497,6 +570,10 @@ class _TrackTile extends StatelessWidget {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
+                  ],
+                  if (isSharedCatalogItem(track.brandId)) ...[
+                    const SizedBox(height: 4),
+                    const SharedCatalogBadge(compact: true),
                   ],
                 ],
               ),

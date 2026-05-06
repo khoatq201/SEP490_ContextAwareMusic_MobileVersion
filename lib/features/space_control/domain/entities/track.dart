@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 class Track extends Equatable {
   final String? queueItemId;
   final String id;
+  final String? brandId;
   final String title;
   final String artist;
   final String fileUrl;
@@ -15,6 +16,7 @@ class Track extends Equatable {
   const Track({
     this.queueItemId,
     required this.id,
+    this.brandId,
     required this.title,
     required this.artist,
     required this.fileUrl,
@@ -28,6 +30,7 @@ class Track extends Equatable {
   @override
   List<Object?> get props => [
         id,
+        brandId,
         queueItemId,
         title,
         artist,

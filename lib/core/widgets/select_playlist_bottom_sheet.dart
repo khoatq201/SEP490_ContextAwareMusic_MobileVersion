@@ -7,9 +7,12 @@ import '../error/exceptions.dart';
 import '../presentation/app_feedback.dart';
 import 'app_feedback_presenter.dart';
 import 'app_inline_error_card.dart';
+import 'playlist_cover_collage.dart';
+import 'shared_catalog_badge.dart';
 import '../../features/home/domain/entities/playlist_entity.dart';
 import '../../features/home/domain/entities/song_entity.dart';
 import '../../features/playlists/data/datasources/playlist_remote_datasource.dart';
+import '../../features/playlists/domain/entities/api_playlist.dart';
 import '../../injection_container.dart';
 import '../theme/cams_theme_tokens.dart';
 
@@ -46,17 +49,18 @@ class _SelectPlaylistBottomSheetState extends State<SelectPlaylistBottomSheet> {
         page: 1,
         pageSize: 100,
       );
+      final playlistDs = sl<PlaylistRemoteDataSource>();
+      final detailsById = await _loadPlaylistDetails(
+        playlistDs,
+        response.items,
+      );
       if (!mounted) return;
       setState(() {
         _playlists = response.items
             .map(
-              (playlist) => PlaylistEntity(
-                id: playlist.id,
-                title: playlist.name,
-                description: playlist.description,
-                coverUrl: null,
-                songs: const [],
-                overrideTrackCount: playlist.trackCount,
+              (playlist) => _playlistEntityFromApi(
+                playlist,
+                detailsById[playlist.id],
               ),
             )
             .toList();
@@ -78,6 +82,55 @@ class _SelectPlaylistBottomSheetState extends State<SelectPlaylistBottomSheet> {
         _errorMessage = 'Failed to load playlists.';
       });
     }
+  }
+
+  Future<Map<String, ApiPlaylist>> _loadPlaylistDetails(
+    PlaylistRemoteDataSource playlistDs,
+    List<ApiPlaylist> playlists,
+  ) async {
+    final entries = await Future.wait(
+      playlists.map((playlist) async {
+        try {
+          final detail = await playlistDs.getPlaylistById(playlist.id);
+          return MapEntry(playlist.id, detail);
+        } catch (_) {
+          return null;
+        }
+      }),
+    );
+
+    return {
+      for (final entry in entries)
+        if (entry != null) entry.key: entry.value,
+    };
+  }
+
+  PlaylistEntity _playlistEntityFromApi(
+    ApiPlaylist playlist,
+    ApiPlaylist? detail,
+  ) {
+    final tracks = detail?.tracks ?? const [];
+    return PlaylistEntity(
+      id: playlist.id,
+      brandId: playlist.brandId,
+      title: playlist.name,
+      description: playlist.description,
+      coverUrl: null,
+      songs: tracks
+          .map(
+            (track) => SongEntity(
+              id: track.trackId,
+              brandId: track.brandId,
+              title: track.title ?? 'Unknown',
+              artist: track.artist ?? 'Unknown',
+              duration: track.effectiveDuration,
+              coverUrl: track.coverImageUrl,
+              streamUrl: track.hlsUrl,
+            ),
+          )
+          .toList(growable: false),
+      overrideTrackCount: playlist.trackCount,
+    );
   }
 
   Future<void> _addSongToPlaylist(PlaylistEntity playlist) async {
@@ -284,13 +337,16 @@ class _SelectPlaylistBottomSheetState extends State<SelectPlaylistBottomSheet> {
             child: SizedBox(
               width: 46,
               height: 46,
-              child: playlist.coverUrl != null
-                  ? Image.network(
-                      playlist.coverUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const _CoverFallback(),
-                    )
-                  : const _CoverFallback(),
+              child: PlaylistCoverCollage(
+                coverUrls: playlist.trackCoverUrls,
+                fallbackCoverUrl: playlist.coverUrl,
+                backgroundColor: Theme.of(context)
+                    .colorScheme
+                    .primary
+                    .withValues(alpha: 0.1),
+                iconColor: Theme.of(context).colorScheme.primary,
+                iconSize: 22,
+              ),
             ),
           ),
           title: Text(
@@ -303,13 +359,21 @@ class _SelectPlaylistBottomSheetState extends State<SelectPlaylistBottomSheet> {
               fontWeight: FontWeight.w700,
             ),
           ),
-          subtitle: Text(
-            '${playlist.totalTracks} tracks',
-            style: GoogleFonts.inter(
-              color: textMuted,
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-            ),
+          subtitle: Row(
+            children: [
+              Text(
+                '${playlist.totalTracks} tracks',
+                style: GoogleFonts.inter(
+                  color: textMuted,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              if (playlist.isSharedCatalog) ...[
+                const SizedBox(width: 8),
+                const SharedCatalogBadge(compact: true),
+              ],
+            ],
           ),
           trailing: isLoading
               ? SizedBox(
@@ -324,24 +388,6 @@ class _SelectPlaylistBottomSheetState extends State<SelectPlaylistBottomSheet> {
           onTap: isLoading ? null : () => _addSongToPlaylist(playlist),
         );
       },
-    );
-  }
-}
-
-class _CoverFallback extends StatelessWidget {
-  const _CoverFallback();
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.camsTokens;
-
-    return Container(
-      color: tokens.bgElevated,
-      child: Icon(
-        LucideIcons.music4,
-        size: 18,
-        color: tokens.textTertiary.withValues(alpha: 0.65),
-      ),
     );
   }
 }

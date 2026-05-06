@@ -5,7 +5,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../../core/enums/queue_insert_mode_enum.dart';
+import '../../../../core/widgets/playlist_cover_collage.dart';
 import '../../../../core/widgets/play_to_space_button.dart';
+import '../../../../core/widgets/shared_catalog_badge.dart';
 import '../../../../core/widgets/song_list_tile.dart';
 import '../../../../core/widgets/song_options_bottom_sheet.dart';
 import '../../../../core/player/player_bloc.dart';
@@ -32,6 +34,7 @@ class SearchPlaylistDetailPage extends StatelessWidget {
     final tracks = playlist.songs
         .map((s) => Track(
               id: s.id,
+              brandId: s.brandId,
               title: s.title,
               artist: s.artist,
               fileUrl: s.streamUrl ?? '',
@@ -80,6 +83,7 @@ class SearchPlaylistDetailPage extends StatelessWidget {
                 ),
               ),
               background: _CoverBackground(
+                coverUrls: playlist.trackCoverUrls,
                 coverUrl: playlist.coverUrl,
                 palette: palette,
               ),
@@ -120,11 +124,13 @@ class SearchPlaylistDetailPage extends StatelessWidget {
                   const SizedBox(height: 10),
 
                   // Meta: track count · duration
-                  Row(
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Icon(LucideIcons.music4,
                           color: palette.textMuted, size: 14),
-                      const SizedBox(width: 5),
                       Text(
                         '${playlist.totalTracks} tracks',
                         style: GoogleFonts.inter(
@@ -133,18 +139,8 @@ class SearchPlaylistDetailPage extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 8),
-                        width: 3,
-                        height: 3,
-                        decoration: BoxDecoration(
-                          color: palette.textMuted,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
                       Icon(LucideIcons.clock,
                           color: palette.textMuted, size: 14),
-                      const SizedBox(width: 5),
                       Text(
                         _formatDuration(playlist.totalDuration),
                         style: GoogleFonts.inter(
@@ -153,6 +149,8 @@ class SearchPlaylistDetailPage extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
+                      if (playlist.isSharedCatalog)
+                        const SharedCatalogBadge(compact: true),
                     ],
                   ),
 
@@ -247,34 +245,23 @@ class SearchPlaylistDetailPage extends StatelessWidget {
 
 // ── Cover background ────────────────────────────────────────────────────────
 class _CoverBackground extends StatelessWidget {
+  final List<String> coverUrls;
   final String? coverUrl;
   final _Palette palette;
-  const _CoverBackground({required this.coverUrl, required this.palette});
+  const _CoverBackground({
+    required this.coverUrls,
+    required this.coverUrl,
+    required this.palette,
+  });
 
   @override
   Widget build(BuildContext context) {
-    if (coverUrl != null) {
-      return Image.network(
-        coverUrl!,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _Fallback(palette: palette),
-      );
-    }
-    return _Fallback(palette: palette);
-  }
-}
-
-class _Fallback extends StatelessWidget {
-  final _Palette palette;
-  const _Fallback({required this.palette});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: palette.bg,
-      child: Center(
-        child: Icon(Icons.music_note, color: palette.textMuted, size: 72),
-      ),
+    return PlaylistCoverCollage(
+      coverUrls: coverUrls,
+      fallbackCoverUrl: coverUrl,
+      backgroundColor: palette.bg,
+      iconColor: palette.textMuted,
+      iconSize: 72,
     );
   }
 }

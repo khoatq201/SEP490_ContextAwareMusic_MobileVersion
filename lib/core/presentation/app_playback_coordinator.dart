@@ -613,14 +613,36 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
     final forceReloadForPlaybackEpochRestart =
         !forceRemotePlaybackResync && remotePlaybackEpochChanged;
     final canKeepCurrentRemoteStream = !forceRemotePlaybackResync &&
-        !forceReloadForPlaybackEpochRestart &&
+        !forceReloadForCompletedTrackRestart &&
         _canKeepCurrentRemoteStream(
           playerState: playerBloc.state,
           playbackState: playbackState,
         );
+    _debugLog(
+      'remoteDecision '
+      'remoteSignature=$remotePlaybackSignature '
+      'lastSignature=${_lastAppliedRemotePlaybackSignature ?? '-'} '
+      'epochSignature=$remotePlaybackEpochSignature '
+      'lastEpoch=${_lastAppliedRemotePlaybackEpochSignature ?? '-'} '
+      'epochChanged=$remotePlaybackEpochChanged '
+      'forceEpochReload=$forceReloadForPlaybackEpochRestart '
+      'forceResync=$forceRemotePlaybackResync '
+      'forceCompletedRestart=$forceReloadForCompletedTrackRestart '
+      'canKeep=$canKeepCurrentRemoteStream '
+      'playerSynced=${playerBloc.state.isSyncedCamsPlayback} '
+      'playerPlaying=${playerBloc.state.isPlaying} '
+      'remotePaused=${playbackState.isPaused} '
+      'playerQueueItem=${playerBloc.state.currentQueueItemId ?? '-'} '
+      'remoteQueueItem=${playbackState.effectiveQueueItemId ?? '-'} '
+      'playerTrack=${playerBloc.state.currentTrackId ?? playerBloc.state.currentTrack?.id ?? '-'} '
+      'remoteTrack=${_resolveCurrentTrackId(playbackState) ?? '-'} '
+      'playerHls=${playerBloc.state.hlsUrl ?? '-'} '
+      'remoteHls=${playbackState.effectiveHlsUrl ?? '-'} '
+      'remoteSeek=${playbackState.effectiveSeekOffset.toStringAsFixed(2)} '
+      'playerPos=${playerBloc.state.currentPositionPrecise.toStringAsFixed(2)}',
+    );
     if (_lastAppliedRemotePlaybackSignature == remotePlaybackSignature &&
-        !forceRemotePlaybackResync &&
-        !forceReloadForPlaybackEpochRestart) {
+        !forceRemotePlaybackResync) {
       if (canKeepCurrentRemoteStream &&
           _applySameRemoteStreamReconciliation(
             session: session,
@@ -959,6 +981,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
   Track _trackFromApiTrack(ApiTrack apiTrack) {
     return Track(
       id: apiTrack.id,
+      brandId: apiTrack.brandId,
       title: apiTrack.title,
       artist: (apiTrack.artist?.trim().isNotEmpty ?? false)
           ? apiTrack.artist!.trim()

@@ -1,377 +1,758 @@
-LGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=ST
-I/flutter (13119):  Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzMjk3OTcwMS1jZDQ5LTQyMWEtYTcxMi1jNjIzZWQ1OTY4NDkiLCJqdGkiOiJhZmJlMTQwNy03OTNlLTRiZDctOTNlZS05ZWQ5ZWEzY2U5YmIiLCJlbWFpbCI6Imtob2FraG9hdHJhbjIwLm1AZ21haWwuY29tIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbmFtZWlkZW50aWZpZXIiOiIzMjk3OTcwMS1jZDQ5LTQyMWEtYTcxMi1jNjIzZWQ1OTY4NDkiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJCcmFuZE1hbmFnZXIiLCJleHAiOjE3NzgwNjA3NjQsImlzcyI6IkxvZ0FJQ0FNUyIsImF1ZCI6IkxvZ0FJQ0FNU0NsaWVudHMifQ.MhxooP0P4IYmHBbxAtC8dkefImXVatvfxoQCBR9nugw
-I/flutter (13119):  content-length: 83
-I/flutter (13119): data:
-I/flutter (13119): {currentPassword: admin, newPassword: Admin@123, confirmPassword: Admin@123}
-I/flutter (13119): 
-I/flutter (13119): [DioClient] Preparing auth header for "/api/auth/change-password": playbackScoped=false selectedToken=eyJhbGciOiJI...
-I/flutter (13119): [DioClient] [request-auth] path=/api/auth/change-password activeMode=manager hasManagerToken=true managerExpiry=2026-05-06T09:46:04.360784Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
-I/flutter (13119): *** DioException ***:
-I/flutter (13119): uri: https://logcams.cloud/api/auth/change-password
-I/flutter (13119): DioException [bad response]: This exception was thrown because the response has a status code of 401 and RequestOptions.validateStatus was configured to throw for this status code.
-I/flutter (13119): The status code of 401 has the following meaning: "Client error - the request contains bad syntax or cannot be fulfilled"
-I/flutter (13119): Read more about status codes at https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
-I/flutter (13119): In order to resolve this exception you typically have either to verify and fix your request code or you have to fix the server code.
-I/flutter (13119): *** Response ***
-I/flutter (13119): uri: https://logcams.cloud/api/auth/change-password
-I/flutter (13119): statusCode: 401
-I/flutter (13119): statusMessage: Unauthorized
-I/flutter (13119): headers:
-I/flutter (13119):  connection: keep-alive
-I/flutter (13119):  alt-svc: h3=":443"; ma=86400
-I/flutter (13119):  date: Wed, 06 May 2026 08:46:04 GMT
-I/flutter (13119):  transfer-encoding: chunked
-I/flutter (13119):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
-I/flutter (13119):  cf-ray: 9f76b65dea60dd4f-HKG
-I/flutter (13119):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=raTti2jNoGXDOJcNtThMsXPDkXmxCEUt4QMBvMlp6JfsIWSTYn9EKHaXdmcpwRGBvRd3whO%2F%2FMpwIJW2p5q1jB5VCRNBHGyfHxe5pSlDE%2FxlTt4XVuiBrGZ2qmUAjyq6"}]}
-I/flutter (13119):  cf-cache-status: DYNAMIC
-I/flutter (13119):  content-type: application/json; charset=utf-8
-I/flutter (13119):  server: cloudflare
-I/flutter (13119): Response Text:
-I/flutter (13119): {"isSuccess":false,"message":"Invalid username or password","errorCode":"InvalidCredentials"}
-I/flutter (13119): 
-I/flutter (13119): 
-I/flutter (13119): [DioClient] 401 on "/api/auth/change-password" -> attempting token refresh (activeMode=manager)
-I/flutter (13119): [DioClient] Refresh decision for "/api/auth/change-password": mode=manager, playbackScoped=false, hasManagerToken=true, hasDeviceAccessContext=false, hasDeviceRefreshContext=false
-I/flutter (13119): [DioClient] [refresh-decision] path=/api/auth/change-password activeMode=manager hasManagerToken=true managerExpiry=2026-05-06T09:46:04.360784Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
-I/flutter (13119): [DioClient] Refreshing manager token (active mode: manager)
-I/flutter (13119): [DioClient] Refresh token - cookies for https://logcams.cloud/api/auth/refresh-token: [refreshToken=STy7uXtCG%...]
-I/flutter (13119): [DioClient] Refresh token - sending with Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
-I/flutter (13119): *** Request ***
-I/flutter (13119): uri: https://logcams.cloud/api/auth/refresh-token
-I/flutter (13119): method: POST
-I/flutter (13119): responseType: ResponseType.json
-I/flutter (13119): followRedirects: true
-I/flutter (13119): persistentConnection: true
-I/flutter (13119): connectTimeout: 0:00:30.000000
-I/flutter (13119): sendTimeout: 0:00:30.000000
-I/flutter (13119): receiveTimeout: 0:00:30.000000
-I/flutter (13119): receiveDataWhenStatusError: true
-I/flutter (13119): extra: {withCredentials: true}
-I/flutter (13119): headers:
-I/flutter (13119):  Content-Type: application/json
-I/flutter (13119):  Accept: application/json
-I/flutter (13119):  Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzMjk3OTcwMS1jZDQ5LTQyMWEtYTcxMi1jNjIzZWQ1OTY4NDkiLCJqdGkiOiJhZmJlMTQwNy03OTNlLTRiZDctOTNlZS05ZWQ5ZWEzY2U5YmIiLCJlbWFpbCI6Imtob2FraG9hdHJhbjIwLm1AZ21haWwuY29tIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbmFtZWlkZW50aWZpZXIiOiIzMjk3OTcwMS1jZDQ5LTQyMWEtYTcxMi1jNjIzZWQ1OTY4NDkiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJCcmFuZE1hbmFnZXIiLCJleHAiOjE3NzgwNjA3NjQsImlzcyI6IkxvZ0FJQ0FNUyIsImF1ZCI6IkxvZ0FJQ0FNU0NsaWVudHMifQ.MhxooP0P4IYmHBbxAtC8dkefImXVatvfxoQCBR9nugw
-I/flutter (13119): data:
-I/flutter (13119): null
-I/flutter (13119): 
-I/flutter (13119): *** Response ***
-I/flutter (13119): uri: https://logcams.cloud/api/auth/refresh-token
-I/flutter (13119): statusCode: 200
-I/flutter (13119): statusMessage: OK
-I/flutter (13119): headers:
-I/flutter (13119):  connection: keep-alive
-I/flutter (13119):  alt-svc: h3=":443"; ma=86400
-I/flutter (13119):  date: Wed, 06 May 2026 08:46:05 GMT
-I/flutter (13119):  transfer-encoding: chunked
-I/flutter (13119):  content-encoding: gzip
-I/flutter (13119):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
-I/flutter (13119):  cf-ray: 9f76b65f5e67dd4f-HKG
-I/flutter (13119):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=uWTXfQyUsQSBXS2zz8GHadN81yQFq71Z2oEEujbu4XqSLZi1bekQh3ZdmWi%2BOiGMWtOtRmIFBZi7rEopR44dsOmlAI2cFw%2FNhrbU0Yk5US4EuLGfXgmPBTwcwXIDh5Cv"}]}
-I/flutter (13119):  cf-cache-status: DYNAMIC
-I/flutter (13119):  content-type: application/json; charset=utf-8
-I/flutter (13119):  server: cloudflare
-I/flutter (13119): Response Text:
-I/flutter (13119): {"isSuccess":true,"message":"Token refreshed successfully","data":{"accessToken":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzMjk3OTcwMS1jZDQ5LTQyMWEtYTcxMi1jNjIzZWQ1OTY4NDkiLCJqdGkiOiJiZTIxMTE1NC1kNjc4LTQ3OGItODgwMi0zYmJjMzE1NGExMGUiLCJlbWFpbCI6Imtob2FraG9hdHJhbjIwLm1AZ21haWwuY29tIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbmFtZWlkZW50aWZpZXIiOiIzMjk3OTcwMS1jZDQ5LTQyMWEtYTcxMi1jNjIzZWQ1OTY4NDkiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJCcmFuZE1hbmFnZXIiLCJleHAiOjE3NzgwNjA3NjUsImlzcyI6IkxvZ0FJQ0FNUyIsImF1ZCI6IkxvZ0FJQ0FNU0NsaWVudHMifQ.NwUuAS0E11nO9sM9ZTVQ3hBIm5yhfZZ8E9wNzbsdeM0","expiresAt":"2026-05-06T09:46:05.5285095Z","roles":[1]}}
-I/flutter (13119): 
-I/flutter (13119): [DioClient] Set-Cookie from /api/auth/refresh-token: (none)
-I/flutter (13119): [DioClient] Token refreshed successfully
-I/flutter (13119): *** Request ***
-I/flutter (13119): uri: https://logcams.cloud/api/auth/change-password
-I/flutter (13119): method: POST
-I/flutter (13119): responseType: ResponseType.json
-I/flutter (13119): followRedirects: true
-I/flutter (13119): persistentConnection: true
-I/flutter (13119): connectTimeout: 0:00:30.000000
-I/flutter (13119): sendTimeout: 0:00:30.000000
-I/flutter (13119): receiveTimeout: 0:00:30.000000
-I/flutter (13119): receiveDataWhenStatusError: true
-I/flutter (13119): extra: {}
-I/flutter (13119): headers:
-I/flutter (13119):  Content-Type: application/json
-I/flutter (13119):  Accept: application/json
-I/flutter (13119):  cookie: refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=ST
-I/flutter (13119):  Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzMjk3OTcwMS1jZDQ5LTQyMWEtYTcxMi1jNjIzZWQ1OTY4NDkiLCJqdGkiOiJiZTIxMTE1NC1kNjc4LTQ3OGItODgwMi0zYmJjMzE1NGExMGUiLCJlbWFpbCI6Imtob2FraG9hdHJhbjIwLm1AZ21haWwuY29tIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbmFtZWlkZW50aWZpZXIiOiIzMjk3OTcwMS1jZDQ5LTQyMWEtYTcxMi1jNjIzZWQ1OTY4NDkiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJCcmFuZE1hbmFnZXIiLCJleHAiOjE3NzgwNjA3NjUsImlzcyI6IkxvZ0FJQ0FNUyIsImF1ZCI6IkxvZ0FJQ0FNU0NsaWVudHMifQ.NwUuAS0E11nO9sM9ZTVQ3hBIm5yhfZZ8E9wNzbsdeM0
-I/flutter (13119):  content-length: 83
-I/flutter (13119): data:
-I/flutter (13119): {currentPassword: admin, newPassword: Admin@123, confirmPassword: Admin@123}
-I/flutter (13119): 
-I/flutter (13119): [DioClient] Preparing auth header for "/api/auth/change-password": playbackScoped=false selectedToken=eyJhbGciOiJI...
-I/flutter (13119): [DioClient] [request-auth] path=/api/auth/change-password activeMode=manager hasManagerToken=true managerExpiry=2026-05-06T09:46:05.528509Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
-I/flutter (13119): *** DioException ***:
-I/flutter (13119): uri: https://logcams.cloud/api/auth/change-password
-I/flutter (13119): DioException [bad response]: This exception was thrown because the response has a status code of 401 and RequestOptions.validateStatus was configured to throw for this status code.
-I/flutter (13119): The status code of 401 has the following meaning: "Client error - the request contains bad syntax or cannot be fulfilled"
-I/flutter (13119): Read more about status codes at https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
-I/flutter (13119): In order to resolve this exception you typically have either to verify and fix your request code or you have to fix the server code.
-I/flutter (13119): *** Response ***
-I/flutter (13119): uri: https://logcams.cloud/api/auth/change-password
-I/flutter (13119): statusCode: 401
-I/flutter (13119): statusMessage: Unauthorized
-I/flutter (13119): headers:
-I/flutter (13119):  connection: keep-alive
-I/flutter (13119):  alt-svc: h3=":443"; ma=86400
-I/flutter (13119):  date: Wed, 06 May 2026 08:46:05 GMT
-I/flutter (13119):  transfer-encoding: chunked
-I/flutter (13119):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
-I/flutter (13119):  cf-ray: 9f76b665acfddd4f-HKG
-I/flutter (13119):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=1EzDfh4BWpYdIKPSET%2B2kdkbWzjS1mXo2pTbxPI7MFEvrEJMoX6JaV7yNf7%2F2NVmv9lf1APoW3UDAex0tLsN9JwItu2DUagtsm%2B0bpxTi89HuhLFvZaFvX%2FloZoPGJ3T"}]}
-I/flutter (13119):  cf-cache-status: DYNAMIC
-I/flutter (13119):  content-type: application/json; charset=utf-8
-I/flutter (13119):  server: cloudflare
-I/flutter (13119): Response Text:
-I/flutter (13119): {"isSuccess":false,"message":"Invalid username or password","errorCode":"InvalidCredentials"}
-I/flutter (13119): 
-I/flutter (13119): 
-I/flutter (13119): [DioClient] 401 on "/api/auth/change-password" -> attempting token refresh (activeMode=manager)
-I/flutter (13119): [DioClient] Refresh decision for "/api/auth/change-password": mode=manager, playbackScoped=false, hasManagerToken=true, hasDeviceAccessContext=false, hasDeviceRefreshContext=false
-I/flutter (13119): [DioClient] [refresh-decision] path=/api/auth/change-password activeMode=manager hasManagerToken=true managerExpiry=2026-05-06T09:46:05.528509Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
-I/flutter (13119): [DioClient] Refreshing manager token (active mode: manager)
-I/flutter (13119): [DioClient] Refresh token - cookies for https://logcams.cloud/api/auth/refresh-token: [refreshToken=STy7uXtCG%...]
-I/flutter (13119): [DioClient] Refresh token - sending with Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
-I/flutter (13119): *** Request ***
-I/flutter (13119): uri: https://logcams.cloud/api/auth/refresh-token
-I/flutter (13119): method: POST
-I/flutter (13119): responseType: ResponseType.json
-I/flutter (13119): followRedirects: true
-I/flutter (13119): persistentConnection: true
-I/flutter (13119): connectTimeout: 0:00:30.000000
-I/flutter (13119): sendTimeout: 0:00:30.000000
-I/flutter (13119): receiveTimeout: 0:00:30.000000
-I/flutter (13119): receiveDataWhenStatusError: true
-I/flutter (13119): extra: {withCredentials: true}
-I/flutter (13119): headers:
-I/flutter (13119):  Content-Type: application/json
-I/flutter (13119):  Accept: application/json
-I/flutter (13119):  Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzMjk3OTcwMS1jZDQ5LTQyMWEtYTcxMi1jNjIzZWQ1OTY4NDkiLCJqdGkiOiJiZTIxMTE1NC1kNjc4LTQ3OGItODgwMi0zYmJjMzE1NGExMGUiLCJlbWFpbCI6Imtob2FraG9hdHJhbjIwLm1AZ21haWwuY29tIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbmFtZWlkZW50aWZpZXIiOiIzMjk3OTcwMS1jZDQ5LTQyMWEtYTcxMi1jNjIzZWQ1OTY4NDkiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJCcmFuZE1hbmFnZXIiLCJleHAiOjE3NzgwNjA3NjUsImlzcyI6IkxvZ0FJQ0FNUyIsImF1ZCI6IkxvZ0FJQ0FNU0NsaWVudHMifQ.NwUuAS0E11nO9sM9ZTVQ3hBIm5yhfZZ8E9wNzbsdeM0
-I/flutter (13119): data:
-I/flutter (13119): null
-I/flutter (13119): 
-I/flutter (13119): *** Response ***
-I/flutter (13119): uri: https://logcams.cloud/api/auth/refresh-token
-I/flutter (13119): statusCode: 200
-I/flutter (13119): statusMessage: OK
-I/flutter (13119): headers:
-I/flutter (13119):  connection: keep-alive
-I/flutter (13119):  alt-svc: h3=":443"; ma=86400
-I/flutter (13119):  date: Wed, 06 May 2026 08:46:06 GMT
-I/flutter (13119):  transfer-encoding: chunked
-I/flutter (13119):  content-encoding: gzip
-I/flutter (13119):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
-I/flutter (13119):  cf-ray: 9f76b66738afdd4f-HKG
-I/flutter (13119):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=I6ZMpZBDZycujJU1oBJqC6lIROsP6vjIax6sREfT7zzT7TuHYMOWtpWkAGCvBXvAV3py%2F%2FJvExPInPx4eSU%2F6fvgDLxMXN8%2Bw9ndtOHPPTtj6AXWpGRYKFox9WQfRKt6"}]}
-I/flutter (13119):  cf-cache-status: DYNAMIC
-I/flutter (13119):  content-type: application/json; charset=utf-8
-I/flutter (13119):  server: cloudflare
-I/flutter (13119): Response Text:
-I/flutter (13119): {"isSuccess":true,"message":"Token refreshed successfully","data":{"accessToken":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzMjk3OTcwMS1jZDQ5LTQyMWEtYTcxMi1jNjIzZWQ1OTY4NDkiLCJqdGkiOiJhNGU4MTIwMC1kMDQ3LTQxMGYtYTU3MS1lODc4ZDY0ODljZjciLCJlbWFpbCI6Imtob2FraG9hdHJhbjIwLm1AZ21haWwuY29tIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbmFtZWlkZW50aWZpZXIiOiIzMjk3OTcwMS1jZDQ5LTQyMWEtYTcxMi1jNjIzZWQ1OTY4NDkiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJCcmFuZE1hbmFnZXIiLCJleHAiOjE3NzgwNjA3NjYsImlzcyI6IkxvZ0FJQ0FNUyIsImF1ZCI6IkxvZ0FJQ0FNU0NsaWVudHMifQ.vVqIszPSZbyyWwnJg6s5-gbhyglH48PqOvbSsnD_5o0","expiresAt":"2026-05-06T09:46:06.0191811Z","roles":[1]}}
-I/flutter (13119): 
-I/flutter (13119): [DioClient] Set-Cookie from /api/auth/refresh-token: (none)
-I/flutter (13119): [DioClient] Token refreshed successfully
-I/flutter (13119): *** Request ***
-I/flutter (13119): uri: https://logcams.cloud/api/auth/change-password
-I/flutter (13119): method: POST
-I/flutter (13119): responseType: ResponseType.json
-I/flutter (13119): followRedirects: true
-I/flutter (13119): persistentConnection: true
-I/flutter (13119): connectTimeout: 0:00:30.000000
-I/flutter (13119): sendTimeout: 0:00:30.000000
-I/flutter (13119): receiveTimeout: 0:00:30.000000
-I/flutter (13119): receiveDataWhenStatusError: true
-I/flutter (13119): extra: {}
-I/flutter (13119): headers:
-I/flutter (13119):  Content-Type: application/json
-I/flutter (13119):  Accept: application/json
-I/flutter (13119):  cookie: refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=ST
-I/flutter (13119):  Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzMjk3OTcwMS1jZDQ5LTQyMWEtYTcxMi1jNjIzZWQ1OTY4NDkiLCJqdGkiOiJhNGU4MTIwMC1kMDQ3LTQxMGYtYTU3MS1lODc4ZDY0ODljZjciLCJlbWFpbCI6Imtob2FraG9hdHJhbjIwLm1AZ21haWwuY29tIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbmFtZWlkZW50aWZpZXIiOiIzMjk3OTcwMS1jZDQ5LTQyMWEtYTcxMi1jNjIzZWQ1OTY4NDkiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJCcmFuZE1hbmFnZXIiLCJleHAiOjE3NzgwNjA3NjYsImlzcyI6IkxvZ0FJQ0FNUyIsImF1ZCI6IkxvZ0FJQ0FNU0NsaWVudHMifQ.vVqIszPSZbyyWwnJg6s5-gbhyglH48PqOvbSsnD_5o0
-I/flutter (13119):  content-length: 83
-I/flutter (13119): data:
-I/flutter (13119): {currentPassword: admin, newPassword: Admin@123, confirmPassword: Admin@123}
-I/flutter (13119): 
-I/flutter (13119): [DioClient] Preparing auth header for "/api/auth/change-password": playbackScoped=false selectedToken=eyJhbGciOiJI...
-I/flutter (13119): [DioClient] [request-auth] path=/api/auth/change-password activeMode=manager hasManagerToken=true managerExpiry=2026-05-06T09:46:06.019181Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
-I/flutter (13119): *** DioException ***:
-I/flutter (13119): uri: https://logcams.cloud/api/auth/change-password
-I/flutter (13119): DioException [bad response]: This exception was thrown because the response has a status code of 401 and RequestOptions.validateStatus was configured to throw for this status code.
-I/flutter (13119): The status code of 401 has the following meaning: "Client error - the request contains bad syntax or cannot be fulfilled"
-I/flutter (13119): Read more about status codes at https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
-I/flutter (13119): In order to resolve this exception you typically have either to verify and fix your request code or you have to fix the server code.
-I/flutter (13119): *** Response ***
-I/flutter (13119): uri: https://logcams.cloud/api/auth/change-password
-I/flutter (13119): statusCode: 401
-I/flutter (13119): statusMessage: Unauthorized
-I/flutter (13119): headers:
-I/flutter (13119):  connection: keep-alive
-I/flutter (13119):  alt-svc: h3=":443"; ma=86400
-I/flutter (13119):  date: Wed, 06 May 2026 08:46:06 GMT
-I/flutter (13119):  transfer-encoding: chunked
-I/flutter (13119):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
-I/flutter (13119):  cf-ray: 9f76b6683af2dd4f-HKG
-I/flutter (13119):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=hQwLmi3kf4Z1PzXpcU9MMj6J22A5fpqtSQ0pbhHXQC5h3JjDEYX%2BBtWU2Jp6OKUlTU60Tfm1j9bUuwJReYQBIpncStrYp5Dtb6Bt1skD9%2BWf7FEj8uc5AND7%2BWpO%2FLfS"}]}
-I/flutter (13119):  cf-cache-status: DYNAMIC
-I/flutter (13119):  content-type: application/json; charset=utf-8
-I/flutter (13119):  server: cloudflare
-I/flutter (13119): Response Text:
-I/flutter (13119): {"isSuccess":false,"message":"Invalid username or password","errorCode":"InvalidCredentials"}
-I/flutter (13119): 
-I/flutter (13119): 
-I/flutter (13119): [DioClient] 401 on "/api/auth/change-password" -> attempting token refresh (activeMode=manager)
-I/flutter (13119): [DioClient] Refresh decision for "/api/auth/change-password": mode=manager, playbackScoped=false, hasManagerToken=true, hasDeviceAccessContext=false, hasDeviceRefreshContext=false
-I/flutter (13119): [DioClient] [refresh-decision] path=/api/auth/change-password activeMode=manager hasManagerToken=true managerExpiry=2026-05-06T09:46:06.019181Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
-I/flutter (13119): [DioClient] Refreshing manager token (active mode: manager)
-I/flutter (13119): [DioClient] Refresh token - cookies for https://logcams.cloud/api/auth/refresh-token: [refreshToken=STy7uXtCG%...]
-I/flutter (13119): [DioClient] Refresh token - sending with Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
-I/flutter (13119): *** Request ***
-I/flutter (13119): uri: https://logcams.cloud/api/auth/refresh-token
-I/flutter (13119): method: POST
-I/flutter (13119): responseType: ResponseType.json
-I/flutter (13119): followRedirects: true
-I/flutter (13119): persistentConnection: true
-I/flutter (13119): connectTimeout: 0:00:30.000000
-I/flutter (13119): sendTimeout: 0:00:30.000000
-I/flutter (13119): receiveTimeout: 0:00:30.000000
-I/flutter (13119): receiveDataWhenStatusError: true
-I/flutter (13119): extra: {withCredentials: true}
-I/flutter (13119): headers:
-I/flutter (13119):  Content-Type: application/json
-I/flutter (13119):  Accept: application/json
-I/flutter (13119):  Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzMjk3OTcwMS1jZDQ5LTQyMWEtYTcxMi1jNjIzZWQ1OTY4NDkiLCJqdGkiOiJhNGU4MTIwMC1kMDQ3LTQxMGYtYTU3MS1lODc4ZDY0ODljZjciLCJlbWFpbCI6Imtob2FraG9hdHJhbjIwLm1AZ21haWwuY29tIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbmFtZWlkZW50aWZpZXIiOiIzMjk3OTcwMS1jZDQ5LTQyMWEtYTcxMi1jNjIzZWQ1OTY4NDkiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJCcmFuZE1hbmFnZXIiLCJleHAiOjE3NzgwNjA3NjYsImlzcyI6IkxvZ0FJQ0FNUyIsImF1ZCI6IkxvZ0FJQ0FNU0NsaWVudHMifQ.vVqIszPSZbyyWwnJg6s5-gbhyglH48PqOvbSsnD_5o0
-I/flutter (13119): data:
-I/flutter (13119): null
-I/flutter (13119): 
-I/flutter (13119): *** Response ***
-I/flutter (13119): uri: https://logcams.cloud/api/auth/refresh-token
-I/flutter (13119): statusCode: 200
-I/flutter (13119): statusMessage: OK
-I/flutter (13119): headers:
-I/flutter (13119):  connection: keep-alive
-I/flutter (13119):  alt-svc: h3=":443"; ma=86400
-I/flutter (13119):  date: Wed, 06 May 2026 08:46:06 GMT
-I/flutter (13119):  transfer-encoding: chunked
-I/flutter (13119):  content-encoding: gzip
-I/flutter (13119):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
-I/flutter (13119):  cf-ray: 9f76b6698defdd4f-HKG
-I/flutter (13119):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=NKUVbXg4OehcJBr%2B3P6QEDDaVb0vMY3MoYmUtotriO47aZK5PII2vOuIfzI64vRP0zRoWsj0pCKAED45tXx4VzmwlIu0CyVRO%2B1drzBXkNP2wyrOw%2BPO%2BwlndiFxxG%2B9"}]}
-I/flutter (13119):  cf-cache-status: DYNAMIC
-I/flutter (13119):  content-type: application/json; charset=utf-8
-I/flutter (13119):  server: cloudflare
-I/flutter (13119): Response Text:
-I/flutter (13119): {"isSuccess":true,"message":"Token refreshed successfully","data":{"accessToken":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzMjk3OTcwMS1jZDQ5LTQyMWEtYTcxMi1jNjIzZWQ1OTY4NDkiLCJqdGkiOiIyNDUyOGY2Yi03OTViLTQxNzYtODI2Zi0zNTM2ZDRjNTU5ODEiLCJlbWFpbCI6Imtob2FraG9hdHJhbjIwLm1AZ21haWwuY29tIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbmFtZWlkZW50aWZpZXIiOiIzMjk3OTcwMS1jZDQ5LTQyMWEtYTcxMi1jNjIzZWQ1OTY4NDkiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJCcmFuZE1hbmFnZXIiLCJleHAiOjE3NzgwNjA3NjYsImlzcyI6IkxvZ0FJQ0FNUyIsImF1ZCI6IkxvZ0FJQ0FNU0NsaWVudHMifQ.QMQKJ3ToViGaiRIxHEHa3xHSFsrFuFpwJlvxeJrl8nA","expiresAt":"2026-05-06T09:46:06.3929625Z","roles":[1]}}
-I/flutter (13119): 
-I/flutter (13119): [DioClient] Set-Cookie from /api/auth/refresh-token: (none)
-I/flutter (13119): [DioClient] Token refreshed successfully
-I/flutter (13119): *** Request ***
-I/flutter (13119): uri: https://logcams.cloud/api/auth/change-password
-I/flutter (13119): method: POST
-I/flutter (13119): responseType: ResponseType.json
-I/flutter (13119): followRedirects: true
-I/flutter (13119): persistentConnection: true
-I/flutter (13119): connectTimeout: 0:00:30.000000
-I/flutter (13119): sendTimeout: 0:00:30.000000
-I/flutter (13119): receiveTimeout: 0:00:30.000000
-I/flutter (13119): receiveDataWhenStatusError: true
-I/flutter (13119): extra: {}
-I/flutter (13119): headers:
-I/flutter (13119):  Content-Type: application/json
-I/flutter (13119):  Accept: application/json
-I/flutter (13119):  cookie: refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=ST
-I/flutter (13119):  Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzMjk3OTcwMS1jZDQ5LTQyMWEtYTcxMi1jNjIzZWQ1OTY4NDkiLCJqdGkiOiIyNDUyOGY2Yi03OTViLTQxNzYtODI2Zi0zNTM2ZDRjNTU5ODEiLCJlbWFpbCI6Imtob2FraG9hdHJhbjIwLm1AZ21haWwuY29tIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbmFtZWlkZW50aWZpZXIiOiIzMjk3OTcwMS1jZDQ5LTQyMWEtYTcxMi1jNjIzZWQ1OTY4NDkiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJCcmFuZE1hbmFnZXIiLCJleHAiOjE3NzgwNjA3NjYsImlzcyI6IkxvZ0FJQ0FNUyIsImF1ZCI6IkxvZ0FJQ0FNU0NsaWVudHMifQ.QMQKJ3ToViGaiRIxHEHa3xHSFsrFuFpwJlvxeJrl8nA
-I/flutter (13119):  content-length: 83
-I/flutter (13119): data:
-I/flutter (13119): {currentPassword: admin, newPassword: Admin@123, confirmPassword: Admin@123}
-I/flutter (13119): 
-I/flutter (13119): [DioClient] Preparing auth header for "/api/auth/change-password": playbackScoped=false selectedToken=eyJhbGciOiJI...
-I/flutter (13119): [DioClient] [request-auth] path=/api/auth/change-password activeMode=manager hasManagerToken=true managerExpiry=2026-05-06T09:46:06.392962Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
-I/flutter (13119): *** DioException ***:
-I/flutter (13119): uri: https://logcams.cloud/api/auth/change-password
-I/flutter (13119): DioException [bad response]: This exception was thrown because the response has a status code of 401 and RequestOptions.validateStatus was configured to throw for this status code.
-I/flutter (13119): The status code of 401 has the following meaning: "Client error - the request contains bad syntax or cannot be fulfilled"
-I/flutter (13119): Read more about status codes at https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
-I/flutter (13119): In order to resolve this exception you typically have either to verify and fix your request code or you have to fix the server code.
-I/flutter (13119): *** Response ***
-I/flutter (13119): uri: https://logcams.cloud/api/auth/change-password
-I/flutter (13119): statusCode: 401
-I/flutter (13119): statusMessage: Unauthorized
-I/flutter (13119): headers:
-I/flutter (13119):  connection: keep-alive
-I/flutter (13119):  alt-svc: h3=":443"; ma=86400
-I/flutter (13119):  date: Wed, 06 May 2026 08:46:06 GMT
-I/flutter (13119):  transfer-encoding: chunked
-I/flutter (13119):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
-I/flutter (13119):  cf-ray: 9f76b66a8864dd4f-HKG
-I/flutter (13119):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=ndnoqF4ai0zXJOYHWTsUaINmDSd9kDyJPVm0uh5GbDC4JQDw4uWDKUTmStJwcP6NxmoAo1h7NZQrve3eq8M4kPZ8fk%2FtdNgHkqoB2jssNdwujv795%2BgORuPUQRJiLSxC"}]}
-I/flutter (13119):  cf-cache-status: DYNAMIC
-I/flutter (13119):  content-type: application/json; charset=utf-8
-I/flutter (13119):  server: cloudflare
-I/flutter (13119): Response Text:
-I/flutter (13119): {"isSuccess":false,"message":"Invalid username or password","errorCode":"InvalidCredentials"}
-I/flutter (13119): 
-I/flutter (13119): 
-I/flutter (13119): [DioClient] 401 on "/api/auth/change-password" -> attempting token refresh (activeMode=manager)
-I/flutter (13119): [DioClient] Refresh decision for "/api/auth/change-password": mode=manager, playbackScoped=false, hasManagerToken=true, hasDeviceAccessContext=false, hasDeviceRefreshContext=false
-I/flutter (13119): [DioClient] [refresh-decision] path=/api/auth/change-password activeMode=manager hasManagerToken=true managerExpiry=2026-05-06T09:46:06.392962Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
-I/flutter (13119): [DioClient] Refreshing manager token (active mode: manager)
-I/flutter (13119): [DioClient] Refresh token - cookies for https://logcams.cloud/api/auth/refresh-token: [refreshToken=STy7uXtCG%...]
-I/flutter (13119): [DioClient] Refresh token - sending with Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
-I/flutter (13119): *** Request ***
-I/flutter (13119): uri: https://logcams.cloud/api/auth/refresh-token
-I/flutter (13119): method: POST
-I/flutter (13119): responseType: ResponseType.json
-I/flutter (13119): followRedirects: true
-I/flutter (13119): persistentConnection: true
-I/flutter (13119): connectTimeout: 0:00:30.000000
-I/flutter (13119): sendTimeout: 0:00:30.000000
-I/flutter (13119): receiveTimeout: 0:00:30.000000
-I/flutter (13119): receiveDataWhenStatusError: true
-I/flutter (13119): extra: {withCredentials: true}
-I/flutter (13119): headers:
-I/flutter (13119):  Content-Type: application/json
-I/flutter (13119):  Accept: application/json
-I/flutter (13119):  Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzMjk3OTcwMS1jZDQ5LTQyMWEtYTcxMi1jNjIzZWQ1OTY4NDkiLCJqdGkiOiIyNDUyOGY2Yi03OTViLTQxNzYtODI2Zi0zNTM2ZDRjNTU5ODEiLCJlbWFpbCI6Imtob2FraG9hdHJhbjIwLm1AZ21haWwuY29tIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbmFtZWlkZW50aWZpZXIiOiIzMjk3OTcwMS1jZDQ5LTQyMWEtYTcxMi1jNjIzZWQ1OTY4NDkiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJCcmFuZE1hbmFnZXIiLCJleHAiOjE3NzgwNjA3NjYsImlzcyI6IkxvZ0FJQ0FNUyIsImF1ZCI6IkxvZ0FJQ0FNU0NsaWVudHMifQ.QMQKJ3ToViGaiRIxHEHa3xHSFsrFuFpwJlvxeJrl8nA
-I/flutter (13119): data:
-I/flutter (13119): null
-I/flutter (13119): 
-I/flutter (13119): *** Response ***
-I/flutter (13119): uri: https://logcams.cloud/api/auth/refresh-token
-I/flutter (13119): statusCode: 200
-I/flutter (13119): statusMessage: OK
-I/flutter (13119): headers:
-I/flutter (13119):  connection: keep-alive
-I/flutter (13119):  alt-svc: h3=":443"; ma=86400
-I/flutter (13119):  date: Wed, 06 May 2026 08:46:06 GMT
-I/flutter (13119):  transfer-encoding: chunked
-I/flutter (13119):  content-encoding: gzip
-I/flutter (13119):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
-I/flutter (13119):  cf-ray: 9f76b66beb95dd4f-HKG
-I/flutter (13119):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=OXj371FpHbMmMJo8vIquob25%2FQzT7UfgqT54o%2BslaGLKkqz6RySQDF51zoEG4esdNGYYqeBcDve3tzdVRr105MqweM5xH6kxMHXXgawIXdYgtrrApYLdkLYXU9zFfO3w"}]}
-I/flutter (13119):  cf-cache-status: DYNAMIC
-I/flutter (13119):  content-type: application/json; charset=utf-8
-I/flutter (13119):  server: cloudflare
-I/flutter (13119): Response Text:
-I/flutter (13119): {"isSuccess":true,"message":"Token refreshed successfully","data":{"accessToken":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzMjk3OTcwMS1jZDQ5LTQyMWEtYTcxMi1jNjIzZWQ1OTY4NDkiLCJqdGkiOiI1Y2ExNWU5OS03ZGZhLTQxNmYtOTJiMy1hZDk3MzdjM2M3YjAiLCJlbWFpbCI6Imtob2FraG9hdHJhbjIwLm1AZ21haWwuY29tIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbmFtZWlkZW50aWZpZXIiOiIzMjk3OTcwMS1jZDQ5LTQyMWEtYTcxMi1jNjIzZWQ1OTY4NDkiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJCcmFuZE1hbmFnZXIiLCJleHAiOjE3NzgwNjA3NjYsImlzcyI6IkxvZ0FJQ0FNUyIsImF1ZCI6IkxvZ0FJQ0FNU0NsaWVudHMifQ.QLmj9ffwK3qE6YoixnV785IKhFwhmITmwHQEqRWW8Dg","expiresAt":"2026-05-06T09:46:06.7616422Z","roles":[1]}}
-I/flutter (13119): 
-I/flutter (13119): [DioClient] Set-Cookie from /api/auth/refresh-token: (none)
-I/flutter (13119): [DioClient] Token refreshed successfully
-I/flutter (13119): *** Request ***
-I/flutter (13119): uri: https://logcams.cloud/api/auth/change-password
-I/flutter (13119): method: POST
-I/flutter (13119): responseType: ResponseType.json
-I/flutter (13119): followRedirects: true
-I/flutter (13119): persistentConnection: true
-I/flutter (13119): connectTimeout: 0:00:30.000000
-I/flutter (13119): sendTimeout: 0:00:30.000000
-I/flutter (13119): receiveTimeout: 0:00:30.000000
-I/flutter (13119): receiveDataWhenStatusError: true
-I/flutter (13119): extra: {}
-I/flutter (13119): headers:
-I/flutter (13119):  Content-Type: application/json
-I/flutter (13119):  Accept: application/json
-I/flutter (13119):  cookie: refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=STy7uXtCG%2FfZ%2FESdUpc7MKPOk5XkbWLGsqHCukIYTpWzltAvdF1bK6UzSlqub3gGsX1scWedVwDQnACIfbO9iQ%3D%3D; refreshToken=ST
-I/flutter (13119):  Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzMjk3OTcwMS1jZDQ5LTQyMWEtYTcxMi1jNjIzZWQ1OTY4NDkiLCJqdGkiOiI1Y2ExNWU5OS03ZGZhLTQxNmYtOTJiMy1hZDk3MzdjM2M3YjAiLCJlbWFpbCI6Imtob2FraG9hdHJhbjIwLm1AZ21haWwuY29tIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbmFtZWlkZW50aWZpZXIiOiIzMjk3OTcwMS1jZDQ5LTQyMWEtYTcxMi1jNjIzZWQ1OTY4NDkiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJCcmFuZE1hbmFnZXIiLCJleHAiOjE3NzgwNjA3NjYsImlzcyI6IkxvZ0FJQ0FNUyIsImF1ZCI6IkxvZ0FJQ0FNU0NsaWVudHMifQ.QLmj9ffwK3qE6YoixnV785IKhFwhmITmwHQEqRWW8Dg
-I/flutter (13119):  content-length: 83
-I/flutter (13119): data:
-I/flutter (13119): {currentPassword: admin, newPassword: Admin@123, confirmPassword: Admin@123}
-I/flutter (13119): 
-I/flutter (13119): [DioClient] Preparing auth header for "/api/auth/change-password": playbackScoped=false selectedToken=eyJhbGciOiJI...
-I/flutter (13119): [DioClient] [request-auth] path=/api/auth/change-password activeMode=manager hasManagerToken=true managerExpiry=2026-05-06T09:46:06.761642Z hasDeviceAccessToken=false deviceAccessExpiry=null hasDeviceRefreshToken=false deviceSessionKeys=(none)
-Lost connection to device.
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+D/AidlBufferPool( 9683): bufferpool2 0xb4000076313fa908 : 5(40960 size) total buffers - 0(0 size) used buffers - 27/32 (recycle/alloc) - 10/27 (fetch/transfer)
+D/AidlBufferPoolAcc( 9683): evictor expired: 1, evicted: 1
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
+Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
+12: '!_debugDoingThisLayout': is not true.
+W/WindowOnBackDispatcher( 9683): sendCancelIfRunning: isInProgress=false callback=io.flutter.embedding.android.FlutterActivity$1@bff059
+W/WindowOnBackDispatcher( 9683): sendCancelIfRunning: isInProgress=false callback=io.flutter.embedding.android.FlutterActivity$1@bff059

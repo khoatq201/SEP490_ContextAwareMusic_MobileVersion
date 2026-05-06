@@ -1303,6 +1303,7 @@ class QueueFirstPlaybackRuntime {
       return SpaceQueueStateItem(
         queueItemId: item.queueItemId,
         trackId: item.trackId,
+        brandId: item.brandId,
         trackName: item.trackName,
         position: item.position,
         queueStatus: nextStatus,

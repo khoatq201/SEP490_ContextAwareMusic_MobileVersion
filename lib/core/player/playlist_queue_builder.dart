@@ -31,6 +31,7 @@ List<Track> buildPlaylistQueue(ApiPlaylist playlist) {
 
     return Track(
       id: playlistTrack.trackId,
+      brandId: playlistTrack.brandId,
       queueItemId: null,
       title: playlistTrack.title ?? 'Unknown Track',
       artist: playlistTrack.artist ?? 'Unknown Artist',
@@ -62,6 +63,7 @@ List<Track> buildSpaceQueue(
         : 'Unknown Artist';
     return Track(
       id: queueItem.trackId,
+      brandId: queueItem.brandId ?? metadata?.brandId,
       queueItemId: queueItem.queueItemId,
       title: resolvedTitle,
       artist: resolvedArtist,

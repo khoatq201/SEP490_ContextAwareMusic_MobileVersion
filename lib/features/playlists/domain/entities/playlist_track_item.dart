@@ -4,6 +4,7 @@ import 'package:equatable/equatable.dart';
 /// Matches backend PlaylistTrackItem DTO.
 class PlaylistTrackItem extends Equatable {
   final String trackId;
+  final String? brandId;
   final String? title;
   final String? artist;
   final int? durationSec;
@@ -18,6 +19,7 @@ class PlaylistTrackItem extends Equatable {
 
   const PlaylistTrackItem({
     required this.trackId,
+    this.brandId,
     this.title,
     this.artist,
     this.durationSec,
@@ -45,6 +47,7 @@ class PlaylistTrackItem extends Equatable {
   @override
   List<Object?> get props => [
         trackId,
+        brandId,
         title,
         artist,
         durationSec,

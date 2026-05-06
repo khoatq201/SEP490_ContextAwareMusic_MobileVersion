@@ -1,11 +1,11 @@
 {
-    "name": "cams_store_manager",
-    "short_name": "cams_store_manager",
+    "name": "Context-aware Music",
+    "short_name": "Context Music",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0f0f11",
-    "theme_color": "#dc2626",
-    "description": "A new Flutter project.",
+    "background_color": "#FFFFFF",
+    "theme_color": "#22b8a7",
+    "description": "Context-aware AI Music application.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

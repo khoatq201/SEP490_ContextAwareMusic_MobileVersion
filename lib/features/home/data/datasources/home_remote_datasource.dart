@@ -5,9 +5,11 @@ import '../../../../core/network/dio_client.dart';
 import '../../../moods/data/datasources/mood_remote_datasource.dart';
 import '../../../moods/data/models/mood_model.dart';
 import '../../../playlists/data/datasources/playlist_remote_datasource.dart';
+import '../../../playlists/domain/entities/api_playlist.dart';
 import '../../domain/entities/category_entity.dart';
 import '../../domain/entities/playlist_entity.dart';
 import '../../domain/entities/sensor_entity.dart';
+import '../../domain/entities/song_entity.dart';
 
 /// Datasource that fetches real data from Moods + Playlists APIs
 /// and maps them into Home domain entities.
@@ -92,6 +94,7 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
       );
 
       final allPlaylists = playlistResponse.items;
+      final playlistDetailsById = await _loadPlaylistDetails(allPlaylists);
       final categories = <CategoryEntity>[];
       List<MoodModel> moods = const [];
 
@@ -115,14 +118,7 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
           id: mood.id,
           title: mood.name,
           playlists: moodPlaylists
-              .map((p) => PlaylistEntity(
-                    id: p.id,
-                    title: p.name,
-                    description: p.description,
-                    coverUrl: null, // API playlists don't have cover images
-                    songs: const [], // Tracks loaded on demand in detail page
-                    overrideTrackCount: p.trackCount,
-                  ))
+              .map((p) => _playlistEntityFromApi(p, playlistDetailsById[p.id]))
               .toList(),
         ));
       }
@@ -135,14 +131,8 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
             id: 'cat-all',
             title: 'All Playlists',
             playlists: allPlaylists
-                .map((p) => PlaylistEntity(
-                      id: p.id,
-                      title: p.name,
-                      description: p.description,
-                      coverUrl: null,
-                      songs: const [],
-                      overrideTrackCount: p.trackCount,
-                    ))
+                .map(
+                    (p) => _playlistEntityFromApi(p, playlistDetailsById[p.id]))
                 .toList(),
           ),
         );
@@ -152,6 +142,59 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
     } catch (e) {
       throw ServerException('Failed to fetch home categories: $e');
     }
+  }
+
+  Future<Map<String, ApiPlaylist>> _loadPlaylistDetails(
+    List<ApiPlaylist> playlists,
+  ) async {
+    final entries = await Future.wait(
+      playlists.map((playlist) async {
+        try {
+          final detail = await playlistDataSource.getPlaylistById(playlist.id);
+          return MapEntry(playlist.id, detail);
+        } catch (_) {
+          return null;
+        }
+      }),
+    );
+
+    return {
+      for (final entry in entries)
+        if (entry != null) entry.key: entry.value,
+    };
+  }
+
+  PlaylistEntity _playlistEntityFromApi(
+    ApiPlaylist playlist,
+    ApiPlaylist? detail,
+  ) {
+    return PlaylistEntity(
+      id: playlist.id,
+      brandId: playlist.brandId,
+      title: playlist.name,
+      description: playlist.description,
+      coverUrl: null,
+      songs: _songsFromPlaylistDetail(detail),
+      overrideTrackCount: playlist.trackCount,
+    );
+  }
+
+  List<SongEntity> _songsFromPlaylistDetail(ApiPlaylist? detail) {
+    final tracks = detail?.tracks;
+    if (tracks == null || tracks.isEmpty) return const [];
+    return tracks
+        .map(
+          (track) => SongEntity(
+            id: track.trackId,
+            brandId: track.brandId,
+            title: track.title ?? 'Unknown',
+            artist: track.artist ?? 'Unknown',
+            duration: track.effectiveDuration,
+            coverUrl: track.coverImageUrl,
+            streamUrl: track.hlsUrl,
+          ),
+        )
+        .toList(growable: false);
   }
 }
 

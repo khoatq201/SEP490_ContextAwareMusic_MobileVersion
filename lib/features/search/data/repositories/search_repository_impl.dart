@@ -9,6 +9,7 @@ import '../../../home/domain/entities/song_entity.dart';
 import '../../../moods/data/datasources/mood_remote_datasource.dart';
 import '../../../playlists/data/models/api_playlist_model.dart';
 import '../../../playlists/data/datasources/playlist_remote_datasource.dart';
+import '../../../playlists/domain/entities/api_playlist.dart';
 import '../../../tracks/data/models/api_track_model.dart';
 import '../../../tracks/data/datasources/track_remote_datasource.dart';
 import '../../../tracks/domain/entities/track_copyright_clearance_status.dart';
@@ -98,8 +99,11 @@ class SearchRepositoryImpl implements SearchRepository {
         pageSize: 10,
         search: query,
       );
+      final playlistDetailsById = await _loadPlaylistDetails(
+        playlistResp.items,
+      );
 
-      _addPlaylistResults(results, playlistResp.items);
+      _addPlaylistResults(results, playlistResp.items, playlistDetailsById);
       final hasPlaylistHit = playlistResp.items.any(
         (playlist) => _matchesPlaylistQuery(playlist, normalizedQuery),
       );
@@ -136,8 +140,15 @@ class SearchRepositoryImpl implements SearchRepository {
             .where(
                 (playlist) => _matchesPlaylistQuery(playlist, normalizedQuery))
             .toList(growable: false);
+        final fallbackPlaylistDetailsById = await _loadPlaylistDetails(
+          fallbackPlaylists,
+        );
 
-        _addPlaylistResults(results, fallbackPlaylists);
+        _addPlaylistResults(
+          results,
+          fallbackPlaylists,
+          fallbackPlaylistDetailsById,
+        );
       }
 
       if (!hasTrackHit || matchingArtistTracks.isEmpty) {
@@ -199,6 +210,7 @@ class SearchRepositoryImpl implements SearchRepository {
           .map(
             (track) => SongEntity(
               id: track.id,
+              brandId: track.brandId,
               title: track.title,
               artist: track.artist ?? 'Unknown',
               duration: track.durationSec ?? 0,
@@ -250,6 +262,7 @@ class SearchRepositoryImpl implements SearchRepository {
       return Right(
         PlaylistEntity(
           id: detail.id,
+          brandId: detail.brandId,
           title: detail.name,
           description: detail.description,
           coverUrl: null,
@@ -257,6 +270,7 @@ class SearchRepositoryImpl implements SearchRepository {
               .map(
                 (track) => SongEntity(
                   id: track.trackId,
+                  brandId: track.brandId,
                   title: track.title ?? 'Unknown',
                   artist: track.artist ?? 'Unknown',
                   duration: track.effectiveDuration,
@@ -287,16 +301,14 @@ class SearchRepositoryImpl implements SearchRepository {
         pageSize: 20,
         moodId: categoryId,
       );
+      final detailsById = await _loadPlaylistDetails(resp.items);
 
       return Right(
         resp.items
             .map(
-              (playlist) => PlaylistEntity(
-                id: playlist.id,
-                title: playlist.name,
-                description: playlist.description,
-                coverUrl: null,
-                songs: const [],
+              (playlist) => _playlistEntityFromApi(
+                playlist,
+                detailsById[playlist.id],
               ),
             )
             .toList(),
@@ -342,6 +354,35 @@ class SearchRepositoryImpl implements SearchRepository {
   }
 
   @override
+  Future<Either<Failure, List<SearchResult>>> getGenreTracks(
+    String genre, {
+    bool playableTracksOnly = false,
+  }) async {
+    try {
+      final resp = await trackDataSource.getTracks(
+        filter: _trackSearchFilter(
+          page: 1,
+          pageSize: 20,
+          genre: genre,
+          playableTracksOnly: playableTracksOnly,
+        ),
+      );
+
+      final results = <String, SearchResult>{};
+      _addTrackResults(results, resp.items);
+      return Right(results.values.toList(growable: false));
+    } catch (error, stackTrace) {
+      return Left(
+        ErrorMapper.toFailure(
+          error,
+          fallbackMessage: 'We could not load tracks for this genre.',
+          stackTrace: stackTrace,
+        ),
+      );
+    }
+  }
+
+  @override
   Future<Either<Failure, List<PlaylistEntity>>> getFeaturedPlaylists() async {
     try {
       final resp = await playlistDataSource.getPlaylists(
@@ -354,16 +395,14 @@ class SearchRepositoryImpl implements SearchRepository {
           ? resp.items
           : (await playlistDataSource.getPlaylists(page: 1, pageSize: 10))
               .items;
+      final detailsById = await _loadPlaylistDetails(items);
 
       return Right(
         items
             .map(
-              (playlist) => PlaylistEntity(
-                id: playlist.id,
-                title: playlist.name,
-                description: playlist.description,
-                coverUrl: null,
-                songs: const [],
+              (playlist) => _playlistEntityFromApi(
+                playlist,
+                detailsById[playlist.id],
               ),
             )
             .toList(),
@@ -382,16 +421,20 @@ class SearchRepositoryImpl implements SearchRepository {
   void _addPlaylistResults(
     Map<String, SearchResult> results,
     List<ApiPlaylistModel> playlists,
+    Map<String, ApiPlaylist> detailsById,
   ) {
     for (final playlist in playlists) {
+      final coverUrls = _trackCoverUrlsFromPlaylist(detailsById[playlist.id]);
       final key = 'playlist:${playlist.id}';
       results.putIfAbsent(
         key,
         () => SearchResult(
           id: playlist.id,
+          brandId: playlist.brandId,
           title: playlist.name,
           subtitle: 'PLAYLIST - ${playlist.moodName ?? ''}',
           imageUrl: null,
+          playlistCoverUrls: coverUrls,
           type: SearchResultType.playlist,
         ),
       );
@@ -408,6 +451,7 @@ class SearchRepositoryImpl implements SearchRepository {
         key,
         () => SearchResult(
           id: track.id,
+          brandId: track.brandId,
           title: track.title,
           subtitle: track.artist ?? 'Unknown',
           imageUrl: track.coverImageUrl,
@@ -427,6 +471,7 @@ class SearchRepositoryImpl implements SearchRepository {
     required int pageSize,
     String? search,
     String? moodId,
+    String? genre,
     required bool playableTracksOnly,
   }) {
     return TrackFilter(
@@ -434,6 +479,7 @@ class SearchRepositoryImpl implements SearchRepository {
       pageSize: pageSize,
       search: search,
       moodId: moodId,
+      genre: genre,
       status: playableTracksOnly ? EntityStatusEnum.active : null,
       copyrightClearanceStatuses: playableTracksOnly
           ? const [
@@ -459,6 +505,7 @@ class SearchRepositoryImpl implements SearchRepository {
         key,
         () => SearchResult(
           id: artist,
+          brandId: track.brandId,
           title: artist,
           subtitle: 'Artist',
           imageUrl: track.coverImageUrl,
@@ -493,6 +540,69 @@ class SearchRepositoryImpl implements SearchRepository {
       return false;
     }
     return _normalizeSearchText(source).contains(normalizedQuery);
+  }
+
+  Future<Map<String, ApiPlaylist>> _loadPlaylistDetails(
+    List<ApiPlaylist> playlists,
+  ) async {
+    final entries = await Future.wait(
+      playlists.map((playlist) async {
+        try {
+          final detail = await playlistDataSource.getPlaylistById(playlist.id);
+          return MapEntry(playlist.id, detail);
+        } catch (_) {
+          return null;
+        }
+      }),
+    );
+
+    return {
+      for (final entry in entries)
+        if (entry != null) entry.key: entry.value,
+    };
+  }
+
+  PlaylistEntity _playlistEntityFromApi(
+    ApiPlaylist playlist,
+    ApiPlaylist? detail,
+  ) {
+    return PlaylistEntity(
+      id: playlist.id,
+      brandId: playlist.brandId,
+      title: playlist.name,
+      description: playlist.description,
+      coverUrl: null,
+      songs: _songsFromPlaylistDetail(detail),
+      overrideTrackCount: playlist.trackCount,
+    );
+  }
+
+  List<SongEntity> _songsFromPlaylistDetail(ApiPlaylist? detail) {
+    final tracks = detail?.tracks;
+    if (tracks == null || tracks.isEmpty) return const [];
+    return tracks
+        .map(
+          (track) => SongEntity(
+            id: track.trackId,
+            brandId: track.brandId,
+            title: track.title ?? 'Unknown',
+            artist: track.artist ?? 'Unknown',
+            duration: track.effectiveDuration,
+            coverUrl: track.coverImageUrl,
+            streamUrl: track.hlsUrl,
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  List<String> _trackCoverUrlsFromPlaylist(ApiPlaylist? detail) {
+    final tracks = detail?.tracks;
+    if (tracks == null || tracks.isEmpty) return const [];
+    return tracks
+        .map((track) => track.coverImageUrl?.trim())
+        .whereType<String>()
+        .where((url) => url.isNotEmpty)
+        .toList(growable: false);
   }
 
   String _normalizeSearchText(String input) {

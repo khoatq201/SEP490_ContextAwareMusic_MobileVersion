@@ -98,7 +98,7 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'Store Manager',
+                          'Context-aware AI Music',
                           style: TextStyle(
                             fontSize: 18,
                             color: tokens.textSecondary,

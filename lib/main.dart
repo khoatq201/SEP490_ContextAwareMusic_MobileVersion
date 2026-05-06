@@ -317,7 +317,7 @@ class _MyAppState extends State<MyApp> {
     }
 
     return MaterialApp.router(
-      title: 'CAMS Store Manager',
+      title: 'Context-aware Music',
       debugShowCheckedModeBanner: false,
       themeMode: themeProvider.themeMode,
       theme: AppTheme.lightTheme,

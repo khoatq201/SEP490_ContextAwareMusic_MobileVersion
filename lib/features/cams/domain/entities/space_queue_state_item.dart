@@ -4,6 +4,7 @@ import 'package:equatable/equatable.dart';
 class SpaceQueueStateItem extends Equatable {
   final String queueItemId;
   final String trackId;
+  final String? brandId;
   final String? trackName;
   final int position;
   final int queueStatus;
@@ -15,6 +16,7 @@ class SpaceQueueStateItem extends Equatable {
   const SpaceQueueStateItem({
     required this.queueItemId,
     required this.trackId,
+    this.brandId,
     this.trackName,
     required this.position,
     required this.queueStatus,
@@ -28,6 +30,7 @@ class SpaceQueueStateItem extends Equatable {
   List<Object?> get props => [
         queueItemId,
         trackId,
+        brandId,
         trackName,
         position,
         queueStatus,

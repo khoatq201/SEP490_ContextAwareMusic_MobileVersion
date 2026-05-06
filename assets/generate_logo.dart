@@ -39,7 +39,7 @@ void main() async {
   // Subtitle
   final subtitlePainter = TextPainter(
     text: const TextSpan(
-      text: 'Store Manager',
+      text: 'AI Music',
       style: TextStyle(
         color: Color(0xFF3B82F6),
         fontSize: 24,

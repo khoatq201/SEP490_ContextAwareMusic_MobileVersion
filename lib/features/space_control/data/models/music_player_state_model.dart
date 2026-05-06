@@ -23,6 +23,7 @@ class MusicPlayerStateModel extends MusicPlayerState {
   static Track _trackFromJson(Map<String, dynamic> json) {
     return Track(
       id: json['id'] as String,
+      brandId: json['brandId'] as String?,
       title: json['title'] as String,
       artist: json['artist'] as String,
       fileUrl: json['fileUrl'] as String,
@@ -48,6 +49,7 @@ class MusicPlayerStateModel extends MusicPlayerState {
   static Map<String, dynamic> _trackToJson(Track track) {
     return {
       'id': track.id,
+      'brandId': track.brandId,
       'title': track.title,
       'artist': track.artist,
       'fileUrl': track.fileUrl,

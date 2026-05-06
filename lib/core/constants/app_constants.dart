@@ -1,7 +1,11 @@
 class AppConstants {
   // App Info
-  static const String appName = 'CAMS Store Manager';
+  static const String appName = 'Context-aware Music';
   static const String appVersion = '1.0.0';
+  static const String registrationPortalUrl =
+      'https://cams-hazel.vercel.app/register';
+  static const String registrationPortalOpenError =
+      'Could not open https://cams-hazel.vercel.app/register';
 
   // Moods
   static const List<String> availableMoods = [

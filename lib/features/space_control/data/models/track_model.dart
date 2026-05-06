@@ -3,6 +3,7 @@ import '../../domain/entities/track.dart';
 class TrackModel extends Track {
   const TrackModel({
     required super.id,
+    super.brandId,
     required super.title,
     required super.artist,
     required super.fileUrl,
@@ -15,6 +16,7 @@ class TrackModel extends Track {
   factory TrackModel.fromJson(Map<String, dynamic> json) {
     return TrackModel(
       id: json['id'] as String,
+      brandId: json['brandId'] as String?,
       title: json['title'] as String,
       artist: json['artist'] as String,
       fileUrl: json['fileUrl'] as String,
@@ -29,6 +31,7 @@ class TrackModel extends Track {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'brandId': brandId,
       'title': title,
       'artist': artist,
       'fileUrl': fileUrl,
@@ -42,6 +45,7 @@ class TrackModel extends Track {
   Track toEntity() {
     return Track(
       id: id,
+      brandId: brandId,
       title: title,
       artist: artist,
       fileUrl: fileUrl,
@@ -55,6 +59,7 @@ class TrackModel extends Track {
   factory TrackModel.fromEntity(Track track) {
     return TrackModel(
       id: track.id,
+      brandId: track.brandId,
       title: track.title,
       artist: track.artist,
       fileUrl: track.fileUrl,

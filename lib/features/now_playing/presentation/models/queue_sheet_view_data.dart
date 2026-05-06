@@ -15,6 +15,7 @@ class QueueSheetItem {
   const QueueSheetItem({
     required this.queueItemId,
     required this.trackId,
+    this.brandId,
     required this.title,
     required this.artist,
     required this.section,
@@ -30,6 +31,7 @@ class QueueSheetItem {
 
   final String? queueItemId;
   final String trackId;
+  final String? brandId;
   final String title;
   final String artist;
   final String? artUrl;
@@ -161,6 +163,7 @@ class QueueSheetViewData {
         final queueItem = QueueSheetItem(
           queueItemId: item.queueItemId,
           trackId: item.trackId,
+          brandId: item.brandId ?? matchedTrack?.brandId,
           title: title,
           artist: artist,
           artUrl: item.coverImageUrl ?? matchedTrack?.albumArt,
@@ -220,6 +223,7 @@ class QueueSheetViewData {
         .map((track) => QueueSheetItem(
               queueItemId: track.queueItemId,
               trackId: track.id,
+              brandId: track.brandId,
               title: track.title,
               artist: track.artist,
               artUrl: track.albumArt,
@@ -259,6 +263,7 @@ class QueueSheetViewData {
       final item = QueueSheetItem(
         queueItemId: baseItem.queueItemId,
         trackId: baseItem.trackId,
+        brandId: baseItem.brandId,
         title: baseItem.title,
         artist: baseItem.artist,
         artUrl: baseItem.artUrl,

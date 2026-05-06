@@ -13,6 +13,8 @@ import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../../../core/utils/cams_queue_actions.dart';
 import '../../../../core/widgets/app_error_view.dart';
 import '../../../../core/widgets/cams_skeleton.dart';
+import '../../../../core/widgets/playlist_cover_collage.dart';
+import '../../../../core/widgets/shared_catalog_badge.dart';
 import '../../../../core/widgets/song_list_tile.dart';
 import '../../../../core/widgets/song_options_bottom_sheet.dart';
 import '../../../../injection_container.dart';
@@ -24,32 +26,62 @@ import '../bloc/category_detail_cubit.dart';
 class CategoryDetailPage extends StatelessWidget {
   final String categoryId;
   final String? categoryName;
+  final CategoryDetailSource source;
 
   const CategoryDetailPage({
     super.key,
     required this.categoryId,
     this.categoryName,
+    this.source = CategoryDetailSource.mood,
   });
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => sl<CategoryDetailCubit>()..load(categoryId),
+      create: (_) {
+        final cubit = sl<CategoryDetailCubit>();
+        switch (source) {
+          case CategoryDetailSource.mood:
+            cubit.load(categoryId);
+            break;
+          case CategoryDetailSource.genre:
+            cubit.loadGenre(categoryId);
+            break;
+        }
+        return cubit;
+      },
       child: _CategoryDetailView(
         categoryId: categoryId,
         categoryName: categoryName ?? 'Category',
+        source: source,
       ),
     );
   }
 }
 
+enum CategoryDetailSource { mood, genre }
+
 class _CategoryDetailView extends StatelessWidget {
   final String categoryId;
   final String categoryName;
+  final CategoryDetailSource source;
   const _CategoryDetailView({
     required this.categoryId,
     required this.categoryName,
+    required this.source,
   });
+
+  void _reload(BuildContext context) {
+    final cubit = context.read<CategoryDetailCubit>();
+    switch (source) {
+      case CategoryDetailSource.mood:
+        cubit.load(categoryId);
+        break;
+      case CategoryDetailSource.genre:
+        cubit.loadGenre(categoryId);
+        break;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -105,9 +137,10 @@ class _CategoryDetailView extends StatelessWidget {
           if (state.status == CategoryDetailStatus.error) {
             return AppErrorView(
               failure: state.failure,
-              title: 'Category unavailable',
-              onRetry: () =>
-                  context.read<CategoryDetailCubit>().load(categoryId),
+              title: source == CategoryDetailSource.genre
+                  ? 'Genre unavailable'
+                  : 'Category unavailable',
+              onRetry: () => _reload(context),
               onSecondaryAction: () => context.pop(),
               secondaryLabel: 'Go back',
             );
@@ -117,6 +150,7 @@ class _CategoryDetailView extends StatelessWidget {
             playlists: state.playlists,
             tracks: state.tracks,
             categoryName: categoryName,
+            source: source,
             isDark: isDark,
           );
         },
@@ -158,6 +192,7 @@ void _showCategoryTrackPlaybackBlocked(
 SongEntity _categoryTrackToSongEntity(SearchResult result) {
   return SongEntity(
     id: result.id,
+    brandId: result.brandId,
     title: result.title,
     artist: result.subtitle,
     duration: result.durationSeconds ?? 0,
@@ -233,12 +268,14 @@ class _CategoryContent extends StatelessWidget {
   final List<PlaylistEntity> playlists;
   final List<SearchResult> tracks;
   final String categoryName;
+  final CategoryDetailSource source;
   final bool isDark;
 
   const _CategoryContent({
     required this.playlists,
     required this.tracks,
     required this.categoryName,
+    required this.source,
     required this.isDark,
   });
 
@@ -269,7 +306,9 @@ class _CategoryContent extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'No playlists or tracks in this mood',
+              source == CategoryDetailSource.genre
+                  ? 'No tracks in this genre'
+                  : 'No playlists or tracks in this mood',
               style: TextStyle(
                 color: isDark
                     ? AppColors.textDarkSecondary
@@ -283,7 +322,7 @@ class _CategoryContent extends StatelessWidget {
 
     return CustomScrollView(
       slivers: [
-        if (playlists.isNotEmpty) ...[
+        if (source == CategoryDetailSource.mood && playlists.isNotEmpty) ...[
           SliverToBoxAdapter(
             child: _SectionTitle(title: 'Playlists', isDark: isDark),
           ),
@@ -389,14 +428,17 @@ class _PlaylistGrid extends StatelessWidget {
               Expanded(
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-                  child: playlist.coverUrl != null
-                      ? Image.network(
-                          playlist.coverUrl!,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const _CoverFallback(),
-                        )
-                      : const _CoverFallback(),
+                  child: PlaylistCoverCollage(
+                    coverUrls: playlist.trackCoverUrls,
+                    fallbackCoverUrl: playlist.coverUrl,
+                    backgroundColor: isDark
+                        ? AppColors.backgroundDarkTertiary
+                        : AppColors.backgroundSecondary,
+                    iconColor: isDark
+                        ? AppColors.textDarkTertiary
+                        : AppColors.textTertiary,
+                    iconSize: 34,
+                  ),
                 ),
               ),
               const SizedBox(height: 6),
@@ -424,6 +466,10 @@ class _PlaylistGrid extends StatelessWidget {
                     fontSize: 11,
                   ),
                 ),
+              if (playlist.isSharedCatalog) ...[
+                const SizedBox(height: 4),
+                const SharedCatalogBadge(compact: true),
+              ],
             ],
           ),
         );
@@ -462,21 +508,6 @@ class _CategoryPlaybackTag extends StatelessWidget {
           fontWeight: FontWeight.w700,
         ),
       ),
-    );
-  }
-}
-
-class _CoverFallback extends StatelessWidget {
-  const _CoverFallback();
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.camsTokens;
-
-    return Container(
-      width: double.infinity,
-      color: tokens.bgContainer,
-      child: Icon(LucideIcons.music4, size: 48, color: tokens.textTertiary),
     );
   }
 }

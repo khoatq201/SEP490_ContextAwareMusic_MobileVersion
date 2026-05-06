@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/constants/api_constants.dart';
+import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/constants/app_typography.dart';
@@ -142,7 +144,7 @@ class _LoginPageV2State extends State<LoginPageV2>
                               ],
                               const SizedBox(height: AppDimensions.spacingXl),
                               Text(
-                                'Copyright 2026 CAMS Store Manager',
+                                'Copyright 2026 Context-aware AI Music',
                                 style: AppTypography.bodyMedium.copyWith(
                                   color: isDark
                                       ? AppColors.textDarkTertiary
@@ -541,7 +543,7 @@ class _LoginPageV2State extends State<LoginPageV2>
                 minimumSize: const Size(0, 30),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              onPressed: _showRegistrationComingSoon,
+              onPressed: _openRegistrationPortal,
               child: Text(
                 'Sign up',
                 style: AppTypography.titleSmall.copyWith(
@@ -557,10 +559,16 @@ class _LoginPageV2State extends State<LoginPageV2>
     );
   }
 
-  void _showRegistrationComingSoon() {
+  Future<void> _openRegistrationPortal() async {
+    final opened = await launchUrl(
+      Uri.parse(AppConstants.registrationPortalUrl),
+      mode: LaunchMode.externalApplication,
+    );
+    if (opened || !mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('Registration portal coming soon!'),
+        content: const Text(AppConstants.registrationPortalOpenError),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusMd),

@@ -81,6 +81,7 @@ class _AlbumBody extends StatelessWidget {
   List<Track> get _tracks => album.songs
       .map((s) => Track(
             id: s.id,
+            brandId: s.brandId,
             title: s.title,
             artist: s.artist,
             fileUrl: s.streamUrl ?? '',

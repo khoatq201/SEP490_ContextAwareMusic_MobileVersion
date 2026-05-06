@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/session/session_cubit.dart';
 import '../../core/enums/user_role.dart';
 import '../theme/cams_theme_tokens.dart';
+import 'shared_catalog_badge.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Enum: the set of actions the user can pick from the bottom sheet
@@ -164,6 +165,10 @@ class SongOptionsBottomSheet extends StatelessWidget {
                               fontWeight: FontWeight.w500,
                             ),
                           ),
+                          if (song.isSharedCatalog) ...[
+                            const SizedBox(height: 6),
+                            const SharedCatalogBadge(compact: true),
+                          ],
                         ],
                       ),
                     ),

@@ -36,5 +36,10 @@ abstract class SearchRepository {
     bool playableTracksOnly = false,
   });
 
+  Future<Either<Failure, List<SearchResult>>> getGenreTracks(
+    String genre, {
+    bool playableTracksOnly = false,
+  });
+
   Future<Either<Failure, List<PlaylistEntity>>> getFeaturedPlaylists();
 }

@@ -23,7 +23,7 @@
         android:required="false" />
 
     <application
-        android:label="cams_store_manager"
+        android:label="Context-aware Music"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true"

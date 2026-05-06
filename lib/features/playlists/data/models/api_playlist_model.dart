@@ -5,6 +5,7 @@ import '../../../../core/enums/entity_status_enum.dart';
 class PlaylistTrackItemModel extends PlaylistTrackItem {
   const PlaylistTrackItemModel({
     required super.trackId,
+    super.brandId,
     super.title,
     super.artist,
     super.durationSec,
@@ -18,6 +19,7 @@ class PlaylistTrackItemModel extends PlaylistTrackItem {
   factory PlaylistTrackItemModel.fromJson(Map<String, dynamic> json) {
     return PlaylistTrackItemModel(
       trackId: json['trackId'] as String,
+      brandId: json['brandId'] as String?,
       title: json['title'] as String?,
       artist: json['artist'] as String?,
       durationSec: (json['durationSec'] as num?)?.toInt(),

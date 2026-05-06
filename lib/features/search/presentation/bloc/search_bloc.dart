@@ -155,6 +155,7 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
       SearchFilterTag.playlists: SearchResultType.playlist,
       SearchFilterTag.artists: SearchResultType.artist,
       SearchFilterTag.songs: SearchResultType.song,
+      SearchFilterTag.genres: SearchResultType.song,
       SearchFilterTag.albums: SearchResultType.album,
       SearchFilterTag.categories: SearchResultType.category,
     };

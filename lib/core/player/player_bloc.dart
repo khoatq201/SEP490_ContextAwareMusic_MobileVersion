@@ -753,9 +753,22 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
           _audioService.loadedUrl != event.hlsUrl ||
           !state.isHlsMode ||
           state.hlsUrl != event.hlsUrl;
+      _debugLog(
+        'hlsDecision '
+        'shouldReloadSource=$shouldReloadSource '
+        'eventForceReload=${event.forceReload} '
+        'engineCompleted=$isEngineCompleted '
+        'loadedUrlMatches=${_audioService.loadedUrl == event.hlsUrl} '
+        'stateHlsMode=${state.isHlsMode} '
+        'stateHlsMatches=${state.hlsUrl == event.hlsUrl} '
+        'loadedUrl=${_audioService.loadedUrl ?? '-'} '
+        'eventHls=${event.hlsUrl}',
+      );
 
       if (shouldReloadSource) {
+        _debugLog('hlsDecision loadUrl start hls=${event.hlsUrl}');
         await _audioService.loadUrl(event.hlsUrl);
+        _debugLog('hlsDecision loadUrl done hls=${event.hlsUrl}');
       }
 
       final targetSeekOffsetSeconds = _resolveFreshHlsSeekOffset(event);
@@ -777,13 +790,31 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       final currentPosition = _audioService.position;
       final positionDrift =
           (currentPosition - targetPosition).inMilliseconds.abs() / 1000.0;
+      _debugLog(
+        'hlsDecision seekCheck '
+        'shouldReloadSource=$shouldReloadSource '
+        'current=${currentPosition.inMilliseconds / 1000.0} '
+        'target=${targetPosition.inMilliseconds / 1000.0} '
+        'drift=${positionDrift.toStringAsFixed(2)} '
+        'tolerance=$_hlsPositionResyncToleranceSeconds',
+      );
       if (shouldReloadSource ||
           positionDrift > _hlsPositionResyncToleranceSeconds) {
+        _debugLog(
+          'hlsDecision seek start '
+          'target=${targetPosition.inMilliseconds / 1000.0}',
+        );
         await _audioService.seek(targetPosition);
+        _debugLog(
+          'hlsDecision seek done '
+          'target=${targetPosition.inMilliseconds / 1000.0}',
+        );
       }
       if (event.isPaused) {
+        _debugLog('hlsDecision finalAction=pause');
         await _audioService.pause();
       } else {
+        _debugLog('hlsDecision finalAction=play');
         await _audioService.play();
       }
     } catch (_) {
@@ -898,12 +929,26 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
 
     switch (event.command) {
       case PlaybackCommandEnum.pause:
+        _debugLog(
+          'remoteCommand pause '
+          'playLocally=${event.playLocally} '
+          'isSynced=${state.isSyncedCamsPlayback} '
+          'queueItemId=${state.currentQueueItemId ?? '-'} '
+          'trackId=${state.currentTrackId ?? state.currentTrack?.id ?? '-'}',
+        );
         if (event.playLocally || state.isSyncedCamsPlayback) {
           _audioService.pause();
         }
         emit(state.copyWith(isPlaying: false));
         return;
       case PlaybackCommandEnum.resume:
+        _debugLog(
+          'remoteCommand resume '
+          'playLocally=${event.playLocally} '
+          'isSynced=${state.isSyncedCamsPlayback} '
+          'queueItemId=${state.currentQueueItemId ?? '-'} '
+          'trackId=${state.currentTrackId ?? state.currentTrack?.id ?? '-'}',
+        );
         if (event.playLocally || state.isSyncedCamsPlayback) {
           _audioService.play();
         }
@@ -928,6 +973,14 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
                   indexOverride: resolvedIndex >= 0 ? resolvedIndex : null,
                 );
           try {
+            _debugLog(
+              'remoteCommand ${event.command.name} seekAudio '
+              'absolute=${absolutePosition.toStringAsFixed(2)} '
+              'local=${localSeekPosition.toStringAsFixed(2)} '
+              'playLocally=${event.playLocally} '
+              'isSynced=${state.isSyncedCamsPlayback} '
+              'hls=${state.hlsUrl}',
+            );
             await _audioService.seek(
               Duration(milliseconds: (localSeekPosition * 1000).round()),
             );

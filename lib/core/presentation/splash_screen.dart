@@ -72,7 +72,7 @@ class _SplashScreenState extends State<SplashScreen>
                   const SizedBox(height: 30),
                   // Subtitle
                   Text(
-                    'Store Manager',
+                    'Context-aware AI Music',
                     style: TextStyle(
                       fontSize: 20,
                       color: isDark
