@@ -4,9 +4,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/error/error_mapper.dart';
+import '../../../../core/error/failure_kind.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/enums/playback_command_enum.dart';
 import '../../../../core/enums/queue_insert_mode_enum.dart';
+import '../../../../core/enums/user_role.dart';
 import '../../../../core/session/session_cubit.dart';
 import '../../../moods/domain/usecases/get_moods.dart';
 import '../../data/services/queue_first_playback_runtime.dart';
@@ -179,6 +181,10 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     String? reason,
   }) async {
     if (!_hasActiveSessionScope('overrideMood')) return;
+    if (state.isBrandPlaybackBlocked) {
+      emit(state.copyWith(errorMessage: state.playbackBlockedMessage));
+      return;
+    }
     final spaceId = state.spaceId;
     if (spaceId == null || spaceId.isEmpty) return;
 
@@ -197,15 +203,16 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     );
 
     result.fold(
-      (failure) => emit(state.copyWith(
+      (failure) => emit(_stateForPlaybackMutationFailure(
+        failure,
         isOverriding: false,
-        errorMessage:
-            'Override failed: ${ErrorMapper.displayMessageForFailure(failure)}',
+        prefix: 'Override failed',
       )),
       (response) async {
         emit(state.copyWith(
           isOverriding: false,
           lastOverrideResponse: response,
+          clearPlaybackBlock: true,
           clearPendingTrackJump: true,
         ));
         await runtime.refreshState(silent: true);
@@ -218,6 +225,10 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     Emitter<CamsPlaybackState> emit,
   ) async {
     if (!_hasActiveSessionScope('playPlaylist')) return;
+    if (state.isBrandPlaybackBlocked) {
+      emit(state.copyWith(errorMessage: state.playbackBlockedMessage));
+      return;
+    }
     final resolvedClearExistingQueue = _resolveClearExistingQueue(
       resolvedMode: event.requestedMode,
       requestedClearExistingQueue: event.clearExistingQueue,
@@ -242,16 +253,17 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     result.fold(
       (failure) {
         _debugLog('playPlaylist failed: ${failure.message}');
-        emit(state.copyWith(
+        emit(_stateForPlaybackMutationFailure(
+          failure,
           isOverriding: false,
-          errorMessage:
-              'Play playlist failed: ${ErrorMapper.displayMessageForFailure(failure)}',
+          prefix: 'Play playlist failed',
         ));
       },
       (_) {
         _debugLog('playPlaylist ACK received from runtime');
         emit(state.copyWith(
           isOverriding: false,
+          clearPlaybackBlock: true,
           clearPendingTrackJump: true,
         ));
       },
@@ -292,6 +304,10 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     String? reason,
   }) async {
     if (!_hasActiveSessionScope('playTrack')) return;
+    if (state.isBrandPlaybackBlocked) {
+      emit(state.copyWith(errorMessage: state.playbackBlockedMessage));
+      return;
+    }
     final resolvedClearExistingQueue = _resolveClearExistingQueue(
       resolvedMode: requestedMode,
       requestedClearExistingQueue: clearExistingQueue,
@@ -320,16 +336,17 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     result.fold(
       (failure) {
         _debugLog('playTrack failed: ${failure.message}');
-        emit(state.copyWith(
+        emit(_stateForPlaybackMutationFailure(
+          failure,
           isOverriding: false,
-          errorMessage:
-              'Play track failed: ${ErrorMapper.displayMessageForFailure(failure)}',
+          prefix: 'Play track failed',
         ));
       },
       (_) {
         _debugLog('playTracks ACK received from runtime');
         emit(state.copyWith(
           isOverriding: false,
+          clearPlaybackBlock: true,
           clearPendingTrackJump: true,
         ));
       },
@@ -419,6 +436,10 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     Emitter<CamsPlaybackState> emit,
   ) async {
     if (!_hasActiveSessionScope('updateSchedulingState')) return;
+    if (event.isScheduling && state.isBrandPlaybackBlocked) {
+      emit(state.copyWith(errorMessage: state.playbackBlockedMessage));
+      return;
+    }
 
     emit(state.copyWith(isOverriding: true, clearError: true));
     final result = await runtime.patchSchedulingState(
@@ -427,14 +448,22 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     );
 
     result.fold(
-      (failure) => emit(state.copyWith(
-        isOverriding: false,
-        errorMessage: _resolveSchedulingUpdateErrorMessage(
+      (failure) {
+        final message = _resolveSchedulingUpdateErrorMessage(
           failure,
           attemptedEnable: event.isScheduling,
-        ),
+        );
+        emit(_stateForPlaybackMutationFailure(
+          failure,
+          isOverriding: false,
+          displayMessage: message,
+          affectsPlaybackStart: event.isScheduling,
+        ));
+      },
+      (_) => emit(state.copyWith(
+        isOverriding: false,
+        clearPlaybackBlock: event.isScheduling,
       )),
-      (_) => emit(state.copyWith(isOverriding: false)),
     );
   }
 
@@ -475,6 +504,11 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     Emitter<CamsPlaybackState> emit,
   ) async {
     if (!_hasActiveSessionScope('sendCommand:${event.command.name}')) return;
+    if (state.isBrandPlaybackBlocked &&
+        _isQuotaConsumingPlaybackCommand(event.command)) {
+      emit(state.copyWith(errorMessage: state.playbackBlockedMessage));
+      return;
+    }
     if (_shouldRelayCommandOptimistically(
       command: event.command,
     )) {
@@ -509,9 +543,15 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
           'command=${event.command.name} '
           '${_describeFailure(failure)}',
         );
+        final failedState = _stateForPlaybackMutationFailure(
+          failure,
+          prefix: 'Command failed',
+          affectsPlaybackStart: _isQuotaConsumingPlaybackCommand(event.command),
+        );
         emit(state.copyWith(
-          errorMessage:
-              'Command failed: ${ErrorMapper.displayMessageForFailure(failure)}',
+          errorMessage: failedState.errorMessage,
+          playbackBlockedMessage: failedState.playbackBlockedMessage,
+          playbackBlockedBrandId: failedState.playbackBlockedBrandId,
         ));
       },
       (_) {
@@ -520,6 +560,9 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
           'spaceId=${state.spaceId ?? '-'} '
           'command=${event.command.name}',
         );
+        if (_isQuotaConsumingPlaybackCommand(event.command)) {
+          emit(state.copyWith(clearPlaybackBlock: true));
+        }
       },
     );
   }
@@ -773,6 +816,11 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     }
 
     _debugLog('runtimeState ${_describePlaybackState(playbackState)}');
+    final blockedBrandId = state.playbackBlockedBrandId;
+    final incomingBrandId = playbackState.brandId;
+    final shouldClearPlaybackBlock = blockedBrandId != null &&
+        incomingBrandId != null &&
+        blockedBrandId.toLowerCase() != incomingBrandId.toLowerCase();
     emit(state.copyWith(
       status: (playbackState.isStreaming || playbackState.hasPendingPlayback)
           ? CamsStatus.active
@@ -783,6 +831,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
       playbackState: playbackState,
       isHubConnected: isHubConnected,
       clearError: true,
+      clearPlaybackBlock: shouldClearPlaybackBlock,
       clearLastCommand: true,
     ));
   }
@@ -881,6 +930,65 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
         command == PlaybackCommandEnum.skipPrevious ||
         command == PlaybackCommandEnum.skipToTrack ||
         command == PlaybackCommandEnum.trackEnded;
+  }
+
+  bool _isQuotaConsumingPlaybackCommand(PlaybackCommandEnum command) {
+    return command == PlaybackCommandEnum.resume ||
+        command == PlaybackCommandEnum.skipNext ||
+        command == PlaybackCommandEnum.skipPrevious ||
+        command == PlaybackCommandEnum.skipToTrack ||
+        command == PlaybackCommandEnum.trackEnded;
+  }
+
+  CamsPlaybackState _stateForPlaybackMutationFailure(
+    Failure failure, {
+    bool? isOverriding,
+    String? prefix,
+    String? displayMessage,
+    bool affectsPlaybackStart = true,
+  }) {
+    final resolvedDisplayMessage =
+        displayMessage ?? ErrorMapper.displayMessageForFailure(failure);
+    final errorMessage = prefix == null || prefix.isEmpty
+        ? resolvedDisplayMessage
+        : '$prefix: $resolvedDisplayMessage';
+
+    if (affectsPlaybackStart && _isBrandWalletPlaybackBlock(failure)) {
+      final blockedMessage = _brandPlaybackBlockMessage(failure);
+      return state.copyWith(
+        isOverriding: isOverriding,
+        errorMessage: blockedMessage,
+        playbackBlockedMessage: blockedMessage,
+        playbackBlockedBrandId: state.playbackState?.brandId,
+      );
+    }
+
+    return state.copyWith(
+      isOverriding: isOverriding,
+      errorMessage: errorMessage,
+    );
+  }
+
+  bool _isBrandWalletPlaybackBlock(Failure failure) {
+    final backendCode = failure.backendCode?.trim().toLowerCase();
+    final message = failure.message.trim().toLowerCase();
+    return failure.kind == FailureKind.business &&
+        backendCode == 'businessruleviolation' &&
+        (message.contains('wallet') ||
+            message.contains('balance') ||
+            message.contains('quota') ||
+            message.contains('token') ||
+            message.contains('top up') ||
+            message.contains('negative'));
+  }
+
+  String _brandPlaybackBlockMessage(Failure failure) {
+    final serverMessage = ErrorMapper.displayMessageForFailure(failure);
+    final role = sessionCubit.state.currentRole;
+    if (role == UserRole.brandManager) {
+      return serverMessage;
+    }
+    return 'Playback is unavailable because the brand wallet needs attention. Contact your brand manager.';
   }
 
   bool _hasActiveSessionScope(String action) {

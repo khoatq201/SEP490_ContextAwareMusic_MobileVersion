@@ -34,10 +34,17 @@ class MiniPlayerWidget extends StatelessWidget {
         final isWaitingForRemoteState = useRemoteControls &&
             (camsState.status == CamsStatus.initial ||
                 camsState.status == CamsStatus.loading);
-        final canControlPlayback = state.hasTrack && !isWaitingForRemoteState;
+        final isRemotePlaybackBlocked =
+            useRemoteControls && camsState.isBrandPlaybackBlocked;
+        final canControlPlayback = state.hasTrack &&
+            !isWaitingForRemoteState &&
+            (!isRemotePlaybackBlocked || state.isPlaying);
         final canEndStream =
             state.isSyncedCamsPlayback && camsState.hasActiveOverride;
-        final canSkipNext = canControlPlayback && state.hasNext;
+        final canSkipNext = state.hasTrack &&
+            !isWaitingForRemoteState &&
+            !isRemotePlaybackBlocked &&
+            state.hasNext;
 
         return GestureDetector(
           onTap: () => context.push('/now-playing-full'),

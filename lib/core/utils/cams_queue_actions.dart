@@ -35,6 +35,21 @@ bool ensureQueueTargetSelected(
   return false;
 }
 
+bool ensurePlaybackQueueIsAvailable(BuildContext context) {
+  final camsState = context.read<CamsPlaybackBloc>().state;
+  if (!camsState.isBrandPlaybackBlocked) return true;
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(
+        camsState.playbackBlockedMessage ??
+            'Playback is unavailable because the brand wallet needs attention.',
+      ),
+    ),
+  );
+  return false;
+}
+
 void queueTrackToCurrentSpace(
   BuildContext context, {
   required String trackId,
@@ -43,6 +58,7 @@ void queueTrackToCurrentSpace(
   required String reason,
 }) {
   if (!ensureQueueTargetSelected(context)) return;
+  if (!ensurePlaybackQueueIsAvailable(context)) return;
 
   final session = context.read<SessionCubit>().state;
   final spaceId = session.currentSpace!.id;
@@ -67,6 +83,7 @@ Future<void> showTrackQueueModePickerAndQueue(
   required String source,
 }) async {
   if (!ensureQueueTargetSelected(context)) return;
+  if (!ensurePlaybackQueueIsAvailable(context)) return;
 
   final mode = await showQueueModePickerBottomSheet(
     context,
@@ -95,6 +112,7 @@ void queuePlaylistToCurrentSpace(
   required String reason,
 }) {
   if (!ensureQueueTargetSelected(context)) return;
+  if (!ensurePlaybackQueueIsAvailable(context)) return;
 
   final session = context.read<SessionCubit>().state;
   final spaceId = session.currentSpace!.id;

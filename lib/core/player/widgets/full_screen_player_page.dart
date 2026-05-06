@@ -44,6 +44,11 @@ class FullScreenPlayerPage extends StatelessWidget {
           final isPlaying = state.isPlaying;
           final useRemoteControls =
               state.isHlsMode && (state.activeSpaceId?.isNotEmpty ?? false);
+          final camsState = context.watch<CamsPlaybackBloc>().state;
+          final isRemotePlaybackBlocked =
+              useRemoteControls && camsState.isBrandPlaybackBlocked;
+          final canPlayPause = !isRemotePlaybackBlocked || isPlaying;
+          final canSkipRemote = !isRemotePlaybackBlocked;
           final moodTags = track?.moodTags;
           final mood =
               (moodTags != null && moodTags.isNotEmpty) ? moodTags.first : null;
@@ -285,15 +290,17 @@ class FullScreenPlayerPage extends StatelessWidget {
                   children: [
                     // Skip previous
                     GestureDetector(
-                      onTap: () {
-                        if (useRemoteControls) {
-                          _dispatchRemoteSkipBack(context);
-                          return;
-                        }
-                        context
-                            .read<PlayerBloc>()
-                            .add(const PlayerSkipBackRequested());
-                      },
+                      onTap: canSkipRemote
+                          ? () {
+                              if (useRemoteControls) {
+                                _dispatchRemoteSkipBack(context);
+                                return;
+                              }
+                              context
+                                  .read<PlayerBloc>()
+                                  .add(const PlayerSkipBackRequested());
+                            }
+                          : null,
                       child: Container(
                         width: 52,
                         height: 52,
@@ -310,21 +317,23 @@ class FullScreenPlayerPage extends StatelessWidget {
 
                     // Play / Pause
                     GestureDetector(
-                      onTap: () {
-                        if (useRemoteControls) {
-                          context.read<CamsPlaybackBloc>().add(
-                                CamsSendCommand(
-                                  command: isPlaying
-                                      ? PlaybackCommandEnum.pause
-                                      : PlaybackCommandEnum.resume,
-                                ),
-                              );
-                          return;
-                        }
-                        context
-                            .read<PlayerBloc>()
-                            .add(const PlayerPlayPauseToggled());
-                      },
+                      onTap: canPlayPause
+                          ? () {
+                              if (useRemoteControls) {
+                                context.read<CamsPlaybackBloc>().add(
+                                      CamsSendCommand(
+                                        command: isPlaying
+                                            ? PlaybackCommandEnum.pause
+                                            : PlaybackCommandEnum.resume,
+                                      ),
+                                    );
+                                return;
+                              }
+                              context
+                                  .read<PlayerBloc>()
+                                  .add(const PlayerPlayPauseToggled());
+                            }
+                          : null,
                       child: Container(
                         width: 76,
                         height: 76,
@@ -343,7 +352,7 @@ class FullScreenPlayerPage extends StatelessWidget {
 
                     // Skip next
                     GestureDetector(
-                      onTap: state.hasNext
+                      onTap: state.hasNext && canSkipRemote
                           ? () {
                               if (useRemoteControls) {
                                 context.read<CamsPlaybackBloc>().add(

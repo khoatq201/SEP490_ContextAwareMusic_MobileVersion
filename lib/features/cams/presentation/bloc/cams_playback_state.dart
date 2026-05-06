@@ -27,6 +27,12 @@ class CamsPlaybackState extends Equatable {
   /// Error message.
   final String? errorMessage;
 
+  /// Brand-level playback block, usually caused by wallet/quota business rules.
+  final String? playbackBlockedMessage;
+
+  /// Brand id associated with the block when the current playback snapshot has it.
+  final String? playbackBlockedBrandId;
+
   /// SignalR connection status.
   final bool isHubConnected;
 
@@ -47,6 +53,8 @@ class CamsPlaybackState extends Equatable {
     this.isOverriding = false,
     this.lastOverrideResponse,
     this.errorMessage,
+    this.playbackBlockedMessage,
+    this.playbackBlockedBrandId,
     this.isHubConnected = false,
     this.lastPlaybackCommand,
     this.lastSeekPositionSeconds,
@@ -89,6 +97,9 @@ class CamsPlaybackState extends Equatable {
 
   bool get hasExplainability => explainability?.hasAnyData ?? false;
 
+  bool get isBrandPlaybackBlocked =>
+      playbackBlockedMessage != null && playbackBlockedMessage!.isNotEmpty;
+
   CamsPlaybackState copyWith({
     CamsStatus? status,
     String? spaceId,
@@ -97,6 +108,8 @@ class CamsPlaybackState extends Equatable {
     bool? isOverriding,
     OverrideResponse? lastOverrideResponse,
     String? errorMessage,
+    String? playbackBlockedMessage,
+    String? playbackBlockedBrandId,
     bool? isHubConnected,
     PlaybackCommandEnum? lastPlaybackCommand,
     double? lastSeekPositionSeconds,
@@ -106,6 +119,7 @@ class CamsPlaybackState extends Equatable {
     String? pendingTrackPlaylistId,
     String? pendingTrackId,
     bool clearError = false,
+    bool clearPlaybackBlock = false,
     bool clearPlaybackState = false,
     bool clearOverrideResponse = false,
     bool clearLastCommand = false,
@@ -125,6 +139,12 @@ class CamsPlaybackState extends Equatable {
           ? null
           : (lastOverrideResponse ?? this.lastOverrideResponse),
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      playbackBlockedMessage: clearPlaybackBlock
+          ? null
+          : (playbackBlockedMessage ?? this.playbackBlockedMessage),
+      playbackBlockedBrandId: clearPlaybackBlock
+          ? null
+          : (playbackBlockedBrandId ?? this.playbackBlockedBrandId),
       isHubConnected: isHubConnected ?? this.isHubConnected,
       lastPlaybackCommand: clearLastCommand
           ? null
@@ -157,6 +177,8 @@ class CamsPlaybackState extends Equatable {
         isOverriding,
         lastOverrideResponse,
         errorMessage,
+        playbackBlockedMessage,
+        playbackBlockedBrandId,
         isHubConnected,
         lastPlaybackCommand,
         lastSeekPositionSeconds,

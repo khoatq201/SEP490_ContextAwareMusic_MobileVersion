@@ -238,7 +238,12 @@ class CamsRemoteDataSourceImpl implements CamsRemoteDataSource {
           // Fall through to the common error below with primary exception.
         }
       }
-      throw ServerException('Failed to send playback command: $e');
+      _throwMappedDioException(
+        e,
+        fallbackMessage: 'Failed to send playback command.',
+        primaryPath: primaryPath,
+        fallbackPath: fallbackPath,
+      );
     } catch (e) {
       if (e is ServerException) rethrow;
       throw ServerException('Failed to send playback command: $e');
@@ -346,6 +351,7 @@ class CamsRemoteDataSourceImpl implements CamsRemoteDataSource {
         playbackScopedPath: ApiConstants.camsCurrentDeviceQueueTracks,
         usePlaybackDeviceScope: usePlaybackDeviceScope,
         payload: payload,
+        fallbackMessage: 'Failed to queue tracks.',
       );
     } catch (e) {
       if (e is ServerException) rethrow;
@@ -376,6 +382,7 @@ class CamsRemoteDataSourceImpl implements CamsRemoteDataSource {
         playbackScopedPath: ApiConstants.camsCurrentDeviceQueuePlaylist,
         usePlaybackDeviceScope: usePlaybackDeviceScope,
         payload: payload,
+        fallbackMessage: 'Failed to queue playlist.',
       );
     } catch (e) {
       if (e is ServerException) rethrow;
@@ -658,6 +665,7 @@ class CamsRemoteDataSourceImpl implements CamsRemoteDataSource {
     required String playbackScopedPath,
     required bool usePlaybackDeviceScope,
     required Map<String, dynamic> payload,
+    required String fallbackMessage,
   }) async {
     final managerScopedPath =
         spaceId.isEmpty ? null : managerScopedPathBuilder(spaceId);
@@ -682,7 +690,12 @@ class CamsRemoteDataSourceImpl implements CamsRemoteDataSource {
           // Fall through to common error.
         }
       }
-      rethrow;
+      _throwMappedDioException(
+        e,
+        fallbackMessage: fallbackMessage,
+        primaryPath: primaryPath,
+        fallbackPath: fallbackPath,
+      );
     }
   }
 

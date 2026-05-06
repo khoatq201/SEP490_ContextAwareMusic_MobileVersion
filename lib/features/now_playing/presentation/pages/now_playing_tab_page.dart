@@ -366,9 +366,14 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
     final isWaitingForRemoteState =
         useRemoteControls && _isCamsPlaybackLoading(camsState);
     final playbackActionsEnabled = hasPlayableTrack && !isWaitingForRemoteState;
+    final isRemotePlaybackBlocked =
+        useRemoteControls && camsState.isBrandPlaybackBlocked;
+    final canPlayPause =
+        playbackActionsEnabled && (!isRemotePlaybackBlocked || isPlaying);
     _syncDiscRotation(isPlaying && playbackActionsEnabled);
     final hasNextForControls = useRemoteControls
         ? playbackActionsEnabled &&
+            !isRemotePlaybackBlocked &&
             (_hasRemoteNext(camsState, playerState) || playerState.hasNext)
         : playbackActionsEnabled && playerState.hasNext;
     final syncedVolumePercent =
@@ -537,6 +542,13 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
                   const SizedBox(height: 10),
                   _LocalPreviewBanner(palette: palette),
                 ],
+                if (camsState.isBrandPlaybackBlocked) ...[
+                  const SizedBox(height: 10),
+                  _BrandPlaybackBlockedBanner(
+                    palette: palette,
+                    message: camsState.playbackBlockedMessage!,
+                  ),
+                ],
 
                 const SizedBox(height: 16),
 
@@ -562,12 +574,14 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
                   palette: palette,
                   accentColor: trackMoodAccent,
                   actionsEnabled: playbackActionsEnabled,
+                  playPauseEnabled: canPlayPause,
                   queueEndBehavior:
                       camsState.playbackState?.queueEndBehavior ?? 0,
                   canChangeQueueEndBehavior:
                       useRemoteControls && camsState.playbackState != null,
                   hasNext: hasNextForControls,
                   hasPrevious: playbackActionsEnabled &&
+                      !isRemotePlaybackBlocked &&
                       (useRemoteControls
                           ? playerState.hasTrack ||
                               (camsState.playbackState?.hasPlayableHls ?? false)
@@ -644,6 +658,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
                     moods: camsState.moods,
                     hasActiveOverride: camsState.hasActiveOverride,
                     isOverriding: camsState.isOverriding,
+                    isPlaybackBlocked: camsState.isBrandPlaybackBlocked,
                     isPreparing: camsState.isPreparing,
                     lastOverrideResponse: camsState.lastOverrideResponse,
                     onOpenOverrideSheet: () => _showOverrideMusicSheet(
@@ -1905,6 +1920,51 @@ class _LocalPreviewBanner extends StatelessWidget {
   }
 }
 
+class _BrandPlaybackBlockedBanner extends StatelessWidget {
+  const _BrandPlaybackBlockedBanner({
+    required this.palette,
+    required this.message,
+  });
+
+  final _NPPalette palette;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: palette.overlay,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: palette.accent.withValues(alpha: 0.5)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            LucideIcons.wallet,
+            color: palette.accent,
+            size: 18,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: GoogleFonts.inter(
+                color: palette.textPrimary,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                height: 1.35,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _IotStatusNotice extends StatelessWidget {
   const _IotStatusNotice({
     required this.palette,
@@ -2252,6 +2312,7 @@ class _ControlsRow extends StatelessWidget {
     required this.palette,
     required this.accentColor,
     required this.actionsEnabled,
+    required this.playPauseEnabled,
     required this.queueEndBehavior,
     required this.canChangeQueueEndBehavior,
     required this.hasNext,
@@ -2264,6 +2325,7 @@ class _ControlsRow extends StatelessWidget {
   });
   final bool isPlaying;
   final bool actionsEnabled;
+  final bool playPauseEnabled;
   final bool canChangeQueueEndBehavior;
   final bool hasNext, hasPrevious;
   final int queueEndBehavior;
@@ -2334,13 +2396,13 @@ class _ControlsRow extends StatelessWidget {
         const SizedBox(width: 10),
         // Play/Pause (large center button)
         GestureDetector(
-          onTap: actionsEnabled ? onPlayPause : null,
+          onTap: playPauseEnabled ? onPlayPause : null,
           child: Container(
             width: 56,
             height: 56,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: actionsEnabled
+              color: playPauseEnabled
                   ? palette.textPrimary
                   : palette.textMuted.withValues(alpha: 0.35),
             ),
@@ -3808,6 +3870,7 @@ class _OverrideMoodCTA extends StatelessWidget {
     required this.moods,
     required this.hasActiveOverride,
     required this.isOverriding,
+    required this.isPlaybackBlocked,
     required this.isPreparing,
     this.lastOverrideResponse,
     required this.onOpenOverrideSheet,
@@ -3819,6 +3882,7 @@ class _OverrideMoodCTA extends StatelessWidget {
   final List<Mood> moods;
   final bool hasActiveOverride;
   final bool isOverriding;
+  final bool isPlaybackBlocked;
   final bool isPreparing;
   final OverrideResponse? lastOverrideResponse;
   final VoidCallback onOpenOverrideSheet;
@@ -3878,7 +3942,9 @@ class _OverrideMoodCTA extends StatelessWidget {
                 ),
               ),
               ElevatedButton.icon(
-                onPressed: isOverriding ? null : onOpenOverrideSheet,
+                onPressed: (isOverriding || isPlaybackBlocked)
+                    ? null
+                    : onOpenOverrideSheet,
                 icon: const Icon(Icons.tune, size: 16),
                 label: Text(ctaLabel),
                 style: ElevatedButton.styleFrom(

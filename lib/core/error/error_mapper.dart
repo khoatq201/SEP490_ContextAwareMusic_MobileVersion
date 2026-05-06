@@ -174,12 +174,10 @@ class ErrorMapper {
       );
     }
 
-    if (statusCode == 422 ||
-        errorCode == ErrorCodeEnum.validationFailed ||
-        errorCode == ErrorCodeEnum.invalidInput ||
-        errorCode == ErrorCodeEnum.invalidCredentials) {
+    if (errorCode == ErrorCodeEnum.invalidOperation ||
+        errorCode == ErrorCodeEnum.businessRuleViolation) {
       return _buildException(
-        kind: FailureKind.validation,
+        kind: FailureKind.business,
         message: message,
         backendCode: backendCode,
         statusCode: statusCode,
@@ -188,10 +186,12 @@ class ErrorMapper {
       );
     }
 
-    if (errorCode == ErrorCodeEnum.invalidOperation ||
-        errorCode == ErrorCodeEnum.businessRuleViolation) {
+    if (statusCode == 422 ||
+        errorCode == ErrorCodeEnum.validationFailed ||
+        errorCode == ErrorCodeEnum.invalidInput ||
+        errorCode == ErrorCodeEnum.invalidCredentials) {
       return _buildException(
-        kind: FailureKind.business,
+        kind: FailureKind.validation,
         message: message,
         backendCode: backendCode,
         statusCode: statusCode,

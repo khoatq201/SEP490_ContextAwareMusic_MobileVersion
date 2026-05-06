@@ -147,7 +147,7 @@ class CamsRepositoryImpl implements CamsRepository {
       );
       return Right(result);
     } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
+      return Left(ErrorMapper.toFailure(e));
     } catch (e) {
       return Left(ServerFailure('Failed to override space: $e'));
     }
@@ -165,7 +165,7 @@ class CamsRepositoryImpl implements CamsRepository {
       );
       return const Right(null);
     } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
+      return Left(ErrorMapper.toFailure(e));
     } catch (e) {
       return Left(ServerFailure('Failed to cancel override: $e'));
     }
@@ -191,7 +191,7 @@ class CamsRepositoryImpl implements CamsRepository {
       );
       return const Right(null);
     } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
+      return Left(ErrorMapper.toFailure(e));
     } catch (e) {
       return Left(ServerFailure('Failed to send playback command: $e'));
     }
@@ -215,7 +215,7 @@ class CamsRepositoryImpl implements CamsRepository {
       );
       return const Right(null);
     } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
+      return Left(ErrorMapper.toFailure(e));
     } catch (e) {
       return Left(ServerFailure('Failed to update audio state: $e'));
     }
@@ -265,7 +265,7 @@ class CamsRepositoryImpl implements CamsRepository {
       );
       return const Right(null);
     } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
+      return Left(ErrorMapper.toFailure(e));
     } catch (e) {
       return Left(ServerFailure('Failed to queue tracks: $e'));
     }
@@ -291,7 +291,7 @@ class CamsRepositoryImpl implements CamsRepository {
       );
       return const Right(null);
     } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
+      return Left(ErrorMapper.toFailure(e));
     } catch (e) {
       return Left(ServerFailure('Failed to queue playlist: $e'));
     }

@@ -14,9 +14,6 @@ import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
 
-const _googleLogoUrl =
-    'https://developers.google.com/identity/images/g-logo.png';
-
 /// Enhanced login page aligned with the CAMS reference design.
 class LoginPageV2 extends StatefulWidget {
   const LoginPageV2({super.key});
@@ -284,44 +281,6 @@ class _LoginPageV2State extends State<LoginPageV2>
             isDark: isDark,
             isLoading: isLoading,
           ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: Divider(
-                  height: 1,
-                  thickness: 1,
-                  color: isDark
-                      ? AppColors.borderDarkMedium
-                      : AppColors.borderMedium,
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  'or',
-                  style: AppTypography.titleSmall.copyWith(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: isDark
-                        ? AppColors.textDarkTertiary
-                        : AppColors.textSecondary,
-                  ),
-                ),
-              ),
-              Expanded(
-                child: Divider(
-                  height: 1,
-                  thickness: 1,
-                  color: isDark
-                      ? AppColors.borderDarkMedium
-                      : AppColors.borderMedium,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          _buildGoogleSignInButton(isDark),
           const SizedBox(height: 18),
           _buildAuthNavigationLinks(isDark),
         ],
@@ -498,50 +457,6 @@ class _LoginPageV2State extends State<LoginPageV2>
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildGoogleSignInButton(bool isDark) {
-    return SizedBox(
-      height: 52,
-      width: double.infinity,
-      child: OutlinedButton.icon(
-        style: OutlinedButton.styleFrom(
-          backgroundColor: isDark
-              ? AppColors.surfaceDarkElevated
-              : context.camsTokens.bgContainer,
-          foregroundColor:
-              isDark ? AppColors.textDarkPrimary : AppColors.textPrimary,
-          side: BorderSide(
-            color: isDark ? AppColors.borderDarkStrong : AppColors.textPrimary,
-            width: 1.4,
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 18),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-          ),
-          textStyle: AppTypography.titleMedium.copyWith(
-            fontSize: 17,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Google sign-in coming soon!'),
-              backgroundColor: isDark
-                  ? AppColors.surfaceDarkElevated
-                  : AppColors.textPrimary,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-              ),
-            ),
-          );
-        },
-        icon: const _GoogleIcon(),
-        label: const Text('Continue with Google'),
       ),
     );
   }
@@ -1011,27 +926,5 @@ class _LoginBackdropPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _LoginBackdropPainter oldDelegate) {
     return oldDelegate.isDark != isDark;
-  }
-}
-
-/// Google "G" logo served from Google Identity documentation assets.
-class _GoogleIcon extends StatelessWidget {
-  const _GoogleIcon();
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 22,
-      height: 22,
-      child: Image.network(
-        _googleLogoUrl,
-        width: 22,
-        height: 22,
-        fit: BoxFit.contain,
-        filterQuality: FilterQuality.high,
-        semanticLabel: 'Google logo',
-        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-      ),
-    );
   }
 }
