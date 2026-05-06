@@ -12,6 +12,9 @@ enum AuthStatus {
   paired,
   error,
   changePasswordSuccess,
+  forgotPasswordOtpSent,
+  forgotPasswordOtpVerified,
+  forgotPasswordResetSuccess,
 }
 
 class AuthState extends Equatable {

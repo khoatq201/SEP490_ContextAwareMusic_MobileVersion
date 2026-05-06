@@ -44,6 +44,21 @@ void main() {
       expect(exception.message, 'Token expired.');
     });
 
+    test('maps invalid credentials 401 to validation failure', () {
+      final exception = ErrorMapper.fromApiResponsePayload(
+        {
+          'message': 'Invalid username or password',
+          'errorCode': 'InvalidCredentials',
+        },
+        fallbackMessage: 'Fallback',
+        statusCode: 401,
+      );
+
+      expect(exception, isA<ValidationException>());
+      expect(exception.kind, FailureKind.validation);
+      expect(exception.message, 'Invalid username or password');
+    });
+
     test('reads validation errors from errors[] payloads', () {
       final exception = ErrorMapper.fromApiResponsePayload(
         {
@@ -61,7 +76,8 @@ void main() {
       expect(exception.message, 'Email is required.');
     });
 
-    test('sanitizes technical exception messages when converting to failure', () {
+    test('sanitizes technical exception messages when converting to failure',
+        () {
       final failure = ErrorMapper.toFailure(
         const ServerException(
           'Failed to load playlists: DioException [bad response]: 500',

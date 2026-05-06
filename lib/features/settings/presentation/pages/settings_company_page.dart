@@ -116,25 +116,25 @@ class SettingsCompanyPage extends StatelessWidget {
                       ),
                   ],
                 ),
-                const SizedBox(height: 20),
-                _SectionLabel(label: 'Music control', palette: palette),
-                const SizedBox(height: 10),
-                _ControlCard(
-                  palette: palette,
-                  rows: [
-                    _ControlRow(
-                      icon: Icons.explicit_outlined,
-                      title: 'Explicit music',
-                      value: snapshot.explicitMusicLabel,
-                    ),
-                    _ControlRow(
-                      icon: Icons.block,
-                      title: 'Blocking songs',
-                      value: snapshot.blockingSongsLabel,
-                    ),
-                  ],
-                  onPressed: (title) => _showControlHint(context, title),
-                ),
+                // const SizedBox(height: 20),
+                // _SectionLabel(label: 'Music control', palette: palette),
+                // const SizedBox(height: 10),
+                // _ControlCard(
+                //   palette: palette,
+                //   rows: [
+                //     _ControlRow(
+                //       icon: Icons.explicit_outlined,
+                //       title: 'Explicit music',
+                //       value: snapshot.explicitMusicLabel,
+                //     ),
+                //     _ControlRow(
+                //       icon: Icons.block,
+                //       title: 'Blocking songs',
+                //       value: snapshot.blockingSongsLabel,
+                //     ),
+                //   ],
+                //   onPressed: (title) => _showControlHint(context, title),
+                // ),
               ],
             );
           },

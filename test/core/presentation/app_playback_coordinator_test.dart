@@ -508,7 +508,7 @@ void main() {
       );
       final firstStartedAtUtc =
           DateTime.now().toUtc().subtract(const Duration(seconds: 220));
-      final queueItems = const [
+      const queueItems = [
         SpaceQueueStateItem(
           queueItemId: 'queue-1',
           trackId: 'track-1',
@@ -1073,6 +1073,80 @@ void main() {
       );
     });
 
+    testWidgets(
+        'manager local audio toggle only silences output while keeping HLS engine sync',
+        (tester) async {
+      addTearDown(() async {
+        await _disposeHarness(tester);
+      });
+      await sessionCubit.setManagerLocalPlaybackEnabled(false);
+
+      final startedAtUtc =
+          DateTime.now().toUtc().subtract(const Duration(seconds: 8));
+      final playbackState = SpacePlaybackState(
+        spaceId: 'space-1',
+        storeId: 'store-1',
+        currentQueueItemId: 'queue-1',
+        currentTrackName: 'Track One',
+        hlsUrl: 'https://stream.example.com/t1.m3u8',
+        startedAtUtc: startedAtUtc,
+        isPaused: false,
+        volumePercent: 55,
+        isMuted: false,
+        spaceQueueItems: const [
+          SpaceQueueStateItem(
+            queueItemId: 'queue-1',
+            trackId: 'track-1',
+            trackName: 'Track One',
+            position: 1,
+            queueStatus: 1,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/t1.m3u8',
+            isReadyToStream: true,
+          ),
+        ],
+      );
+
+      await _pumpCoordinator(
+          tester, notificationService, sessionCubit, playerBloc, camsBloc);
+      camsBloc.seed(playbackState);
+      await tester.pump();
+      await tester.runAsync(() async {
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+      });
+
+      await _waitUntil(
+        tester,
+        () =>
+            playerBloc.state.isSyncedCamsPlayback &&
+            audioService.loadedUrl == 'https://stream.example.com/t1.m3u8' &&
+            audioService.playCallCount >= 1,
+        timeout: const Duration(seconds: 10),
+      );
+
+      expect(playerBloc.state.localAudioOutputEnabled, isFalse);
+      expect(playerBloc.state.currentQueueItemId, 'queue-1');
+      expect(audioService.lastSetVolume, 0);
+
+      audioService.emitPosition(const Duration(seconds: 12));
+      await tester.pump();
+      await tester.runAsync(() async {
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+      });
+      await _waitUntil(
+        tester,
+        () => playerBloc.state.displayPositionPrecise >= 11.5,
+      );
+
+      camsBloc.seed(playbackState.copyWith(volumePercent: 99));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(audioService.lastSetVolume, 0);
+      expect(playerBloc.state.isSyncedCamsPlayback, isTrue);
+      expect(audioService.loadedUrl, 'https://stream.example.com/t1.m3u8');
+    });
+
     testWidgets('ignores stale CAMS playback snapshots after switching spaces',
         (tester) async {
       addTearDown(() async {
@@ -1377,39 +1451,44 @@ class _FakeAudioPlayerService extends AudioPlayerService {
   String? get loadedUrl => _loadedUrl;
 
   @override
-  Future<Duration?> loadUrl(String url) async {
+  Future<Duration?> loadUrl(String url) {
     loadCallCount += 1;
     _loadedUrl = url;
     _processingState = ProcessingState.ready;
-    return null;
+    return Future<Duration?>.value();
   }
 
   @override
-  Future<void> play() async {
+  Future<void> play() {
     playCallCount += 1;
+    return Future<void>.value();
   }
 
   @override
-  Future<void> pause() async {
+  Future<void> pause() {
     pauseCallCount += 1;
+    return Future<void>.value();
   }
 
   @override
-  Future<void> stop() async {
+  Future<void> stop() {
     stopCallCount += 1;
     _loadedUrl = null;
     _position = Duration.zero;
+    return Future<void>.value();
   }
 
   @override
-  Future<void> seek(Duration position) async {
+  Future<void> seek(Duration position) {
     seekCallCount += 1;
     _position = position;
+    return Future<void>.value();
   }
 
   @override
-  Future<void> setVolume(double volume) async {
+  Future<void> setVolume(double volume) {
     lastSetVolume = volume;
+    return Future<void>.value();
   }
 
   void emitPosition(Duration position) {

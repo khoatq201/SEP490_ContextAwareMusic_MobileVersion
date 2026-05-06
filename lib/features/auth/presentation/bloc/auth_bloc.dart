@@ -7,6 +7,9 @@ import '../../domain/usecases/change_password.dart';
 import '../../domain/usecases/get_current_user.dart';
 import '../../domain/usecases/login.dart';
 import '../../domain/usecases/logout.dart';
+import '../../domain/usecases/request_forgot_password_otp.dart';
+import '../../domain/usecases/reset_forgot_password.dart';
+import '../../domain/usecases/verify_forgot_password_otp.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 
@@ -16,6 +19,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     required this.logout,
     required this.getCurrentUser,
     required this.changePassword,
+    required this.requestForgotPasswordOtp,
+    required this.verifyForgotPasswordOtp,
+    required this.resetForgotPassword,
     required this.sessionCubit,
     this.sessionDataCache,
   }) : super(const AuthState()) {
@@ -24,12 +30,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<CheckAuthStatus>(_onCheckAuthStatus);
     on<AuthUserLoaded>(_onAuthUserLoaded);
     on<ChangePasswordRequested>(_onChangePasswordRequested);
+    on<ForgotPasswordOtpRequested>(_onForgotPasswordOtpRequested);
+    on<ForgotPasswordOtpVerifyRequested>(_onForgotPasswordOtpVerifyRequested);
+    on<ForgotPasswordResetRequested>(_onForgotPasswordResetRequested);
   }
 
   final Login login;
   final Logout logout;
   final GetCurrentUser getCurrentUser;
   final ChangePassword changePassword;
+  final RequestForgotPasswordOtp requestForgotPasswordOtp;
+  final VerifyForgotPasswordOtp verifyForgotPasswordOtp;
+  final ResetForgotPassword resetForgotPassword;
   final SessionCubit sessionCubit;
   final SessionDataCache? sessionDataCache;
 
@@ -199,6 +211,105 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           ),
         );
       },
+    );
+  }
+
+  Future<void> _onForgotPasswordOtpRequested(
+    ForgotPasswordOtpRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(state.copyWith(
+      status: AuthStatus.loading,
+      clearFailure: true,
+      clearFeedback: true,
+    ));
+
+    final result = await requestForgotPasswordOtp(email: event.email);
+
+    result.fold(
+      (failure) => emit(
+        state.copyWith(
+          status: AuthStatus.error,
+          failure: failure,
+          clearFeedback: true,
+        ),
+      ),
+      (_) => emit(
+        state.copyWith(
+          status: AuthStatus.forgotPasswordOtpSent,
+          feedback: AppFeedback.success('Verification code sent to your email'),
+          clearFailure: true,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _onForgotPasswordOtpVerifyRequested(
+    ForgotPasswordOtpVerifyRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(state.copyWith(
+      status: AuthStatus.loading,
+      clearFailure: true,
+      clearFeedback: true,
+    ));
+
+    final result = await verifyForgotPasswordOtp(
+      email: event.email,
+      otp: event.otp,
+    );
+
+    result.fold(
+      (failure) => emit(
+        state.copyWith(
+          status: AuthStatus.error,
+          failure: failure,
+          clearFeedback: true,
+        ),
+      ),
+      (_) => emit(
+        state.copyWith(
+          status: AuthStatus.forgotPasswordOtpVerified,
+          feedback: AppFeedback.success('Verification code confirmed'),
+          clearFailure: true,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _onForgotPasswordResetRequested(
+    ForgotPasswordResetRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(state.copyWith(
+      status: AuthStatus.loading,
+      clearFailure: true,
+      clearFeedback: true,
+    ));
+
+    final result = await resetForgotPassword(
+      email: event.email,
+      newPassword: event.newPassword,
+      confirmPassword: event.confirmPassword,
+    );
+
+    result.fold(
+      (failure) => emit(
+        state.copyWith(
+          status: AuthStatus.error,
+          failure: failure,
+          clearFeedback: true,
+        ),
+      ),
+      (_) => emit(
+        state.copyWith(
+          status: AuthStatus.forgotPasswordResetSuccess,
+          feedback: AppFeedback.success(
+            'Password reset successfully. Please sign in again.',
+          ),
+          clearFailure: true,
+        ),
+      ),
     );
   }
 }

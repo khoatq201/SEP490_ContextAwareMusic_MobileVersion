@@ -17,6 +17,9 @@ import 'package:cams_store_manager/features/auth/domain/usecases/change_password
 import 'package:cams_store_manager/features/auth/domain/usecases/get_current_user.dart';
 import 'package:cams_store_manager/features/auth/domain/usecases/login.dart';
 import 'package:cams_store_manager/features/auth/domain/usecases/logout.dart';
+import 'package:cams_store_manager/features/auth/domain/usecases/request_forgot_password_otp.dart';
+import 'package:cams_store_manager/features/auth/domain/usecases/reset_forgot_password.dart';
+import 'package:cams_store_manager/features/auth/domain/usecases/verify_forgot_password_otp.dart';
 import 'package:cams_store_manager/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:cams_store_manager/features/cams/data/models/override_response_model.dart';
 import 'package:cams_store_manager/features/cams/data/models/space_playback_state_model.dart';
@@ -73,6 +76,13 @@ void main() {
         logout: Logout(_FakeAuthRepository()),
         getCurrentUser: GetCurrentUser(_FakeAuthRepository()),
         changePassword: ChangePassword(_FakeAuthRepository()),
+        requestForgotPasswordOtp: RequestForgotPasswordOtp(
+          _FakeAuthRepository(),
+        ),
+        verifyForgotPasswordOtp: VerifyForgotPasswordOtp(
+          _FakeAuthRepository(),
+        ),
+        resetForgotPassword: ResetForgotPassword(_FakeAuthRepository()),
         sessionCubit: sessionCubit,
       );
 
@@ -368,6 +378,30 @@ class _FakeAuthRepository implements AuthRepository {
   @override
   Future<Either<Failure, User>> refreshToken() async {
     return const Left(ServerFailure('not used in this test'));
+  }
+
+  @override
+  Future<Either<Failure, void>> requestForgotPasswordOtp({
+    required String email,
+  }) async {
+    return const Right(null);
+  }
+
+  @override
+  Future<Either<Failure, void>> resetForgotPassword({
+    required String email,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    return const Right(null);
+  }
+
+  @override
+  Future<Either<Failure, void>> verifyForgotPasswordOtp({
+    required String email,
+    required String otp,
+  }) async {
+    return const Right(null);
   }
 }
 

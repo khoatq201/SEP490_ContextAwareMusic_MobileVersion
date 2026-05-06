@@ -445,6 +445,7 @@ void main() {
         playLocally: false,
       ));
       await _tick();
+      audioService.seekCalls.clear();
 
       bloc.add(const PlayerRemoteCommandApplied(
         command: PlaybackCommandEnum.skipToTrack,

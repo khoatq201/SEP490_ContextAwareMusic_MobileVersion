@@ -112,10 +112,21 @@ class ErrorMapper {
     final backendCode = details.backendCode;
     final errorCode = details.errorCode;
 
-    if (statusCode == 401 ||
-        errorCode == ErrorCodeEnum.unauthorized ||
+    if (errorCode == ErrorCodeEnum.invalidCredentials) {
+      return _buildException(
+        kind: FailureKind.validation,
+        message: message,
+        backendCode: backendCode,
+        statusCode: statusCode,
+        debugMessage: debugMessage,
+        isRetryable: false,
+      );
+    }
+
+    if (errorCode == ErrorCodeEnum.unauthorized ||
         errorCode == ErrorCodeEnum.invalidToken ||
-        errorCode == ErrorCodeEnum.tokenExpired) {
+        errorCode == ErrorCodeEnum.tokenExpired ||
+        statusCode == 401) {
       return _buildException(
         kind: FailureKind.authentication,
         message: message,
@@ -188,8 +199,7 @@ class ErrorMapper {
 
     if (statusCode == 422 ||
         errorCode == ErrorCodeEnum.validationFailed ||
-        errorCode == ErrorCodeEnum.invalidInput ||
-        errorCode == ErrorCodeEnum.invalidCredentials) {
+        errorCode == ErrorCodeEnum.invalidInput) {
       return _buildException(
         kind: FailureKind.validation,
         message: message,

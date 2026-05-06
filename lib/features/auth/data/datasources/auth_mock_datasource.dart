@@ -106,4 +106,40 @@ class AuthMockDataSource implements AuthRemoteDataSource {
     }
     // Mock: always succeeds
   }
+
+  @override
+  Future<void> requestForgotPasswordOtp({
+    required String email,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (!_mockProfiles.containsKey(email.toLowerCase())) {
+      throw const ServerException('No active account was found for this email');
+    }
+  }
+
+  @override
+  Future<void> verifyForgotPasswordOtp({
+    required String email,
+    required String otp,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (!_mockProfiles.containsKey(email.toLowerCase()) || otp != '123456') {
+      throw const ServerException('Invalid or expired verification code');
+    }
+  }
+
+  @override
+  Future<void> resetForgotPassword({
+    required String email,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (!_mockProfiles.containsKey(email.toLowerCase())) {
+      throw const ServerException('No active account was found for this email');
+    }
+    if (newPassword != confirmPassword) {
+      throw const ServerException('Passwords do not match');
+    }
+  }
 }

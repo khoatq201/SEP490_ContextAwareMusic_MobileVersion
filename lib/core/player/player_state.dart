@@ -45,6 +45,9 @@ class PlayerState extends Equatable {
   /// Increments when the local HLS player reports natural completion.
   final int hlsCompletionSequence;
 
+  /// Whether synced CAMS playback should be audible on this device.
+  final bool localAudioOutputEnabled;
+
   const PlayerState({
     this.currentTrack,
     this.isPlaying = false,
@@ -64,6 +67,7 @@ class PlayerState extends Equatable {
     this.currentQueueItemId,
     this.currentTrackId,
     this.hlsCompletionSequence = 0,
+    this.localAudioOutputEnabled = true,
   });
 
   /// Whether we have enough data to render the MiniPlayer.
@@ -188,6 +192,7 @@ class PlayerState extends Equatable {
     String? currentQueueItemId,
     String? currentTrackId,
     int? hlsCompletionSequence,
+    bool? localAudioOutputEnabled,
     bool clearTrack = false,
     bool clearPlaylistName = false,
     bool clearPlaylistId = false,
@@ -225,6 +230,8 @@ class PlayerState extends Equatable {
           clearCurrentTrackId ? null : (currentTrackId ?? this.currentTrackId),
       hlsCompletionSequence:
           hlsCompletionSequence ?? this.hlsCompletionSequence,
+      localAudioOutputEnabled:
+          localAudioOutputEnabled ?? this.localAudioOutputEnabled,
     );
   }
 
@@ -248,5 +255,6 @@ class PlayerState extends Equatable {
         currentQueueItemId,
         currentTrackId,
         hlsCompletionSequence,
+        localAudioOutputEnabled,
       ];
 }

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_typography.dart';
 import '../../../../core/enums/entity_status_enum.dart';
 import '../../../../core/error/failures.dart';
+import '../../../../core/presentation/shell_layout_metrics.dart';
 import '../../../../core/theme/cams_theme_tokens.dart';
 import '../../../../core/widgets/app_error_view.dart';
 import '../../../../core/widgets/cams_skeleton.dart';
@@ -462,6 +463,7 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      useRootNavigator: true,
       useSafeArea: true,
       showDragHandle: true,
       backgroundColor: context.camsTokens.bgElevated,
@@ -2077,17 +2079,19 @@ class _BrandProfileSheetState extends State<_BrandProfileSheet> {
   Widget build(BuildContext context) {
     final tokens = context.camsTokens;
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final bottomSystemGap = ShellLayoutMetrics.safeBottom(context);
+    final sheetBottomGap = bottomInset > 0 ? bottomInset : bottomSystemGap;
 
     return AnimatedPadding(
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOutCubic,
-      padding: EdgeInsets.only(bottom: bottomInset),
+      padding: EdgeInsets.only(bottom: sheetBottomGap),
       child: ConstrainedBox(
         constraints: BoxConstraints(
           maxHeight: MediaQuery.sizeOf(context).height * 0.88,
         ),
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 28),
           child: Form(
             key: _formKey,
             child: Column(

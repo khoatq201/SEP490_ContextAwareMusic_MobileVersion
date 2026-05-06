@@ -197,6 +197,82 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<Either<Failure, void>> requestForgotPasswordOtp({
+    required String email,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return const Left(NetworkFailure());
+    }
+
+    try {
+      await remoteDataSource.requestForgotPasswordOtp(email: email);
+      return const Right(null);
+    } catch (error, stackTrace) {
+      return Left(
+        ErrorMapper.toFailure(
+          error,
+          fallbackMessage: 'We could not send the reset code right now.',
+          stackTrace: stackTrace,
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> verifyForgotPasswordOtp({
+    required String email,
+    required String otp,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return const Left(NetworkFailure());
+    }
+
+    try {
+      await remoteDataSource.verifyForgotPasswordOtp(
+        email: email,
+        otp: otp,
+      );
+      return const Right(null);
+    } catch (error, stackTrace) {
+      return Left(
+        ErrorMapper.toFailure(
+          error,
+          fallbackMessage: 'The verification code is invalid or expired.',
+          stackTrace: stackTrace,
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> resetForgotPassword({
+    required String email,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return const Left(NetworkFailure());
+    }
+
+    try {
+      await remoteDataSource.resetForgotPassword(
+        email: email,
+        newPassword: newPassword,
+        confirmPassword: confirmPassword,
+      );
+      return const Right(null);
+    } catch (error, stackTrace) {
+      return Left(
+        ErrorMapper.toFailure(
+          error,
+          fallbackMessage: 'We could not reset your password right now.',
+          stackTrace: stackTrace,
+        ),
+      );
+    }
+  }
+
+  @override
   Future<Either<Failure, User>> refreshToken() async {
     if (!await networkInfo.isConnected) {
       return const Left(NetworkFailure());

@@ -26,6 +26,24 @@ abstract class AuthRepository {
     required String confirmPassword,
   });
 
+  /// Request password reset OTP for a public forgot password flow.
+  Future<Either<Failure, void>> requestForgotPasswordOtp({
+    required String email,
+  });
+
+  /// Verify the OTP sent to the email in the forgot password flow.
+  Future<Either<Failure, void>> verifyForgotPasswordOtp({
+    required String email,
+    required String otp,
+  });
+
+  /// Reset password after OTP verification.
+  Future<Either<Failure, void>> resetForgotPassword({
+    required String email,
+    required String newPassword,
+    required String confirmPassword,
+  });
+
   /// Refresh access token (uses HttpOnly cookie refresh token).
   Future<Either<Failure, User>> refreshToken();
 }

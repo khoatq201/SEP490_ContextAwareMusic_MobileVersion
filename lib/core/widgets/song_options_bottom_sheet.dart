@@ -211,17 +211,17 @@ class SongOptionsBottomSheet extends StatelessWidget {
                   ? () => Navigator.pop(context, SongOption.addToQueue)
                   : null,
             ),
-            _OptionTile(
-              icon: Icons.album_outlined,
-              label: 'Go to album',
-              enabled: enableGoToAlbum,
-              isDark: isDark,
-              textPrimary: textPrimary,
-              textMuted: textMuted,
-              onTap: enableGoToAlbum
-                  ? () => Navigator.pop(context, SongOption.goToAlbum)
-                  : null,
-            ),
+            // _OptionTile(
+            //   icon: Icons.album_outlined,
+            //   label: 'Go to album',
+            //   enabled: enableGoToAlbum,
+            //   isDark: isDark,
+            //   textPrimary: textPrimary,
+            //   textMuted: textMuted,
+            //   onTap: enableGoToAlbum
+            //       ? () => Navigator.pop(context, SongOption.goToAlbum)
+            //       : null,
+            // ),
             _OptionTile(
               icon: Icons.person_outline,
               label: 'Go to artist',

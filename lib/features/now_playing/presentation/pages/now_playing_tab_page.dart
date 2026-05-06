@@ -853,21 +853,21 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
               ),
               const SizedBox(height: 12),
               Divider(color: palette.border, height: 1),
-              _SheetOption(
-                  icon: LucideIcons.listMusic,
-                  label: 'Go to playlist',
-                  palette: palette,
-                  onTap: () => Navigator.pop(ctx)),
+              // _SheetOption(
+              //     icon: LucideIcons.listMusic,
+              //     label: 'Go to playlist',
+              //     palette: palette,
+              //     onTap: () => Navigator.pop(ctx)),
               _SheetOption(
                   icon: LucideIcons.listPlus,
                   label: 'Add to playlist',
                   palette: palette,
                   onTap: () => Navigator.pop(ctx)),
-              _SheetOption(
-                  icon: LucideIcons.ban,
-                  label: 'Block song',
-                  palette: palette,
-                  onTap: () => Navigator.pop(ctx)),
+              // _SheetOption(
+              //     icon: LucideIcons.ban,
+              //     label: 'Block song',
+              //     palette: palette,
+              //     onTap: () => Navigator.pop(ctx)),
               _SheetOption(
                   icon: LucideIcons.listEnd,
                   label: 'Add to queue',
@@ -884,11 +884,11 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
                       _showAddToQueueSheet(ctx, palette);
                     }
                   }),
-              _SheetOption(
-                  icon: LucideIcons.disc,
-                  label: 'Go to album',
-                  palette: palette,
-                  onTap: () => Navigator.pop(ctx)),
+              // _SheetOption(
+              //     icon: LucideIcons.disc,
+              //     label: 'Go to album',
+              //     palette: palette,
+              //     onTap: () => Navigator.pop(ctx)),
               _SheetOption(
                   icon: LucideIcons.mic2,
                   label: 'Go to artist',

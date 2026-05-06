@@ -312,8 +312,15 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
     return false;
   }
 
+  bool _shouldDriveRemoteAudioEngine(SessionState session) {
+    if (session.currentSpace == null) return false;
+    if (session.isPlaybackDevice) return true;
+    return session.currentRole == UserRole.brandManager ||
+        session.currentRole == UserRole.storeManager;
+  }
+
   bool _shouldUseSyntheticRemoteProgress(SessionState session) {
-    return !_shouldPlayRemoteAudioLocally(session);
+    return !_shouldDriveRemoteAudioEngine(session);
   }
 
   void _reapplyRemotePlaybackLocality({
@@ -772,7 +779,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
       playerState: playerState,
       playbackState: playbackState,
     );
-    final shouldCorrectPosition = _shouldPlayRemoteAudioLocally(session) &&
+    final shouldCorrectPosition = _shouldDriveRemoteAudioEngine(session) &&
         driftSeconds > _sameRemoteStreamSeekCorrectionSeconds;
     var appliedSameStreamCommand = false;
     if (playerState.isPlaying != shouldBePlaying) {
@@ -1100,7 +1107,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
     required SessionState session,
     required SpacePlaybackState? playbackState,
   }) {
-    if (_shouldPlayRemoteAudioLocally(session) ||
+    if (_shouldDriveRemoteAudioEngine(session) ||
         playbackState == null ||
         !playbackState.isStreaming) {
       _stopManagerProgressTicker();
@@ -1124,7 +1131,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
       final currentSession = context.read<SessionCubit>().state;
       final currentPlaybackState =
           context.read<CamsPlaybackBloc>().state.playbackState;
-      if (_shouldPlayRemoteAudioLocally(currentSession) ||
+      if (_shouldDriveRemoteAudioEngine(currentSession) ||
           currentPlaybackState == null ||
           !currentPlaybackState.isStreaming ||
           currentPlaybackState.isPaused) {
@@ -1415,7 +1422,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
     required PlayerState playerState,
   }) {
     final playbackState = camsState.playbackState;
-    final shouldMonitor = _shouldPlayRemoteAudioLocally(session) &&
+    final shouldMonitor = _shouldDriveRemoteAudioEngine(session) &&
         playbackState != null &&
         playbackState.isStreaming &&
         !playbackState.isPaused &&
@@ -1454,7 +1461,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
     final playbackState = camsState.playbackState;
     final playerState = playerBloc.state;
 
-    if (!_shouldPlayRemoteAudioLocally(session) ||
+    if (!_shouldDriveRemoteAudioEngine(session) ||
         playbackState == null ||
         !playbackState.isStreaming ||
         playbackState.isPaused ||

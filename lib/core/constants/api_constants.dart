@@ -95,6 +95,10 @@ class ApiConstants {
   static const String authDeviceRefreshToken = '/api/auth/device/refresh-token';
   static const String profile = '/api/auth/profile';
   static const String changePassword = '/api/auth/change-password';
+  static const String forgotPassword = '/api/auth/forgot-password';
+  static const String forgotPasswordVerifyOtp =
+      '/api/auth/forgot-password/verify-otp';
+  static const String forgotPasswordReset = '/api/auth/forgot-password/reset';
 
   // Stores & Spaces
   static String getBrandDetail(String brandId) => '/api/brands/$brandId';

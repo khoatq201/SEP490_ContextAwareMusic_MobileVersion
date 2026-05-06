@@ -15,6 +15,9 @@ import 'features/auth/domain/usecases/login.dart';
 import 'features/auth/domain/usecases/logout.dart';
 import 'features/auth/domain/usecases/get_current_user.dart';
 import 'features/auth/domain/usecases/change_password.dart';
+import 'features/auth/domain/usecases/request_forgot_password_otp.dart';
+import 'features/auth/domain/usecases/reset_forgot_password.dart';
+import 'features/auth/domain/usecases/verify_forgot_password_otp.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'core/constants/api_constants.dart';
 
@@ -239,6 +242,9 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(() => Logout(sl()));
   sl.registerLazySingleton(() => GetCurrentUser(sl()));
   sl.registerLazySingleton(() => ChangePassword(sl()));
+  sl.registerLazySingleton(() => RequestForgotPasswordOtp(sl()));
+  sl.registerLazySingleton(() => VerifyForgotPasswordOtp(sl()));
+  sl.registerLazySingleton(() => ResetForgotPassword(sl()));
 
   // BLoCs
   sl.registerLazySingleton(
@@ -247,6 +253,9 @@ Future<void> initializeDependencies() async {
       logout: sl(),
       getCurrentUser: sl(),
       changePassword: sl(),
+      requestForgotPasswordOtp: sl(),
+      verifyForgotPasswordOtp: sl(),
+      resetForgotPassword: sl(),
       sessionCubit: sl(),
       sessionDataCache: sl(),
     ),

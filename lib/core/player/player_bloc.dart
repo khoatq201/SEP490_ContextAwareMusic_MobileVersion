@@ -101,6 +101,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       duration: track.duration ?? 0,
       currentIndex: index,
       isHlsMode: false,
+      localAudioOutputEnabled: playLocally,
       clearHlsUrl: true,
       clearCurrentQueueItemId: true,
     ));
@@ -252,6 +253,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       currentPosition: event.currentPosition,
       currentPositionPrecise: event.currentPosition.toDouble(),
       duration: event.duration,
+      localAudioOutputEnabled: event.playLocally,
       clearCurrentQueueItemId: true,
     ));
 
@@ -640,7 +642,10 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
   }
 
   // ── HLS streaming from CAMS ────────────────────────────────────────────
-  void _onHlsStarted(PlayerHlsStarted event, Emitter<PlayerState> emit) async {
+  Future<void> _onHlsStarted(
+    PlayerHlsStarted event,
+    Emitter<PlayerState> emit,
+  ) async {
     // ── Stale-replay guard ─────────────────────────────────────────────
     // When the audio engine is in `completed` state (track just finished)
     // and this event references the SAME track that just completed, skip
@@ -708,6 +713,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       hlsUrl: event.hlsUrl,
       playlistName: event.playlistName,
       playlistId: event.playlistId,
+      localAudioOutputEnabled: event.playLocally,
       currentQueueItemId: event.queueItemId ?? resolvedTrack.queueItemId,
       currentTrackId: event.trackId ?? resolvedTrack.id,
       isPlaying: !event.isPaused,
@@ -730,18 +736,11 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       'playLocally=${event.playLocally}',
     );
 
-    if (!event.playLocally) {
-      if (_audioService.loadedUrl != null) {
-        try {
-          await _audioService.stop();
-        } catch (_) {
-          // Best effort only; synthetic sync can continue without local audio.
-        }
-      }
-      return;
-    }
-
     try {
+      if (!event.playLocally) {
+        unawaited(_audioService.setVolume(0));
+      }
+
       // If the audio engine is at `completed` state (track just ended),
       // always force a full source reload. ExoPlayer's internal position
       // tracking corrupts if you seek/play on a completed player — it
@@ -823,7 +822,10 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     return resolvedSeconds.clamp(0.0, totalDurationSeconds).toDouble();
   }
 
-  void _onHlsStopped(PlayerHlsStopped event, Emitter<PlayerState> emit) async {
+  Future<void> _onHlsStopped(
+    PlayerHlsStopped event,
+    Emitter<PlayerState> emit,
+  ) async {
     await _audioService.stop();
     emit(state.copyWith(
       isPlaying: false,
@@ -834,6 +836,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       clearPlaylistId: true,
       clearCurrentQueueItemId: true,
       clearCurrentTrackId: true,
+      localAudioOutputEnabled: true,
       queue: const [],
       currentIndex: -1,
       currentPosition: 0,
@@ -895,13 +898,13 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
 
     switch (event.command) {
       case PlaybackCommandEnum.pause:
-        if (event.playLocally) {
+        if (event.playLocally || state.isSyncedCamsPlayback) {
           _audioService.pause();
         }
         emit(state.copyWith(isPlaying: false));
         return;
       case PlaybackCommandEnum.resume:
-        if (event.playLocally) {
+        if (event.playLocally || state.isSyncedCamsPlayback) {
           _audioService.play();
         }
         emit(state.copyWith(isPlaying: true));
@@ -914,7 +917,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       case PlaybackCommandEnum.skipToTrack:
       case PlaybackCommandEnum.trackEnded:
         if (hasUsefulSeek &&
-            event.playLocally &&
+            (event.playLocally || state.isSyncedCamsPlayback) &&
             state.isHlsMode &&
             state.hlsUrl != null &&
             state.hlsUrl!.isNotEmpty) {
@@ -967,7 +970,8 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     Emitter<PlayerState> emit,
   ) {
     final boundedVolume = event.volumePercent.clamp(0, 100) / 100.0;
-    final effectiveVolume = event.isMuted ? 0.0 : boundedVolume;
+    final effectiveVolume =
+        !state.localAudioOutputEnabled || event.isMuted ? 0.0 : boundedVolume;
     unawaited(_audioService.setVolume(effectiveVolume));
   }
 

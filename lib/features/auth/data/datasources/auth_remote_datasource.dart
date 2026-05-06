@@ -28,6 +28,21 @@ abstract class AuthRemoteDataSource {
     required String newPassword,
     required String confirmPassword,
   });
+
+  Future<void> requestForgotPasswordOtp({
+    required String email,
+  });
+
+  Future<void> verifyForgotPasswordOtp({
+    required String email,
+    required String otp,
+  });
+
+  Future<void> resetForgotPassword({
+    required String email,
+    required String newPassword,
+    required String confirmPassword,
+  });
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -224,6 +239,100 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       throw ErrorMapper.fromDioException(
         error,
         fallbackMessage: 'We could not change your password right now.',
+      );
+    }
+  }
+
+  @override
+  Future<void> requestForgotPasswordOtp({
+    required String email,
+  }) async {
+    try {
+      final response = await dioClient.post(
+        ApiConstants.forgotPassword,
+        data: {'email': email},
+      );
+
+      final apiResult = ApiResult<void>.fromJson(
+        response.data as Map<String, dynamic>,
+      );
+
+      if (!apiResult.isSuccess) {
+        throw ErrorMapper.fromApiErrorDetails(
+          apiResult.errorDetails,
+          fallbackMessage: 'We could not send the reset code right now.',
+        );
+      }
+    } on DioException catch (error) {
+      throw ErrorMapper.fromDioException(
+        error,
+        fallbackMessage: 'We could not send the reset code right now.',
+      );
+    }
+  }
+
+  @override
+  Future<void> verifyForgotPasswordOtp({
+    required String email,
+    required String otp,
+  }) async {
+    try {
+      final response = await dioClient.post(
+        ApiConstants.forgotPasswordVerifyOtp,
+        data: {
+          'email': email,
+          'otp': otp,
+        },
+      );
+
+      final apiResult = ApiResult<void>.fromJson(
+        response.data as Map<String, dynamic>,
+      );
+
+      if (!apiResult.isSuccess) {
+        throw ErrorMapper.fromApiErrorDetails(
+          apiResult.errorDetails,
+          fallbackMessage: 'The verification code is invalid or expired.',
+        );
+      }
+    } on DioException catch (error) {
+      throw ErrorMapper.fromDioException(
+        error,
+        fallbackMessage: 'The verification code is invalid or expired.',
+      );
+    }
+  }
+
+  @override
+  Future<void> resetForgotPassword({
+    required String email,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    try {
+      final response = await dioClient.post(
+        ApiConstants.forgotPasswordReset,
+        data: {
+          'email': email,
+          'newPassword': newPassword,
+          'confirmPassword': confirmPassword,
+        },
+      );
+
+      final apiResult = ApiResult<void>.fromJson(
+        response.data as Map<String, dynamic>,
+      );
+
+      if (!apiResult.isSuccess) {
+        throw ErrorMapper.fromApiErrorDetails(
+          apiResult.errorDetails,
+          fallbackMessage: 'We could not reset your password right now.',
+        );
+      }
+    } on DioException catch (error) {
+      throw ErrorMapper.fromDioException(
+        error,
+        fallbackMessage: 'We could not reset your password right now.',
       );
     }
   }

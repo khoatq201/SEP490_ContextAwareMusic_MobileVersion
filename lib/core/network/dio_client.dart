@@ -7,6 +7,8 @@ import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../constants/api_constants.dart';
+import '../enums/error_code_enum.dart';
+import '../error/api_error_details.dart';
 import '../error/exceptions.dart';
 import '../services/local_storage_service.dart';
 
@@ -25,6 +27,33 @@ class DioClient {
         path == ApiConstants.refreshToken ||
         path == ApiConstants.authPair ||
         path == ApiConstants.authDeviceRefreshToken;
+  }
+
+  bool _shouldAttemptTokenRefresh(DioException error) {
+    final response = error.response;
+    if (response?.statusCode != 401) return false;
+
+    final path = error.requestOptions.path;
+    if (_shouldSkipAuthorization(path)) return false;
+
+    if (error.requestOptions.extra['authRetryAttempted'] == true) {
+      _log('401 on "$path" after auth retry -> not refreshing again.');
+      return false;
+    }
+
+    final details = ApiErrorDetails.fromPayload(
+      response?.data,
+      statusCode: response?.statusCode,
+    );
+    if (details.errorCode == ErrorCodeEnum.invalidCredentials) {
+      _log(
+        '401 on "$path" has backend errorCode=InvalidCredentials; '
+        'treating as validation failure instead of refreshing token.',
+      );
+      return false;
+    }
+
+    return true;
   }
 
   String _normalizePath(String path) {
@@ -224,8 +253,7 @@ class DioClient {
         },
         onError: (error, handler) async {
           final path = error.requestOptions.path;
-          if (error.response?.statusCode == 401 &&
-              !_shouldSkipAuthorization(path)) {
+          if (_shouldAttemptTokenRefresh(error)) {
             _log(
               '401 on "$path" -> attempting token refresh '
               '(activeMode=${_localStorage.getActiveSessionMode()})',
@@ -260,6 +288,7 @@ class DioClient {
             if (refreshedToken != null && refreshedToken.isNotEmpty) {
               final opts = error.requestOptions;
               opts.headers['Authorization'] = 'Bearer $refreshedToken';
+              opts.extra['authRetryAttempted'] = true;
               final response = await _dio.fetch(opts);
               _log(
                 'Retry succeeded for "$path" after refresh '
