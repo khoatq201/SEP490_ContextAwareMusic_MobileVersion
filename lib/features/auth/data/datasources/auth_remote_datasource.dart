@@ -8,6 +8,7 @@ import '../../../../core/models/api_result.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/services/local_storage_service.dart';
 import '../models/auth_response_model.dart';
+import '../models/forgot_password_response_models.dart';
 import '../models/profile_response_model.dart';
 
 abstract class AuthRemoteDataSource {
@@ -29,11 +30,11 @@ abstract class AuthRemoteDataSource {
     required String confirmPassword,
   });
 
-  Future<void> requestForgotPasswordOtp({
+  Future<ForgotPasswordOtpInfoModel> requestForgotPasswordOtp({
     required String email,
   });
 
-  Future<void> verifyForgotPasswordOtp({
+  Future<ForgotPasswordVerifyInfoModel> verifyForgotPasswordOtp({
     required String email,
     required String otp,
   });
@@ -244,7 +245,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   }
 
   @override
-  Future<void> requestForgotPasswordOtp({
+  Future<ForgotPasswordOtpInfoModel> requestForgotPasswordOtp({
     required String email,
   }) async {
     try {
@@ -253,16 +254,21 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         data: {'email': email},
       );
 
-      final apiResult = ApiResult<void>.fromJson(
+      final apiResult = ApiResult<ForgotPasswordOtpInfoModel>.fromJson(
         response.data as Map<String, dynamic>,
+        fromData: (data) => ForgotPasswordOtpInfoModel.fromJson(
+          data as Map<String, dynamic>,
+        ),
       );
 
-      if (!apiResult.isSuccess) {
+      if (!apiResult.isSuccess || apiResult.data == null) {
         throw ErrorMapper.fromApiErrorDetails(
           apiResult.errorDetails,
           fallbackMessage: 'We could not send the reset code right now.',
         );
       }
+
+      return apiResult.data!;
     } on DioException catch (error) {
       throw ErrorMapper.fromDioException(
         error,
@@ -272,7 +278,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   }
 
   @override
-  Future<void> verifyForgotPasswordOtp({
+  Future<ForgotPasswordVerifyInfoModel> verifyForgotPasswordOtp({
     required String email,
     required String otp,
   }) async {
@@ -285,16 +291,22 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         },
       );
 
-      final apiResult = ApiResult<void>.fromJson(
+      final apiResult = ApiResult<ForgotPasswordVerifyInfoModel>.fromJson(
         response.data as Map<String, dynamic>,
+        fromData: (data) => ForgotPasswordVerifyInfoModel.fromJson(
+          data as Map<String, dynamic>,
+        ),
       );
 
-      if (!apiResult.isSuccess) {
+      if (!apiResult.isSuccess || apiResult.data == null) {
         throw ErrorMapper.fromApiErrorDetails(
           apiResult.errorDetails,
           fallbackMessage: 'The verification code is invalid or expired.',
+          debugMessage: apiResult.errors?.join('|'),
         );
       }
+
+      return apiResult.data!;
     } on DioException catch (error) {
       throw ErrorMapper.fromDioException(
         error,

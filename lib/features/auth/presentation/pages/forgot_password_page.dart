@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -38,9 +40,21 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   String? _flowEmail;
   bool _showNewPassword = false;
   bool _showConfirmPassword = false;
+  Timer? _ticker;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted && _step != _ForgotPasswordStep.email) {
+        setState(() {});
+      }
+    });
+  }
 
   @override
   void dispose() {
+    _ticker?.cancel();
     _emailController.dispose();
     _otpController.dispose();
     _newPasswordController.dispose();
@@ -298,8 +312,14 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             duration: const Duration(milliseconds: 220),
             child: switch (_step) {
               _ForgotPasswordStep.email => _buildEmailForm(isLoading),
-              _ForgotPasswordStep.otp => _buildOtpForm(isLoading),
-              _ForgotPasswordStep.reset => _buildResetForm(isLoading),
+              _ForgotPasswordStep.otp => _buildOtpForm(
+                  state: state,
+                  isLoading: isLoading,
+                ),
+              _ForgotPasswordStep.reset => _buildResetForm(
+                  state: state,
+                  isLoading: isLoading,
+                ),
             },
           ),
           const SizedBox(height: AppDimensions.spacingMd),
@@ -313,19 +333,32 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           ),
           if (_step == _ForgotPasswordStep.otp) ...[
             const SizedBox(height: AppDimensions.spacingSm),
+            _buildForgotPasswordMeta(state),
+            const SizedBox(height: AppDimensions.spacingSm),
             TextButton.icon(
-              onPressed: isLoading ? null : _resendOtp,
+              onPressed: isLoading || _resendSecondsRemaining(state) > 0
+                  ? null
+                  : _resendOtp,
               icon: Icon(
                 Icons.refresh_rounded,
-                color: colorScheme.primary,
+                color: _resendSecondsRemaining(state) > 0
+                    ? tokens.textTertiary
+                    : colorScheme.primary,
               ),
               label: Text(
-                'Resend code',
+                _resendSecondsRemaining(state) > 0
+                    ? 'Resend in ${_formatDuration(_resendSecondsRemaining(state))}'
+                    : 'Resend code',
                 style: AppTypography.button.copyWith(
-                  color: colorScheme.primary,
+                  color: _resendSecondsRemaining(state) > 0
+                      ? tokens.textTertiary
+                      : colorScheme.primary,
                 ),
               ),
             ),
+          ] else if (_step == _ForgotPasswordStep.reset) ...[
+            const SizedBox(height: AppDimensions.spacingSm),
+            _buildForgotPasswordMeta(state),
           ],
         ],
       ),
@@ -385,7 +418,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     );
   }
 
-  Widget _buildOtpForm(bool isLoading) {
+  Widget _buildOtpForm({
+    required AuthState state,
+    required bool isLoading,
+  }) {
     return Form(
       key: _otpFormKey,
       child: Column(
@@ -428,7 +464,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     );
   }
 
-  Widget _buildResetForm(bool isLoading) {
+  Widget _buildResetForm({
+    required AuthState state,
+    required bool isLoading,
+  }) {
+    final sessionExpired = _resetSessionSecondsRemaining(state) == 0;
     return Form(
       key: _resetFormKey,
       child: Column(
@@ -477,10 +517,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           ),
           const SizedBox(height: AppDimensions.spacingLg),
           _PrimaryActionButton(
-            label: 'Reset password',
+            label: sessionExpired ? 'Session expired' : 'Reset password',
             icon: Icons.check_circle_outline_rounded,
             isLoading: isLoading,
-            onPressed: _resetPassword,
+            onPressed: sessionExpired ? null : _resetPassword,
           ),
         ],
       ),
@@ -549,6 +589,83 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     );
   }
 
+  Widget _buildForgotPasswordMeta(AuthState state) {
+    final tokens = context.camsTokens;
+    final colorScheme = Theme.of(context).colorScheme;
+    final otpInfo = state.forgotPasswordOtpInfo;
+    final verifyInfo = state.forgotPasswordVerifyInfo;
+    final otpSeconds = _otpSecondsRemaining(state);
+    final resetSeconds = _resetSessionSecondsRemaining(state);
+    final attempts = _step == _ForgotPasswordStep.reset
+        ? _attemptsText(
+            verifyInfo?.remainingAttempts,
+            verifyInfo?.maxAttempts,
+          )
+        : _attemptsText(
+            otpInfo?.remainingAttempts,
+            otpInfo?.maxAttempts,
+          );
+
+    final rows = <_MetaRow>[
+      if (_step == _ForgotPasswordStep.otp && otpSeconds != null)
+        _MetaRow(
+          icon: Icons.timer_outlined,
+          text: otpSeconds > 0
+              ? 'OTP expires in ${_formatDuration(otpSeconds)}'
+              : 'OTP has expired. Resend a new code.',
+        ),
+      if (_step == _ForgotPasswordStep.reset && resetSeconds != null)
+        _MetaRow(
+          icon: Icons.lock_clock_outlined,
+          text: resetSeconds > 0
+              ? 'Reset session expires in ${_formatDuration(resetSeconds)}'
+              : 'Reset session expired. Verify OTP again.',
+        ),
+      if (attempts != null)
+        _MetaRow(
+          icon: Icons.pin_outlined,
+          text: attempts,
+        ),
+    ];
+
+    if (rows.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.all(AppDimensions.spacingMd),
+      decoration: BoxDecoration(
+        color: tokens.bgElevated,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
+        border: Border.all(color: tokens.borderSecondary),
+      ),
+      child: Column(
+        children: rows
+            .map(
+              (row) => Padding(
+                padding: EdgeInsets.only(
+                  bottom: row == rows.last ? 0 : AppDimensions.spacing8,
+                ),
+                child: Row(
+                  children: [
+                    Icon(row.icon, color: colorScheme.primary, size: 18),
+                    const SizedBox(width: AppDimensions.spacing8),
+                    Expanded(
+                      child: Text(
+                        row.text,
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: tokens.textSecondary,
+                          height: 1.35,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+            .toList(),
+      ),
+    );
+  }
+
   String get _titleForStep {
     return switch (_step) {
       _ForgotPasswordStep.email => 'Forgot Password?',
@@ -572,8 +689,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     return switch (_step) {
       _ForgotPasswordStep.email =>
         'The reset flow is public and only keeps your email temporarily for this session.',
-      _ForgotPasswordStep.otp =>
-        'Mock mode accepts 123456. OTP is not stored after verification.',
+      _ForgotPasswordStep.otp => 'The OTP is not stored after verification.',
       _ForgotPasswordStep.reset =>
         'The reset request sends only your email and new password.',
     };
@@ -587,6 +703,69 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       null => 'Forgot password failed',
     };
   }
+
+  int? _otpSecondsRemaining(AuthState state) {
+    final info = state.forgotPasswordOtpInfo;
+    if (info == null) return null;
+    return _secondsUntil(
+      info.expiresAtUtc,
+      fallbackSeconds: info.expiresInSeconds,
+    );
+  }
+
+  int _resendSecondsRemaining(AuthState state) {
+    final info = state.forgotPasswordOtpInfo;
+    if (info == null) return 0;
+    return _secondsUntil(
+          info.resendAvailableAtUtc,
+          fallbackSeconds: info.resendAfterSeconds,
+        ) ??
+        0;
+  }
+
+  int? _resetSessionSecondsRemaining(AuthState state) {
+    final info = state.forgotPasswordVerifyInfo;
+    if (info == null) return null;
+    return _secondsUntil(
+      info.resetSessionExpiresAtUtc,
+      fallbackSeconds: info.resetSessionExpiresInSeconds,
+    );
+  }
+
+  int? _secondsUntil(DateTime? utcDateTime, {int? fallbackSeconds}) {
+    if (utcDateTime == null) return fallbackSeconds;
+    final seconds =
+        utcDateTime.toUtc().difference(DateTime.now().toUtc()).inSeconds;
+    return seconds < 0 ? 0 : seconds;
+  }
+
+  String? _attemptsText(int? remainingAttempts, int? maxAttempts) {
+    if (remainingAttempts == null && maxAttempts == null) return null;
+    if (remainingAttempts != null && maxAttempts != null) {
+      return '$remainingAttempts of $maxAttempts OTP attempts remaining';
+    }
+    if (remainingAttempts != null) {
+      return '$remainingAttempts OTP attempts remaining';
+    }
+    return 'Maximum $maxAttempts OTP attempts';
+  }
+
+  String _formatDuration(int seconds) {
+    final minutes = seconds ~/ 60;
+    final remainder = seconds % 60;
+    if (minutes <= 0) return '${remainder}s';
+    return '$minutes:${remainder.toString().padLeft(2, '0')}';
+  }
+}
+
+class _MetaRow {
+  const _MetaRow({
+    required this.icon,
+    required this.text,
+  });
+
+  final IconData icon;
+  final String text;
 }
 
 class _StepPill extends StatelessWidget {
@@ -639,7 +818,7 @@ class _PrimaryActionButton extends StatelessWidget {
   final String label;
   final IconData icon;
   final bool isLoading;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {

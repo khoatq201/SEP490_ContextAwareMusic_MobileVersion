@@ -5,6 +5,7 @@ import '../../../../core/error/failures.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/network/network_info.dart';
 import '../../../../core/services/local_storage_service.dart';
+import '../../domain/entities/forgot_password_metadata.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_remote_datasource.dart';
@@ -197,7 +198,7 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<Either<Failure, void>> requestForgotPasswordOtp({
+  Future<Either<Failure, ForgotPasswordOtpInfo>> requestForgotPasswordOtp({
     required String email,
   }) async {
     if (!await networkInfo.isConnected) {
@@ -205,8 +206,9 @@ class AuthRepositoryImpl implements AuthRepository {
     }
 
     try {
-      await remoteDataSource.requestForgotPasswordOtp(email: email);
-      return const Right(null);
+      final info =
+          await remoteDataSource.requestForgotPasswordOtp(email: email);
+      return Right(info);
     } catch (error, stackTrace) {
       return Left(
         ErrorMapper.toFailure(
@@ -219,7 +221,7 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<Either<Failure, void>> verifyForgotPasswordOtp({
+  Future<Either<Failure, ForgotPasswordVerifyInfo>> verifyForgotPasswordOtp({
     required String email,
     required String otp,
   }) async {
@@ -228,11 +230,11 @@ class AuthRepositoryImpl implements AuthRepository {
     }
 
     try {
-      await remoteDataSource.verifyForgotPasswordOtp(
+      final info = await remoteDataSource.verifyForgotPasswordOtp(
         email: email,
         otp: otp,
       );
-      return const Right(null);
+      return Right(info);
     } catch (error, stackTrace) {
       return Left(
         ErrorMapper.toFailure(

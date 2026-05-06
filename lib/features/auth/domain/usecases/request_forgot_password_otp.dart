@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 
 import '../../../../core/error/failures.dart';
+import '../entities/forgot_password_metadata.dart';
 import '../repositories/auth_repository.dart';
 
 class RequestForgotPasswordOtp {
@@ -8,7 +9,7 @@ class RequestForgotPasswordOtp {
 
   final AuthRepository repository;
 
-  Future<Either<Failure, void>> call({
+  Future<Either<Failure, ForgotPasswordOtpInfo>> call({
     required String email,
   }) async {
     final normalizedEmail = email.trim();

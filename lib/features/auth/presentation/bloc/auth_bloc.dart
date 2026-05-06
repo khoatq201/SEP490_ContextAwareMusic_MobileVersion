@@ -1,8 +1,10 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/error/failures.dart';
 import '../../../../core/presentation/app_feedback.dart';
 import '../../../../core/services/session_data_cache.dart';
 import '../../../../core/session/session_cubit.dart';
+import '../../domain/entities/forgot_password_metadata.dart';
 import '../../domain/usecases/change_password.dart';
 import '../../domain/usecases/get_current_user.dart';
 import '../../domain/usecases/login.dart';
@@ -53,6 +55,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       status: AuthStatus.loading,
       clearFailure: true,
       clearFeedback: true,
+      clearForgotPasswordVerifyInfo: true,
     ));
 
     final result = await login(
@@ -234,10 +237,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           clearFeedback: true,
         ),
       ),
-      (_) => emit(
+      (info) => emit(
         state.copyWith(
           status: AuthStatus.forgotPasswordOtpSent,
           feedback: AppFeedback.success('Verification code sent to your email'),
+          forgotPasswordOtpInfo: info,
+          clearForgotPasswordVerifyInfo: true,
           clearFailure: true,
         ),
       ),
@@ -260,17 +265,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     );
 
     result.fold(
-      (failure) => emit(
-        state.copyWith(
-          status: AuthStatus.error,
-          failure: failure,
-          clearFeedback: true,
-        ),
-      ),
-      (_) => emit(
+      (failure) {
+        final updatedOtpInfo = _applyOtpAttemptMetadataFromFailure(failure);
+        emit(
+          state.copyWith(
+            status: AuthStatus.error,
+            failure: failure,
+            clearFeedback: true,
+            forgotPasswordOtpInfo: updatedOtpInfo,
+          ),
+        );
+      },
+      (info) => emit(
         state.copyWith(
           status: AuthStatus.forgotPasswordOtpVerified,
           feedback: AppFeedback.success('Verification code confirmed'),
+          forgotPasswordVerifyInfo: info,
           clearFailure: true,
         ),
       ),
@@ -308,8 +318,44 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             'Password reset successfully. Please sign in again.',
           ),
           clearFailure: true,
+          clearForgotPasswordOtpInfo: true,
+          clearForgotPasswordVerifyInfo: true,
         ),
       ),
     );
+  }
+
+  ForgotPasswordOtpInfo? _applyOtpAttemptMetadataFromFailure(Failure failure) {
+    final current = state.forgotPasswordOtpInfo;
+    final debugMessage = failure.debugMessage;
+    if (debugMessage is! String || debugMessage.isEmpty) {
+      return current;
+    }
+
+    final remainingAttempts = _extractMetadataInt(
+      debugMessage,
+      'remainingAttempts',
+    );
+    final maxAttempts = _extractMetadataInt(debugMessage, 'maxAttempts');
+    if (remainingAttempts == null && maxAttempts == null) {
+      return current;
+    }
+
+    return (current ??
+            ForgotPasswordOtpInfo(
+              email: '',
+              remainingAttempts: remainingAttempts,
+              maxAttempts: maxAttempts,
+            ))
+        .copyWith(
+      remainingAttempts: remainingAttempts,
+      maxAttempts: maxAttempts,
+    );
+  }
+
+  int? _extractMetadataInt(String source, String key) {
+    final match = RegExp('$key\\s*=\\s*(\\d+)').firstMatch(source);
+    if (match == null) return null;
+    return int.tryParse(match.group(1)!);
   }
 }

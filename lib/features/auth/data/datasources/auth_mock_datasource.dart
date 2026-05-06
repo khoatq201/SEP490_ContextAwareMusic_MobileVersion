@@ -1,5 +1,6 @@
 import '../../../../core/error/exceptions.dart';
 import '../models/auth_response_model.dart';
+import '../models/forgot_password_response_models.dart';
 import '../models/profile_response_model.dart';
 import 'auth_remote_datasource.dart';
 
@@ -108,17 +109,27 @@ class AuthMockDataSource implements AuthRemoteDataSource {
   }
 
   @override
-  Future<void> requestForgotPasswordOtp({
+  Future<ForgotPasswordOtpInfoModel> requestForgotPasswordOtp({
     required String email,
   }) async {
     await Future.delayed(const Duration(milliseconds: 500));
     if (!_mockProfiles.containsKey(email.toLowerCase())) {
       throw const ServerException('No active account was found for this email');
     }
+    final now = DateTime.now().toUtc();
+    return ForgotPasswordOtpInfoModel(
+      email: email,
+      expiresAtUtc: now.add(const Duration(minutes: 5)),
+      expiresInSeconds: 300,
+      resendAvailableAtUtc: now.add(const Duration(seconds: 60)),
+      resendAfterSeconds: 60,
+      remainingAttempts: 5,
+      maxAttempts: 5,
+    );
   }
 
   @override
-  Future<void> verifyForgotPasswordOtp({
+  Future<ForgotPasswordVerifyInfoModel> verifyForgotPasswordOtp({
     required String email,
     required String otp,
   }) async {
@@ -126,6 +137,14 @@ class AuthMockDataSource implements AuthRemoteDataSource {
     if (!_mockProfiles.containsKey(email.toLowerCase()) || otp != '123456') {
       throw const ServerException('Invalid or expired verification code');
     }
+    final now = DateTime.now().toUtc();
+    return ForgotPasswordVerifyInfoModel(
+      email: email,
+      resetSessionExpiresAtUtc: now.add(const Duration(minutes: 4)),
+      resetSessionExpiresInSeconds: 240,
+      remainingAttempts: 4,
+      maxAttempts: 5,
+    );
   }
 
   @override

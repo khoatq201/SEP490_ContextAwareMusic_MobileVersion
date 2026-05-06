@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import '../../../../core/error/failures.dart';
+import '../entities/forgot_password_metadata.dart';
 import '../entities/user.dart';
 
 abstract class AuthRepository {
@@ -27,12 +28,12 @@ abstract class AuthRepository {
   });
 
   /// Request password reset OTP for a public forgot password flow.
-  Future<Either<Failure, void>> requestForgotPasswordOtp({
+  Future<Either<Failure, ForgotPasswordOtpInfo>> requestForgotPasswordOtp({
     required String email,
   });
 
   /// Verify the OTP sent to the email in the forgot password flow.
-  Future<Either<Failure, void>> verifyForgotPasswordOtp({
+  Future<Either<Failure, ForgotPasswordVerifyInfo>> verifyForgotPasswordOtp({
     required String email,
     required String otp,
   });

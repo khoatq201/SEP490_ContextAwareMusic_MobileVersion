@@ -80,151 +80,217 @@ class StoreDashboardPage extends StatelessWidget {
       ),
       builder: (sheetCtx) {
         return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Drag handle
-              Container(
-                margin: const EdgeInsets.only(top: 10, bottom: 8),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: tokens.textTertiary.withValues(alpha: 0.35),
-                  borderRadius: BorderRadius.circular(2),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Drag handle
+                Container(
+                  margin: const EdgeInsets.only(top: 10, bottom: 8),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: tokens.textTertiary.withValues(alpha: 0.35),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-              ),
 
-              // Profile header
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppDimensions.spacingLg,
-                  vertical: AppDimensions.spacingMd,
-                ),
-                child: Row(
-                  children: [
-                    _buildAvatar(
-                      context,
-                      user?.avatarUrl,
-                      user?.username,
-                      size: 52,
-                    ),
-                    const SizedBox(width: AppDimensions.spacingMd),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            user?.fullName ?? user?.username ?? 'User',
-                            style: AppTypography.titleMedium.copyWith(
-                              color: tokens.textPrimary,
-                              fontWeight: FontWeight.w700,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            user?.email ?? '',
-                            style: AppTypography.bodySmall.copyWith(
-                              color: tokens.textSecondary,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          if (user?.role != null)
-                            Container(
-                              margin: const EdgeInsets.only(top: 4),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: colorScheme.primary.withValues(
-                                  alpha: 0.15,
-                                ),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
-                                user!.role.toUpperCase(),
-                                style: AppTypography.labelSmall.copyWith(
-                                  color: colorScheme.primary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                        ],
+                // Profile header
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppDimensions.spacingLg,
+                    vertical: AppDimensions.spacingMd,
+                  ),
+                  child: Row(
+                    children: [
+                      _buildAvatar(
+                        context,
+                        user?.avatarUrl,
+                        user?.username,
+                        size: 52,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: AppDimensions.spacingMd),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              user?.fullName ?? user?.username ?? 'User',
+                              style: AppTypography.titleMedium.copyWith(
+                                color: tokens.textPrimary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              user?.email ?? '',
+                              style: AppTypography.bodySmall.copyWith(
+                                color: tokens.textSecondary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (user?.role != null)
+                              Container(
+                                margin: const EdgeInsets.only(top: 4),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: colorScheme.primary.withValues(
+                                    alpha: 0.15,
+                                  ),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  user!.role.toUpperCase(),
+                                  style: AppTypography.labelSmall.copyWith(
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
 
-              const Divider(height: 1),
+                const Divider(height: 1),
 
-              // Switch Store — only for BrandManager / SystemAdmin
-              if (user != null && (user.isBrandManager || user.isSystemAdmin))
                 ListTile(
                   leading: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: tokens.techAccentSoft,
+                      color: colorScheme.primary.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Icon(Icons.store_outlined,
-                        color: tokens.techAccent, size: 22),
+                    child: Icon(
+                      Icons.person_outline_rounded,
+                      color: colorScheme.primary,
+                      size: 22,
+                    ),
                   ),
                   title: Text(
-                    'Switch Store',
+                    'Account settings',
                     style: AppTypography.bodyMedium.copyWith(
                       color: tokens.textPrimary,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   subtitle: Text(
-                    'Select a different store',
+                    'Profile, password, and sign-out options',
                     style: AppTypography.bodySmall.copyWith(
                       color: tokens.textSecondary,
                     ),
                   ),
                   onTap: () {
                     Navigator.of(sheetCtx).pop();
-                    context.go('/store-selection');
+                    context.push('/settings/user');
                   },
                 ),
 
-              // Logout
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: tokens.error.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(10),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      Icons.settings_outlined,
+                      color: colorScheme.primary,
+                      size: 22,
+                    ),
                   ),
-                  child: Icon(
-                    Icons.logout_outlined,
-                    color: tokens.error,
-                    size: 22,
+                  title: Text(
+                    'Workspace settings',
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: tokens.textPrimary,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
+                  subtitle: Text(
+                    'Appearance, organization, and subscription',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: tokens.textSecondary,
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.of(sheetCtx).pop();
+                    context.push('/settings');
+                  },
                 ),
-                title: Text(
-                  'Logout',
-                  style: AppTypography.bodyMedium.copyWith(
-                    color: tokens.error,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                subtitle: Text(
-                  'Sign out of your account',
-                  style: AppTypography.bodySmall.copyWith(
-                    color: tokens.textSecondary,
-                  ),
-                ),
-                onTap: () {
-                  Navigator.of(sheetCtx).pop();
-                  context.read<AuthBloc>().add(const LogoutRequested());
-                },
-              ),
 
-              const SizedBox(height: AppDimensions.spacingMd),
-            ],
+                // Switch Store — only for BrandManager / SystemAdmin
+                if (user != null && (user.isBrandManager || user.isSystemAdmin))
+                  ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: tokens.techAccentSoft,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(Icons.store_outlined,
+                          color: tokens.techAccent, size: 22),
+                    ),
+                    title: Text(
+                      'Switch Store',
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: tokens.textPrimary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'Select a different store',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: tokens.textSecondary,
+                      ),
+                    ),
+                    onTap: () {
+                      Navigator.of(sheetCtx).pop();
+                      context.go('/store-selection');
+                    },
+                  ),
+
+                // Logout
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: tokens.error.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      Icons.logout_outlined,
+                      color: tokens.error,
+                      size: 22,
+                    ),
+                  ),
+                  title: Text(
+                    'Logout',
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: tokens.error,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Sign out of your account',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: tokens.textSecondary,
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.of(sheetCtx).pop();
+                    context.read<AuthBloc>().add(const LogoutRequested());
+                  },
+                ),
+
+                const SizedBox(height: AppDimensions.spacingMd),
+              ],
+            ),
           ),
         );
       },
@@ -242,22 +308,28 @@ class StoreDashboardPage extends StatelessWidget {
     if (avatarUrl != null && avatarUrl.isNotEmpty) {
       return CircleAvatar(
         radius: size / 2,
-        backgroundImage: NetworkImage(avatarUrl),
         backgroundColor: tokens.brandPrimarySoft,
+        child: ClipOval(
+          child: Image.network(
+            avatarUrl,
+            width: size,
+            height: size,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => _AvatarFallback(
+              initials: _getInitials(username),
+              size: size,
+              backgroundColor: colorScheme.primary.withValues(alpha: 0.85),
+              foregroundColor: tokens.textOnAccent,
+            ),
+          ),
+        ),
       );
     }
-    final initials = _getInitials(username);
-    return CircleAvatar(
-      radius: size / 2,
+    return _AvatarFallback(
+      initials: _getInitials(username),
+      size: size,
       backgroundColor: colorScheme.primary.withValues(alpha: 0.85),
-      child: Text(
-        initials,
-        style: TextStyle(
-          color: tokens.textOnAccent,
-          fontSize: size * 0.38,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
+      foregroundColor: tokens.textOnAccent,
     );
   }
 
@@ -1033,6 +1105,7 @@ class StoreDashboardPage extends StatelessWidget {
     final canManageMusicPolicy = !session.isPlaybackDevice &&
         (session.currentRole == UserRole.brandManager ||
             session.currentRole == UserRole.storeManager);
+    final canManageSpaces = canManageMusicPolicy;
     final canViewGovernanceConfig = canManageMusicPolicy;
     final showStoreTools =
         canManageStore || canManageMusicPolicy || canViewGovernanceConfig;
@@ -1215,27 +1288,10 @@ class StoreDashboardPage extends StatelessWidget {
                     const SizedBox(height: AppDimensions.spacingMd),
 
                     if (state.spaces.isEmpty)
-                      Center(
-                        child: Padding(
-                          padding:
-                              const EdgeInsets.all(AppDimensions.spacingXl),
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.space_dashboard_outlined,
-                                size: 64,
-                                color: tokens.textTertiary,
-                              ),
-                              const SizedBox(height: AppDimensions.spacingMd),
-                              Text(
-                                'No spaces available',
-                                style: AppTypography.bodyMedium.copyWith(
-                                  color: tokens.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                      _NoSpacesState(
+                        canManageSpaces: canManageSpaces,
+                        onManageSpaces: () => context.go('/locations'),
+                        onAccountSettings: () => context.push('/settings/user'),
                       )
                     else
                       GridView.builder(
@@ -1306,6 +1362,121 @@ class StoreDashboardPage extends StatelessWidget {
             );
           },
         ),
+      ),
+    );
+  }
+}
+
+class _AvatarFallback extends StatelessWidget {
+  const _AvatarFallback({
+    required this.initials,
+    required this.size,
+    required this.backgroundColor,
+    required this.foregroundColor,
+  });
+
+  final String initials;
+  final double size;
+  final Color backgroundColor;
+  final Color foregroundColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return CircleAvatar(
+      radius: size / 2,
+      backgroundColor: backgroundColor,
+      child: Text(
+        initials,
+        style: TextStyle(
+          color: foregroundColor,
+          fontSize: size * 0.38,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _NoSpacesState extends StatelessWidget {
+  const _NoSpacesState({
+    required this.canManageSpaces,
+    required this.onManageSpaces,
+    required this.onAccountSettings,
+  });
+
+  final bool canManageSpaces;
+  final VoidCallback onManageSpaces;
+  final VoidCallback onAccountSettings;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = context.camsTokens;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppDimensions.spacingLg),
+      decoration: BoxDecoration(
+        color: tokens.bgContainer,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
+        border: Border.all(color: tokens.borderSecondary),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Icon(
+              Icons.space_dashboard_outlined,
+              size: 32,
+              color: colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: AppDimensions.spacingMd),
+          Text(
+            'No spaces yet',
+            textAlign: TextAlign.center,
+            style: AppTypography.titleMedium.copyWith(
+              color: tokens.textPrimary,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: AppDimensions.spacingXs),
+          Text(
+            canManageSpaces
+                ? 'Create a space to start controlling playback for this store.'
+                : 'This store has no spaces yet. Account settings are still available.',
+            textAlign: TextAlign.center,
+            style: AppTypography.bodySmall.copyWith(
+              color: tokens.textSecondary,
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: AppDimensions.spacingLg),
+          if (canManageSpaces) ...[
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: onManageSpaces,
+                icon: const Icon(Icons.add_business_rounded, size: 18),
+                label: const Text('Manage spaces'),
+              ),
+            ),
+            const SizedBox(height: AppDimensions.spacingSm),
+          ],
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: onAccountSettings,
+              icon: const Icon(Icons.person_outline_rounded, size: 18),
+              label: const Text('Account settings'),
+            ),
+          ),
+        ],
       ),
     );
   }

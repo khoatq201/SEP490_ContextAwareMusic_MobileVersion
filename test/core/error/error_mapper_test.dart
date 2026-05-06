@@ -76,6 +76,21 @@ void main() {
       expect(exception.message, 'Email is required.');
     });
 
+    test('uses message instead of metadata-only errors', () {
+      final exception = ErrorMapper.fromApiResponsePayload(
+        {
+          'message': 'Invalid OTP code.',
+          'errors': ['remainingAttempts=4', 'maxAttempts=5'],
+          'errorCode': 'ValidationFailed',
+        },
+        fallbackMessage: 'Fallback',
+        statusCode: 422,
+      );
+
+      expect(exception, isA<ValidationException>());
+      expect(exception.message, 'Invalid OTP code.');
+    });
+
     test('sanitizes technical exception messages when converting to failure',
         () {
       final failure = ErrorMapper.toFailure(

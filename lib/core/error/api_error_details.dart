@@ -18,7 +18,7 @@ class ApiErrorDetails {
   String? get primaryMessage {
     for (final error in errors) {
       final normalized = error.trim();
-      if (normalized.isNotEmpty) {
+      if (normalized.isNotEmpty && !_isMetadataEntry(normalized)) {
         return normalized;
       }
     }
@@ -28,6 +28,10 @@ class ApiErrorDetails {
       return normalizedMessage;
     }
     return null;
+  }
+
+  static bool _isMetadataEntry(String value) {
+    return RegExp(r'^[A-Za-z][A-Za-z0-9_]*=').hasMatch(value);
   }
 
   factory ApiErrorDetails.fromPayload(
