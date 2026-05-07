@@ -129,6 +129,7 @@ class PlaybackNotificationService {
 
   StreamSubscription<ja.PlayerState>? _playerStateSub;
   Timer? _notificationDebounceTimer;
+  bool _notificationUpdatePending = false;
   app_player.PlayerState _latestState = const app_player.PlayerState();
   bool _isEnabled = false;
   bool _controlsEnabled = true;
@@ -163,6 +164,15 @@ class PlaybackNotificationService {
     );
   }
 
+  @visibleForTesting
+  PlaybackNotificationService.test({
+    required CamsAudioHandler handler,
+    required AudioPlayerService audioPlayerService,
+  }) : this._(
+          handler: handler,
+          audioPlayerService: audioPlayerService,
+        );
+
   Stream<PlaybackNotificationCommand> get commands => _handler.commands;
 
   void syncPlayerState(
@@ -190,6 +200,7 @@ class PlaybackNotificationService {
 
     if (immediate) {
       _notificationDebounceTimer?.cancel();
+      _notificationUpdatePending = false;
       _publishPlaybackState();
     } else {
       _scheduleNotificationUpdate();
@@ -202,21 +213,37 @@ class PlaybackNotificationService {
     _latestState = const app_player.PlayerState();
     _lastMediaItemSignature = null;
     _notificationDebounceTimer?.cancel();
+    _notificationUpdatePending = false;
     await _handler.clearSession();
   }
 
   Future<void> dispose() async {
     _notificationDebounceTimer?.cancel();
+    _notificationUpdatePending = false;
     await _playerStateSub?.cancel();
     await _handler.dispose();
   }
 
-  /// Debounce ALL notification updates to max ~2/sec.
+  /// Throttle notification updates to max ~2/sec.
   void _scheduleNotificationUpdate() {
-    _notificationDebounceTimer?.cancel();
+    if (_notificationDebounceTimer?.isActive ?? false) {
+      _notificationUpdatePending = true;
+      return;
+    }
+
+    _publishPlaybackState();
     _notificationDebounceTimer = Timer(
       const Duration(milliseconds: 500),
-      _publishPlaybackState,
+      () {
+        _notificationDebounceTimer = null;
+        if (!_isEnabled || !_notificationUpdatePending) {
+          _notificationUpdatePending = false;
+          return;
+        }
+
+        _notificationUpdatePending = false;
+        _scheduleNotificationUpdate();
+      },
     );
   }
 
