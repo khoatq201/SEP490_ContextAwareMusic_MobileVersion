@@ -20,6 +20,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
 
   /// Audio engine for real playback.
   final AudioPlayerService _audioService;
+  int _remotePlaybackActionEpoch = 0;
 
   /// Subscriptions to audio-engine streams.
   StreamSubscription<Duration>? _positionSub;
@@ -679,6 +680,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     PlayerHlsStarted event,
     Emitter<PlayerState> emit,
   ) async {
+    final actionEpoch = ++_remotePlaybackActionEpoch;
     // ── Stale-replay guard ─────────────────────────────────────────────
     // When the audio engine is in `completed` state (track just finished)
     // and this event references the SAME track that just completed, skip
@@ -843,6 +845,18 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
           'target=${targetPosition.inMilliseconds / 1000.0}',
         );
       }
+      if (actionEpoch != _remotePlaybackActionEpoch ||
+          state.hlsUrl != event.hlsUrl) {
+        _debugLog(
+          'hlsDecision finalAction=skip stale '
+          'eventEpoch=$actionEpoch '
+          'currentEpoch=$_remotePlaybackActionEpoch '
+          'stateHls=${state.hlsUrl ?? '-'} '
+          'eventHls=${event.hlsUrl}',
+        );
+        return;
+      }
+
       if (event.isPaused) {
         _debugLog('hlsDecision finalAction=pause');
         await _audioService.pause();
@@ -913,6 +927,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     PlayerRemoteCommandApplied event,
     Emitter<PlayerState> emit,
   ) async {
+    _remotePlaybackActionEpoch += 1;
     final absolutePosition = event.positionSeconds;
     final isSeekCommand = event.command == PlaybackCommandEnum.seek ||
         event.command == PlaybackCommandEnum.seekForward ||

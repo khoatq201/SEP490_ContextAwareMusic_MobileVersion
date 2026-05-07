@@ -414,6 +414,93 @@ void main() {
       expect(playerBloc.state.currentQueueItemId, 'queue-1');
     });
 
+    testWidgets('reapplies confirmed pause while local command hold is active',
+        (tester) async {
+      addTearDown(() async {
+        await _disposeHarness(tester);
+      });
+      sessionCubit.setPlaybackMode(
+        store: const Store(
+          id: 'store-1',
+          name: 'Store 1',
+          brandId: 'brand-1',
+        ),
+        space: const Space(
+          id: 'space-1',
+          name: 'Space 1',
+          storeId: 'store-1',
+          type: SpaceTypeEnum.hall,
+          status: EntityStatusEnum.active,
+        ),
+        deviceId: 'device-1',
+      );
+      final startedAtUtc =
+          DateTime.now().toUtc().subtract(const Duration(seconds: 4));
+      final playbackState = SpacePlaybackState(
+        spaceId: 'space-1',
+        storeId: 'store-1',
+        currentQueueItemId: 'queue-1',
+        currentTrackName: 'Track One',
+        hlsUrl: 'https://stream.example.com/t1.m3u8',
+        startedAtUtc: startedAtUtc,
+        isPaused: false,
+        spaceQueueItems: const [
+          SpaceQueueStateItem(
+            queueItemId: 'queue-1',
+            trackId: 'track-1',
+            trackName: 'Track One',
+            position: 1,
+            queueStatus: 1,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/t1.m3u8',
+            isReadyToStream: true,
+          ),
+        ],
+      );
+
+      await _pumpCoordinator(
+          tester, notificationService, sessionCubit, playerBloc, camsBloc);
+      camsBloc.seed(playbackState);
+      await tester.pump();
+      await _waitUntil(
+        tester,
+        () =>
+            playerBloc.state.isSyncedCamsPlayback && playerBloc.state.isPlaying,
+      );
+
+      final firstPauseCallCount = audioService.pauseCallCount;
+      camsBloc.seedState(camsBloc.state.copyWith(
+        lastPlaybackCommand: PlaybackCommandEnum.pause,
+        commandSequence: camsBloc.state.commandSequence + 1,
+        isPlaybackCommandInFlight: true,
+        inFlightPlaybackCommand: PlaybackCommandEnum.pause,
+      ));
+      await tester.pump();
+      await _waitUntil(
+        tester,
+        () => audioService.pauseCallCount == firstPauseCallCount + 1,
+      );
+
+      final relayPauseCallCount = audioService.pauseCallCount;
+      camsBloc.seedState(camsBloc.state.copyWith(
+        playbackState: playbackState.copyWith(
+          isPaused: true,
+          pausePositionSeconds: 4,
+          seekOffsetSeconds: 4,
+        ),
+        isPlaybackCommandInFlight: false,
+        clearInFlightPlaybackCommand: true,
+      ));
+      await tester.pump();
+
+      await _waitUntil(
+        tester,
+        () => audioService.pauseCallCount == relayPauseCallCount + 1,
+      );
+      expect(playerBloc.state.isPlaying, isFalse);
+      expect(notificationService.lastState.isPlaying, isFalse);
+    });
+
     testWidgets(
         'resumes local player when identical remote snapshot is playing',
         (tester) async {
@@ -766,6 +853,86 @@ void main() {
       expect(
         camsBloc.addedEvents.whereType<CamsPreviousTapped>(),
         hasLength(previousTapCount + 1),
+      );
+    });
+
+    testWidgets(
+        'notification pause still applies locally when player state is already paused',
+        (tester) async {
+      addTearDown(() async {
+        await _disposeHarness(tester);
+      });
+      sessionCubit.setPlaybackMode(
+        store: const Store(
+          id: 'store-1',
+          name: 'Store 1',
+          brandId: 'brand-1',
+        ),
+        space: const Space(
+          id: 'space-1',
+          name: 'Space 1',
+          storeId: 'store-1',
+          type: SpaceTypeEnum.hall,
+          status: EntityStatusEnum.active,
+        ),
+        deviceId: 'device-1',
+      );
+      const playbackState = SpacePlaybackState(
+        spaceId: 'space-1',
+        storeId: 'store-1',
+        currentQueueItemId: 'queue-1',
+        currentTrackName: 'Track One',
+        hlsUrl: 'https://stream.example.com/t1.m3u8',
+        isPaused: false,
+        spaceQueueItems: [
+          SpaceQueueStateItem(
+            queueItemId: 'queue-1',
+            trackId: 'track-1',
+            trackName: 'Track One',
+            position: 1,
+            queueStatus: 1,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/t1.m3u8',
+            isReadyToStream: true,
+          ),
+        ],
+      );
+
+      await _pumpCoordinator(
+          tester, notificationService, sessionCubit, playerBloc, camsBloc);
+      camsBloc.seed(playbackState);
+      await tester.pump();
+      await _waitUntil(
+        tester,
+        () =>
+            playerBloc.state.isSyncedCamsPlayback && playerBloc.state.isPlaying,
+      );
+
+      playerBloc.add(const PlayerRemoteCommandApplied(
+        command: PlaybackCommandEnum.pause,
+        playLocally: true,
+      ));
+      await tester.pump();
+      await _waitUntil(tester, () => playerBloc.state.isPlaying == false);
+
+      final pauseCallCount = audioService.pauseCallCount;
+      final pauseCommandCount = camsBloc.addedEvents
+          .whereType<CamsSendCommand>()
+          .where((event) => event.command == PlaybackCommandEnum.pause)
+          .length;
+
+      notificationService.emitCommand(PlaybackNotificationCommand.pause);
+      await tester.pump();
+
+      await _waitUntil(
+        tester,
+        () => audioService.pauseCallCount == pauseCallCount + 1,
+      );
+      expect(
+        camsBloc.addedEvents
+            .whereType<CamsSendCommand>()
+            .where((event) => event.command == PlaybackCommandEnum.pause),
+        hasLength(pauseCommandCount + 1),
       );
     });
 

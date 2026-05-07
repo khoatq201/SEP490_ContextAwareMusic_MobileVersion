@@ -195,6 +195,40 @@ void main() {
       expect(bloc.state.isPlaying, isTrue);
     });
 
+    test('does not let a stale HLS start resume after a newer pause command',
+        () async {
+      final loadCompleter = Completer<Duration?>();
+      audioService.nextLoadCompleter = loadCompleter;
+
+      bloc.add(const PlayerHlsStarted(
+        hlsUrl: 'https://stream.example.com/live.m3u8',
+        queueItemId: 'queue-1',
+        trackId: 'track-1',
+        trackName: 'Track 1',
+        seekOffsetSeconds: 12,
+        playLocally: true,
+      ));
+      await _tick();
+
+      expect(bloc.state.isPlaying, isTrue);
+      expect(audioService.playCallCount, 0);
+
+      bloc.add(const PlayerRemoteCommandApplied(
+        command: PlaybackCommandEnum.pause,
+        playLocally: true,
+      ));
+      await _tick();
+
+      expect(bloc.state.isPlaying, isFalse);
+      expect(audioService.pauseCallCount, 1);
+
+      loadCompleter.complete(null);
+      await _tick();
+
+      expect(audioService.playCallCount, 0);
+      expect(bloc.state.isPlaying, isFalse);
+    });
+
     test(
         'maps local HLS position updates for later queue items back to absolute queue offsets',
         () async {
@@ -944,8 +978,10 @@ class _FakeAudioPlayerService extends AudioPlayerService {
   final Duration _bufferedPosition = Duration.zero;
   ProcessingState _processingState = ProcessingState.idle;
   double? lastSetVolume;
+  Completer<Duration?>? nextLoadCompleter;
   int loadCallCount = 0;
   int playCallCount = 0;
+  int pauseCallCount = 0;
   int stopCallCount = 0;
 
   @override
@@ -975,6 +1011,11 @@ class _FakeAudioPlayerService extends AudioPlayerService {
     loadCallCount += 1;
     _loadedUrl = url;
     _processingState = ProcessingState.ready;
+    final loadCompleter = nextLoadCompleter;
+    if (loadCompleter != null) {
+      nextLoadCompleter = null;
+      return loadCompleter.future;
+    }
     return null;
   }
 
@@ -984,7 +1025,9 @@ class _FakeAudioPlayerService extends AudioPlayerService {
   }
 
   @override
-  Future<void> pause() async {}
+  Future<void> pause() async {
+    pauseCallCount += 1;
+  }
 
   @override
   Future<void> stop() async {

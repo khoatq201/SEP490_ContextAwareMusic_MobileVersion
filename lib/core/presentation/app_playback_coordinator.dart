@@ -397,6 +397,18 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
     return true;
   }
 
+  PlaybackCommandEnum? _confirmedLocalHoldCommand(
+    SpacePlaybackState playbackState,
+  ) {
+    final heldCommand = _localPlaybackCommandHoldCommand;
+    if (heldCommand == null) return null;
+    return switch (heldCommand) {
+      PlaybackCommandEnum.pause when playbackState.isPaused => heldCommand,
+      PlaybackCommandEnum.resume when !playbackState.isPaused => heldCommand,
+      _ => null,
+    };
+  }
+
   bool _shouldPlayRemoteAudioLocally(SessionState session) {
     if (session.currentSpace == null) return false;
     if (session.isPlaybackDevice) {
@@ -936,6 +948,7 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
       playbackState: playbackState,
     );
     if (suppressPlaybackCorrections) {
+      final confirmedHoldCommand = _confirmedLocalHoldCommand(playbackState);
       _debugLog(
         'same remote HLS snapshot -> defer playback correction while playback command is pending '
         'command=${inFlightCommand ?? '-'} '
@@ -946,6 +959,28 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
         'remoteSeek=${playbackState.effectiveSeekOffset.toStringAsFixed(2)} '
         'drift=${driftSeconds.toStringAsFixed(2)}',
       );
+      if (confirmedHoldCommand != null) {
+        _debugLog(
+          'same remote HLS snapshot -> apply confirmed ${confirmedHoldCommand.name} during local hold '
+          'queueItemId=${playbackState.effectiveQueueItemId ?? '-'} '
+          'remotePaused=${playbackState.isPaused}',
+        );
+        _addPlayerEvent(PlayerRemoteCommandApplied(
+          command: confirmedHoldCommand,
+          playLocally: _shouldPlayRemoteAudioLocally(session),
+        ));
+        _clearLocalPlaybackCommandHold();
+        _syncNotification(
+          session: session,
+          playerState: playerState.copyWith(isPlaying: shouldBePlaying),
+          immediate: true,
+        );
+        _addPlayerEvent(PlayerAudioSettingsApplied(
+          volumePercent: playbackState.volumePercent,
+          isMuted: playbackState.isMuted,
+        ));
+        return true;
+      }
       _addPlayerEvent(PlayerAudioSettingsApplied(
         volumePercent: playbackState.volumePercent,
         isMuted: playbackState.isMuted,
@@ -1836,22 +1871,22 @@ class _AppPlaybackCoordinatorState extends State<AppPlaybackCoordinator>
     if (canRouteToCams) {
       switch (command.type) {
         case PlaybackNotificationCommandType.play:
-          if (!playerState.isPlaying) {
-            _addPlayerEvent(const PlayerRemoteCommandApplied(
-              command: PlaybackCommandEnum.resume,
-              playLocally: true,
-            ));
+          _addPlayerEvent(const PlayerRemoteCommandApplied(
+            command: PlaybackCommandEnum.resume,
+            playLocally: true,
+          ));
+          if (camsState.playbackState?.isPaused != false) {
             _addCamsEvent(const CamsSendCommand(
               command: PlaybackCommandEnum.resume,
             ));
           }
           return;
         case PlaybackNotificationCommandType.pause:
-          if (playerState.isPlaying) {
-            _addPlayerEvent(const PlayerRemoteCommandApplied(
-              command: PlaybackCommandEnum.pause,
-              playLocally: true,
-            ));
+          _addPlayerEvent(const PlayerRemoteCommandApplied(
+            command: PlaybackCommandEnum.pause,
+            playLocally: true,
+          ));
+          if (camsState.playbackState?.isPaused != true) {
             _addCamsEvent(const CamsSendCommand(
               command: PlaybackCommandEnum.pause,
             ));
