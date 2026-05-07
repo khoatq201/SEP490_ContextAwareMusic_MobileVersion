@@ -336,11 +336,28 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       'queueItemId=${state.currentQueueItemId ?? '-'} '
       'trackId=${state.currentTrackId ?? state.currentTrack?.id ?? '-'} '
       'trackTitle=${state.currentTrack?.title ?? '-'} '
+      'hlsUrl=${state.hlsUrl ?? '-'} '
+      'loadedUrl=${_audioService.loadedUrl ?? '-'} '
       'position=${state.currentPositionPrecise.toStringAsFixed(2)} '
       'duration=${state.duration} '
       'hasNext=${state.hasNext}',
     );
     if (state.isHlsMode && (state.hlsUrl?.isNotEmpty ?? false)) {
+      final hlsUrl = state.hlsUrl!;
+      final loadedUrl = _audioService.loadedUrl;
+      if (loadedUrl != hlsUrl) {
+        _traceLog(
+          'LOCAL_COMPLETED_IGNORED '
+          'reason=source_mismatch '
+          'queueItemId=${state.currentQueueItemId ?? '-'} '
+          'trackId=${state.currentTrackId ?? state.currentTrack?.id ?? '-'} '
+          'trackTitle=${state.currentTrack?.title ?? '-'} '
+          'hlsUrl=$hlsUrl '
+          'loadedUrl=${loadedUrl ?? '-'}',
+        );
+        return;
+      }
+
       final completionPosition = state.duration > 0
           ? _absoluteQueuePositionForTrack(state.duration.toDouble()).floor()
           : state.currentPosition;
@@ -434,6 +451,14 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     final absoluteTargetSeconds = event.positionSeconds.toDouble();
     final localTargetSeconds =
         _relativeTrackPositionForAbsolute(absoluteTargetSeconds);
+    _traceLog(
+      'LOCAL_SEEK_ENGINE_START '
+      'absoluteTarget=${absoluteTargetSeconds.toStringAsFixed(2)} '
+      'localTarget=${localTargetSeconds.toStringAsFixed(2)} '
+      'enginePos=${_audioService.position.inMilliseconds / 1000.0} '
+      'enginePlaying=${_audioService.playing} '
+      'engineState=${_audioService.processingState.name}',
+    );
     try {
       await _audioService.seek(
         Duration(milliseconds: (localTargetSeconds * 1000).round()),
@@ -446,6 +471,14 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       currentPosition: absoluteTargetSeconds.floor(),
       currentPositionPrecise: absoluteTargetSeconds,
     ));
+    _traceLog(
+      'LOCAL_SEEK_EMIT '
+      'absoluteTarget=${absoluteTargetSeconds.toStringAsFixed(2)} '
+      'localTarget=${localTargetSeconds.toStringAsFixed(2)} '
+      'enginePos=${_audioService.position.inMilliseconds / 1000.0} '
+      'statePos=${absoluteTargetSeconds.toStringAsFixed(2)} '
+      'isPlaying=${state.isPlaying}',
+    );
   }
 
   void _onDurationUpdated(
@@ -929,10 +962,16 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
 
     switch (event.command) {
       case PlaybackCommandEnum.pause:
-        _debugLog(
-          'remoteCommand pause '
+        _traceLog(
+          'PLAYER_REMOTE_COMMAND_START '
+          'command=pause '
           'playLocally=${event.playLocally} '
           'isSynced=${state.isSyncedCamsPlayback} '
+          'statePlaying=${state.isPlaying} '
+          'statePos=${state.currentPositionPrecise.toStringAsFixed(2)} '
+          'enginePlaying=${_audioService.playing} '
+          'enginePos=${_audioService.position.inMilliseconds / 1000.0} '
+          'engineState=${_audioService.processingState.name} '
           'queueItemId=${state.currentQueueItemId ?? '-'} '
           'trackId=${state.currentTrackId ?? state.currentTrack?.id ?? '-'}',
         );
@@ -940,12 +979,26 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
           _audioService.pause();
         }
         emit(state.copyWith(isPlaying: false));
+        _traceLog(
+          'PLAYER_REMOTE_COMMAND_EMIT '
+          'command=pause '
+          'statePlaying=false '
+          'statePos=${state.currentPositionPrecise.toStringAsFixed(2)} '
+          'enginePlaying=${_audioService.playing} '
+          'engineState=${_audioService.processingState.name}',
+        );
         return;
       case PlaybackCommandEnum.resume:
-        _debugLog(
-          'remoteCommand resume '
+        _traceLog(
+          'PLAYER_REMOTE_COMMAND_START '
+          'command=resume '
           'playLocally=${event.playLocally} '
           'isSynced=${state.isSyncedCamsPlayback} '
+          'statePlaying=${state.isPlaying} '
+          'statePos=${state.currentPositionPrecise.toStringAsFixed(2)} '
+          'enginePlaying=${_audioService.playing} '
+          'enginePos=${_audioService.position.inMilliseconds / 1000.0} '
+          'engineState=${_audioService.processingState.name} '
           'queueItemId=${state.currentQueueItemId ?? '-'} '
           'trackId=${state.currentTrackId ?? state.currentTrack?.id ?? '-'}',
         );
@@ -953,6 +1006,14 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
           _audioService.play();
         }
         emit(state.copyWith(isPlaying: true));
+        _traceLog(
+          'PLAYER_REMOTE_COMMAND_EMIT '
+          'command=resume '
+          'statePlaying=true '
+          'statePos=${state.currentPositionPrecise.toStringAsFixed(2)} '
+          'enginePlaying=${_audioService.playing} '
+          'engineState=${_audioService.processingState.name}',
+        );
         return;
       case PlaybackCommandEnum.seek:
       case PlaybackCommandEnum.seekForward:

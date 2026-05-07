@@ -45,10 +45,20 @@ class FullScreenPlayerPage extends StatelessWidget {
           final useRemoteControls =
               state.isHlsMode && (state.activeSpaceId?.isNotEmpty ?? false);
           final camsState = context.watch<CamsPlaybackBloc>().state;
+          final isRemoteCommandInFlight =
+              useRemoteControls && camsState.isPlaybackCommandInFlight;
           final isRemotePlaybackBlocked =
               useRemoteControls && camsState.isBrandPlaybackBlocked;
-          final canPlayPause = !isRemotePlaybackBlocked || isPlaying;
-          final canSkipRemote = !isRemotePlaybackBlocked;
+          final isRemoteMutationBlocked =
+              useRemoteControls && camsState.isPlaybackMutationBlocked;
+          final canPlayPause = !isRemoteCommandInFlight &&
+              !isRemoteMutationBlocked &&
+              (!isRemotePlaybackBlocked || isPlaying);
+          final canSkipRemote = !isRemoteCommandInFlight &&
+              !isRemotePlaybackBlocked &&
+              !isRemoteMutationBlocked;
+          final canSkipBackRemote =
+              !isRemotePlaybackBlocked && !isRemoteMutationBlocked;
           final moodTags = track?.moodTags;
           final mood =
               (moodTags != null && moodTags.isNotEmpty) ? moodTags.first : null;
@@ -290,7 +300,7 @@ class FullScreenPlayerPage extends StatelessWidget {
                   children: [
                     // Skip previous
                     GestureDetector(
-                      onTap: canSkipRemote
+                      onTap: canSkipBackRemote
                           ? () {
                               if (useRemoteControls) {
                                 _dispatchRemoteSkipBack(context);
@@ -320,6 +330,18 @@ class FullScreenPlayerPage extends StatelessWidget {
                       onTap: canPlayPause
                           ? () {
                               if (useRemoteControls) {
+                                debugPrint(
+                                  '[PlaybackUiTrace] FULL_PLAY_PAUSE_TAP '
+                                  'command=${isPlaying ? PlaybackCommandEnum.pause.name : PlaybackCommandEnum.resume.name} '
+                                  'inFlight=${camsState.isPlaybackCommandInFlight} '
+                                  'inFlightCommand=${camsState.inFlightPlaybackCommand?.name ?? '-'} '
+                                  'playerPlaying=$isPlaying '
+                                  'display=${state.displayPositionPrecise.toStringAsFixed(2)} '
+                                  'current=${state.currentPositionPrecise.toStringAsFixed(2)} '
+                                  'remotePaused=${camsState.playbackState?.isPaused} '
+                                  'remoteSeek=${camsState.playbackState?.effectiveSeekOffset.toStringAsFixed(2) ?? '-'} '
+                                  'queueItem=${state.currentQueueItemId ?? '-'}',
+                                );
                                 context.read<CamsPlaybackBloc>().add(
                                       CamsSendCommand(
                                         command: isPlaying

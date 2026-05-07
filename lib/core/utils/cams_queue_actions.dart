@@ -37,12 +37,16 @@ bool ensureQueueTargetSelected(
 
 bool ensurePlaybackQueueIsAvailable(BuildContext context) {
   final camsState = context.read<CamsPlaybackBloc>().state;
-  if (!camsState.isBrandPlaybackBlocked) return true;
+  if (!camsState.isBrandPlaybackBlocked &&
+      !camsState.isPlaybackMutationBlocked) {
+    return true;
+  }
 
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content: Text(
-        camsState.playbackBlockedMessage ??
+        camsState.playbackMutationBlockedMessage ??
+            camsState.playbackBlockedMessage ??
             'Playback is unavailable because the brand wallet needs attention.',
       ),
     ),

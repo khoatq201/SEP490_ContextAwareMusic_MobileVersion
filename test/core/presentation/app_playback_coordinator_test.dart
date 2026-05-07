@@ -37,6 +37,7 @@ import 'package:cams_store_manager/features/cams/domain/usecases/update_audio_st
 import 'package:cams_store_manager/features/cams/domain/usecases/update_scheduling_state.dart';
 import 'package:cams_store_manager/features/cams/presentation/bloc/cams_playback_bloc.dart';
 import 'package:cams_store_manager/features/cams/presentation/bloc/cams_playback_event.dart';
+import 'package:cams_store_manager/features/cams/presentation/bloc/cams_playback_state.dart';
 import 'package:cams_store_manager/features/moods/data/repositories/mood_repository_impl.dart';
 import 'package:cams_store_manager/features/moods/domain/entities/mood.dart';
 import 'package:cams_store_manager/features/moods/domain/usecases/get_moods.dart';
@@ -769,6 +770,71 @@ void main() {
     });
 
     testWidgets(
+        'locks notification controls and ignores notification commands when playback mutation is blocked',
+        (tester) async {
+      addTearDown(() async {
+        await _disposeHarness(tester);
+      });
+      sessionCubit.setPlaybackMode(
+        store: const Store(
+          id: 'store-1',
+          name: 'Store 1',
+          brandId: 'brand-1',
+        ),
+        space: const Space(
+          id: 'space-1',
+          name: 'Space 1',
+          storeId: 'store-1',
+          type: SpaceTypeEnum.hall,
+          status: EntityStatusEnum.active,
+        ),
+        deviceId: 'device-1',
+      );
+
+      await _pumpCoordinator(
+          tester, notificationService, sessionCubit, playerBloc, camsBloc);
+      playerBloc.add(const PlayerHlsStarted(
+        hlsUrl: 'https://stream.example.com/t2.m3u8',
+        queueItemId: 'queue-2',
+        trackId: 'track-2',
+        trackName: 'Track Two',
+        playLocally: false,
+      ));
+      await tester.pump();
+      await _waitUntil(tester, () => playerBloc.state.isSyncedCamsPlayback);
+
+      camsBloc.seedState(
+        camsBloc.state.copyWith(
+          spaceId: 'space-1',
+          playbackState: const SpacePlaybackState(
+            spaceId: 'space-1',
+            storeId: 'store-1',
+            hlsUrl: 'https://stream.example.com/t2.m3u8',
+            currentQueueItemId: 'queue-2',
+            currentTrackName: 'Track Two',
+            isPaused: false,
+          ),
+          playbackMutationBlockedMessage: 'Strict Sync mode is active.',
+        ),
+      );
+      await tester.pump();
+      await _waitUntil(
+        tester,
+        () => notificationService.lastControlsEnabled == false,
+      );
+
+      final eventCount = camsBloc.addedEvents.length;
+      notificationService.emitCommand(PlaybackNotificationCommand.skipPrevious);
+      notificationService.emitCommand(PlaybackNotificationCommand.pause);
+      notificationService.emitCommand(
+        PlaybackNotificationCommand.seek(const Duration(seconds: 12)),
+      );
+      await tester.pump();
+
+      expect(camsBloc.addedEvents, hasLength(eventCount));
+    });
+
+    testWidgets(
         'keeps queue-first HLS playback synthetic when queue snapshot is empty',
         (tester) async {
       addTearDown(() async {
@@ -1375,6 +1441,7 @@ class _FakePlaybackNotificationService implements PlaybackNotificationService {
 
   ps.PlayerState lastState = const ps.PlayerState();
   bool? lastEnabled;
+  bool? lastControlsEnabled;
   int syncCalls = 0;
   int clearCalls = 0;
 
@@ -1390,11 +1457,13 @@ class _FakePlaybackNotificationService implements PlaybackNotificationService {
   void syncPlayerState(
     ps.PlayerState playerState, {
     required bool enabled,
+    bool controlsEnabled = true,
     bool forceMediaItem = false,
     bool immediate = false,
   }) {
     lastState = playerState;
     lastEnabled = enabled;
+    lastControlsEnabled = controlsEnabled;
     syncCalls += 1;
   }
 
@@ -1761,6 +1830,10 @@ class _ManualCamsPlaybackBloc extends CamsPlaybackBloc {
         playbackState: playbackState,
       ),
     );
+  }
+
+  void seedState(CamsPlaybackState nextState) {
+    emit(nextState);
   }
 
   @override

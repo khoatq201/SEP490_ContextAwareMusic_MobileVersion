@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cams_store_manager/core/enums/scheduling_slot_origin_enum.dart';
 import 'package:cams_store_manager/features/cams/data/models/space_playback_state_model.dart';
+import 'package:cams_store_manager/features/config_governance/domain/entities/config_governance_enums.dart';
 
 void main() {
   group('SpacePlaybackStateModel', () {
@@ -50,6 +51,25 @@ void main() {
       expect(model.spaceQueueItems.single.coverImageUrl,
           'https://example.com/cover.jpg');
       expect(model.isStreaming, true);
+    });
+
+    test('parses governance mode aliases from space state payload', () {
+      final strict = SpacePlaybackStateModel.fromJson(const {
+        'spaceId': 'space-strict',
+        'governanceMode': 'StrictSync',
+      });
+      final freedom = SpacePlaybackStateModel.fromJson(const {
+        'spaceId': 'space-freedom',
+        'governentMode': 3,
+      });
+      final aiMode = SpacePlaybackStateModel.fromJson(const {
+        'spaceId': 'space-ai',
+        'governmentMode': 'AI Mode',
+      });
+
+      expect(strict.governanceMode, StoreGovernanceMode.strictSync);
+      expect(freedom.governanceMode, StoreGovernanceMode.freedom);
+      expect(aiMode.governanceMode, StoreGovernanceMode.aiMode);
     });
 
     test('parses legacy playlist-centric payload with queue-field fallback',

@@ -31,19 +31,31 @@ class MiniPlayerWidget extends StatelessWidget {
         final colorScheme = Theme.of(context).colorScheme;
         final useRemoteControls =
             state.isHlsMode && (state.activeSpaceId?.isNotEmpty ?? false);
+        final hasRetainedRemoteIdentity = state.isSyncedCamsPlayback &&
+            ((state.currentQueueItemId?.isNotEmpty ?? false) ||
+                (state.hlsUrl?.isNotEmpty ?? false));
         final isWaitingForRemoteState = useRemoteControls &&
+            !hasRetainedRemoteIdentity &&
             (camsState.status == CamsStatus.initial ||
                 camsState.status == CamsStatus.loading);
+        final isRemoteCommandInFlight =
+            useRemoteControls && camsState.isPlaybackCommandInFlight;
         final isRemotePlaybackBlocked =
             useRemoteControls && camsState.isBrandPlaybackBlocked;
+        final isRemoteMutationBlocked =
+            useRemoteControls && camsState.isPlaybackMutationBlocked;
         final canControlPlayback = state.hasTrack &&
             !isWaitingForRemoteState &&
+            !isRemoteCommandInFlight &&
+            !isRemoteMutationBlocked &&
             (!isRemotePlaybackBlocked || state.isPlaying);
         final canEndStream =
             state.isSyncedCamsPlayback && camsState.hasActiveOverride;
         final canSkipNext = state.hasTrack &&
             !isWaitingForRemoteState &&
+            !isRemoteCommandInFlight &&
             !isRemotePlaybackBlocked &&
+            !isRemoteMutationBlocked &&
             state.hasNext;
 
         return GestureDetector(
@@ -147,6 +159,18 @@ class MiniPlayerWidget extends StatelessWidget {
                           onPressed: canControlPlayback
                               ? () {
                                   if (useRemoteControls) {
+                                    debugPrint(
+                                      '[PlaybackUiTrace] MINI_PLAY_PAUSE_TAP '
+                                      'command=${state.isPlaying ? PlaybackCommandEnum.pause.name : PlaybackCommandEnum.resume.name} '
+                                      'inFlight=${camsState.isPlaybackCommandInFlight} '
+                                      'inFlightCommand=${camsState.inFlightPlaybackCommand?.name ?? '-'} '
+                                      'playerPlaying=${state.isPlaying} '
+                                      'display=${state.displayPositionPrecise.toStringAsFixed(2)} '
+                                      'current=${state.currentPositionPrecise.toStringAsFixed(2)} '
+                                      'remotePaused=${camsState.playbackState?.isPaused} '
+                                      'remoteSeek=${camsState.playbackState?.effectiveSeekOffset.toStringAsFixed(2) ?? '-'} '
+                                      'queueItem=${state.currentQueueItemId ?? '-'}',
+                                    );
                                     context.read<CamsPlaybackBloc>().add(
                                           CamsSendCommand(
                                             command: state.isPlaying

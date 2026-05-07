@@ -10,6 +10,7 @@ import '../../../../core/enums/playback_command_enum.dart';
 import '../../../../core/enums/queue_insert_mode_enum.dart';
 import '../../../../core/enums/user_role.dart';
 import '../../../../core/session/session_cubit.dart';
+import '../../../config_governance/domain/entities/config_governance_enums.dart';
 import '../../../moods/domain/usecases/get_moods.dart';
 import '../../data/services/queue_first_playback_runtime.dart';
 import '../../data/services/store_hub_service.dart';
@@ -73,8 +74,13 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
   StreamSubscription<ConnectionStatus>? _runtimeConnectionSub;
   DateTime? _lastPreviousTapAtUtc;
   String? _lastPreviousTapIdentity;
+  bool _playbackCommandInFlight = false;
+  CamsSendCommand? _queuedPriorityCommand;
+  CamsSendCommand? _queuedSeekCommand;
   static const double _minimumRemoteRestartSeekSeconds = 0.001;
   static const Duration _previousTapJumpThreshold = Duration(milliseconds: 900);
+  static const String _strictSyncBlockedMessage =
+      'Strict Sync mode is active. Only brand managers can modify playback, queue, scheduling, or audio settings for this space.';
 
   Future<void> _onInit(
     CamsInitPlayback event,
@@ -89,7 +95,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     emit(state.copyWith(
       status: CamsStatus.loading,
       spaceId: event.spaceId,
-      clearPlaybackState: true,
+      clearPlaybackState: !event.preserveExistingPlaybackState,
       clearError: true,
       clearPendingTrackJump: true,
       clearLastCommand: true,
@@ -181,6 +187,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     String? reason,
   }) async {
     if (!_hasActiveSessionScope('overrideMood')) return;
+    if (_emitMutationBlockedIfNeeded(emit, action: 'override')) return;
     if (state.isBrandPlaybackBlocked) {
       emit(state.copyWith(errorMessage: state.playbackBlockedMessage));
       return;
@@ -225,6 +232,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     Emitter<CamsPlaybackState> emit,
   ) async {
     if (!_hasActiveSessionScope('playPlaylist')) return;
+    if (_emitMutationBlockedIfNeeded(emit, action: 'playPlaylist')) return;
     if (state.isBrandPlaybackBlocked) {
       emit(state.copyWith(errorMessage: state.playbackBlockedMessage));
       return;
@@ -304,6 +312,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     String? reason,
   }) async {
     if (!_hasActiveSessionScope('playTrack')) return;
+    if (_emitMutationBlockedIfNeeded(emit, action: 'playTrack')) return;
     if (state.isBrandPlaybackBlocked) {
       emit(state.copyWith(errorMessage: state.playbackBlockedMessage));
       return;
@@ -358,6 +367,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     Emitter<CamsPlaybackState> emit,
   ) async {
     if (!_hasActiveSessionScope('reorderQueue')) return;
+    if (_emitMutationBlockedIfNeeded(emit, action: 'reorderQueue')) return;
     if (event.queueItemIds.length < 2) return;
 
     final result = await runtime.reorderQueueItems(
@@ -365,9 +375,10 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     );
 
     result.fold(
-      (failure) => emit(state.copyWith(
-        errorMessage:
-            'Reorder queue failed: ${ErrorMapper.displayMessageForFailure(failure)}',
+      (failure) => emit(_stateForPlaybackMutationFailure(
+        failure,
+        prefix: 'Reorder queue failed',
+        affectsPlaybackStart: false,
       )),
       (_) {},
     );
@@ -378,6 +389,9 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     Emitter<CamsPlaybackState> emit,
   ) async {
     if (!_hasActiveSessionScope('removeQueueItems')) return;
+    if (_emitMutationBlockedIfNeeded(emit, action: 'removeQueueItems')) {
+      return;
+    }
     if (event.queueItemIds.isEmpty) return;
 
     final result = await runtime.removeQueueEntries(
@@ -385,9 +399,10 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     );
 
     result.fold(
-      (failure) => emit(state.copyWith(
-        errorMessage:
-            'Remove queue item failed: ${ErrorMapper.displayMessageForFailure(failure)}',
+      (failure) => emit(_stateForPlaybackMutationFailure(
+        failure,
+        prefix: 'Remove queue item failed',
+        affectsPlaybackStart: false,
       )),
       (_) {},
     );
@@ -398,11 +413,13 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     Emitter<CamsPlaybackState> emit,
   ) async {
     if (!_hasActiveSessionScope('clearQueue')) return;
+    if (_emitMutationBlockedIfNeeded(emit, action: 'clearQueue')) return;
     final result = await runtime.clearQueueItems();
     result.fold(
-      (failure) => emit(state.copyWith(
-        errorMessage:
-            'Clear queue failed: ${ErrorMapper.displayMessageForFailure(failure)}',
+      (failure) => emit(_stateForPlaybackMutationFailure(
+        failure,
+        prefix: 'Clear queue failed',
+        affectsPlaybackStart: false,
       )),
       (_) {},
     );
@@ -414,6 +431,9 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
   ) async {
     if (!event.hasAnyUpdate) return;
     if (!_hasActiveSessionScope('updateAudioState')) return;
+    if (_emitMutationBlockedIfNeeded(emit, action: 'updateAudioState')) {
+      return;
+    }
 
     final result = await runtime.patchAudioState(
       volumePercent: event.volumePercent,
@@ -423,10 +443,16 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     );
 
     result.fold(
-      (failure) => emit(state.copyWith(
-        errorMessage:
-            'Update audio settings failed: ${ErrorMapper.displayMessageForFailure(failure)}',
-      )),
+      (failure) {
+        final failedState = _stateForPlaybackMutationFailure(
+          failure,
+          prefix: 'Update audio settings failed',
+          affectsPlaybackStart: false,
+        );
+        emit(failedState.copyWith(
+          audioSettingsFailureSequence: state.audioSettingsFailureSequence + 1,
+        ));
+      },
       (_) {},
     );
   }
@@ -436,6 +462,9 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     Emitter<CamsPlaybackState> emit,
   ) async {
     if (!_hasActiveSessionScope('updateSchedulingState')) return;
+    if (_emitMutationBlockedIfNeeded(emit, action: 'updateSchedulingState')) {
+      return;
+    }
     if (event.isScheduling && state.isBrandPlaybackBlocked) {
       emit(state.copyWith(errorMessage: state.playbackBlockedMessage));
       return;
@@ -472,6 +501,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     Emitter<CamsPlaybackState> emit,
   ) async {
     if (!_hasActiveSessionScope('cancelOverride')) return;
+    if (_emitMutationBlockedIfNeeded(emit, action: 'cancelOverride')) return;
     final spaceId = state.spaceId;
     if (spaceId == null || spaceId.isEmpty) return;
 
@@ -483,10 +513,11 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     );
 
     result.fold(
-      (failure) => emit(state.copyWith(
+      (failure) => emit(_stateForPlaybackMutationFailure(
+        failure,
         isOverriding: false,
-        errorMessage:
-            'Cancel override failed: ${ErrorMapper.displayMessageForFailure(failure)}',
+        prefix: 'Cancel override failed',
+        affectsPlaybackStart: false,
       )),
       (_) async {
         emit(state.copyWith(
@@ -504,11 +535,53 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     Emitter<CamsPlaybackState> emit,
   ) async {
     if (!_hasActiveSessionScope('sendCommand:${event.command.name}')) return;
+    if (_emitMutationBlockedIfNeeded(
+      emit,
+      action: 'sendCommand:${event.command.name}',
+    )) {
+      return;
+    }
+    if (_playbackCommandInFlight) {
+      if (_shouldQueueLatestSeekCommand(event)) {
+        _queuedSeekCommand = event;
+        _traceLog(
+          'API_COMMAND_QUEUED '
+          'spaceId=${state.spaceId ?? '-'} '
+          'command=${event.command.name} '
+          'seek=${event.seekPositionSeconds?.toStringAsFixed(2) ?? '-'}',
+        );
+      } else {
+        _traceLog(
+          'API_COMMAND_DROPPED_IN_FLIGHT '
+          'spaceId=${state.spaceId ?? '-'} '
+          'command=${event.command.name} '
+          'inFlight=${state.inFlightPlaybackCommand?.name ?? '-'}',
+        );
+      }
+      return;
+    }
     if (state.isBrandPlaybackBlocked &&
         _isQuotaConsumingPlaybackCommand(event.command)) {
       emit(state.copyWith(errorMessage: state.playbackBlockedMessage));
       return;
     }
+
+    _playbackCommandInFlight = true;
+    _traceLog(
+      'API_COMMAND_IN_FLIGHT_START '
+      'spaceId=${state.spaceId ?? '-'} '
+      'command=${event.command.name} '
+      'seek=${event.seekPositionSeconds?.toStringAsFixed(2) ?? '-'} '
+      'remotePaused=${state.playbackState?.isPaused} '
+      'remoteSeek=${state.playbackState?.effectiveSeekOffset.toStringAsFixed(2) ?? '-'} '
+      'currentQueueItem=${state.playbackState?.effectiveQueueItemId ?? '-'}',
+    );
+    emit(state.copyWith(
+      isPlaybackCommandInFlight: true,
+      inFlightPlaybackCommand: event.command,
+      clearError: true,
+    ));
+
     if (_shouldRelayCommandOptimistically(
       command: event.command,
     )) {
@@ -528,43 +601,99 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
       'targetQueueItemId=${event.targetQueueItemId ?? '-'} '
       'targetTrackId=${event.targetTrackId ?? '-'}',
     );
-    final result = await runtime.sendCommand(
-      command: event.command,
-      seekPositionSeconds: event.seekPositionSeconds,
-      targetQueueItemId: event.targetQueueItemId,
-      targetTrackId: event.targetTrackId,
-    );
+    try {
+      final result = await runtime.sendCommand(
+        command: event.command,
+        seekPositionSeconds: event.seekPositionSeconds,
+        targetQueueItemId: event.targetQueueItemId,
+        targetTrackId: event.targetTrackId,
+      );
 
-    result.fold(
-      (failure) {
-        _traceLog(
-          'API_COMMAND_FAIL '
-          'spaceId=${state.spaceId ?? '-'} '
-          'command=${event.command.name} '
-          '${_describeFailure(failure)}',
-        );
-        final failedState = _stateForPlaybackMutationFailure(
-          failure,
-          prefix: 'Command failed',
-          affectsPlaybackStart: _isQuotaConsumingPlaybackCommand(event.command),
-        );
-        emit(state.copyWith(
-          errorMessage: failedState.errorMessage,
-          playbackBlockedMessage: failedState.playbackBlockedMessage,
-          playbackBlockedBrandId: failedState.playbackBlockedBrandId,
-        ));
-      },
-      (_) {
-        _traceLog(
-          'API_COMMAND_ACK '
-          'spaceId=${state.spaceId ?? '-'} '
-          'command=${event.command.name}',
-        );
-        if (_isQuotaConsumingPlaybackCommand(event.command)) {
-          emit(state.copyWith(clearPlaybackBlock: true));
-        }
-      },
+      result.fold(
+        (failure) {
+          _traceLog(
+            'API_COMMAND_FAIL '
+            'spaceId=${state.spaceId ?? '-'} '
+            'command=${event.command.name} '
+            '${_describeFailure(failure)}',
+          );
+          final failedState = _stateForPlaybackMutationFailure(
+            failure,
+            prefix: 'Command failed',
+            affectsPlaybackStart:
+                _isQuotaConsumingPlaybackCommand(event.command),
+          );
+          emit(state.copyWith(
+            errorMessage: failedState.errorMessage,
+            playbackBlockedMessage: failedState.playbackBlockedMessage,
+            playbackBlockedBrandId: failedState.playbackBlockedBrandId,
+            playbackMutationBlockedMessage:
+                failedState.playbackMutationBlockedMessage,
+            failedPlaybackCommand: event.command,
+            failedSeekPositionSeconds: event.seekPositionSeconds,
+            playbackCommandFailureSequence:
+                state.playbackCommandFailureSequence + 1,
+          ));
+        },
+        (_) {
+          _traceLog(
+            'API_COMMAND_ACK '
+            'spaceId=${state.spaceId ?? '-'} '
+            'command=${event.command.name}',
+          );
+          if (_isQuotaConsumingPlaybackCommand(event.command)) {
+            emit(state.copyWith(clearPlaybackBlock: true));
+          }
+        },
+      );
+    } finally {
+      _playbackCommandInFlight = false;
+      _traceLog(
+        'API_COMMAND_IN_FLIGHT_END '
+        'spaceId=${state.spaceId ?? '-'} '
+        'command=${event.command.name} '
+        'queuedPriority=${_queuedPriorityCommand?.command.name ?? '-'} '
+        'queuedSeek=${_queuedSeekCommand?.seekPositionSeconds?.toStringAsFixed(2) ?? '-'} '
+        'remotePaused=${state.playbackState?.isPaused} '
+        'remoteSeek=${state.playbackState?.effectiveSeekOffset.toStringAsFixed(2) ?? '-'}',
+      );
+      emit(state.copyWith(
+        isPlaybackCommandInFlight: false,
+        clearInFlightPlaybackCommand: true,
+      ));
+      _dispatchQueuedSeekCommandIfNeeded();
+    }
+  }
+
+  bool _shouldQueueLatestSeekCommand(CamsSendCommand event) {
+    return _shouldPersistSeekPosition(event.command) &&
+        event.seekPositionSeconds != null;
+  }
+
+  void _dispatchQueuedSeekCommandIfNeeded() {
+    final queuedPriorityCommand = _queuedPriorityCommand;
+    if (queuedPriorityCommand != null) {
+      _queuedPriorityCommand = null;
+      _queuedSeekCommand = null;
+      _traceLog(
+        'API_COMMAND_DISPATCH_QUEUED_PRIORITY '
+        'spaceId=${state.spaceId ?? '-'} '
+        'command=${queuedPriorityCommand.command.name} '
+        'targetQueueItemId=${queuedPriorityCommand.targetQueueItemId ?? '-'}',
+      );
+      add(queuedPriorityCommand);
+      return;
+    }
+
+    final queuedSeekCommand = _queuedSeekCommand;
+    if (queuedSeekCommand == null) return;
+    _queuedSeekCommand = null;
+    _traceLog(
+      'API_COMMAND_DISPATCH_QUEUED_SEEK '
+      'spaceId=${state.spaceId ?? '-'} '
+      'seek=${queuedSeekCommand.seekPositionSeconds?.toStringAsFixed(2) ?? '-'}',
     );
+    add(queuedSeekCommand);
   }
 
   void _onPreviousTapped(
@@ -585,21 +714,58 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
         _lastPreviousTapAtUtc != null &&
         _lastPreviousTapIdentity == currentIdentity &&
         nowUtc.difference(_lastPreviousTapAtUtc!) <= _previousTapJumpThreshold;
+    final previousTapAgeMs = _lastPreviousTapAtUtc == null
+        ? -1
+        : nowUtc.difference(_lastPreviousTapAtUtc!).inMilliseconds;
+    _traceLog(
+      'PREVIOUS_TAP_DECISION '
+      'spaceId=${state.spaceId ?? '-'} '
+      'currentQueueItem=${playbackState.effectiveQueueItemId ?? '-'} '
+      'currentTrack=${playbackState.currentDisplayName ?? '-'} '
+      'previousQueueItem=${previousQueueItem?.queueItemId ?? '-'} '
+      'previousTrack=${previousQueueItem?.trackName ?? '-'} '
+      'lastTapAgeMs=$previousTapAgeMs '
+      'identityMatched=${_lastPreviousTapIdentity == currentIdentity} '
+      'inFlight=$_playbackCommandInFlight '
+      'shouldJumpToPrevious=$shouldJumpToPrevious',
+    );
 
     if (shouldJumpToPrevious) {
       _lastPreviousTapAtUtc = null;
       _lastPreviousTapIdentity = null;
-      add(
-        CamsSendCommand(
-          command: PlaybackCommandEnum.skipToTrack,
-          targetQueueItemId: previousQueueItem.queueItemId,
-        ),
+      final jumpCommand = CamsSendCommand(
+        command: PlaybackCommandEnum.skipToTrack,
+        targetQueueItemId: previousQueueItem.queueItemId,
       );
+      if (_playbackCommandInFlight) {
+        _queuedPriorityCommand = jumpCommand;
+        _queuedSeekCommand = null;
+        _traceLog(
+          'PREVIOUS_TAP_QUEUED_TRACK_JUMP '
+          'spaceId=${state.spaceId ?? '-'} '
+          'targetQueueItemId=${previousQueueItem.queueItemId} '
+          'inFlight=${state.inFlightPlaybackCommand?.name ?? '-'}',
+        );
+        return;
+      }
+      _traceLog(
+        'PREVIOUS_TAP_DISPATCH_TRACK_JUMP '
+        'spaceId=${state.spaceId ?? '-'} '
+        'targetQueueItemId=${previousQueueItem.queueItemId} '
+        'targetTrack=${previousQueueItem.trackName ?? '-'}',
+      );
+      add(jumpCommand);
       return;
     }
 
     _lastPreviousTapAtUtc = nowUtc;
     _lastPreviousTapIdentity = currentIdentity;
+    _traceLog(
+      'PREVIOUS_TAP_DISPATCH_RESTART '
+      'spaceId=${state.spaceId ?? '-'} '
+      'currentQueueItem=${playbackState.effectiveQueueItemId ?? '-'} '
+      'seek=${_minimumRemoteRestartSeekSeconds.toStringAsFixed(3)}',
+    );
     add(
       const CamsSendCommand(
         command: PlaybackCommandEnum.seek,
@@ -657,6 +823,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
       isIotDeviceOffline: currentPlayback?.isIotDeviceOffline ?? false,
       isMuted: currentPlayback?.isMuted ?? false,
       queueEndBehavior: currentPlayback?.queueEndBehavior ?? 0,
+      governanceMode: currentPlayback?.governanceMode,
       spaceQueueItems: currentPlayback?.spaceQueueItems ?? const [],
       explainability: currentPlayback?.explainability,
     );
@@ -734,7 +901,10 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
       status: CamsStatus.idle,
       playbackState: activeSpaceId == null
           ? null
-          : SpacePlaybackState(spaceId: activeSpaceId),
+          : SpacePlaybackState(
+              spaceId: activeSpaceId,
+              governanceMode: state.playbackState?.governanceMode,
+            ),
       clearOverrideResponse: true,
       clearPendingTrackJump: true,
       clearLastCommand: true,
@@ -816,11 +986,32 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     }
 
     _debugLog('runtimeState ${_describePlaybackState(playbackState)}');
+    final previousPlaybackState = state.playbackState;
+    final previousQueueItemId = previousPlaybackState?.effectiveQueueItemId;
+    final nextQueueItemId = playbackState.effectiveQueueItemId;
+    if (previousQueueItemId != nextQueueItemId ||
+        state.isPlaybackCommandInFlight ||
+        state.inFlightPlaybackCommand != null) {
+      _traceLog(
+        'BLOC_RUNTIME_STATE_APPLY '
+        'spaceId=${playbackState.spaceId} '
+        'inFlight=${state.inFlightPlaybackCommand?.name ?? '-'} '
+        'previousQueueItem=${previousQueueItemId ?? '-'} '
+        'nextQueueItem=${nextQueueItemId ?? '-'} '
+        'previousTrack=${previousPlaybackState?.currentDisplayName ?? '-'} '
+        'nextTrack=${playbackState.currentDisplayName ?? '-'} '
+        'nextPaused=${playbackState.isPaused} '
+        'nextSeek=${playbackState.effectiveSeekOffset.toStringAsFixed(2)}',
+      );
+    }
     final blockedBrandId = state.playbackBlockedBrandId;
     final incomingBrandId = playbackState.brandId;
     final shouldClearPlaybackBlock = blockedBrandId != null &&
         incomingBrandId != null &&
         blockedBrandId.toLowerCase() != incomingBrandId.toLowerCase();
+    final strictSyncBlockMessage = _currentStrictSyncBlockMessage(
+      incomingPlaybackState: playbackState,
+    );
     emit(state.copyWith(
       status: (playbackState.isStreaming || playbackState.hasPendingPlayback)
           ? CamsStatus.active
@@ -832,6 +1023,11 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
       isHubConnected: isHubConnected,
       clearError: true,
       clearPlaybackBlock: shouldClearPlaybackBlock,
+      playbackMutationBlockedMessage: strictSyncBlockMessage,
+      clearPlaybackMutationBlock: strictSyncBlockMessage == null &&
+          _shouldClearPlaybackMutationBlock(
+            incomingPlaybackState: playbackState,
+          ),
       clearLastCommand: true,
     ));
   }
@@ -904,6 +1100,15 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     String? targetQueueItemId,
     String? targetTrackId,
   }) {
+    _traceLog(
+      'COMMAND_RELAY_EMIT '
+      'spaceId=${state.spaceId ?? '-'} '
+      'command=${command.name} '
+      'seek=${seekPositionSeconds?.toStringAsFixed(2) ?? '-'} '
+      'targetQueueItemId=${targetQueueItemId ?? '-'} '
+      'targetTrackId=${targetTrackId ?? '-'} '
+      'nextSequence=${state.commandSequence + 1}',
+    );
     emit(state.copyWith(
       lastPlaybackCommand: command,
       lastSeekPositionSeconds:
@@ -940,6 +1145,73 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
         command == PlaybackCommandEnum.trackEnded;
   }
 
+  StoreGovernanceMode? _effectiveGovernanceMode({
+    SpacePlaybackState? incomingPlaybackState,
+  }) {
+    return incomingPlaybackState?.governanceMode ??
+        state.playbackState?.governanceMode ??
+        sessionCubit.state.currentStore?.governanceMode;
+  }
+
+  String? _currentStrictSyncBlockMessage({
+    SpacePlaybackState? incomingPlaybackState,
+  }) {
+    final session = sessionCubit.state;
+    if (session.currentRole == UserRole.brandManager) return null;
+    if (_effectiveGovernanceMode(
+            incomingPlaybackState: incomingPlaybackState) !=
+        StoreGovernanceMode.strictSync) {
+      return null;
+    }
+    return _strictSyncBlockedMessage;
+  }
+
+  bool _shouldClearPlaybackMutationBlock({
+    SpacePlaybackState? incomingPlaybackState,
+  }) {
+    final session = sessionCubit.state;
+    if (session.currentRole == UserRole.brandManager) return true;
+    final governanceMode =
+        _effectiveGovernanceMode(incomingPlaybackState: incomingPlaybackState);
+    return governanceMode != null &&
+        governanceMode != StoreGovernanceMode.strictSync;
+  }
+
+  bool _emitMutationBlockedIfNeeded(
+    Emitter<CamsPlaybackState> emit, {
+    required String action,
+  }) {
+    final message = state.playbackMutationBlockedMessage ??
+        _currentStrictSyncBlockMessage();
+    if (message == null || message.isEmpty) return false;
+
+    _traceLog(
+      'MUTATION_BLOCKED '
+      'spaceId=${state.spaceId ?? '-'} '
+      'action=$action '
+      'message="$message"',
+    );
+    if (state.errorMessage == message) {
+      emit(state.copyWith(clearError: true));
+    }
+    emit(state.copyWith(
+      errorMessage: message,
+      playbackMutationBlockedMessage: message,
+    ));
+    return true;
+  }
+
+  bool _isStrictSyncPlaybackBlock(Failure failure) {
+    final backendCode = failure.backendCode?.trim().toLowerCase();
+    final message = failure.message.trim().toLowerCase();
+    return failure.kind == FailureKind.business &&
+        backendCode == 'businessruleviolation' &&
+        (message.contains('strictsync') ||
+            message.contains('strict sync') ||
+            message.contains('only brandmanager') ||
+            message.contains('only brand manager'));
+  }
+
   CamsPlaybackState _stateForPlaybackMutationFailure(
     Failure failure, {
     bool? isOverriding,
@@ -952,6 +1224,21 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
     final errorMessage = prefix == null || prefix.isEmpty
         ? resolvedDisplayMessage
         : '$prefix: $resolvedDisplayMessage';
+
+    if (_isStrictSyncPlaybackBlock(failure)) {
+      final blockMessage =
+          sessionCubit.state.currentRole == UserRole.brandManager
+              ? resolvedDisplayMessage
+              : _strictSyncBlockedMessage;
+      final blockedErrorMessage = prefix == null || prefix.isEmpty
+          ? blockMessage
+          : '$prefix: $blockMessage';
+      return state.copyWith(
+        isOverriding: isOverriding,
+        errorMessage: blockedErrorMessage,
+        playbackMutationBlockedMessage: blockMessage,
+      );
+    }
 
     if (affectsPlaybackStart && _isBrandWalletPlaybackBlock(failure)) {
       final blockedMessage = _brandPlaybackBlockMessage(failure);
@@ -1071,6 +1358,7 @@ class CamsPlaybackBloc extends Bloc<CamsPlaybackEvent, CamsPlaybackState> {
         'hls=${playbackState.hlsUrl ?? '-'} '
         'manual=${playbackState.isManualOverride} '
         'scheduling=${playbackState.isScheduling} '
+        'governance=${playbackState.governanceMode?.label ?? '-'} '
         'queueCount=${playbackState.spaceQueueItems.length} '
         'queue=[$queuePreview]';
   }

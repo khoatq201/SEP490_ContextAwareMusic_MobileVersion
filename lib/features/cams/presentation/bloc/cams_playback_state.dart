@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import '../../../../core/enums/playback_command_enum.dart';
+import '../../../config_governance/domain/entities/config_governance_enums.dart';
 import '../../../moods/domain/entities/mood.dart';
 import '../../domain/entities/space_playback_state.dart';
 import '../../data/models/override_response_model.dart';
@@ -33,6 +34,9 @@ class CamsPlaybackState extends Equatable {
   /// Brand id associated with the block when the current playback snapshot has it.
   final String? playbackBlockedBrandId;
 
+  /// Space/store mutation block, usually caused by strict sync governance.
+  final String? playbackMutationBlockedMessage;
+
   /// SignalR connection status.
   final bool isHubConnected;
 
@@ -42,6 +46,12 @@ class CamsPlaybackState extends Equatable {
   final String? lastTargetQueueItemId;
   final String? lastTargetTrackId;
   final int commandSequence;
+  final PlaybackCommandEnum? failedPlaybackCommand;
+  final double? failedSeekPositionSeconds;
+  final int playbackCommandFailureSequence;
+  final int audioSettingsFailureSequence;
+  final bool isPlaybackCommandInFlight;
+  final PlaybackCommandEnum? inFlightPlaybackCommand;
   final String? pendingTrackPlaylistId;
   final String? pendingTrackId;
 
@@ -55,12 +65,19 @@ class CamsPlaybackState extends Equatable {
     this.errorMessage,
     this.playbackBlockedMessage,
     this.playbackBlockedBrandId,
+    this.playbackMutationBlockedMessage,
     this.isHubConnected = false,
     this.lastPlaybackCommand,
     this.lastSeekPositionSeconds,
     this.lastTargetQueueItemId,
     this.lastTargetTrackId,
     this.commandSequence = 0,
+    this.failedPlaybackCommand,
+    this.failedSeekPositionSeconds,
+    this.playbackCommandFailureSequence = 0,
+    this.audioSettingsFailureSequence = 0,
+    this.isPlaybackCommandInFlight = false,
+    this.inFlightPlaybackCommand,
     this.pendingTrackPlaylistId,
     this.pendingTrackId,
   });
@@ -97,8 +114,17 @@ class CamsPlaybackState extends Equatable {
 
   bool get hasExplainability => explainability?.hasAnyData ?? false;
 
+  StoreGovernanceMode? get governanceMode => playbackState?.governanceMode;
+
+  bool get isStrictSyncGovernance =>
+      governanceMode == StoreGovernanceMode.strictSync;
+
   bool get isBrandPlaybackBlocked =>
       playbackBlockedMessage != null && playbackBlockedMessage!.isNotEmpty;
+
+  bool get isPlaybackMutationBlocked =>
+      playbackMutationBlockedMessage != null &&
+      playbackMutationBlockedMessage!.isNotEmpty;
 
   CamsPlaybackState copyWith({
     CamsStatus? status,
@@ -110,22 +136,32 @@ class CamsPlaybackState extends Equatable {
     String? errorMessage,
     String? playbackBlockedMessage,
     String? playbackBlockedBrandId,
+    String? playbackMutationBlockedMessage,
     bool? isHubConnected,
     PlaybackCommandEnum? lastPlaybackCommand,
     double? lastSeekPositionSeconds,
     String? lastTargetQueueItemId,
     String? lastTargetTrackId,
     int? commandSequence,
+    PlaybackCommandEnum? failedPlaybackCommand,
+    double? failedSeekPositionSeconds,
+    int? playbackCommandFailureSequence,
+    int? audioSettingsFailureSequence,
+    bool? isPlaybackCommandInFlight,
+    PlaybackCommandEnum? inFlightPlaybackCommand,
     String? pendingTrackPlaylistId,
     String? pendingTrackId,
     bool clearError = false,
     bool clearPlaybackBlock = false,
+    bool clearPlaybackMutationBlock = false,
     bool clearPlaybackState = false,
     bool clearOverrideResponse = false,
     bool clearLastCommand = false,
+    bool clearFailedPlaybackCommand = false,
     bool clearLastSeekPosition = false,
     bool clearLastTargetQueueItemId = false,
     bool clearLastTargetTrackId = false,
+    bool clearInFlightPlaybackCommand = false,
     bool clearPendingTrackJump = false,
   }) {
     return CamsPlaybackState(
@@ -145,6 +181,10 @@ class CamsPlaybackState extends Equatable {
       playbackBlockedBrandId: clearPlaybackBlock
           ? null
           : (playbackBlockedBrandId ?? this.playbackBlockedBrandId),
+      playbackMutationBlockedMessage: clearPlaybackMutationBlock
+          ? null
+          : (playbackMutationBlockedMessage ??
+              this.playbackMutationBlockedMessage),
       isHubConnected: isHubConnected ?? this.isHubConnected,
       lastPlaybackCommand: clearLastCommand
           ? null
@@ -159,6 +199,21 @@ class CamsPlaybackState extends Equatable {
           ? null
           : (lastTargetTrackId ?? this.lastTargetTrackId),
       commandSequence: commandSequence ?? this.commandSequence,
+      failedPlaybackCommand: clearFailedPlaybackCommand
+          ? null
+          : (failedPlaybackCommand ?? this.failedPlaybackCommand),
+      failedSeekPositionSeconds: clearFailedPlaybackCommand
+          ? null
+          : (failedSeekPositionSeconds ?? this.failedSeekPositionSeconds),
+      playbackCommandFailureSequence:
+          playbackCommandFailureSequence ?? this.playbackCommandFailureSequence,
+      audioSettingsFailureSequence:
+          audioSettingsFailureSequence ?? this.audioSettingsFailureSequence,
+      isPlaybackCommandInFlight:
+          isPlaybackCommandInFlight ?? this.isPlaybackCommandInFlight,
+      inFlightPlaybackCommand: clearInFlightPlaybackCommand
+          ? null
+          : (inFlightPlaybackCommand ?? this.inFlightPlaybackCommand),
       pendingTrackPlaylistId: clearPendingTrackJump
           ? null
           : (pendingTrackPlaylistId ?? this.pendingTrackPlaylistId),
@@ -179,12 +234,19 @@ class CamsPlaybackState extends Equatable {
         errorMessage,
         playbackBlockedMessage,
         playbackBlockedBrandId,
+        playbackMutationBlockedMessage,
         isHubConnected,
         lastPlaybackCommand,
         lastSeekPositionSeconds,
         lastTargetQueueItemId,
         lastTargetTrackId,
         commandSequence,
+        failedPlaybackCommand,
+        failedSeekPositionSeconds,
+        playbackCommandFailureSequence,
+        audioSettingsFailureSequence,
+        isPlaybackCommandInFlight,
+        inFlightPlaybackCommand,
         pendingTrackPlaylistId,
         pendingTrackId,
       ];

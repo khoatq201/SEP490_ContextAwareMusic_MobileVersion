@@ -15,11 +15,15 @@ abstract class CamsPlaybackEvent extends Equatable {
 /// Initialize CAMS playback â€” connect SignalR, fetch state & moods.
 class CamsInitPlayback extends CamsPlaybackEvent {
   final String spaceId;
+  final bool preserveExistingPlaybackState;
 
-  const CamsInitPlayback({required this.spaceId});
+  const CamsInitPlayback({
+    required this.spaceId,
+    this.preserveExistingPlaybackState = false,
+  });
 
   @override
-  List<Object?> get props => [spaceId];
+  List<Object?> get props => [spaceId, preserveExistingPlaybackState];
 }
 
 /// Dispose CAMS â€” disconnect SignalR, leave space.

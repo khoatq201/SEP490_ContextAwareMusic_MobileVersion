@@ -27,6 +27,7 @@ import '../../../../features/cams/domain/entities/space_playback_state.dart';
 import '../../../../features/cams/presentation/bloc/cams_playback_bloc.dart';
 import '../../../../features/cams/presentation/bloc/cams_playback_event.dart';
 import '../../../../features/cams/presentation/bloc/cams_playback_state.dart';
+import '../../../../features/config_governance/domain/entities/config_governance_enums.dart';
 import '../../../../features/home/domain/entities/song_entity.dart';
 import '../../../../features/moods/domain/entities/mood.dart';
 import '../models/queue_sheet_view_data.dart';
@@ -110,7 +111,16 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
     context.read<CamsPlaybackBloc>().add(const CamsPreviousTapped());
   }
 
-  bool _isCamsPlaybackLoading(CamsPlaybackState camsState) {
+  bool _isCamsPlaybackLoading(
+    CamsPlaybackState camsState, {
+    ps.PlayerState? playerState,
+  }) {
+    final hasRetainedRemoteIdentity =
+        playerState?.isSyncedCamsPlayback == true &&
+            ((playerState?.currentQueueItemId?.isNotEmpty ?? false) ||
+                (playerState?.hlsUrl?.isNotEmpty ?? false));
+    if (hasRetainedRemoteIdentity) return false;
+
     return camsState.status == CamsStatus.initial ||
         camsState.status == CamsStatus.loading;
   }
@@ -171,6 +181,25 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
     return _defaultRemoteVolumePercent;
   }
 
+  String? _playbackMutationBlockMessage(CamsPlaybackState camsState) {
+    if (camsState.isPlaybackMutationBlocked) {
+      return camsState.playbackMutationBlockedMessage;
+    }
+    if (camsState.isBrandPlaybackBlocked) {
+      return camsState.playbackBlockedMessage;
+    }
+    return null;
+  }
+
+  bool _ensurePlaybackMutationAllowed(BuildContext context) {
+    final message =
+        _playbackMutationBlockMessage(context.read<CamsPlaybackBloc>().state);
+    if (message == null || message.isEmpty) return true;
+
+    AppFeedbackPresenter.show(context, AppFeedback.error(message));
+    return false;
+  }
+
   void _previewLocalVolume(
     BuildContext context, {
     required int volumePercent,
@@ -216,6 +245,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
     BuildContext context, {
     required int requestedVolumePercent,
   }) {
+    if (!_ensurePlaybackMutationAllowed(context)) return;
     final boundedVolume = requestedVolumePercent.clamp(0, 100).toInt();
     if (boundedVolume <= 0) {
       _applyMuteIntent(context, isMuted: true);
@@ -239,6 +269,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
     BuildContext context, {
     required bool isMuted,
   }) {
+    if (!_ensurePlaybackMutationAllowed(context)) return;
     if (isMuted) {
       setState(() {
         _volume = 0;
@@ -302,19 +333,6 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
               positionSeconds: playerState.currentPositionPrecise,
               currentHlsUrl: hlsUrl,
             ));
-          },
-        ),
-        BlocListener<CamsPlaybackBloc, CamsPlaybackState>(
-          listenWhen: (previous, current) =>
-              previous.errorMessage != current.errorMessage &&
-              current.errorMessage != null,
-          listener: (context, camsState) {
-            if (camsState.errorMessage != null) {
-              AppFeedbackPresenter.show(
-                context,
-                AppFeedback.error(camsState.errorMessage!),
-              );
-            }
           },
         ),
       ],
@@ -384,11 +402,22 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
     final useRemoteControls =
         playerState.isSyncedCamsPlayback || camsState.isStreaming;
     final hasPlayableTrack = track != null;
-    final isWaitingForRemoteState =
-        useRemoteControls && _isCamsPlaybackLoading(camsState);
-    final playbackActionsEnabled = hasPlayableTrack && !isWaitingForRemoteState;
+    final isWaitingForRemoteState = useRemoteControls &&
+        _isCamsPlaybackLoading(camsState, playerState: playerState);
+    final isRemoteCommandInFlight =
+        useRemoteControls && camsState.isPlaybackCommandInFlight;
     final isRemotePlaybackBlocked =
         useRemoteControls && camsState.isBrandPlaybackBlocked;
+    final isRemoteMutationBlocked =
+        useRemoteControls && camsState.isPlaybackMutationBlocked;
+    final playbackActionsEnabled = hasPlayableTrack &&
+        !isWaitingForRemoteState &&
+        !isRemoteCommandInFlight &&
+        !isRemoteMutationBlocked;
+    final transportIdentityActionsEnabled = hasPlayableTrack &&
+        !isWaitingForRemoteState &&
+        !isRemotePlaybackBlocked &&
+        !isRemoteMutationBlocked;
     final canPlayPause =
         playbackActionsEnabled && (!isRemotePlaybackBlocked || isPlaying);
     _syncDiscRotation(isPlaying && playbackActionsEnabled);
@@ -411,9 +440,16 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
         playbackState?.explainability?.hasAnyData == true ||
             playbackState?.isManualOverride == true;
     final showIotStatus = camsState.playbackState?.iotStatusLabel != null;
+    final effectiveGovernanceMode = playbackState?.governanceMode ??
+        context.read<SessionCubit>().state.currentStore?.governanceMode;
+    final showStrictSyncTag = useRemoteControls &&
+        (camsState.isPlaybackMutationBlocked ||
+            effectiveGovernanceMode == StoreGovernanceMode.strictSync);
     final trackMoodAccent = _trackMoodAccent(track?.moodTags, palette);
 
-    if (isPlayback && _isCamsPlaybackLoading(camsState) && !hasPlayableTrack) {
+    if (isPlayback &&
+        _isCamsPlaybackLoading(camsState, playerState: playerState) &&
+        !hasPlayableTrack) {
       return _NowPlayingSkeleton(
         palette: palette,
         showTopBar: widget.showTopBar,
@@ -546,12 +582,18 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
                   ),
                 ],
                 if ((showAiInsightButton && playbackState != null) ||
-                    showIotStatus) ...[
+                    showIotStatus ||
+                    showStrictSyncTag) ...[
                   const SizedBox(height: 10),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
                     children: [
+                      if (showStrictSyncTag)
+                        _StrictSyncModeTag(
+                          palette: palette,
+                          message: camsState.playbackMutationBlockedMessage,
+                        ),
                       if (showAiInsightButton && playbackState != null)
                         _AiInsightButton(
                           palette: palette,
@@ -613,8 +655,7 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
                   canChangeQueueEndBehavior:
                       useRemoteControls && camsState.playbackState != null,
                   hasNext: hasNextForControls,
-                  hasPrevious: playbackActionsEnabled &&
-                      !isRemotePlaybackBlocked &&
+                  hasPrevious: transportIdentityActionsEnabled &&
                       (useRemoteControls
                           ? playerState.hasTrack ||
                               (camsState.playbackState?.hasPlayableHls ?? false)
@@ -627,6 +668,18 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
                   },
                   onPlayPause: () {
                     if (useRemoteControls) {
+                      debugPrint(
+                        '[PlaybackUiTrace] PLAY_PAUSE_TAP '
+                        'command=${isPlaying ? PlaybackCommandEnum.pause.name : PlaybackCommandEnum.resume.name} '
+                        'inFlight=${camsState.isPlaybackCommandInFlight} '
+                        'inFlightCommand=${camsState.inFlightPlaybackCommand?.name ?? '-'} '
+                        'playerPlaying=$isPlaying '
+                        'display=${playerState.displayPositionPrecise.toStringAsFixed(2)} '
+                        'current=${playerState.currentPositionPrecise.toStringAsFixed(2)} '
+                        'remotePaused=${camsState.playbackState?.isPaused} '
+                        'remoteSeek=${camsState.playbackState?.effectiveSeekOffset.toStringAsFixed(2) ?? '-'} '
+                        'queueItem=${playerState.currentQueueItemId ?? '-'}',
+                      );
                       context.read<CamsPlaybackBloc>().add(CamsSendCommand(
                             command: isPlaying
                                 ? PlaybackCommandEnum.pause
@@ -691,7 +744,8 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
                     moods: camsState.moods,
                     hasActiveOverride: camsState.hasActiveOverride,
                     isOverriding: camsState.isOverriding,
-                    isPlaybackBlocked: camsState.isBrandPlaybackBlocked,
+                    isPlaybackBlocked: camsState.isBrandPlaybackBlocked ||
+                        camsState.isPlaybackMutationBlocked,
                     isPreparing: camsState.isPreparing,
                     lastOverrideResponse: camsState.lastOverrideResponse,
                     onOpenOverrideSheet: () => _showOverrideMusicSheet(
@@ -708,7 +762,8 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
                   _RuntimeStatusPanel(
                     playbackState: camsState.playbackState!,
                     palette: palette,
-                    isBusy: camsState.isOverriding,
+                    isBusy: camsState.isOverriding ||
+                        camsState.isPlaybackMutationBlocked,
                     onSchedulingChanged: (enabled) =>
                         context.read<CamsPlaybackBloc>().add(
                               CamsUpdateSchedulingState(isScheduling: enabled),
@@ -897,6 +952,19 @@ class _NowPlayingTabPageState extends State<NowPlayingTabPage>
               ),
               const SizedBox(height: 12),
               Divider(color: palette.border, height: 1),
+              _SheetOption(
+                  icon: LucideIcons.refreshCw,
+                  label: 'Refresh playback state',
+                  palette: palette,
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    ctx.read<CamsPlaybackBloc>().add(const CamsRefreshState());
+                    if (!mounted) return;
+                    AppFeedbackPresenter.show(
+                      ctx,
+                      AppFeedback.info('Refreshing playback state.'),
+                    );
+                  }),
               // _SheetOption(
               //     icon: LucideIcons.listMusic,
               //     label: 'Go to playlist',
@@ -1183,6 +1251,25 @@ class _QueueSheetState extends State<_QueueSheet> {
     return _QueueSheet._defaultRemoteVolumePercent;
   }
 
+  String? _queueMutationBlockMessage(CamsPlaybackState camsState) {
+    if (camsState.isPlaybackMutationBlocked) {
+      return camsState.playbackMutationBlockedMessage;
+    }
+    if (camsState.isBrandPlaybackBlocked) {
+      return camsState.playbackBlockedMessage;
+    }
+    return null;
+  }
+
+  bool _ensureQueueMutationAllowed(BuildContext context) {
+    final message =
+        _queueMutationBlockMessage(context.read<CamsPlaybackBloc>().state);
+    if (message == null || message.isEmpty) return true;
+
+    AppFeedbackPresenter.show(context, AppFeedback.error(message));
+    return false;
+  }
+
   void _previewLocalVolume(
     BuildContext context, {
     required int volumePercent,
@@ -1200,6 +1287,7 @@ class _QueueSheetState extends State<_QueueSheet> {
     BuildContext context, {
     required bool isMuted,
   }) {
+    if (!_ensureQueueMutationAllowed(context)) return;
     if (isMuted) {
       _dispatchAudioStatePatch(
         context,
@@ -1224,6 +1312,7 @@ class _QueueSheetState extends State<_QueueSheet> {
     BuildContext context, {
     required int requestedVolumePercent,
   }) {
+    if (!_ensureQueueMutationAllowed(context)) return;
     final boundedVolume = requestedVolumePercent.clamp(0, 100).toInt();
     if (boundedVolume <= 0) {
       _applyMuteIntent(context, isMuted: true);
@@ -1244,6 +1333,7 @@ class _QueueSheetState extends State<_QueueSheet> {
     BuildContext context,
     List<String> queueItemIds,
   ) {
+    if (!_ensureQueueMutationAllowed(context)) return;
     if (queueItemIds.length < 2) return;
     if (queueItemIds.any((id) => id.isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1263,6 +1353,7 @@ class _QueueSheetState extends State<_QueueSheet> {
   }
 
   void _dispatchPlayQueueItem(BuildContext context, QueueSheetItem item) {
+    if (!_ensureQueueMutationAllowed(context)) return;
     if (item.isCurrent) return;
     final queueItemId = item.queueItemId;
     if (queueItemId == null || queueItemId.isEmpty) return;
@@ -1277,6 +1368,7 @@ class _QueueSheetState extends State<_QueueSheet> {
   }
 
   void _dispatchRemoveQueueItem(BuildContext context, QueueSheetItem item) {
+    if (!_ensureQueueMutationAllowed(context)) return;
     final queueItemId = item.queueItemId;
     if (queueItemId == null || queueItemId.isEmpty) return;
 
@@ -1286,6 +1378,7 @@ class _QueueSheetState extends State<_QueueSheet> {
   }
 
   Future<void> _confirmAndClearQueue(BuildContext context) async {
+    if (!_ensureQueueMutationAllowed(context)) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
@@ -1321,6 +1414,7 @@ class _QueueSheetState extends State<_QueueSheet> {
     int? localVolumePercent,
     bool? localIsMuted,
   }) {
+    if (!_ensureQueueMutationAllowed(context)) return;
     context.read<CamsPlaybackBloc>().add(
           CamsUpdateAudioState(
             volumePercent: volumePercent,
@@ -1475,6 +1569,7 @@ class _QueueSheetState extends State<_QueueSheet> {
                               palette: palette,
                               volumePercent: playback.volumePercent,
                               isMuted: playback.isMuted,
+                              enabled: !camsState.isPlaybackMutationBlocked,
                               onToggleMute: (nextMuted) {
                                 _applyMuteIntent(
                                   context,
@@ -1729,6 +1824,7 @@ class _QueueAudioControls extends StatefulWidget {
     required this.palette,
     required this.volumePercent,
     required this.isMuted,
+    required this.enabled,
     required this.onToggleMute,
     required this.onVolumePreviewChanged,
     required this.onVolumeChanged,
@@ -1737,6 +1833,7 @@ class _QueueAudioControls extends StatefulWidget {
   final _NPPalette palette;
   final int volumePercent;
   final bool isMuted;
+  final bool enabled;
   final ValueChanged<bool> onToggleMute;
   final ValueChanged<int> onVolumePreviewChanged;
   final ValueChanged<int> onVolumeChanged;
@@ -1808,19 +1905,23 @@ class _QueueAudioControlsState extends State<_QueueAudioControls> {
                     const BoxConstraints.tightFor(width: 28, height: 28),
                 padding: EdgeInsets.zero,
                 tooltip: widget.isMuted ? 'Unmute' : 'Mute',
-                onPressed: () {
-                  setState(() {
-                    _draftVolumePercent = widget.isMuted
-                        ? widget.volumePercent.clamp(0, 100).toDouble()
-                        : 0;
-                    _isDragging = false;
-                  });
-                  widget.onToggleMute(!widget.isMuted);
-                },
+                onPressed: widget.enabled
+                    ? () {
+                        setState(() {
+                          _draftVolumePercent = widget.isMuted
+                              ? widget.volumePercent.clamp(0, 100).toDouble()
+                              : 0;
+                          _isDragging = false;
+                        });
+                        widget.onToggleMute(!widget.isMuted);
+                      }
+                    : null,
                 icon: Icon(
                   widget.isMuted ? LucideIcons.volumeX : LucideIcons.volume2,
                   size: 16,
-                  color: widget.palette.textMuted,
+                  color: widget.enabled
+                      ? widget.palette.textMuted
+                      : widget.palette.textMuted.withValues(alpha: 0.4),
                 ),
               ),
             ],
@@ -1840,28 +1941,35 @@ class _QueueAudioControlsState extends State<_QueueAudioControls> {
               min: 0,
               max: 100,
               divisions: 20,
-              onChangeStart: (value) {
-                setState(() {
-                  _isDragging = true;
-                  _draftVolumePercent = value.clamp(0.0, 100.0).toDouble();
-                });
-              },
-              onChanged: (value) {
-                final nextValue = value.clamp(0.0, 100.0).toDouble();
-                setState(() {
-                  _draftVolumePercent = nextValue;
-                });
-                widget.onVolumePreviewChanged(nextValue.round());
-              },
-              onChangeEnd: (value) {
-                final roundedVolume =
-                    value.clamp(0.0, 100.0).round().clamp(0, 100).toInt();
-                setState(() {
-                  _isDragging = false;
-                  _draftVolumePercent = roundedVolume.toDouble();
-                });
-                widget.onVolumeChanged(roundedVolume);
-              },
+              onChangeStart: widget.enabled
+                  ? (value) {
+                      setState(() {
+                        _isDragging = true;
+                        _draftVolumePercent =
+                            value.clamp(0.0, 100.0).toDouble();
+                      });
+                    }
+                  : null,
+              onChanged: widget.enabled
+                  ? (value) {
+                      final nextValue = value.clamp(0.0, 100.0).toDouble();
+                      setState(() {
+                        _draftVolumePercent = nextValue;
+                      });
+                      widget.onVolumePreviewChanged(nextValue.round());
+                    }
+                  : null,
+              onChangeEnd: widget.enabled
+                  ? (value) {
+                      final roundedVolume =
+                          value.clamp(0.0, 100.0).round().clamp(0, 100).toInt();
+                      setState(() {
+                        _isDragging = false;
+                        _draftVolumePercent = roundedVolume.toDouble();
+                      });
+                      widget.onVolumeChanged(roundedVolume);
+                    }
+                  : null,
             ),
           ),
         ],
@@ -2168,6 +2276,59 @@ class _BrandPlaybackBlockedBanner extends StatelessWidget {
   }
 }
 
+class _StrictSyncModeTag extends StatelessWidget {
+  const _StrictSyncModeTag({
+    required this.palette,
+    this.message,
+  });
+
+  final _NPPalette palette;
+  final String? message;
+
+  @override
+  Widget build(BuildContext context) {
+    final tooltip = message?.trim().isNotEmpty == true
+        ? message!.trim()
+        : 'Strict Sync is active. Playback controls follow the brand schedule.';
+
+    return Tooltip(
+      message: tooltip,
+      child: Container(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width - 48,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: palette.warning.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: palette.warning.withValues(alpha: 0.34),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(LucideIcons.lock, color: palette.warning, size: 15),
+            const SizedBox(width: 7),
+            Flexible(
+              child: Text(
+                'Strict Sync',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.inter(
+                  color: palette.warning,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _IotStatusNotice extends StatelessWidget {
   const _IotStatusNotice({
     required this.palette,
@@ -2359,9 +2520,6 @@ class _ProgressBar extends StatefulWidget {
 }
 
 class _ProgressBarState extends State<_ProgressBar> {
-  static const Duration _remoteSeekDebounce = Duration(milliseconds: 180);
-
-  Timer? _remoteSeekTimer;
   double? _dragPositionSeconds;
   bool _isDragging = false;
 
@@ -2384,12 +2542,6 @@ class _ProgressBarState extends State<_ProgressBar> {
     }
   }
 
-  @override
-  void dispose() {
-    _remoteSeekTimer?.cancel();
-    super.dispose();
-  }
-
   double _clampSliderPosition(double value) {
     if (widget.duration <= 0) return 0;
     return value.clamp(0.0, widget.duration.toDouble()).toDouble();
@@ -2407,24 +2559,42 @@ class _ProgressBarState extends State<_ProgressBar> {
     final localTargetSeconds =
         _resolveAbsoluteTargetSeconds(sliderPositionSeconds);
     final remoteTargetSeconds = sliderPositionSeconds.round();
+    final playerState = context.read<PlayerBloc>().state;
+    final camsState = context.read<CamsPlaybackBloc>().state;
+    debugPrint(
+      '[PlaybackUiTrace] SEEK_COMMIT '
+      'useRemote=${widget.useRemoteControls} '
+      'inFlight=${camsState.isPlaybackCommandInFlight} '
+      'inFlightCommand=${camsState.inFlightPlaybackCommand?.name ?? '-'} '
+      'slider=${sliderPositionSeconds.toStringAsFixed(2)} '
+      'localTarget=$localTargetSeconds '
+      'remoteTarget=$remoteTargetSeconds '
+      'playerDisplay=${playerState.displayPositionPrecise.toStringAsFixed(2)} '
+      'playerCurrent=${playerState.currentPositionPrecise.toStringAsFixed(2)} '
+      'queueItem=${playerState.currentQueueItemId ?? '-'} '
+      'hls=${playerState.hlsUrl ?? '-'}',
+    );
     context.read<PlayerBloc>().add(
           PlayerSeekRequested(positionSeconds: localTargetSeconds),
         );
 
     if (!widget.useRemoteControls) return;
 
-    _remoteSeekTimer?.cancel();
-    _remoteSeekTimer = Timer(_remoteSeekDebounce, () {
-      if (!mounted) return;
-      // CAMS seek payload targets the current HLS stream position, not the
-      // cumulative queue offset shown in local PlayerState.
-      context.read<CamsPlaybackBloc>().add(
-            CamsSendCommand(
-              command: PlaybackCommandEnum.seek,
-              seekPositionSeconds: remoteTargetSeconds.toDouble(),
-            ),
-          );
-    });
+    final latestCamsState = context.read<CamsPlaybackBloc>().state;
+    debugPrint(
+      '[PlaybackUiTrace] SEEK_REMOTE_SEND '
+      'inFlight=${latestCamsState.isPlaybackCommandInFlight} '
+      'inFlightCommand=${latestCamsState.inFlightPlaybackCommand?.name ?? '-'} '
+      'remoteTarget=$remoteTargetSeconds',
+    );
+    // CAMS seek payload targets the current HLS stream position, not the
+    // cumulative queue offset shown in local PlayerState.
+    context.read<CamsPlaybackBloc>().add(
+          CamsSendCommand(
+            command: PlaybackCommandEnum.seek,
+            seekPositionSeconds: remoteTargetSeconds.toDouble(),
+          ),
+        );
   }
 
   @override
@@ -2459,7 +2629,6 @@ class _ProgressBarState extends State<_ProgressBar> {
             max: widget.duration > 0 ? widget.duration.toDouble() : 1,
             onChangeStart: canSeek
                 ? (value) {
-                    _remoteSeekTimer?.cancel();
                     setState(() {
                       _isDragging = true;
                       _dragPositionSeconds = _clampSliderPosition(value);

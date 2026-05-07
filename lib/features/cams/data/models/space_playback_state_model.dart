@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../../../../core/enums/override_mode_enum.dart';
 import '../../../../core/enums/ai_generation_mode_enum.dart';
 import '../../../../core/enums/scheduling_slot_origin_enum.dart';
+import '../../../config_governance/domain/entities/config_governance_enums.dart';
 import '../../domain/entities/space_playback_state.dart';
 import '../../domain/entities/space_queue_state_item.dart';
 import 'space_queue_state_item_model.dart';
@@ -43,6 +44,7 @@ class SpacePlaybackStateModel extends SpacePlaybackState {
     super.isIotDeviceOffline,
     super.isMuted,
     super.queueEndBehavior,
+    super.governanceMode,
     super.spaceQueueItems,
     super.explainability,
   });
@@ -101,6 +103,7 @@ class SpacePlaybackStateModel extends SpacePlaybackState {
       isIotDeviceOffline: _readBool(json, 'isIotDeviceOffline') ?? false,
       isMuted: _readBool(json, 'isMuted') ?? false,
       queueEndBehavior: _readNum(json, 'queueEndBehavior')?.toInt() ?? 0,
+      governanceMode: _readGovernanceMode(json),
       spaceQueueItems: queueItems.cast<SpaceQueueStateItem>(),
       explainability: _readExplainability(json),
     );
@@ -148,6 +151,22 @@ class SpacePlaybackStateModel extends SpacePlaybackState {
       if (value.toLowerCase() == 'false') return false;
     }
     return null;
+  }
+
+  static StoreGovernanceMode? _readGovernanceMode(
+    Map<String, dynamic> json,
+  ) {
+    final value = _readFirstValue(json, const [
+      'governanceMode',
+      'governentMode',
+      'govermentMode',
+      'governmentMode',
+      'storeGovernanceMode',
+      'spaceGovernanceMode',
+      'effectiveGovernanceMode',
+      'governance.mode',
+    ]);
+    return StoreGovernanceMode.tryParseConfigValue(value?.toString());
   }
 
   static DateTime? _readDateTime(Map<String, dynamic> json, String key) {

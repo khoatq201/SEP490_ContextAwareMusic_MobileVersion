@@ -36,6 +36,7 @@ import 'package:cams_store_manager/features/cams/domain/usecases/update_scheduli
 import 'package:cams_store_manager/features/cams/presentation/bloc/cams_playback_bloc.dart';
 import 'package:cams_store_manager/features/cams/presentation/bloc/cams_playback_event.dart';
 import 'package:cams_store_manager/features/cams/presentation/bloc/cams_playback_state.dart';
+import 'package:cams_store_manager/features/config_governance/domain/entities/config_governance_enums.dart';
 import 'package:cams_store_manager/features/moods/data/repositories/mood_repository_impl.dart';
 import 'package:cams_store_manager/features/moods/domain/entities/mood.dart';
 import 'package:cams_store_manager/features/moods/domain/usecases/get_moods.dart';
@@ -654,8 +655,7 @@ void main() {
       expect(bloc.state.playbackState?.currentTrackName, 'Track A');
     });
 
-    test('waits for SpaceStateSync after skipNext and ignores command echo',
-        () async {
+    test('does not infer skipNext target from cached queue', () async {
       const playbackState = SpacePlaybackState(
         spaceId: 'space-1',
         currentQueueItemId: 'queue-1',
@@ -770,6 +770,99 @@ void main() {
       expect(bloc.state.playbackState?.currentTrackName, 'Track Two');
     });
 
+    test('releases unconfirmed track jump when backend keeps another track',
+        () async {
+      const playbackState = SpacePlaybackState(
+        spaceId: 'space-1',
+        currentQueueItemId: 'queue-1',
+        currentTrackName: 'Track One',
+        hlsUrl: 'https://stream.example.com/t1.m3u8',
+        spaceQueueItems: [
+          SpaceQueueStateItem(
+            queueItemId: 'queue-1',
+            trackId: 'track-1',
+            trackName: 'Track One',
+            position: 1,
+            queueStatus: SpacePlaybackState.queueStatusPlaying,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/t1.m3u8',
+            isReadyToStream: true,
+          ),
+          SpaceQueueStateItem(
+            queueItemId: 'queue-2',
+            trackId: 'track-2',
+            trackName: 'Track Two',
+            position: 2,
+            queueStatus: SpacePlaybackState.queueStatusPending,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/t2.m3u8',
+            isReadyToStream: true,
+          ),
+        ],
+      );
+      const backendStillOnFirst = SpacePlaybackStateModel(
+        spaceId: 'space-1',
+        currentQueueItemId: 'queue-1',
+        currentTrackName: 'Track One',
+        hlsUrl: 'https://stream.example.com/t1.m3u8',
+        spaceQueueItems: [
+          SpaceQueueStateItem(
+            queueItemId: 'queue-1',
+            trackId: 'track-1',
+            trackName: 'Track One',
+            position: 1,
+            queueStatus: SpacePlaybackState.queueStatusPlaying,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/t1.m3u8',
+            isReadyToStream: true,
+          ),
+          SpaceQueueStateItem(
+            queueItemId: 'queue-2',
+            trackId: 'track-2',
+            trackName: 'Track Two',
+            position: 2,
+            queueStatus: SpacePlaybackState.queueStatusPending,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/t2.m3u8',
+            isReadyToStream: true,
+          ),
+        ],
+      );
+      repository.getSpaceStateResult = const Right(playbackState);
+      await _initBloc(bloc);
+      await _waitUntil(
+        () => bloc.state.playbackState?.currentQueueItemId == 'queue-1',
+      );
+
+      bloc.add(const CamsSendCommand(
+        command: PlaybackCommandEnum.skipToTrack,
+        targetQueueItemId: 'queue-2',
+      ));
+      await _waitUntil(
+        () =>
+            repository.lastSendCommandRequest?.command ==
+            PlaybackCommandEnum.skipToTrack,
+      );
+      await _waitUntil(
+        () => bloc.state.playbackState?.currentQueueItemId == 'queue-2',
+      );
+
+      storeHubService.emitStateSync(backendStillOnFirst);
+      await _nextTick();
+
+      expect(bloc.state.playbackState?.currentQueueItemId, 'queue-2');
+      expect(bloc.state.playbackState?.currentTrackName, 'Track Two');
+
+      await Future<void>.delayed(const Duration(milliseconds: 1600));
+      storeHubService.emitStateSync(backendStillOnFirst);
+      await _waitUntil(
+        () => bloc.state.playbackState?.currentQueueItemId == 'queue-1',
+      );
+
+      expect(bloc.state.playbackState?.currentQueueItemId, 'queue-1');
+      expect(bloc.state.playbackState?.currentTrackName, 'Track One');
+    });
+
     test('preserves full queue when post-next refresh returns partial queue',
         () async {
       const initialState = SpacePlaybackState(
@@ -825,7 +918,8 @@ void main() {
           hlsUrl: 'https://stream.example.com/t2.m3u8',
         ),
       );
-      repository.getQueueResult = const Right([]);
+      repository.getQueueResult =
+          const Left(ServerFailure('Queue unavailable'));
 
       bloc.add(const CamsRefreshState());
       await _waitUntil(
@@ -838,6 +932,166 @@ void main() {
             .map((item) => item.queueItemId)
             .toList(),
         ['queue-1', 'queue-2', 'queue-3'],
+      );
+    });
+
+    test('accepts hydrated empty queue over stale cached queue', () async {
+      const initialState = SpacePlaybackState(
+        spaceId: 'space-1',
+        currentQueueItemId: 'queue-1',
+        currentTrackName: 'Track One',
+        hlsUrl: 'https://stream.example.com/t1.m3u8',
+        spaceQueueItems: [
+          SpaceQueueStateItem(
+            queueItemId: 'queue-1',
+            trackId: 'track-1',
+            trackName: 'Track One',
+            position: 1,
+            queueStatus: SpacePlaybackState.queueStatusPlaying,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/t1.m3u8',
+            isReadyToStream: true,
+          ),
+          SpaceQueueStateItem(
+            queueItemId: 'queue-2',
+            trackId: 'track-2',
+            trackName: 'Track Two',
+            position: 2,
+            queueStatus: SpacePlaybackState.queueStatusPending,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/t2.m3u8',
+            isReadyToStream: true,
+          ),
+        ],
+      );
+
+      repository.getSpaceStateResult = const Right(initialState);
+      await _initBloc(bloc);
+      await _waitUntil(
+        () => bloc.state.playbackState?.spaceQueueItems.length == 2,
+      );
+
+      repository.getSpaceStateResult = const Right(
+        SpacePlaybackState(
+          spaceId: 'space-1',
+          currentQueueItemId: 'queue-1',
+          currentTrackName: 'Track One',
+          hlsUrl: 'https://stream.example.com/t1.m3u8',
+        ),
+      );
+      repository.getQueueResult = const Right([]);
+
+      bloc.add(const CamsRefreshState());
+      await _waitUntil(() => repository.getQueueCallCount >= 1);
+      await _nextTick();
+
+      expect(bloc.state.playbackState?.spaceQueueItems, isEmpty);
+      expect(bloc.state.playbackState?.currentQueueItemId, 'queue-1');
+      expect(bloc.state.playbackState?.currentTrackName, 'Track One');
+    });
+
+    test('accepts hydrated changed queue over stale cached queue', () async {
+      const initialState = SpacePlaybackState(
+        spaceId: 'space-1',
+        currentQueueItemId: 'queue-1',
+        currentTrackName: 'Track One',
+        hlsUrl: 'https://stream.example.com/t1.m3u8',
+        spaceQueueItems: [
+          SpaceQueueStateItem(
+            queueItemId: 'queue-1',
+            trackId: 'track-1',
+            trackName: 'Track One',
+            position: 1,
+            queueStatus: SpacePlaybackState.queueStatusPlaying,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/t1.m3u8',
+            isReadyToStream: true,
+          ),
+          SpaceQueueStateItem(
+            queueItemId: 'queue-stale-2',
+            trackId: 'track-stale-2',
+            trackName: 'Stale Two',
+            position: 2,
+            queueStatus: SpacePlaybackState.queueStatusPending,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/stale-2.m3u8',
+            isReadyToStream: true,
+          ),
+          SpaceQueueStateItem(
+            queueItemId: 'queue-stale-3',
+            trackId: 'track-stale-3',
+            trackName: 'Stale Three',
+            position: 3,
+            queueStatus: SpacePlaybackState.queueStatusPending,
+            source: 1,
+            hlsUrl: 'https://stream.example.com/stale-3.m3u8',
+            isReadyToStream: true,
+          ),
+        ],
+      );
+
+      repository.getSpaceStateResult = const Right(initialState);
+      await _initBloc(bloc);
+      await _waitUntil(
+        () => bloc.state.playbackState?.spaceQueueItems.length == 3,
+      );
+
+      repository.getSpaceStateResult = const Right(
+        SpacePlaybackState(
+          spaceId: 'space-1',
+          currentQueueItemId: 'queue-1',
+          currentTrackName: 'Track One',
+          hlsUrl: 'https://stream.example.com/t1.m3u8',
+          spaceQueueItems: [
+            SpaceQueueStateItem(
+              queueItemId: 'queue-1',
+              trackId: 'track-1',
+              trackName: 'Track One',
+              position: 1,
+              queueStatus: SpacePlaybackState.queueStatusPlaying,
+              source: 1,
+              hlsUrl: 'https://stream.example.com/t1.m3u8',
+              isReadyToStream: true,
+            ),
+          ],
+        ),
+      );
+      repository.getQueueResult = const Right([
+        SpaceQueueStateItem(
+          queueItemId: 'queue-1',
+          trackId: 'track-1',
+          trackName: 'Track One',
+          position: 1,
+          queueStatus: SpacePlaybackState.queueStatusPlaying,
+          source: 1,
+          hlsUrl: 'https://stream.example.com/t1.m3u8',
+          isReadyToStream: true,
+        ),
+        SpaceQueueStateItem(
+          queueItemId: 'queue-ai-2',
+          trackId: 'track-ai-2',
+          trackName: 'AI Two',
+          position: 2,
+          queueStatus: SpacePlaybackState.queueStatusPending,
+          source: 2,
+          hlsUrl: 'https://stream.example.com/ai-2.m3u8',
+          isReadyToStream: true,
+        ),
+      ]);
+
+      bloc.add(const CamsRefreshState());
+      await _waitUntil(
+        () =>
+            bloc.state.playbackState?.spaceQueueItems.length == 2 &&
+            bloc.state.playbackState?.spaceQueueItems.last.queueItemId ==
+                'queue-ai-2',
+      );
+
+      expect(
+        bloc.state.playbackState?.spaceQueueItems
+            .map((item) => item.queueItemId)
+            .toList(),
+        ['queue-1', 'queue-ai-2'],
       );
     });
 
@@ -986,7 +1240,7 @@ void main() {
       );
     });
 
-    test('waits for authoritative sync for targeted previous jump', () async {
+    test('holds local targeted previous jump across stale sync', () async {
       const playbackState = SpacePlaybackState(
         spaceId: 'space-1',
         currentQueueItemId: 'queue-2',
@@ -1042,11 +1296,47 @@ void main() {
         repository.lastSendCommandRequest?.targetQueueItemId,
         'queue-1',
       );
+      expect(bloc.state.commandSequence, relaySequenceAfterRestart);
+      await _waitUntil(
+        () => bloc.state.playbackState?.currentQueueItemId == 'queue-1',
+      );
+      expect(bloc.state.playbackState?.currentQueueItemId, 'queue-1');
+      expect(bloc.state.playbackState?.currentTrackName, 'Track One');
+
+      storeHubService.emitStateSync(
+        const SpacePlaybackStateModel(
+          spaceId: 'space-1',
+          currentQueueItemId: 'queue-1',
+          currentTrackName: 'Track One',
+          hlsUrl: 'https://stream.example.com/t1.m3u8',
+          spaceQueueItems: [
+            SpaceQueueStateItem(
+              queueItemId: 'queue-1',
+              trackId: 'track-1',
+              trackName: 'Track One',
+              position: 1,
+              queueStatus: SpacePlaybackState.queueStatusPlaying,
+              source: 1,
+              hlsUrl: 'https://stream.example.com/t1.m3u8',
+              isReadyToStream: true,
+            ),
+            SpaceQueueStateItem(
+              queueItemId: 'queue-2',
+              trackId: 'track-2',
+              trackName: 'Track Two',
+              position: 2,
+              queueStatus: SpacePlaybackState.queueStatusPending,
+              source: 1,
+              hlsUrl: 'https://stream.example.com/t2.m3u8',
+              isReadyToStream: true,
+            ),
+          ],
+        ),
+      );
       await _nextTick();
 
-      expect(bloc.state.commandSequence, relaySequenceAfterRestart);
-      expect(bloc.state.playbackState?.currentQueueItemId, 'queue-2');
-      expect(bloc.state.playbackState?.currentTrackName, 'Track Two');
+      expect(bloc.state.playbackState?.currentQueueItemId, 'queue-1');
+      expect(bloc.state.playbackState?.currentTrackName, 'Track One');
 
       storeHubService.emitStateSync(
         const SpacePlaybackStateModel(
@@ -1080,8 +1370,8 @@ void main() {
       );
       await _nextTick();
 
-      expect(bloc.state.playbackState?.currentQueueItemId, 'queue-2');
-      expect(bloc.state.playbackState?.currentTrackName, 'Track Two');
+      expect(bloc.state.playbackState?.currentQueueItemId, 'queue-1');
+      expect(bloc.state.playbackState?.currentTrackName, 'Track One');
 
       storeHubService.emitStateSync(
         const SpacePlaybackStateModel(
@@ -1144,6 +1434,214 @@ void main() {
 
       sendCommandCompleter.complete(const Right(null));
       await _nextTick();
+    });
+
+    test('drops transport commands while a playback command is in flight',
+        () async {
+      await _initBloc(bloc);
+
+      final sendCommandCompleter = Completer<Either<Failure, void>>();
+      repository.sendCommandCompleter = sendCommandCompleter;
+
+      bloc.add(const CamsSendCommand(command: PlaybackCommandEnum.pause));
+      await _waitUntil(() => bloc.state.isPlaybackCommandInFlight);
+
+      bloc.add(const CamsSendCommand(command: PlaybackCommandEnum.resume));
+      await _nextTick();
+
+      expect(repository.sendCommandCallCount, 1);
+      expect(
+        repository.lastSendCommandRequest?.command,
+        PlaybackCommandEnum.pause,
+      );
+
+      sendCommandCompleter.complete(const Right(null));
+      await _waitUntil(() => !bloc.state.isPlaybackCommandInFlight);
+
+      expect(repository.sendCommandCallCount, 1);
+    });
+
+    test('coalesces seek spam to the latest seek after acknowledgement',
+        () async {
+      await _initBloc(bloc);
+
+      final sendCommandCompleter = Completer<Either<Failure, void>>();
+      repository.sendCommandCompleter = sendCommandCompleter;
+
+      bloc.add(const CamsSendCommand(
+        command: PlaybackCommandEnum.seek,
+        seekPositionSeconds: 10,
+      ));
+      await _waitUntil(() => bloc.state.isPlaybackCommandInFlight);
+
+      bloc.add(const CamsSendCommand(
+        command: PlaybackCommandEnum.seek,
+        seekPositionSeconds: 20,
+      ));
+      bloc.add(const CamsSendCommand(
+        command: PlaybackCommandEnum.seek,
+        seekPositionSeconds: 30,
+      ));
+      await _nextTick();
+
+      expect(repository.sendCommandCallCount, 1);
+      expect(repository.lastSendCommandRequest?.seekPositionSeconds, 10);
+
+      sendCommandCompleter.complete(const Right(null));
+      await _waitUntil(
+        () =>
+            repository.sendCommandCallCount == 2 &&
+            !bloc.state.isPlaybackCommandInFlight,
+      );
+
+      expect(
+        repository.lastSendCommandRequest?.command,
+        PlaybackCommandEnum.seek,
+      );
+      expect(repository.lastSendCommandRequest?.seekPositionSeconds, 30);
+    });
+
+    test('marks failed optimistic playback command for rollback', () async {
+      await _initBloc(bloc);
+
+      repository.sendCommandResult = const Left(ServerFailure(
+        'StrictSync mode is active. Only BrandManager can modify space state or scheduling.',
+        FailureKind.business,
+        'BusinessRuleViolation',
+        422,
+        null,
+        false,
+      ));
+
+      bloc.add(const CamsSendCommand(
+        command: PlaybackCommandEnum.seek,
+        seekPositionSeconds: 87,
+      ));
+
+      await _waitUntil(
+        () =>
+            !bloc.state.isPlaybackCommandInFlight &&
+            bloc.state.playbackCommandFailureSequence == 1,
+      );
+
+      expect(bloc.state.failedPlaybackCommand, PlaybackCommandEnum.seek);
+      expect(bloc.state.failedSeekPositionSeconds, 87);
+      expect(bloc.state.isPlaybackMutationBlocked, isTrue);
+      expect(bloc.state.errorMessage, contains('Strict Sync mode is active'));
+    });
+
+    test('strict sync governance blocks playback mutations before API calls',
+        () async {
+      sessionCubit.changeStore(const Store(
+        id: 'store-1',
+        name: 'Store 1',
+        brandId: 'brand-1',
+        governanceMode: StoreGovernanceMode.strictSync,
+      ));
+      sessionCubit.changeSpace(const Space(
+        id: 'space-1',
+        name: 'Space 1',
+        storeId: 'store-1',
+        type: SpaceTypeEnum.hall,
+        status: EntityStatusEnum.active,
+      ));
+
+      await _initBloc(bloc);
+
+      bloc.add(const CamsSendCommand(command: PlaybackCommandEnum.pause));
+      bloc.add(const CamsUpdateAudioState(isMuted: true));
+      bloc.add(const CamsPlayTrack(trackId: 'track-1'));
+      await _nextTick();
+
+      expect(repository.sendCommandCallCount, 0);
+      expect(repository.lastUpdateAudioStateRequest, isNull);
+      expect(repository.lastQueueTracksRequest, isNull);
+      expect(bloc.state.isPlaybackMutationBlocked, isTrue);
+      expect(bloc.state.errorMessage, contains('Strict Sync mode is active'));
+    });
+
+    test('space state governance mode blocks playback mutations', () async {
+      repository.getSpaceStateResult = const Right(SpacePlaybackState(
+        spaceId: 'space-1',
+        governanceMode: StoreGovernanceMode.strictSync,
+      ));
+
+      await _initBloc(bloc);
+
+      bloc.add(const CamsSendCommand(command: PlaybackCommandEnum.pause));
+      await _nextTick();
+
+      expect(repository.sendCommandCallCount, 0);
+      expect(bloc.state.playbackState?.governanceMode,
+          StoreGovernanceMode.strictSync);
+      expect(bloc.state.isPlaybackMutationBlocked, isTrue);
+      expect(bloc.state.errorMessage, contains('Strict Sync mode is active'));
+    });
+
+    test('refreshed freedom governance clears stale strict sync block',
+        () async {
+      sessionCubit.changeStore(const Store(
+        id: 'store-1',
+        name: 'Store 1',
+        brandId: 'brand-1',
+        governanceMode: StoreGovernanceMode.strictSync,
+      ));
+      sessionCubit.changeSpace(const Space(
+        id: 'space-1',
+        name: 'Space 1',
+        storeId: 'store-1',
+        type: SpaceTypeEnum.hall,
+        status: EntityStatusEnum.active,
+      ));
+      repository.queueSpaceStateResults(const [
+        Right(SpacePlaybackState(
+          spaceId: 'space-1',
+          governanceMode: StoreGovernanceMode.strictSync,
+        )),
+        Right(SpacePlaybackState(
+          spaceId: 'space-1',
+          governanceMode: StoreGovernanceMode.freedom,
+        )),
+      ]);
+
+      await _initBloc(bloc);
+
+      expect(bloc.state.isPlaybackMutationBlocked, isTrue);
+
+      bloc.add(const CamsRefreshState());
+      await _waitUntil(
+        () =>
+            bloc.state.playbackState?.governanceMode ==
+            StoreGovernanceMode.freedom,
+      );
+
+      expect(bloc.state.isPlaybackMutationBlocked, isFalse);
+
+      bloc.add(const CamsSendCommand(command: PlaybackCommandEnum.pause));
+      await _waitUntil(() => repository.sendCommandCallCount == 1);
+
+      expect(repository.lastSendCommandRequest?.command,
+          PlaybackCommandEnum.pause);
+    });
+
+    test('failed audio setting update requests local audio rollback', () async {
+      await _initBloc(bloc);
+
+      repository.updateAudioStateResult = const Left(ServerFailure(
+        'StrictSync mode is active. Only BrandManager can modify space state or scheduling.',
+        FailureKind.business,
+        'BusinessRuleViolation',
+        422,
+        null,
+        false,
+      ));
+
+      bloc.add(const CamsUpdateAudioState(isMuted: true));
+      await _waitUntil(() => bloc.state.audioSettingsFailureSequence == 1);
+
+      expect(repository.lastUpdateAudioStateRequest?.isMuted, isTrue);
+      expect(bloc.state.isPlaybackMutationBlocked, isTrue);
+      expect(bloc.state.errorMessage, contains('Strict Sync mode is active'));
     });
 
     test('seek command clears stale target ids from command relay', () async {
@@ -1672,6 +2170,7 @@ class _FakeCamsRepository implements CamsRepository {
   Either<Failure, void> queuePlaylistResult = const Right(null);
   Either<Failure, void> queueTracksResult = const Right(null);
   Either<Failure, void> sendCommandResult = const Right(null);
+  Either<Failure, void> updateAudioStateResult = const Right(null);
   Completer<Either<Failure, void>>? sendCommandCompleter;
   Either<Failure, void> cancelOverrideResult = const Right(null);
   Either<Failure, List<SpaceQueueStateItem>> getQueueResult = const Right([]);
@@ -1690,6 +2189,7 @@ class _FakeCamsRepository implements CamsRepository {
   _UpdateSchedulingStateRequest? lastUpdateSchedulingStateRequest;
   Either<Failure, void> updateSchedulingStateResult = const Right(null);
   int getSpaceStateCallCount = 0;
+  int sendCommandCallCount = 0;
   int getQueueCallCount = 0;
   int cancelOverrideCallCount = 0;
   int clearQueueCallCount = 0;
@@ -1804,6 +2304,7 @@ class _FakeCamsRepository implements CamsRepository {
     String? targetTrackId,
     bool usePlaybackDeviceScope = false,
   }) async {
+    sendCommandCallCount += 1;
     lastSendCommandRequest = _SendPlaybackCommandRequest(
       spaceId: spaceId,
       command: command,
@@ -1835,6 +2336,10 @@ class _FakeCamsRepository implements CamsRepository {
       queueEndBehavior: queueEndBehavior,
       usePlaybackDeviceScope: usePlaybackDeviceScope,
     );
+    final configuredResult = updateAudioStateResult;
+    if (configuredResult.isLeft()) {
+      return configuredResult;
+    }
     getSpaceStateResult = getSpaceStateResult.fold(
       Left.new,
       (state) => Right(
@@ -1865,7 +2370,7 @@ class _FakeCamsRepository implements CamsRepository {
         ),
       ),
     );
-    return const Right(null);
+    return configuredResult;
   }
 
   @override

@@ -613,6 +613,7 @@ class CamsRemoteDataSourceImpl implements CamsRemoteDataSource {
       isIotDeviceOffline: state.isIotDeviceOffline,
       isMuted: state.isMuted,
       queueEndBehavior: state.queueEndBehavior,
+      governanceMode: state.governanceMode,
       spaceQueueItems: state.spaceQueueItems,
       explainability: state.explainability,
     );

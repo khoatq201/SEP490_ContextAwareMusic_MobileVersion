@@ -46,35 +46,46 @@ class PlaybackNotificationCommand {
 class CamsAudioHandler extends BaseAudioHandler with SeekHandler {
   final StreamController<PlaybackNotificationCommand> _commandController =
       StreamController<PlaybackNotificationCommand>.broadcast();
+  bool _commandsEnabled = true;
 
   Stream<PlaybackNotificationCommand> get commands => _commandController.stream;
 
+  void setCommandsEnabled(bool enabled) {
+    _commandsEnabled = enabled;
+  }
+
+  void _emitCommand(PlaybackNotificationCommand command) {
+    if (!_commandsEnabled) return;
+    _commandController.add(command);
+  }
+
   @override
   Future<void> play() async {
-    _commandController.add(PlaybackNotificationCommand.play);
+    _emitCommand(PlaybackNotificationCommand.play);
   }
 
   @override
   Future<void> pause() async {
-    _commandController.add(PlaybackNotificationCommand.pause);
+    _emitCommand(PlaybackNotificationCommand.pause);
   }
 
   @override
   Future<void> skipToNext() async {
-    _commandController.add(PlaybackNotificationCommand.skipNext);
+    _emitCommand(PlaybackNotificationCommand.skipNext);
   }
 
   @override
   Future<void> skipToPrevious() async {
-    _commandController.add(PlaybackNotificationCommand.skipPrevious);
+    _emitCommand(PlaybackNotificationCommand.skipPrevious);
   }
 
   @override
   Future<void> seek(Duration position) async {
-    _commandController.add(PlaybackNotificationCommand.seek(position));
+    _emitCommand(PlaybackNotificationCommand.seek(position));
   }
 
   Future<void> clearSession() async {
+    setCommandsEnabled(false);
     mediaItem.add(null);
     playbackState.add(PlaybackState(
       controls: [],
@@ -120,6 +131,7 @@ class PlaybackNotificationService {
   Timer? _notificationDebounceTimer;
   app_player.PlayerState _latestState = const app_player.PlayerState();
   bool _isEnabled = false;
+  bool _controlsEnabled = true;
   String? _lastMediaItemSignature;
 
   static Future<PlaybackNotificationService> init({
@@ -156,11 +168,14 @@ class PlaybackNotificationService {
   void syncPlayerState(
     app_player.PlayerState playerState, {
     required bool enabled,
+    bool controlsEnabled = true,
     bool forceMediaItem = false,
     bool immediate = false,
   }) {
     _latestState = playerState;
     _isEnabled = enabled && playerState.hasTrack;
+    _controlsEnabled = _isEnabled && controlsEnabled;
+    _handler.setCommandsEnabled(_controlsEnabled);
     if (!_isEnabled) {
       clear();
       return;
@@ -183,6 +198,7 @@ class PlaybackNotificationService {
 
   Future<void> clear() async {
     _isEnabled = false;
+    _controlsEnabled = false;
     _latestState = const app_player.PlayerState();
     _lastMediaItemSignature = null;
     _notificationDebounceTimer?.cancel();
@@ -231,6 +247,23 @@ class PlaybackNotificationService {
   }
 
   PlaybackState _buildPlaybackState(app_player.PlayerState state) {
+    if (!_controlsEnabled) {
+      return PlaybackState(
+        controls: const [],
+        systemActions: const {},
+        androidCompactActionIndices: const [],
+        processingState: _mapProcessingState(
+          _audioPlayerService.processingState,
+          state,
+        ),
+        playing: state.isPlaying,
+        updatePosition: _notificationPosition(state),
+        bufferedPosition: _audioPlayerService.bufferedPosition,
+        speed: 1.0,
+        queueIndex: state.currentIndex >= 0 ? state.currentIndex : 0,
+      );
+    }
+
     final canSkipPrevious = state.hasPrevious;
     final canSkipNext = state.hasNext;
     final controls = <MediaControl>[

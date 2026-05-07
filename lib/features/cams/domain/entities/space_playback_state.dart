@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 import '../../../../core/enums/ai_generation_mode_enum.dart';
 import '../../../../core/enums/override_mode_enum.dart';
 import '../../../../core/enums/scheduling_slot_origin_enum.dart';
+import '../../../config_governance/domain/entities/config_governance_enums.dart';
 import 'space_queue_state_item.dart';
 
 class SpacePlaybackExplainability extends Equatable {
@@ -230,6 +231,7 @@ class SpacePlaybackState extends Equatable {
   final bool isIotDeviceOffline;
   final bool isMuted;
   final int queueEndBehavior;
+  final StoreGovernanceMode? governanceMode;
 
   /// Full queue snapshot from CAMS.
   final List<SpaceQueueStateItem> spaceQueueItems;
@@ -270,6 +272,7 @@ class SpacePlaybackState extends Equatable {
     this.isIotDeviceOffline = false,
     this.isMuted = false,
     this.queueEndBehavior = 0,
+    this.governanceMode,
     this.spaceQueueItems = const [],
     this.explainability,
   });
@@ -404,8 +407,7 @@ class SpacePlaybackState extends Equatable {
     return null;
   }
 
-  bool get hasIotWarning =>
-      isIotDeviceAssigned == false || isIotDeviceOffline;
+  bool get hasIotWarning => isIotDeviceAssigned == false || isIotDeviceOffline;
 
   double get effectiveSeekOffset {
     if (isPaused) {
@@ -527,6 +529,7 @@ class SpacePlaybackState extends Equatable {
     bool? isIotDeviceOffline,
     bool? isMuted,
     int? queueEndBehavior,
+    StoreGovernanceMode? governanceMode,
     List<SpaceQueueStateItem>? spaceQueueItems,
     SpacePlaybackExplainability? explainability,
     bool clearStoreId = false,
@@ -555,6 +558,7 @@ class SpacePlaybackState extends Equatable {
     bool clearPendingPlaylistId = false,
     bool clearPendingOverrideReason = false,
     bool clearIotDeviceAssigned = false,
+    bool clearGovernanceMode = false,
     bool clearExplainability = false,
   }) {
     return SpacePlaybackState(
@@ -634,6 +638,8 @@ class SpacePlaybackState extends Equatable {
       isIotDeviceOffline: isIotDeviceOffline ?? this.isIotDeviceOffline,
       isMuted: isMuted ?? this.isMuted,
       queueEndBehavior: queueEndBehavior ?? this.queueEndBehavior,
+      governanceMode:
+          clearGovernanceMode ? null : (governanceMode ?? this.governanceMode),
       spaceQueueItems: spaceQueueItems ?? this.spaceQueueItems,
       explainability:
           clearExplainability ? null : (explainability ?? this.explainability),
@@ -676,6 +682,7 @@ class SpacePlaybackState extends Equatable {
         isIotDeviceOffline,
         isMuted,
         queueEndBehavior,
+        governanceMode,
         spaceQueueItems,
         explainability,
       ];

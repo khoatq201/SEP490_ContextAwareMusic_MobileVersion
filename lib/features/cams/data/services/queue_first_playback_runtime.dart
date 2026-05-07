@@ -22,10 +22,14 @@ import 'store_hub_service.dart';
 /// - SignalR events from StoreHub
 /// - queue/playback mutations followed by reconcile polling
 ///
-/// UI state should always be derived from [playbackStateStream] rather than
-/// local optimistic queue mutations.
+/// UI state should always be derived from [playbackStateStream] so optimistic
+/// transport patches and authoritative snapshots are merged in one place.
 class QueueFirstPlaybackRuntime {
   static const Duration _pendingTrackJumpHoldDuration = Duration(seconds: 5);
+  static const Duration _pendingTrackJumpTargetGraceDuration =
+      Duration(milliseconds: 1500);
+  static const Duration _pendingTrackJumpUnconfirmedHoldDuration =
+      Duration(milliseconds: 1500);
   static const Duration _pendingCommandEchoHoldDuration = Duration(seconds: 5);
   static const Duration _queueHydrationReuseWindow =
       Duration(milliseconds: 750);
@@ -80,6 +84,7 @@ class QueueFirstPlaybackRuntime {
   DateTime? _pendingTraceIssuedAtUtc;
   String? _pendingTrackJumpQueueItemId;
   DateTime? _pendingTrackJumpIssuedAtUtc;
+  DateTime? _pendingTrackJumpTargetSeenAtUtc;
   final Map<String, int> _pendingCommandEchoCounts = <String, int>{};
   final Map<String, DateTime> _pendingCommandEchoIssuedAtUtc =
       <String, DateTime>{};
@@ -213,7 +218,10 @@ class QueueFirstPlaybackRuntime {
       },
       (playbackState) async {
         final normalizedState = await _normalizeIncomingState(playbackState);
-        final guardedState = _applyPendingTrackJumpGuard(normalizedState);
+        final guardedState = _applyPendingTrackJumpGuard(
+          normalizedState,
+          source: 'http-refresh',
+        );
         _maybeTraceStateSync(
           source: 'http-refresh',
           playbackState: guardedState,
@@ -221,7 +229,7 @@ class QueueFirstPlaybackRuntime {
         if (!silent) {
           _debugLog('refreshState -> ${_describePlaybackState(guardedState)}');
         }
-        _emitState(guardedState);
+        _emitState(guardedState, source: 'http-refresh');
         return Right(guardedState);
       },
     );
@@ -484,8 +492,7 @@ class QueueFirstPlaybackRuntime {
           targetQueueItemId: targetQueueItemId,
           targetTrackId: targetTrackId,
         );
-        if (_isLocallyPatchableCommand(command) &&
-            !_isTrackJumpCommand(command)) {
+        if (_isLocallyPatchableCommand(command)) {
           final patchedState = _applyPlaybackCommandPatch(
             current: _currentState,
             command: command,
@@ -494,13 +501,18 @@ class QueueFirstPlaybackRuntime {
             targetTrackId: targetTrackId,
           );
           if (patchedState != null) {
-            _rememberPendingCommandEcho(
-              command: command,
-              seekPositionSeconds: seekPositionSeconds,
-              targetQueueItemId: targetQueueItemId,
-              targetTrackId: targetTrackId,
+            if (!_isTrackJumpCommand(command)) {
+              _rememberPendingCommandEcho(
+                command: command,
+                seekPositionSeconds: seekPositionSeconds,
+                targetQueueItemId: targetQueueItemId,
+                targetTrackId: targetTrackId,
+              );
+            }
+            _emitState(
+              patchedState,
+              source: 'local-command-patch:${command.name}',
             );
-            _emitState(patchedState);
           }
         }
         unawaited(
@@ -603,6 +615,15 @@ class QueueFirstPlaybackRuntime {
 
     _playStreamSub = storeHubService.onPlayStream.listen((event) {
       if (!_isActiveSpace(event.spaceId)) return;
+      _traceLog(
+        'SIGNALR_PLAY_STREAM '
+        'spaceId=${event.spaceId} '
+        'transition=${event.transitionType.name} '
+        'queueItemId=${event.currentQueueItemId ?? '-'} '
+        'trackId=${event.trackId ?? '-'} '
+        'trackName=${event.trackName ?? '-'} '
+        'hls=${event.hlsUrl}',
+      );
       _debugLog(
         'hub PlayStream spaceId=${event.spaceId} '
         'transition=${event.transitionType.name} '
@@ -641,6 +662,14 @@ class QueueFirstPlaybackRuntime {
         targetQueueItemId: event.targetQueueItemId,
         targetTrackId: event.targetTrackId,
       )) {
+        _traceLog(
+          'SIGNALR_PLAYBACK_COMMAND_ECHO_IGNORED '
+          'spaceId=${event.spaceId} '
+          'command=${event.command.name} '
+          'seek=${event.seekPositionSeconds?.toStringAsFixed(2) ?? '-'} '
+          'targetQueueItemId=${event.targetQueueItemId ?? '-'} '
+          'targetTrackId=${event.targetTrackId ?? '-'}',
+        );
         _debugLog(
           'ignore local command echo command=${event.command.name} '
           'targetQueueItemId=${event.targetQueueItemId ?? '-'} '
@@ -663,7 +692,10 @@ class QueueFirstPlaybackRuntime {
           targetTrackId: event.targetTrackId,
         );
         if (patchedState != null) {
-          _emitState(patchedState);
+          _emitState(
+            patchedState,
+            source: 'signalr-command-patch:${event.command.name}',
+          );
         } else {
           unawaited(refreshState(silent: true));
         }
@@ -683,7 +715,24 @@ class QueueFirstPlaybackRuntime {
       final activeSpaceId = _activeSpaceId;
       if (activeSpaceId == null || activeSpaceId.isEmpty) return;
 
-      _emitState(SpacePlaybackState(spaceId: activeSpaceId));
+      _emitState(
+        (_currentState ?? SpacePlaybackState(spaceId: activeSpaceId)).copyWith(
+          spaceId: activeSpaceId,
+          clearCurrentQueueItemId: true,
+          clearCurrentTrackName: true,
+          clearCurrentPlaylistId: true,
+          clearCurrentPlaylistName: true,
+          clearHlsUrl: true,
+          clearStartedAtUtc: true,
+          clearExpectedEndAtUtc: true,
+          isPaused: false,
+          clearPausePositionSeconds: true,
+          clearSeekOffsetSeconds: true,
+          clearPendingQueueItemId: true,
+          clearPendingPlaylistId: true,
+          clearPendingOverrideReason: true,
+        ),
+      );
     });
 
     _connectionSub = storeHubService.onConnectionStatus.listen((status) {
@@ -708,12 +757,15 @@ class QueueFirstPlaybackRuntime {
     SpacePlaybackState playbackState,
   ) async {
     final normalizedState = await _normalizeIncomingState(playbackState);
-    final guardedState = _applyPendingTrackJumpGuard(normalizedState);
+    final guardedState = _applyPendingTrackJumpGuard(
+      normalizedState,
+      source: 'signalr-state-sync',
+    );
     _maybeTraceStateSync(
       source: 'signalr-state-sync',
       playbackState: guardedState,
     );
-    _emitState(guardedState);
+    _emitState(guardedState, source: 'signalr-state-sync');
   }
 
   Future<SpacePlaybackState> _normalizeIncomingState(
@@ -727,8 +779,22 @@ class QueueFirstPlaybackRuntime {
       incoming: normalizedState,
       current: _currentState,
     );
+    normalizedState = _preserveGovernanceModeFallback(
+      incoming: normalizedState,
+      current: _currentState,
+    );
 
-    if (_shouldHydrateQueueSnapshot(normalizedState)) {
+    final shouldVerifyCachedQueue = _shouldVerifyCachedQueueSnapshot(
+      incoming: normalizedState,
+      current: _currentState,
+    );
+    var hasHydratedQueueSnapshot = false;
+    if (_shouldHydrateQueueSnapshot(
+      normalizedState,
+      current: _currentState,
+      shouldVerifyCachedQueue: shouldVerifyCachedQueue,
+    )) {
+      final hadIncomingQueueItems = normalizedState.spaceQueueItems.isNotEmpty;
       final queueResult = await _hydrateQueueSnapshot(normalizedState);
       normalizedState = queueResult.fold(
         (failure) {
@@ -737,29 +803,63 @@ class QueueFirstPlaybackRuntime {
           );
           return normalizedState;
         },
-        (queueItems) => queueItems.isEmpty
-            ? normalizedState
-            : _copyWithQueue(
-                source: normalizedState,
-                queueItems: _sortQueueItems(queueItems),
-              ),
+        (queueItems) {
+          if (queueItems.isEmpty &&
+              hadIncomingQueueItems &&
+              !shouldVerifyCachedQueue) {
+            _debugLog(
+              'keep incoming queue snapshot because hydration returned empty '
+              'incomingCount=${normalizedState.spaceQueueItems.length}',
+            );
+            _clearQueueHydrationCache();
+            return normalizedState;
+          }
+          hasHydratedQueueSnapshot = true;
+          return _copyWithQueue(
+            source: normalizedState,
+            queueItems: _sortQueueItems(queueItems),
+          );
+        },
       );
     }
 
     normalizedState = _preserveQueueSnapshotFallback(
       incoming: normalizedState,
       current: _currentState,
+      hasHydratedQueueSnapshot: hasHydratedQueueSnapshot,
     );
 
     return normalizedState;
   }
 
-  SpacePlaybackState _preserveQueueSnapshotFallback({
+  SpacePlaybackState _preserveGovernanceModeFallback({
     required SpacePlaybackState incoming,
     required SpacePlaybackState? current,
   }) {
+    if (incoming.governanceMode != null || current?.governanceMode == null) {
+      return incoming;
+    }
+    return incoming.copyWith(governanceMode: current!.governanceMode);
+  }
+
+  SpacePlaybackState _preserveQueueSnapshotFallback({
+    required SpacePlaybackState incoming,
+    required SpacePlaybackState? current,
+    required bool hasHydratedQueueSnapshot,
+  }) {
     if (current == null || current.spaceQueueItems.isEmpty) return incoming;
     if (incoming.spaceId.toLowerCase() != current.spaceId.toLowerCase()) {
+      return incoming;
+    }
+    if (hasHydratedQueueSnapshot) {
+      if (incoming.spaceQueueItems.length < current.spaceQueueItems.length) {
+        _debugLog(
+          'accept hydrated queue snapshot over cached queue '
+          'incomingCount=${incoming.spaceQueueItems.length} '
+          'currentCount=${current.spaceQueueItems.length} '
+          'currentQueueItemId=${incoming.currentQueueItemId ?? '-'}',
+        );
+      }
       return incoming;
     }
     if (!incoming.hasPlayableHls &&
@@ -856,16 +956,39 @@ class QueueFirstPlaybackRuntime {
   }
 
   SpacePlaybackState _applyPendingTrackJumpGuard(
-    SpacePlaybackState incoming,
-  ) {
+    SpacePlaybackState incoming, {
+    required String source,
+  }) {
+    final nowUtc = DateTime.now().toUtc();
     final pendingQueueItemId = _pendingTrackJumpQueueItemId;
     final pendingIssuedAtUtc = _pendingTrackJumpIssuedAtUtc;
     if (pendingQueueItemId == null || pendingIssuedAtUtc == null) {
       return incoming;
     }
 
-    final pendingAge = DateTime.now().toUtc().difference(pendingIssuedAtUtc);
+    final pendingAge = nowUtc.difference(pendingIssuedAtUtc);
+    final targetSeenAtUtc = _pendingTrackJumpTargetSeenAtUtc;
+    final targetSeenAge =
+        targetSeenAtUtc == null ? null : nowUtc.difference(targetSeenAtUtc);
+    _traceLog(
+      'TRACK_JUMP_GUARD_CHECK '
+      'source=$source '
+      'target=$pendingQueueItemId '
+      'ageMs=${pendingAge.inMilliseconds} '
+      'targetSeenMs=${targetSeenAge?.inMilliseconds.toString() ?? '-'} '
+      'incoming=${_describeTrackJumpState(incoming)} '
+      'current=${_describeTrackJumpState(_currentState)}',
+    );
     if (pendingAge > _pendingTrackJumpHoldDuration) {
+      _traceLog(
+        'TRACK_JUMP_GUARD_EXPIRED '
+        'source=$source '
+        'target=$pendingQueueItemId '
+        'ageMs=${pendingAge.inMilliseconds} '
+        'targetSeenMs=${targetSeenAge?.inMilliseconds.toString() ?? '-'} '
+        'incoming=${_describeTrackJumpState(incoming)} '
+        'current=${_describeTrackJumpState(_currentState)}',
+      );
       _clearPendingTrackJump();
       return incoming;
     }
@@ -873,6 +996,73 @@ class QueueFirstPlaybackRuntime {
     final incomingQueueItemId = incoming.effectiveQueueItemId;
     if (incomingQueueItemId != null &&
         incomingQueueItemId.toLowerCase() == pendingQueueItemId.toLowerCase()) {
+      if (_pendingTrackJumpTargetSeenAtUtc == null) {
+        _pendingTrackJumpTargetSeenAtUtc = nowUtc;
+        _traceLog(
+          'TRACK_JUMP_GUARD_ACCEPT_TARGET_GRACE '
+          'source=$source '
+          'target=$pendingQueueItemId '
+          'ageMs=${pendingAge.inMilliseconds} '
+          'graceMs=${_pendingTrackJumpTargetGraceDuration.inMilliseconds} '
+          'incoming=${_describeTrackJumpState(incoming)}',
+        );
+        return incoming;
+      }
+
+      final confirmedAge = nowUtc.difference(_pendingTrackJumpTargetSeenAtUtc!);
+      if (confirmedAge < _pendingTrackJumpTargetGraceDuration) {
+        _traceLog(
+          'TRACK_JUMP_GUARD_ACCEPT_TARGET_KEEP '
+          'source=$source '
+          'target=$pendingQueueItemId '
+          'ageMs=${pendingAge.inMilliseconds} '
+          'targetSeenMs=${confirmedAge.inMilliseconds} '
+          'incoming=${_describeTrackJumpState(incoming)}',
+        );
+        return incoming;
+      }
+
+      _traceLog(
+        'TRACK_JUMP_GUARD_ACCEPT_TARGET '
+        'source=$source '
+        'target=$pendingQueueItemId '
+        'ageMs=${pendingAge.inMilliseconds} '
+        'targetSeenMs=${confirmedAge.inMilliseconds} '
+        'incoming=${_describeTrackJumpState(incoming)}',
+      );
+      _clearPendingTrackJump();
+      return incoming;
+    }
+
+    if (targetSeenAge != null &&
+        targetSeenAge > _pendingTrackJumpTargetGraceDuration) {
+      _traceLog(
+        'TRACK_JUMP_GUARD_PASS_AFTER_TARGET_GRACE '
+        'source=$source '
+        'target=$pendingQueueItemId '
+        'ageMs=${pendingAge.inMilliseconds} '
+        'targetSeenMs=${targetSeenAge.inMilliseconds} '
+        'incoming=${_describeTrackJumpState(incoming)} '
+        'current=${_describeTrackJumpState(_currentState)}',
+      );
+      _clearPendingTrackJump();
+      return incoming;
+    }
+
+    if (targetSeenAtUtc == null &&
+        incomingQueueItemId != null &&
+        incomingQueueItemId.isNotEmpty &&
+        pendingAge > _pendingTrackJumpUnconfirmedHoldDuration) {
+      _traceLog(
+        'TRACK_JUMP_GUARD_PASS_UNCONFIRMED '
+        'source=$source '
+        'target=$pendingQueueItemId '
+        'ageMs=${pendingAge.inMilliseconds} '
+        'unconfirmedHoldMs='
+        '${_pendingTrackJumpUnconfirmedHoldDuration.inMilliseconds} '
+        'incoming=${_describeTrackJumpState(incoming)} '
+        'current=${_describeTrackJumpState(_currentState)}',
+      );
       _clearPendingTrackJump();
       return incoming;
     }
@@ -881,9 +1071,28 @@ class QueueFirstPlaybackRuntime {
     if (current == null ||
         current.effectiveQueueItemId?.toLowerCase() !=
             pendingQueueItemId.toLowerCase()) {
+      _traceLog(
+        'TRACK_JUMP_GUARD_PASS_THROUGH '
+        'source=$source '
+        'target=$pendingQueueItemId '
+        'ageMs=${pendingAge.inMilliseconds} '
+        'targetSeenMs=${targetSeenAge?.inMilliseconds.toString() ?? '-'} '
+        'reason=current_not_on_target '
+        'incoming=${_describeTrackJumpState(incoming)} '
+        'current=${_describeTrackJumpState(current)}',
+      );
       return incoming;
     }
 
+    _traceLog(
+      'TRACK_JUMP_GUARD_HOLD_STALE '
+      'source=$source '
+      'target=$pendingQueueItemId '
+      'ageMs=${pendingAge.inMilliseconds} '
+      'targetSeenMs=${targetSeenAge?.inMilliseconds.toString() ?? '-'} '
+      'incoming=${_describeTrackJumpState(incoming)} '
+      'current=${_describeTrackJumpState(current)}',
+    );
     _debugLog(
       'hold stale state while track jump is pending '
       'target=$pendingQueueItemId incoming=${incomingQueueItemId ?? '-'}',
@@ -928,12 +1137,42 @@ class QueueFirstPlaybackRuntime {
     _debugLog('reconcile finished without fingerprint change');
   }
 
-  void _emitState(SpacePlaybackState playbackState) {
+  void _emitState(
+    SpacePlaybackState playbackState, {
+    String source = 'runtime',
+  }) {
+    final previousState = _currentState;
     final fingerprint = _fingerprintFor(playbackState);
     _currentState = playbackState;
-    if (_lastFingerprint == fingerprint) return;
+    final previousQueueItemId = previousState?.effectiveQueueItemId;
+    final nextQueueItemId = playbackState.effectiveQueueItemId;
+    final shouldTraceEmit = _pendingTrackJumpQueueItemId != null ||
+        previousQueueItemId != nextQueueItemId ||
+        previousState?.currentDisplayName != playbackState.currentDisplayName ||
+        previousState?.governanceMode != playbackState.governanceMode;
+    if (_lastFingerprint == fingerprint) {
+      if (shouldTraceEmit) {
+        _traceLog(
+          'STATE_EMIT_SKIPPED_DUPLICATE '
+          'source=$source '
+          'pendingTarget=${_pendingTrackJumpQueueItemId ?? '-'} '
+          'previous=${_describeTrackJumpState(previousState)} '
+          'next=${_describeTrackJumpState(playbackState)}',
+        );
+      }
+      return;
+    }
 
     _lastFingerprint = fingerprint;
+    if (shouldTraceEmit) {
+      _traceLog(
+        'STATE_EMIT '
+        'source=$source '
+        'pendingTarget=${_pendingTrackJumpQueueItemId ?? '-'} '
+        'previous=${_describeTrackJumpState(previousState)} '
+        'next=${_describeTrackJumpState(playbackState)}',
+      );
+    }
     _debugLog('emitState ${_describePlaybackState(playbackState)}');
     _playbackStateController.add(playbackState);
   }
@@ -983,6 +1222,7 @@ class QueueFirstPlaybackRuntime {
       playbackState.isIotDeviceOffline ? '1' : '0',
       playbackState.isMuted ? '1' : '0',
       playbackState.queueEndBehavior.toString(),
+      playbackState.governanceMode?.value.toString() ?? '',
       playbackState.explainability?.moodName ?? '',
       playbackState.explainability?.recommendedBpmMin?.toString() ?? '',
       playbackState.explainability?.recommendedBpmMax?.toString() ?? '',
@@ -996,7 +1236,11 @@ class QueueFirstPlaybackRuntime {
     ].join('||');
   }
 
-  bool _shouldHydrateQueueSnapshot(SpacePlaybackState playbackState) {
+  bool _shouldHydrateQueueSnapshot(
+    SpacePlaybackState playbackState, {
+    required SpacePlaybackState? current,
+    required bool shouldVerifyCachedQueue,
+  }) {
     final hasQueueIdentity =
         (playbackState.currentQueueItemId?.isNotEmpty ?? false) ||
             (playbackState.pendingQueueItemId?.isNotEmpty ?? false);
@@ -1004,6 +1248,8 @@ class QueueFirstPlaybackRuntime {
     if (queueItems.isEmpty) {
       return hasQueueIdentity || playbackState.hasPlayableHls;
     }
+
+    if (shouldVerifyCachedQueue) return true;
 
     final currentQueueItemId = playbackState.currentQueueItemId;
     if (currentQueueItemId != null &&
@@ -1025,6 +1271,34 @@ class QueueFirstPlaybackRuntime {
     final looksLikeSmallWindow = sortedItems.length <= 3 &&
         (hasQueueIdentity || playbackState.hasPlayableHls);
     return hasPositionGap || looksLikeSmallWindow;
+  }
+
+  bool _shouldVerifyCachedQueueSnapshot({
+    required SpacePlaybackState incoming,
+    required SpacePlaybackState? current,
+  }) {
+    if (current == null ||
+        current.spaceId.toLowerCase() != incoming.spaceId.toLowerCase() ||
+        current.spaceQueueItems.isEmpty ||
+        incoming.spaceQueueItems.isEmpty ||
+        incoming.spaceQueueItems.length >= current.spaceQueueItems.length) {
+      return false;
+    }
+
+    final hasQueueIdentity =
+        (incoming.currentQueueItemId?.isNotEmpty ?? false) ||
+            (incoming.pendingQueueItemId?.isNotEmpty ?? false);
+    if (!hasQueueIdentity && !incoming.hasPlayableHls) return false;
+
+    final incomingQueueIds = incoming.spaceQueueItems
+        .map((item) => item.queueItemId)
+        .where((id) => id.isNotEmpty)
+        .toSet();
+    final currentQueueIds = current.spaceQueueItems
+        .map((item) => item.queueItemId)
+        .where((id) => id.isNotEmpty)
+        .toSet();
+    return incomingQueueIds.every(currentQueueIds.contains);
   }
 
   Future<Either<Failure, List<SpaceQueueStateItem>>> _hydrateQueueSnapshot(
@@ -1139,7 +1413,18 @@ class QueueFirstPlaybackRuntime {
     String? targetQueueItemId,
     String? targetTrackId,
   }) {
-    if (current == null) return null;
+    if (current == null) {
+      if (_isTrackJumpCommand(command)) {
+        _traceLog(
+          'TRACK_JUMP_PATCH_MISS '
+          'command=${command.name} '
+          'reason=no_current_state '
+          'targetQueueItemId=${targetQueueItemId ?? '-'} '
+          'targetTrackId=${targetTrackId ?? '-'}',
+        );
+      }
+      return null;
+    }
 
     final nowUtc = DateTime.now().toUtc();
     final safeSeek = seekPositionSeconds == null || seekPositionSeconds < 0
@@ -1182,11 +1467,23 @@ class QueueFirstPlaybackRuntime {
       case PlaybackCommandEnum.trackEnded:
         final targetQueueItem = _resolveCommandTargetQueueItem(
           current: current,
-          command: command,
           targetQueueItemId: targetQueueItemId,
           targetTrackId: targetTrackId,
         );
-        if (targetQueueItem == null) return null;
+        if (targetQueueItem == null) {
+          final hasExplicitTarget = (targetQueueItemId?.isNotEmpty ?? false) ||
+              (targetTrackId?.isNotEmpty ?? false);
+          _traceLog(
+            'TRACK_JUMP_PATCH_MISS '
+            'spaceId=${current.spaceId} '
+            'command=${command.name} '
+            'reason=${hasExplicitTarget ? 'target_not_found' : 'implicit_target_not_patched'} '
+            'targetQueueItemId=${targetQueueItemId ?? '-'} '
+            'targetTrackId=${targetTrackId ?? '-'} '
+            'current=${_describeTrackJumpState(current)}',
+          );
+          return null;
+        }
         _rememberPendingTrackJump(targetQueueItem.queueItemId);
         return _applyTrackJumpPatch(
           current: current,
@@ -1198,57 +1495,32 @@ class QueueFirstPlaybackRuntime {
 
   SpaceQueueStateItem? _resolveCommandTargetQueueItem({
     required SpacePlaybackState current,
-    required PlaybackCommandEnum command,
     String? targetQueueItemId,
     String? targetTrackId,
   }) {
     final sortedItems = current.sortedQueueItems;
     if (sortedItems.isEmpty) return null;
 
-    if (targetQueueItemId != null && targetQueueItemId.isNotEmpty) {
+    final hasTargetQueueItemId =
+        targetQueueItemId != null && targetQueueItemId.isNotEmpty;
+    final hasTargetTrackId = targetTrackId != null && targetTrackId.isNotEmpty;
+    if (!hasTargetQueueItemId && !hasTargetTrackId) {
+      return null;
+    }
+
+    if (hasTargetQueueItemId) {
       for (final item in sortedItems) {
         if (item.queueItemId == targetQueueItemId) return item;
       }
     }
 
-    if (targetTrackId != null && targetTrackId.isNotEmpty) {
+    if (hasTargetTrackId) {
       for (final item in sortedItems) {
         if (item.trackId == targetTrackId) return item;
       }
     }
 
-    final focusedIndex = sortedItems.indexWhere(
-      (item) => item.queueItemId == current.effectiveQueueItemId,
-    );
-    final fallbackIndex = focusedIndex >= 0
-        ? focusedIndex
-        : sortedItems.indexWhere(
-            (item) => item.queueStatus == SpacePlaybackState.queueStatusPlaying,
-          );
-
-    switch (command) {
-      case PlaybackCommandEnum.skipNext:
-      case PlaybackCommandEnum.trackEnded:
-        final nextIndex = fallbackIndex + 1;
-        if (fallbackIndex >= 0 && nextIndex < sortedItems.length) {
-          return sortedItems[nextIndex];
-        }
-        return null;
-      case PlaybackCommandEnum.skipPrevious:
-        final previousIndex = fallbackIndex - 1;
-        if (fallbackIndex > 0 && previousIndex < sortedItems.length) {
-          return sortedItems[previousIndex];
-        }
-        return null;
-      case PlaybackCommandEnum.skipToTrack:
-        return null;
-      case PlaybackCommandEnum.pause:
-      case PlaybackCommandEnum.resume:
-      case PlaybackCommandEnum.seek:
-      case PlaybackCommandEnum.seekForward:
-      case PlaybackCommandEnum.seekBackward:
-        return null;
-    }
+    return null;
   }
 
   SpacePlaybackState _applyTrackJumpPatch({
@@ -1259,6 +1531,15 @@ class QueueFirstPlaybackRuntime {
     final targetHlsUrl = targetQueueItem.hlsUrl?.trim();
     final targetTrackName = targetQueueItem.trackName?.trim();
     final hasTargetHlsUrl = targetHlsUrl != null && targetHlsUrl.isNotEmpty;
+    _traceLog(
+      'LOCAL_TRACK_JUMP_PATCH '
+      'spaceId=${current.spaceId} '
+      'from=${current.effectiveQueueItemId ?? '-'} '
+      'target=${targetQueueItem.queueItemId} '
+      'trackId=${targetQueueItem.trackId} '
+      'trackName=${targetTrackName ?? '-'} '
+      'hls=${hasTargetHlsUrl ? targetHlsUrl : '-'}',
+    );
     return current.copyWith(
       currentQueueItemId: targetQueueItem.queueItemId,
       currentTrackName: targetTrackName != null && targetTrackName.isNotEmpty
@@ -1424,6 +1705,9 @@ class QueueFirstPlaybackRuntime {
     return command == PlaybackCommandEnum.seek ||
         command == PlaybackCommandEnum.seekForward ||
         command == PlaybackCommandEnum.seekBackward ||
+        command == PlaybackCommandEnum.skipNext ||
+        command == PlaybackCommandEnum.skipPrevious ||
+        command == PlaybackCommandEnum.skipToTrack ||
         command == PlaybackCommandEnum.trackEnded;
   }
 
@@ -1441,6 +1725,10 @@ class QueueFirstPlaybackRuntime {
       PlaybackCommandEnum.seekForward ||
       PlaybackCommandEnum.seekBackward =>
         'STATE_SYNC_AFTER_SEEK',
+      PlaybackCommandEnum.skipNext ||
+      PlaybackCommandEnum.skipPrevious ||
+      PlaybackCommandEnum.skipToTrack =>
+        'STATE_SYNC_AFTER_TRACK_JUMP',
       PlaybackCommandEnum.trackEnded => 'STATE_SYNC_AFTER_TRACK_ENDED',
       _ => null,
     };
@@ -1480,11 +1768,36 @@ class QueueFirstPlaybackRuntime {
   void _rememberPendingTrackJump(String queueItemId) {
     _pendingTrackJumpQueueItemId = queueItemId;
     _pendingTrackJumpIssuedAtUtc = DateTime.now().toUtc();
+    _pendingTrackJumpTargetSeenAtUtc = null;
+    _traceLog(
+      'TRACK_JUMP_PENDING_SET '
+      'target=$queueItemId '
+      'holdMs=${_pendingTrackJumpHoldDuration.inMilliseconds} '
+      'unconfirmedHoldMs='
+      '${_pendingTrackJumpUnconfirmedHoldDuration.inMilliseconds} '
+      'current=${_describeTrackJumpState(_currentState)}',
+    );
   }
 
   void _clearPendingTrackJump() {
+    final pendingQueueItemId = _pendingTrackJumpQueueItemId;
+    if (pendingQueueItemId != null) {
+      final ageMs = _pendingTrackJumpIssuedAtUtc == null
+          ? -1
+          : DateTime.now()
+              .toUtc()
+              .difference(_pendingTrackJumpIssuedAtUtc!)
+              .inMilliseconds;
+      _traceLog(
+        'TRACK_JUMP_PENDING_CLEAR '
+        'target=$pendingQueueItemId '
+        'ageMs=$ageMs '
+        'current=${_describeTrackJumpState(_currentState)}',
+      );
+    }
     _pendingTrackJumpQueueItemId = null;
     _pendingTrackJumpIssuedAtUtc = null;
+    _pendingTrackJumpTargetSeenAtUtc = null;
   }
 
   String _commandEchoSignature({
@@ -1493,9 +1806,10 @@ class QueueFirstPlaybackRuntime {
     String? targetQueueItemId,
     String? targetTrackId,
   }) {
-    final seekMillis = seekPositionSeconds == null
-        ? ''
-        : (seekPositionSeconds * 1000).round().toString();
+    final seekMillis =
+        _isTrackJumpCommand(command) || seekPositionSeconds == null
+            ? ''
+            : (seekPositionSeconds * 1000).round().toString();
     return [
       command.name,
       seekMillis,
@@ -1590,6 +1904,22 @@ class QueueFirstPlaybackRuntime {
     _pendingCommandEchoIssuedAtUtc.clear();
   }
 
+  String _describeTrackJumpState(SpacePlaybackState? playbackState) {
+    if (playbackState == null) return 'null';
+    final focusedItem = playbackState.focusedQueueItem;
+    return [
+      'queue=${playbackState.effectiveQueueItemId ?? '-'}',
+      'itemStatus=${focusedItem?.queueStatus.toString() ?? '-'}',
+      'track=${playbackState.currentDisplayName ?? '-'}',
+      'trackId=${focusedItem?.trackId ?? '-'}',
+      'hls=${playbackState.effectiveHlsUrl ?? '-'}',
+      'paused=${playbackState.isPaused}',
+      'seek=${playbackState.effectiveSeekOffset.toStringAsFixed(2)}',
+      'started=${playbackState.startedAtUtc?.toUtc().toIso8601String() ?? '-'}',
+      'queueCount=${playbackState.spaceQueueItems.length}',
+    ].join(',');
+  }
+
   String _describePlaybackState(SpacePlaybackState playbackState) {
     final queuePreview = playbackState.spaceQueueItems
         .take(4)
@@ -1606,6 +1936,7 @@ class QueueFirstPlaybackRuntime {
         'manual=${playbackState.isManualOverride} '
         'scheduling=${playbackState.isScheduling} '
         'paused=${playbackState.isPaused} '
+        'governance=${playbackState.governanceMode?.label ?? '-'} '
         'queueCount=${playbackState.spaceQueueItems.length} '
         'queue=[$queuePreview]';
   }

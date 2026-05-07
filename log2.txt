@@ -1,758 +1,527 @@
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-D/AidlBufferPool( 9683): bufferpool2 0xb4000076313fa908 : 5(40960 size) total buffers - 0(0 size) used buffers - 27/32 (recycle/alloc) - 10/27 (fetch/transfer)
-D/AidlBufferPoolAcc( 9683): evictor expired: 1, evicted: 1
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-E/flutter ( 9683): [ERROR:flutter/flow/layers/transform_layer.cc(15)] TransformLayer is constructed with an invalid matrix.
-Another exception was thrown: 'package:flutter/src/rendering/object.dart': Failed assertion: line 2702 pos
-12: '!_debugDoingThisLayout': is not true.
-W/WindowOnBackDispatcher( 9683): sendCancelIfRunning: isInProgress=false callback=io.flutter.embedding.android.FlutterActivity$1@bff059
-W/WindowOnBackDispatcher( 9683): sendCancelIfRunning: isInProgress=false callback=io.flutter.embedding.android.FlutterActivity$1@bff059
+I/flutter (11543): [PlayerBlocV2] hlsDecision seek start target=1.08
+I/flutter (11543): [PlayerBlocV2] hlsDecision seek done target=0.846
+I/flutter (11543): [PlayerBlocV2] hlsDecision finalAction=play
+I/flutter (11543): [PlayerBlocV2] hlsDecision seek done target=1.08
+I/flutter (11543): [PlayerBlocV2] hlsDecision finalAction=play
+I/flutter (11543): [NowPlayingArtworkDebug] didUpdate unchanged count=10 identity=01a2f04d-6bd0-448e-a5d1-95d711220392 url=https://logaicams-bucket.s3.ap-southeast-1.amazonaws.com/uploads/tracks/covers/nhat-8de0e9e77b88459b90f0bf81c20307ff.jpg?X-Amz-Expires=3600&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIATL6VKTUC2S2NFLN2%2F20260507%2Fap-southeast-1%2Fs3%2Faws4_request&X-Amz-Date=20260507T145809Z&X-Amz-SignedHeaders=host&X-Amz-Signature=d9afcd6c2b7bfdcedae111bbc6ba5f599eeb5102f2bb002522fd54ee88d1a456 incomingUrl=https://logaicams-bucket.s3.ap-southeast-1.amazonaws.com/uploads/tracks/covers/nhat-8de0e9e77b88459b90f0bf81c20307ff.jpg?X-Amz-Expires=3600&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIATL6VKTUC2S2NFLN2%2F20260507%2Fap-southeast-1%2Fs3%2Faws4_request&X-Amz-Date=20260507T145809Z&X-Amz-SignedHeaders=host&X-Amz-Signature=d9afcd6c2b7bfdcedae111bbc6ba5f599eeb5102f2bb002522fd54ee88d1a456
+I/flutter (11543): [DioClient] Preparing auth header for "/api/fuzzy-music-profiles/space/d0d258f5-3c74-457a-b17b-629f61d504d6": playbackScoped=false selectedToken=eyJhbGciOiJI...
+I/flutter (11543): [DioClient] [request-auth] path=/api/fuzzy-music-profiles/space/d0d258f5-3c74-457a-b17b-629f61d504d6 activeMode=playback_device hasManagerToken=false managerExpiry=null hasDeviceAccessToken=true deviceAccessExpiry=2026-05-07T15:03:45.779989Z hasDeviceRefreshToken=true deviceSessionKeys=deviceAccessToken,deviceRefreshToken,accessTokenExpiresAt,brandId,storeId,spaceId,storeName,spaceName,deviceId,manufacturer,model,osVersion,appVersion
+I/flutter (11543): [DioClient] Preparing auth header for "/api/fuzzy-music-profiles/store/d34ffedc-f11a-41f6-b485-efb6cf6181a5": playbackScoped=false selectedToken=eyJhbGciOiJI...
+I/flutter (11543): [DioClient] [request-auth] path=/api/fuzzy-music-profiles/store/d34ffedc-f11a-41f6-b485-efb6cf6181a5 activeMode=playback_device hasManagerToken=false managerExpiry=null hasDeviceAccessToken=true deviceAccessExpiry=2026-05-07T15:03:45.779989Z hasDeviceRefreshToken=true deviceSessionKeys=deviceAccessToken,deviceRefreshToken,accessTokenExpiresAt,brandId,storeId,spaceId,storeName,spaceName,deviceId,manufacturer,model,osVersion,appVersion
+I/flutter (11543): [DioClient] Preparing auth header for "/api/fuzzy-music-profiles/store": playbackScoped=false selectedToken=eyJhbGciOiJI...
+I/flutter (11543): [DioClient] [request-auth] path=/api/fuzzy-music-profiles/store activeMode=playback_device hasManagerToken=false managerExpiry=null hasDeviceAccessToken=true deviceAccessExpiry=2026-05-07T15:03:45.779989Z hasDeviceRefreshToken=true deviceSessionKeys=deviceAccessToken,deviceRefreshToken,accessTokenExpiresAt,brandId,storeId,spaceId,storeName,spaceName,deviceId,manufacturer,model,osVersion,appVersion
+I/flutter (11543): [PlaybackTrace] TRACK_JUMP_GUARD_CHECK source=http-refresh target=01a2f04d-6bd0-448e-a5d1-95d711220392 ageMs=1919 targetSeenMs=- incoming=queue=a4df7300-1770-4eeb-bb3d-8273b155b171,itemStatus=1,track=Shape of you,trackId=0375a513-5e9b-4e92-867c-d250a526778f,hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/0375a513-5e9b-4e92-867c-d250a526778f/v1/shade-of-you-e215bcdb1d1247738eca78c92b930aa1.m3u8,paused=false,seek=0.54,started=2026-05-07T14:58:10.881935Z,queueCount=20 current=queue=01a2f04d-6bd0-448e-a5d1-95d711220392,itemStatus=1,track=Nhất tiếu giang hồ,trackId=3a29e926-f6ad-4de9-96fc-ae4d07cc3b66,hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/3a29e926-f6ad-4de9-96fc-ae4d07cc3b66/v1/nhat-tieu-giang-ho-b454b9e6e268450ea21cd2241ff58bc2.m3u8,paused=false,seek=2.20,started=2026-05-07T14:58:09.223745Z,queueCount=20
+I/flutter (11543): [PlaybackTrace] TRACK_JUMP_GUARD_HOLD_STALE source=http-refresh target=01a2f04d-6bd0-448e-a5d1-95d711220392 ageMs=1919 targetSeenMs=- incoming=queue=a4df7300-1770-4eeb-bb3d-8273b155b171,itemStatus=1,track=Shape of you,trackId=0375a513-5e9b-4e92-867c-d250a526778f,hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/0375a513-5e9b-4e92-867c-d250a526778f/v1/shade-of-you-e215bcdb1d1247738eca78c92b930aa1.m3u8,paused=false,seek=0.54,started=2026-05-07T14:58:10.881935Z,queueCount=20 current=queue=01a2f04d-6bd0-448e-a5d1-95d711220392,itemStatus=1,track=Nhất tiếu giang hồ,trackId=3a29e926-f6ad-4de9-96fc-ae4d07cc3b66,hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/3a29e926-f6ad-4de9-96fc-ae4d07cc3b66/v1/nhat-tieu-giang-ho-b454b9e6e268450ea21cd2241ff58bc2.m3u8,paused=false,seek=2.20,started=2026-05-07T14:58:09.223745Z,queueCount=20
+I/flutter (11543): [QueueFirstV2] hold stale state while track jump is pending target=01a2f04d-6bd0-448e-a5d1-95d711220392 incoming=a4df7300-1770-4eeb-bb3d-8273b155b171
+I/flutter (11543): [PlaybackTrace] STATE_EMIT source=http-refresh pendingTarget=01a2f04d-6bd0-448e-a5d1-95d711220392 previous=queue=01a2f04d-6bd0-448e-a5d1-95d711220392,itemStatus=1,track=Nhất tiếu giang hồ,trackId=3a29e926-f6ad-4de9-96fc-ae4d07cc3b66,hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/3a29e926-f6ad-4de9-96fc-ae4d07cc3b66/v1/nhat-tieu-giang-ho-b454b9e6e268450ea21cd2241ff58bc2.m3u8,paused=false,seek=2.20,started=2026-05-07T14:58:09.223745Z,queueCount=20 next=queue=01a2f04d-6bd0-448e-a5d1-95d711220392,itemStatus=1,track=Nhất tiếu giang hồ,trackId=3a29e926-f6ad-4de9-96fc-ae4d07cc3b66,hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/3a29e926-f6ad-4de9-96fc-ae4d07cc3b66/v1/nhat-tieu-giang-ho-b454b9e6e268450ea21cd2241ff58bc2.m3u8,paused=false,seek=2.20,started=2026-05-07T14:58:09.223745Z,queueCount=20
+I/flutter (11543): [QueueFirstV2] emitState space=d0d258f5-3c74-457a-b17b-629f61d504d6 current=01a2f04d-6bd0-448e-a5d1-95d711220392 pending=- track=Nhất tiếu giang hồ hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/3a29e926-f6ad-4de9-96fc-ae4d07cc3b66/v1/nhat-tieu-giang-ho-b454b9e6e268450ea21cd2241ff58bc2.m3u8 manual=false scheduling=false paused=false queueCount=20 queue=[1:Star Boys:2 | 2:Baby:2 | 3:Thật bất ngờ:2 | 4:Smooth:2]
+I/flutter (11543): [QueueFirstV2] reconcile detected immediate state change
+I/flutter (11543): [CamsPlaybackBlocV2] runtimeState space=d0d258f5-3c74-457a-b17b-629f61d504d6 currentQueueItemId=01a2f04d-6bd0-448e-a5d1-95d711220392 pendingQueueItemId=- currentTrack=Nhất tiếu giang hồ hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/3a29e926-f6ad-4de9-96fc-ae4d07cc3b66/v1/nhat-tieu-giang-ho-b454b9e6e268450ea21cd2241ff58bc2.m3u8 manual=false scheduling=false queueCount=20 queue=[1:Star Boys:2 | 2:Baby:2 | 3:Thật bất ngờ:2]
+I/flutter (11543): [AppPlaybackCoordinatorV2] syncCamsState status=active commandInFlight=false inFlightCommand=- localHold=- holdSeek=- playback=space=d0d258f5-3c74-457a-b17b-629f61d504d6 current=01a2f04d-6bd0-448e-a5d1-95d711220392 pending=- track=Nhất tiếu giang hồ hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/3a29e926-f6ad-4de9-96fc-ae4d07cc3b66/v1/nhat-tieu-giang-ho-b454b9e6e268450ea21cd2241ff58bc2.m3u8 queueCount=20 queue=[1:Star Boys:2 | 2:Baby:2 | 3:Thật bất ngờ:2 | 4:Smooth:2] playerTrack=Nhất tiếu giang hồ playerHls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/3a29e926-f6ad-4de9-96fc-ae4d07cc3b66/v1/nhat-tieu-giang-ho-b454b9e6e268450ea21cd2241ff58bc2.m3u8
+I/flutter (11543): [AppPlaybackCoordinatorV2] remoteDecision remoteSignature=d0d258f5-3c74-457a-b17b-629f61d504d6|01a2f04d-6bd0-448e-a5d1-95d711220392|3a29e926-f6ad-4de9-96fc-ae4d07cc3b66|https://ddbdgg08nzlz.cloudfront.net/audio/tracks/3a29e926-f6ad-4de9-96fc-ae4d07cc3b66/v1/nhat-tieu-giang-ho-b454b9e6e268450ea21cd2241ff58bc2.m3u8|0|2 lastSignature=d0d258f5-3c74-457a-b17b-629f61d504d6|01a2f04d-6bd0-448e-a5d1-95d711220392|3a29e926-f6ad-4de9-96fc-ae4d07cc3b66|https://ddbdgg08nzlz.cloudfront.net/audio/tracks/3a29e926-f6ad-4de9-96fc-ae4d07cc3b66/v1/nhat-tieu-giang-ho-b454b9e6e268450ea21cd2241ff58bc2.m3u8|0|1 epochSignature=d0d258f5-3c74-457a-b17b-629f61d504d6|01a2f04d-6bd0-448e-a5d1-95d711220392|3a29e926-f6ad-4de9-96fc-ae4d07cc3b66|https://ddbdgg08nzlz.cloudfront.net/audio/tracks/3a29e926-f6ad-4de9-96fc-ae4d07cc3b66/v1/nhat-tieu-giang-ho-b454b9e6e268450ea21cd2241ff58bc2.m3u8 lastEpoch=d0d258f5-3c74-457a-b17b-629f61d504d6|01a2f04d-6bd0-448e-a5d1-95d711220392|3a29e926-f6ad-4de9-96fc-ae4d07cc3b66|https://ddbdgg08nzlz.cloudfront.net/
+I/flutter (11543): [AppPlaybackCoordinatorV2] same remote HLS snapshot -> keep current player queueItemId=01a2f04d-6bd0-448e-a5d1-95d711220392 drift=0.16
+I/flutter (11543): [NowPlayingArtworkDebug] didUpdate unchanged count=20 identity=01a2f04d-6bd0-448e-a5d1-95d711220392 url=https://logaicams-bucket.s3.ap-southeast-1.amazonaws.com/uploads/tracks/covers/nhat-8de0e9e77b88459b90f0bf81c20307ff.jpg?X-Amz-Expires=3600&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIATL6VKTUC2S2NFLN2%2F20260507%2Fap-southeast-1%2Fs3%2Faws4_request&X-Amz-Date=20260507T145809Z&X-Amz-SignedHeaders=host&X-Amz-Signature=d9afcd6c2b7bfdcedae111bbc6ba5f599eeb5102f2bb002522fd54ee88d1a456 incomingUrl=https://logaicams-bucket.s3.ap-southeast-1.amazonaws.com/uploads/tracks/covers/nhat-8de0e9e77b88459b90f0bf81c20307ff.jpg?X-Amz-Expires=3600&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIATL6VKTUC2S2NFLN2%2F20260507%2Fap-southeast-1%2Fs3%2Faws4_request&X-Amz-Date=20260507T145809Z&X-Amz-SignedHeaders=host&X-Amz-Signature=d9afcd6c2b7bfdcedae111bbc6ba5f599eeb5102f2bb002522fd54ee88d1a456
+D/AidlBufferPool(11543): bufferpool2 0xb4000076313b3998 : 0(0 size) total buffers - 0(0 size) used buffers - 11201/11207 (recycle/alloc) - 36/11197 (fetch/transfer)
+D/AidlBufferPoolAcc(11543): evictor expired: 1, evicted: 1
+I/flutter (11543): [NowPlayingArtworkDebug] didUpdate unchanged count=30 identity=01a2f04d-6bd0-448e-a5d1-95d711220392 url=https://logaicams-bucket.s3.ap-southeast-1.amazonaws.com/uploads/tracks/covers/nhat-8de0e9e77b88459b90f0bf81c20307ff.jpg?X-Amz-Expires=3600&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIATL6VKTUC2S2NFLN2%2F20260507%2Fap-southeast-1%2Fs3%2Faws4_request&X-Amz-Date=20260507T145809Z&X-Amz-SignedHeaders=host&X-Amz-Signature=d9afcd6c2b7bfdcedae111bbc6ba5f599eeb5102f2bb002522fd54ee88d1a456 incomingUrl=https://logaicams-bucket.s3.ap-southeast-1.amazonaws.com/uploads/tracks/covers/nhat-8de0e9e77b88459b90f0bf81c20307ff.jpg?X-Amz-Expires=3600&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIATL6VKTUC2S2NFLN2%2F20260507%2Fap-southeast-1%2Fs3%2Faws4_request&X-Amz-Date=20260507T145809Z&X-Amz-SignedHeaders=host&X-Amz-Signature=d9afcd6c2b7bfdcedae111bbc6ba5f599eeb5102f2bb002522fd54ee88d1a456
+D/AidlBufferPool(11543): bufferpool2 0xb400007631446028 : 0(0 size) total buffers - 0(0 size) used buffers - 18/23 (recycle/alloc) - 5/13 (fetch/transfer)
+D/AidlBufferPoolAcc(11543): evictor expired: 2, evicted: 1
+D/AidlBufferPool(11543): bufferpool2 0xb400007631443438 : 5(40960 size) total buffers - 1(8192 size) used buffers - 269/274 (recycle/alloc) - 6/270 (fetch/transfer)
+I/flutter (11543): [NowPlayingArtworkDebug] didUpdate unchanged count=40 identity=01a2f04d-6bd0-448e-a5d1-95d711220392 url=https://logaicams-bucket.s3.ap-southeast-1.amazonaws.com/uploads/tracks/covers/nhat-8de0e9e77b88459b90f0bf81c20307ff.jpg?X-Amz-Expires=3600&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIATL6VKTUC2S2NFLN2%2F20260507%2Fap-southeast-1%2Fs3%2Faws4_request&X-Amz-Date=20260507T145809Z&X-Amz-SignedHeaders=host&X-Amz-Signature=d9afcd6c2b7bfdcedae111bbc6ba5f599eeb5102f2bb002522fd54ee88d1a456 incomingUrl=https://logaicams-bucket.s3.ap-southeast-1.amazonaws.com/uploads/tracks/covers/nhat-8de0e9e77b88459b90f0bf81c20307ff.jpg?X-Amz-Expires=3600&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIATL6VKTUC2S2NFLN2%2F20260507%2Fap-southeast-1%2Fs3%2Faws4_request&X-Amz-Date=20260507T145809Z&X-Amz-SignedHeaders=host&X-Amz-Signature=d9afcd6c2b7bfdcedae111bbc6ba5f599eeb5102f2bb002522fd54ee88d1a456
+I/flutter (11543): [NowPlayingArtworkDebug] didUpdate unchanged count=50 identity=01a2f04d-6bd0-448e-a5d1-95d711220392 url=https://logaicams-bucket.s3.ap-southeast-1.amazonaws.com/uploads/tracks/covers/nhat-8de0e9e77b88459b90f0bf81c20307ff.jpg?X-Amz-Expires=3600&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIATL6VKTUC2S2NFLN2%2F20260507%2Fap-southeast-1%2Fs3%2Faws4_request&X-Amz-Date=20260507T145809Z&X-Amz-SignedHeaders=host&X-Amz-Signature=d9afcd6c2b7bfdcedae111bbc6ba5f599eeb5102f2bb002522fd54ee88d1a456 incomingUrl=https://logaicams-bucket.s3.ap-southeast-1.amazonaws.com/uploads/tracks/covers/nhat-8de0e9e77b88459b90f0bf81c20307ff.jpg?X-Amz-Expires=3600&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIATL6VKTUC2S2NFLN2%2F20260507%2Fap-southeast-1%2Fs3%2Faws4_request&X-Amz-Date=20260507T145809Z&X-Amz-SignedHeaders=host&X-Amz-Signature=d9afcd6c2b7bfdcedae111bbc6ba5f599eeb5102f2bb002522fd54ee88d1a456
+I/flutter (11543): [NowPlayingArtworkDebug] didUpdate unchanged count=60 identity=01a2f04d-6bd0-448e-a5d1-95d711220392 url=https://logaicams-bucket.s3.ap-southeast-1.amazonaws.com/uploads/tracks/covers/nhat-8de0e9e77b88459b90f0bf81c20307ff.jpg?X-Amz-Expires=3600&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIATL6VKTUC2S2NFLN2%2F20260507%2Fap-southeast-1%2Fs3%2Faws4_request&X-Amz-Date=20260507T145809Z&X-Amz-SignedHeaders=host&X-Amz-Signature=d9afcd6c2b7bfdcedae111bbc6ba5f599eeb5102f2bb002522fd54ee88d1a456 incomingUrl=https://logaicams-bucket.s3.ap-southeast-1.amazonaws.com/uploads/tracks/covers/nhat-8de0e9e77b88459b90f0bf81c20307ff.jpg?X-Amz-Expires=3600&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIATL6VKTUC2S2NFLN2%2F20260507%2Fap-southeast-1%2Fs3%2Faws4_request&X-Amz-Date=20260507T145809Z&X-Amz-SignedHeaders=host&X-Amz-Signature=d9afcd6c2b7bfdcedae111bbc6ba5f599eeb5102f2bb002522fd54ee88d1a456
+D/AidlBufferPool(11543): bufferpool2 0xb400007631443438 : 5(40960 size) total buffers - 1(8192 size) used buffers - 498/503 (recycle/alloc) - 7/498 (fetch/transfer)
+I/flutter (11543): [NowPlayingArtworkDebug] didUpdate unchanged count=70 identity=01a2f04d-6bd0-448e-a5d1-95d711220392 url=https://logaicams-bucket.s3.ap-southeast-1.amazonaws.com/uploads/tracks/covers/nhat-8de0e9e77b88459b90f0bf81c20307ff.jpg?X-Amz-Expires=3600&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIATL6VKTUC2S2NFLN2%2F20260507%2Fap-southeast-1%2Fs3%2Faws4_request&X-Amz-Date=20260507T145809Z&X-Amz-SignedHeaders=host&X-Amz-Signature=d9afcd6c2b7bfdcedae111bbc6ba5f599eeb5102f2bb002522fd54ee88d1a456 incomingUrl=https://logaicams-bucket.s3.ap-southeast-1.amazonaws.com/uploads/tracks/covers/nhat-8de0e9e77b88459b90f0bf81c20307ff.jpg?X-Amz-Expires=3600&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIATL6VKTUC2S2NFLN2%2F20260507%2Fap-southeast-1%2Fs3%2Faws4_request&X-Amz-Date=20260507T145809Z&X-Amz-SignedHeaders=host&X-Amz-Signature=d9afcd6c2b7bfdcedae111bbc6ba5f599eeb5102f2bb002522fd54ee88d1a456
+I/flutter (11543): [NowPlayingArtworkDebug] didUpdate unchanged count=80 identity=01a2f04d-6bd0-448e-a5d1-95d711220392 url=https://logaicams-bucket.s3.ap-southeast-1.amazonaws.com/uploads/tracks/covers/nhat-8de0e9e77b88459b90f0bf81c20307ff.jpg?X-Amz-Expires=3600&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIATL6VKTUC2S2NFLN2%2F20260507%2Fap-southeast-1%2Fs3%2Faws4_request&X-Amz-Date=20260507T145809Z&X-Amz-SignedHeaders=host&X-Amz-Signature=d9afcd6c2b7bfdcedae111bbc6ba5f599eeb5102f2bb002522fd54ee88d1a456 incomingUrl=https://logaicams-bucket.s3.ap-southeast-1.amazonaws.com/uploads/tracks/covers/nhat-8de0e9e77b88459b90f0bf81c20307ff.jpg?X-Amz-Expires=3600&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIATL6VKTUC2S2NFLN2%2F20260507%2Fap-southeast-1%2Fs3%2Faws4_request&X-Amz-Date=20260507T145809Z&X-Amz-SignedHeaders=host&X-Amz-Signature=d9afcd6c2b7bfdcedae111bbc6ba5f599eeb5102f2bb002522fd54ee88d1a456
+I/flutter (11543): [NowPlayingArtworkDebug] didUpdate unchanged count=90 identity=01a2f04d-6bd0-448e-a5d1-95d711220392 url=https://logaicams-bucket.s3.ap-southeast-1.amazonaws.com/uploads/tracks/covers/nhat-8de0e9e77b88459b90f0bf81c20307ff.jpg?X-Amz-Expires=3600&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIATL6VKTUC2S2NFLN2%2F20260507%2Fap-southeast-1%2Fs3%2Faws4_request&X-Amz-Date=20260507T145809Z&X-Amz-SignedHeaders=host&X-Amz-Signature=d9afcd6c2b7bfdcedae111bbc6ba5f599eeb5102f2bb002522fd54ee88d1a456 incomingUrl=https://logaicams-bucket.s3.ap-southeast-1.amazonaws.com/uploads/tracks/covers/nhat-8de0e9e77b88459b90f0bf81c20307ff.jpg?X-Amz-Expires=3600&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIATL6VKTUC2S2NFLN2%2F20260507%2Fap-southeast-1%2Fs3%2Faws4_request&X-Amz-Date=20260507T145809Z&X-Amz-SignedHeaders=host&X-Amz-Signature=d9afcd6c2b7bfdcedae111bbc6ba5f599eeb5102f2bb002522fd54ee88d1a456
+D/AidlBufferPool(11543): bufferpool2 0xb400007631443438 : 5(40960 size) total buffers - 1(8192 size) used buffers - 731/736 (recycle/alloc) - 7/731 (fetch/transfer)
+I/flutter (11543): [NowPlayingArtworkDebug] didUpdate unchanged count=100 identity=01a2f04d-6bd0-448e-a5d1-95d711220392 url=https://logaicams-bucket.s3.ap-southeast-1.amazonaws.com/uploads/tracks/covers/nhat-8de0e9e77b88459b90f0bf81c20307ff.jpg?X-Amz-Expires=3600&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIATL6VKTUC2S2NFLN2%2F20260507%2Fap-southeast-1%2Fs3%2Faws4_request&X-Amz-Date=20260507T145809Z&X-Amz-SignedHeaders=host&X-Amz-Signature=d9afcd6c2b7bfdcedae111bbc6ba5f599eeb5102f2bb002522fd54ee88d1a456 incomingUrl=https://logaicams-bucket.s3.ap-southeast-1.amazonaws.com/uploads/tracks/covers/nhat-8de0e9e77b88459b90f0bf81c20307ff.jpg?X-Amz-Expires=3600&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIATL6VKTUC2S2NFLN2%2F20260507%2Fap-southeast-1%2Fs3%2Faws4_request&X-Amz-Date=20260507T145809Z&X-Amz-SignedHeaders=host&X-Amz-Signature=d9afcd6c2b7bfdcedae111bbc6ba5f599eeb5102f2bb002522fd54ee88d1a456
+I/VRI[MainActivity]@c8541dc(11543): call setFrameRateCategory for touch hint category=high hint, reason=touch, vri=VRI[MainActivity]@c8541dc
+I/flutter (11543): [PlaybackUiTrace] PLAY_PAUSE_TAP command=pause inFlight=false inFlightCommand=- playerPlaying=true display=19.44 current=2985.44 remotePaused=false remoteSeek=19.63 queueItem=01a2f04d-6bd0-448e-a5d1-95d711220392
+I/flutter (11543): [PlaybackTrace] API_COMMAND_IN_FLIGHT_START spaceId=d0d258f5-3c74-457a-b17b-629f61d504d6 command=pause seek=- remotePaused=false remoteSeek=19.63 currentQueueItem=01a2f04d-6bd0-448e-a5d1-95d711220392
+I/flutter (11543): [PlaybackTrace] COMMAND_RELAY_EMIT spaceId=d0d258f5-3c74-457a-b17b-629f61d504d6 command=pause seek=- targetQueueItemId=- targetTrackId=- nextSequence=2
+I/flutter (11543): [PlaybackTrace] API_COMMAND_SENT spaceId=d0d258f5-3c74-457a-b17b-629f61d504d6 command=pause seek=- targetQueueItemId=- targetTrackId=-
+I/flutter (11543): [PlaybackTrace] API_COMMAND_PIPELINE spaceId=d0d258f5-3c74-457a-b17b-629f61d504d6 scope=playback_device command=pause seek=- targetQueueItemId=- targetTrackId=-
+I/flutter (11543): [PlaybackTrace] LOCAL_COMMAND_HOLD_START command=pause seek=- queueItemId=01a2f04d-6bd0-448e-a5d1-95d711220392 holdMs=1200 until=2026-05-07T14:58:29.779211Z
+I/flutter (11543): [PlaybackTrace] COORDINATOR_COMMAND_RELAY command=pause seek=- targetQueueItemId=- targetTrackId=- playLocally=true playerPlaying=true playerPos=2985.44 inFlight=true inFlightCommand=pause
+I/flutter (11543): [PlaybackTrace] PLAYER_REMOTE_COMMAND_START command=pause playLocally=true isSynced=true statePlaying=true statePos=2985.44 enginePlaying=true enginePos=19.586 engineState=ready queueItemId=01a2f04d-6bd0-448e-a5d1-95d711220392 trackId=3a29e926-f6ad-4de9-96fc-ae4d07cc3b66
+I/flutter (11543): [PlaybackTrace] PLAYER_REMOTE_COMMAND_EMIT command=pause statePlaying=false statePos=2985.44 enginePlaying=false engineState=ready
+I/flutter (11543): [NowPlayingArtworkDebug] discSpinIntent shouldSpin=false wasAnimating=true value=0.553
+I/flutter (11543): [NowPlayingArtworkDebug] discRotation stop at=0.553
+I/flutter (11543): *** Request ***
+I/flutter (11543): uri: https://logcams.cloud/api/cams/spaces/playback
+I/flutter (11543): method: POST
+I/flutter (11543): responseType: ResponseType.json
+I/flutter (11543): followRedirects: true
+I/flutter (11543): persistentConnection: true
+I/flutter (11543): connectTimeout: 0:00:30.000000
+I/flutter (11543): sendTimeout: 0:00:30.000000
+I/flutter (11543): receiveTimeout: 0:00:30.000000
+I/flutter (11543): receiveDataWhenStatusError: true
+I/flutter (11543): extra: {}
+I/flutter (11543): headers:
+I/flutter (11543):  Content-Type: application/json
+I/flutter (11543):  Accept: application/json
+I/flutter (11543): data:
+I/flutter (11543): {command: 1}
+I/flutter (11543): 
+I/flutter (11543): [DioClient] Preparing auth header for "/api/cams/spaces/playback": playbackScoped=true selectedToken=eyJhbGciOiJI...
+I/flutter (11543): [DioClient] [request-auth] path=/api/cams/spaces/playback activeMode=playback_device hasManagerToken=false managerExpiry=null hasDeviceAccessToken=true deviceAccessExpiry=2026-05-07T15:03:45.779989Z hasDeviceRefreshToken=true deviceSessionKeys=deviceAccessToken,deviceRefreshToken,accessTokenExpiresAt,brandId,storeId,spaceId,storeName,spaceName,deviceId,manufacturer,model,osVersion,appVersion
+I/flutter (11543): [PlaybackTrace] SIGNALR_PLAYBACK_COMMAND spaceId=d0d258f5-3c74-457a-b17b-629f61d504d6 command=pause seek=- targetQueueItemId=- targetTrackId=-
+I/flutter (11543): [QueueFirstV2] hub PlaybackCommand spaceId=d0d258f5-3c74-457a-b17b-629f61d504d6 command=pause seek=- targetQueueItemId=- targetTrackId=-
+I/flutter (11543): [PlaybackTrace] STATE_EMIT source=signalr-command-patch:pause pendingTarget=01a2f04d-6bd0-448e-a5d1-95d711220392 previous=queue=01a2f04d-6bd0-448e-a5d1-95d711220392,itemStatus=1,track=Nhất tiếu giang hồ,trackId=3a29e926-f6ad-4de9-96fc-ae4d07cc3b66,hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/3a29e926-f6ad-4de9-96fc-ae4d07cc3b66/v1/nhat-tieu-giang-ho-b454b9e6e268450ea21cd2241ff58bc2.m3u8,paused=false,seek=19.93,started=2026-05-07T14:58:09.223745Z,queueCount=20 next=queue=01a2f04d-6bd0-448e-a5d1-95d711220392,itemStatus=1,track=Nhất tiếu giang hồ,trackId=3a29e926-f6ad-4de9-96fc-ae4d07cc3b66,hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/3a29e926-f6ad-4de9-96fc-ae4d07cc3b66/v1/nhat-tieu-giang-ho-b454b9e6e268450ea21cd2241ff58bc2.m3u8,paused=true,seek=20.00,started=2026-05-07T14:58:09.223745Z,queueCount=20
+I/flutter (11543): [QueueFirstV2] emitState space=d0d258f5-3c74-457a-b17b-629f61d504d6 current=01a2f04d-6bd0-448e-a5d1-95d711220392 pending=- track=Nhất tiếu giang hồ hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/3a29e926-f6ad-4de9-96fc-ae4d07cc3b66/v1/nhat-tieu-giang-ho-b454b9e6e268450ea21cd2241ff58bc2.m3u8 manual=false scheduling=false paused=true queueCount=20 queue=[1:Star Boys:2 | 2:Baby:2 | 3:Thật bất ngờ:2 | 4:Smooth:2]
+I/flutter (11543): [CamsPlaybackBlocV2] runtimeState space=d0d258f5-3c74-457a-b17b-629f61d504d6 currentQueueItemId=01a2f04d-6bd0-448e-a5d1-95d711220392 pendingQueueItemId=- currentTrack=Nhất tiếu giang hồ hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/3a29e926-f6ad-4de9-96fc-ae4d07cc3b66/v1/nhat-tieu-giang-ho-b454b9e6e268450ea21cd2241ff58bc2.m3u8 manual=false scheduling=false queueCount=20 queue=[1:Star Boys:2 | 2:Baby:2 | 3:Thật bất ngờ:2]
+I/flutter (11543): [PlaybackTrace] BLOC_RUNTIME_STATE_APPLY spaceId=d0d258f5-3c74-457a-b17b-629f61d504d6 inFlight=pause previousQueueItem=01a2f04d-6bd0-448e-a5d1-95d711220392 nextQueueItem=01a2f04d-6bd0-448e-a5d1-95d711220392 previousTrack=Nhất tiếu giang hồ nextTrack=Nhất tiếu giang hồ nextPaused=true nextSeek=20.00
+I/flutter (11543): [AppPlaybackCoordinatorV2] syncCamsState status=active commandInFlight=true inFlightCommand=pause localHold=pause holdSeek=- playback=space=d0d258f5-3c74-457a-b17b-629f61d504d6 current=01a2f04d-6bd0-448e-a5d1-95d711220392 pending=- track=Nhất tiếu giang hồ hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/3a29e926-f6ad-4de9-96fc-ae4d07cc3b66/v1/nhat-tieu-giang-ho-b454b9e6e268450ea21cd2241ff58bc2.m3u8 queueCount=20 queue=[1:Star Boys:2 | 2:Baby:2 | 3:Thật bất ngờ:2 | 4:Smooth:2] playerTrack=Nhất tiếu giang hồ playerHls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/3a29e926-f6ad-4de9-96fc-ae4d07cc3b66/v1/nhat-tieu-giang-ho-b454b9e6e268450ea21cd2241ff58bc2.m3u8
+I/flutter (11543): [AppPlaybackCoordinatorV2] remoteDecision remoteSignature=d0d258f5-3c74-457a-b17b-629f61d504d6|01a2f04d-6bd0-448e-a5d1-95d711220392|3a29e926-f6ad-4de9-96fc-ae4d07cc3b66|https://ddbdgg08nzlz.cloudfront.net/audio/tracks/3a29e926-f6ad-4de9-96fc-ae4d07cc3b66/v1/nhat-tieu-giang-ho-b454b9e6e268450ea21cd2241ff58bc2.m3u8|1|20 lastSignature=d0d258f5-3c74-457a-b17b-629f61d504d6|01a2f04d-6bd0-448e-a5d1-95d711220392|3a29e926-f6ad-4de9-96fc-ae4d07cc3b66|https://ddbdgg08nzlz.cloudfront.net/audio/tracks/3a29e926-f6ad-4de9-96fc-ae4d07cc3b66/v1/nhat-tieu-giang-ho-b454b9e6e268450ea21cd2241ff58bc2.m3u8|0|2 epochSignature=d0d258f5-3c74-457a-b17b-629f61d504d6|01a2f04d-6bd0-448e-a5d1-95d711220392|3a29e926-f6ad-4de9-96fc-ae4d07cc3b66|https://ddbdgg08nzlz.cloudfront.net/audio/tracks/3a29e926-f6ad-4de9-96fc-ae4d07cc3b66/v1/nhat-tieu-giang-ho-b454b9e6e268450ea21cd2241ff58bc2.m3u8 lastEpoch=d0d258f5-3c74-457a-b17b-629f61d504d6|01a2f04d-6bd0-448e-a5d1-95d711220392|3a29e926-f6ad-4de9-96fc-ae4d07cc3b66|https://ddbdgg08nzlz.cloudfront.net
+I/flutter (11543): [AppPlaybackCoordinatorV2] same remote HLS snapshot -> defer playback correction while playback command is pending command=pause queueItemId=01a2f04d-6bd0-448e-a5d1-95d711220392 playerPlaying=false remotePaused=true playerPos=2985.59 remoteSeek=20.00 drift=0.41
+I/flutter (11543): *** Response ***
+I/flutter (11543): uri: https://logcams.cloud/api/cams/spaces/playback
+I/flutter (11543): statusCode: 200
+I/flutter (11543): statusMessage: OK
+I/flutter (11543): headers:
+I/flutter (11543):  connection: keep-alive
+I/flutter (11543):  alt-svc: h3=":443"; ma=86400
+I/flutter (11543):  date: Thu, 07 May 2026 14:58:29 GMT
+I/flutter (11543):  transfer-encoding: chunked
+I/flutter (11543):  content-encoding: gzip
+I/flutter (11543):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+I/flutter (11543):  cf-ray: 9f81154399e4b21b-HKG
+I/flutter (11543):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=TvSbSiXJwXky9DzSWZS2p7ZELPy5Zs5xetqbbdf1v0Da9x73WkVluu7pMZMHkDyO%2BuDj9XOXCRs473V4%2FvtJalS2eRvLCfnOwk%2FQ%2BILoP2nogRmyOgPB0rZ0Y1q3tj%2Fj"}]}
+I/flutter (11543):  cf-cache-status: DYNAMIC
+I/flutter (11543):  content-type: application/json; charset=utf-8
+I/flutter (11543):  server: cloudflare
+I/flutter (11543): Response Text:
+I/flutter (11543): {"isSuccess":true,"message":"Playback command 'Pause' relayed to Space."}
+I/flutter (11543): 
+I/flutter (11543): [PlaybackTrace] API_COMMAND_HTTP_OK spaceId=d0d258f5-3c74-457a-b17b-629f61d504d6 command=pause
+I/flutter (11543): [PlaybackTrace] STATE_EMIT source=local-command-patch:pause pendingTarget=01a2f04d-6bd0-448e-a5d1-95d711220392 previous=queue=01a2f04d-6bd0-448e-a5d1-95d711220392,itemStatus=1,track=Nhất tiếu giang hồ,trackId=3a29e926-f6ad-4de9-96fc-ae4d07cc3b66,hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/3a29e926-f6ad-4de9-96fc-ae4d07cc3b66/v1/nhat-tieu-giang-ho-b454b9e6e268450ea21cd2241ff58bc2.m3u8,paused=true,seek=20.00,started=2026-05-07T14:58:09.223745Z,queueCount=20 next=queue=01a2f04d-6bd0-448e-a5d1-95d711220392,itemStatus=1,track=Nhất tiếu giang hồ,trackId=3a29e926-f6ad-4de9-96fc-ae4d07cc3b66,hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/3a29e926-f6ad-4de9-96fc-ae4d07cc3b66/v1/nhat-tieu-giang-ho-b454b9e6e268450ea21cd2241ff58bc2.m3u8,paused=true,seek=20.00,started=2026-05-07T14:58:09.223745Z,queueCount=20
+I/flutter (11543): [QueueFirstV2] emitState space=d0d258f5-3c74-457a-b17b-629f61d504d6 current=01a2f04d-6bd0-448e-a5d1-95d711220392 pending=- track=Nhất tiếu giang hồ hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/3a29e926-f6ad-4de9-96fc-ae4d07cc3b66/v1/nhat-tieu-giang-ho-b454b9e6e268450ea21cd2241ff58bc2.m3u8 manual=false scheduling=false paused=true queueCount=20 queue=[1:Star Boys:2 | 2:Baby:2 | 3:Thật bất ngờ:2 | 4:Smooth:2]
+I/flutter (11543): [QueueFirstV2] reconcile after mutation started
+I/flutter (11543): [PlaybackTrace] API_COMMAND_ACK spaceId=d0d258f5-3c74-457a-b17b-629f61d504d6 command=pause
+I/flutter (11543): [PlaybackTrace] API_COMMAND_IN_FLIGHT_END spaceId=d0d258f5-3c74-457a-b17b-629f61d504d6 command=pause queuedPriority=- queuedSeek=- remotePaused=true remoteSeek=20.00
+I/flutter (11543): [CamsPlaybackBlocV2] runtimeState space=d0d258f5-3c74-457a-b17b-629f61d504d6 currentQueueItemId=01a2f04d-6bd0-448e-a5d1-95d711220392 pendingQueueItemId=- currentTrack=Nhất tiếu giang hồ hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/3a29e926-f6ad-4de9-96fc-ae4d07cc3b66/v1/nhat-tieu-giang-ho-b454b9e6e268450ea21cd2241ff58bc2.m3u8 manual=false scheduling=false queueCount=20 queue=[1:Star Boys:2 | 2:Baby:2 | 3:Thật bất ngờ:2]
+I/flutter (11543): [AppPlaybackCoordinatorV2] syncCamsState status=active commandInFlight=false inFlightCommand=- localHold=pause holdSeek=- playback=space=d0d258f5-3c74-457a-b17b-629f61d504d6 current=01a2f04d-6bd0-448e-a5d1-95d711220392 pending=- track=Nhất tiếu giang hồ hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/3a29e926-f6ad-4de9-96fc-ae4d07cc3b66/v1/nhat-tieu-giang-ho-b454b9e6e268450ea21cd2241ff58bc2.m3u8 queueCount=20 queue=[1:Star Boys:2 | 2:Baby:2 | 3:Thật bất ngờ:2 | 4:Smooth:2] playerTrack=Nhất tiếu giang hồ playerHls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/3a29e926-f6ad-4de9-96fc-ae4d07cc3b66/v1/nhat-tieu-giang-ho-b454b9e6e268450ea21cd2241ff58bc2.m3u8
+I/flutter (11543): [AppPlaybackCoordinatorV2] remoteDecision remoteSignature=d0d258f5-3c74-457a-b17b-629f61d504d6|01a2f04d-6bd0-448e-a5d1-95d711220392|3a29e926-f6ad-4de9-96fc-ae4d07cc3b66|https://ddbdgg08nzlz.cloudfront.net/audio/tracks/3a29e926-f6ad-4de9-96fc-ae4d07cc3b66/v1/nhat-tieu-giang-ho-b454b9e6e268450ea21cd2241ff58bc2.m3u8|1|20 lastSignature=d0d258f5-3c74-457a-b17b-629f61d504d6|01a2f04d-6bd0-448e-a5d1-95d711220392|3a29e926-f6ad-4de9-96fc-ae4d07cc3b66|https://ddbdgg08nzlz.cloudfront.net/audio/tracks/3a29e926-f6ad-4de9-96fc-ae4d07cc3b66/v1/nhat-tieu-giang-ho-b454b9e6e268450ea21cd2241ff58bc2.m3u8|1|20 epochSignature=d0d258f5-3c74-457a-b17b-629f61d504d6|01a2f04d-6bd0-448e-a5d1-95d711220392|3a29e926-f6ad-4de9-96fc-ae4d07cc3b66|https://ddbdgg08nzlz.cloudfront.net/audio/tracks/3a29e926-f6ad-4de9-96fc-ae4d07cc3b66/v1/nhat-tieu-giang-ho-b454b9e6e268450ea21cd2241ff58bc2.m3u8 lastEpoch=d0d258f5-3c74-457a-b17b-629f61d504d6|01a2f04d-6bd0-448e-a5d1-95d711220392|3a29e926-f6ad-4de9-96fc-ae4d07cc3b66|https://ddbdgg08nzlz.cloudfront.ne
+I/flutter (11543): [AppPlaybackCoordinatorV2] same remote HLS snapshot -> defer playback correction while playback command is pending command=pause queueItemId=01a2f04d-6bd0-448e-a5d1-95d711220392 playerPlaying=false remotePaused=true playerPos=2985.59 remoteSeek=20.00 drift=0.41
+I/flutter (11543): [AppPlaybackCoordinatorV2] same remote HLS snapshot -> skip manager position snapshot while playback command is pending command=pause remoteSeek=20.00 playerPos=2985.59
+I/flutter (11543): *** Request ***
+I/flutter (11543): uri: https://logcams.cloud/api/cams/spaces/state
+I/flutter (11543): method: GET
+I/flutter (11543): responseType: ResponseType.json
+I/flutter (11543): followRedirects: true
+I/flutter (11543): persistentConnection: true
+I/flutter (11543): connectTimeout: 0:00:30.000000
+I/flutter (11543): sendTimeout: 0:00:30.000000
+I/flutter (11543): receiveTimeout: 0:00:30.000000
+I/flutter (11543): receiveDataWhenStatusError: true
+I/flutter (11543): extra: {}
+I/flutter (11543): headers:
+I/flutter (11543):  Content-Type: application/json
+I/flutter (11543):  Accept: application/json
+I/flutter (11543): data:
+I/flutter (11543): null
+I/flutter (11543): 
+I/flutter (11543): [DioClient] Preparing auth header for "/api/cams/spaces/state": playbackScoped=true selectedToken=eyJhbGciOiJI...
+I/flutter (11543): [DioClient] [request-auth] path=/api/cams/spaces/state activeMode=playback_device hasManagerToken=false managerExpiry=null hasDeviceAccessToken=true deviceAccessExpiry=2026-05-07T15:03:45.779989Z hasDeviceRefreshToken=true deviceSessionKeys=deviceAccessToken,deviceRefreshToken,accessTokenExpiresAt,brandId,storeId,spaceId,storeName,spaceName,deviceId,manufacturer,model,osVersion,appVersion
+I/flutter (11543): [QueueFirstV2] hub SpaceStateSync raw -> space=d0d258f5-3c74-457a-b17b-629f61d504d6 current=a4df7300-1770-4eeb-bb3d-8273b155b171 pending=- track=Shape of you hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/0375a513-5e9b-4e92-867c-d250a526778f/v1/shade-of-you-e215bcdb1d1247738eca78c92b930aa1.m3u8 manual=false scheduling=false paused=true queueCount=20 queue=[1:Star Boys:3 | 2:Baby:2 | 3:Thật bất ngờ:3 | 4:Smooth:3]
+I/flutter (11543): [PlaybackTrace] TRACK_JUMP_GUARD_CHECK source=signalr-state-sync target=01a2f04d-6bd0-448e-a5d1-95d711220392 ageMs=19807 targetSeenMs=- incoming=queue=a4df7300-1770-4eeb-bb3d-8273b155b171,itemStatus=1,track=Shape of you,trackId=0375a513-5e9b-4e92-867c-d250a526778f,hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/0375a513-5e9b-4e92-867c-d250a526778f/v1/shade-of-you-e215bcdb1d1247738eca78c92b930aa1.m3u8,paused=true,seek=20.00,started=2026-05-07T14:58:09.255451Z,queueCount=20 current=queue=01a2f04d-6bd0-448e-a5d1-95d711220392,itemStatus=1,track=Nhất tiếu giang hồ,trackId=3a29e926-f6ad-4de9-96fc-ae4d07cc3b66,hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/3a29e926-f6ad-4de9-96fc-ae4d07cc3b66/v1/nhat-tieu-giang-ho-b454b9e6e268450ea21cd2241ff58bc2.m3u8,paused=true,seek=20.00,started=2026-05-07T14:58:09.223745Z,queueCount=20
+I/flutter (11543): [PlaybackTrace] TRACK_JUMP_GUARD_EXPIRED source=signalr-state-sync target=01a2f04d-6bd0-448e-a5d1-95d711220392 ageMs=19807 targetSeenMs=- incoming=queue=a4df7300-1770-4eeb-bb3d-8273b155b171,itemStatus=1,track=Shape of you,trackId=0375a513-5e9b-4e92-867c-d250a526778f,hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/0375a513-5e9b-4e92-867c-d250a526778f/v1/shade-of-you-e215bcdb1d1247738eca78c92b930aa1.m3u8,paused=true,seek=20.00,started=2026-05-07T14:58:09.255451Z,queueCount=20 current=queue=01a2f04d-6bd0-448e-a5d1-95d711220392,itemStatus=1,track=Nhất tiếu giang hồ,trackId=3a29e926-f6ad-4de9-96fc-ae4d07cc3b66,hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/3a29e926-f6ad-4de9-96fc-ae4d07cc3b66/v1/nhat-tieu-giang-ho-b454b9e6e268450ea21cd2241ff58bc2.m3u8,paused=true,seek=20.00,started=2026-05-07T14:58:09.223745Z,queueCount=20
+I/CCodec  (11543): [c2.android.aac.decoder] state->set(FLUSHING)
+I/CCodec  (11543): [c2.android.aac.decoder] state->set(FLUSHED)
+D/CCodecBuffers(11543): [c2.android.aac.decoder#763:1D-Output.Impl[N]] Client returned a buffer it does not own according to our record: 0
+D/MediaCodec(11543): keep callback message for reclaim
+I/CCodec  (11543): [c2.android.aac.decoder] state->set(RESUMING)
+I/CCodecConfig(11543): query failed after returning 21 values (BAD_INDEX)
+I/CCodecBufferChannel(11543): [c2.android.aac.decoder#763] 4 initial input buffers available
+I/CCodec  (11543): [c2.android.aac.decoder] state->set(RUNNING)
+W/LegacyMessageQueue(11543): Handler (android.media.MediaCodec$EventHandler) {18afa3d} sending message to a Handler on a dead thread
+W/LegacyMessageQueue(11543): java.lang.IllegalStateException: Handler (android.media.MediaCodec$EventHandler) {18afa3d} sending message to a Handler on a dead thread
+W/LegacyMessageQueue(11543):    at android.os.MessageQueue.enqueueMessageLegacy(MessageQueue.java:1391)
+W/LegacyMessageQueue(11543):    at android.os.MessageQueue.enqueueMessage(MessageQueue.java:1500)
+W/LegacyMessageQueue(11543):    at android.os.Handler.enqueueMessage(Handler.java:790)
+W/LegacyMessageQueue(11543):    at android.os.Handler.sendMessageAtTime(Handler.java:739)
+W/LegacyMessageQueue(11543):    at android.os.Handler.sendMessageDelayed(Handler.java:709)
+W/LegacyMessageQueue(11543):    at android.os.Handler.sendMessage(Handler.java:647)
+W/LegacyMessageQueue(11543):    at android.media.MediaCodec.postEventFromNative(MediaCodec.java:6046)
+W/LegacyMessageQueue(11543): Handler (android.media.MediaCodec$EventHandler) {18afa3d} sending message to a Handler on a dead thread
+W/LegacyMessageQueue(11543): java.lang.IllegalStateException: Handler (android.media.MediaCodec$EventHandler) {18afa3d} sending message to a Handler on a dead thread
+W/LegacyMessageQueue(11543):    at android.os.MessageQueue.enqueueMessageLegacy(MessageQueue.java:1391)
+W/LegacyMessageQueue(11543):    at android.os.MessageQueue.enqueueMessage(MessageQueue.java:1500)
+W/LegacyMessageQueue(11543):    at android.os.Handler.enqueueMessage(Handler.java:790)
+W/LegacyMessageQueue(11543):    at android.os.Handler.sendMessageAtTime(Handler.java:739)
+W/LegacyMessageQueue(11543):    at android.os.Handler.sendMessageDelayed(Handler.java:709)
+W/LegacyMessageQueue(11543):    at android.os.Handler.sendMessage(Handler.java:647)
+W/LegacyMessageQueue(11543):    at android.media.MediaCodec.postEventFromNative(MediaCodec.java:6046)
+I/CCodec  (11543): [c2.android.aac.decoder] state->set(RELEASING)
+I/NotificationManager(11543): com.example.cams_store_manager: notify(1124, null, Notification(channel=com.example.cams_store_manager.playback_controls shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=0 color=0x00000000 category=transport actions=3 vis=PUBLIC semFlags=0x0 semPriority=0 semMissedCount=0)) as user
+D/CCodecBufferChannel(11543): [c2.android.aac.decoder#763] MediaCodec discarded an unknown buffer
+D/CCodecBufferChannel(11543): [c2.android.aac.decoder#763] MediaCodec discarded an unknown buffer
+D/CCodecBufferChannel(11543): [c2.android.aac.decoder#763] MediaCodec discarded an unknown buffer
+D/CCodecBufferChannel(11543): [c2.android.aac.decoder#763] MediaCodec discarded an unknown buffer
+I/CCodec  (11543): [release][3405] component -> surface
+I/CCodec  (11543): [c2.android.aac.decoder] state->set(RELEASED)
+I/Codec2Client(11543): Component destructing
+I/MediaCodec(11543): Codec shutdown complete
+I/CCodecBufferChannel(11543): CCodecBufferChannel destructing c2.android.aac.decoder#763
+I/flutter (11543): *** Response ***
+I/flutter (11543): uri: https://logcams.cloud/api/cams/spaces/state
+I/flutter (11543): statusCode: 200
+I/flutter (11543): statusMessage: OK
+I/flutter (11543): headers:
+I/flutter (11543):  connection: keep-alive
+I/flutter (11543):  alt-svc: h3=":443"; ma=86400
+I/flutter (11543):  date: Thu, 07 May 2026 14:58:29 GMT
+I/flutter (11543):  transfer-encoding: chunked
+I/flutter (11543):  content-encoding: gzip
+I/flutter (11543):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+I/flutter (11543):  cf-ray: 9f811544ed4bb21b-HKG
+I/flutter (11543):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=UGjZHLf8Sxh3API%2BgmKi2ck9jw9alGMpMs3IO0h1H5qvdEyR17ayKgcCEeb94vkUgJ1Ay4E14hhughrfZQS5LtK1ow47BCA5f2I5X2arFu90UAIjMeA4iUWijCnlGt8N"}]}
+I/flutter (11543):  cf-cache-status: DYNAMIC
+I/flutter (11543):  content-type: application/json; charset=utf-8
+I/flutter (11543):  server: cloudflare
+I/flutter (11543): Response Text:
+I/flutter (11543): {"isSuccess":true,"message":"Success","data":{"spaceId":"d0d258f5-3c74-457a-b17b-629f61d504d6","storeId":"d34ffedc-f11a-41f6-b485-efb6cf6181a5","brandId":"ff587081-083f-42ec-b43b-b3a6b2f4756d","currentQueueItemId":"a4df7300-1770-4eeb-bb3d-8273b155b171","currentTrackName":"Shape of you","currentArtist":"SpaceX","hlsUrl":"https://ddbdgg08nzlz.cloudfront.net/audio/tracks/0375a513-5e9b-4e92-867c-d250a526778f/v1/shade-of-you-e215bcdb1d1247738eca78c92b930aa1.m3u8","moodName":"Energetic","isManualOverride":false,"overrideMode":null,"overrideReason":null,"manualOverrideActivatedAtUtc":null,"manualOverrideExpiresAtUtc":null,"manualOverrideTtlSeconds":null,"manualOverrideRemainingSeconds":null,"isScheduling":false,"schedulingSlotId":null,"schedulingSlotOrigin":null,"schedulingEndsAtUtc":null,"schedulingRemainingSeconds":null,"startedAtUtc":"2026-05-07T14:58:09.255451Z","expectedEndAtUtc":null,"seekOffsetSeconds":20.0626478,"isPaused":true,"pausePositionSeconds":20,"pendingQueueItemId":null,"pendingOverrideReason":null
+I/flutter (11543): 
+I/flutter (11543): *** Request ***
+I/flutter (11543): uri: https://logcams.cloud/api/cams/space/d0d258f5-3c74-457a-b17b-629f61d504d6/mood
+I/flutter (11543): method: GET
+I/flutter (11543): responseType: ResponseType.json
+I/flutter (11543): followRedirects: true
+I/flutter (11543): persistentConnection: true
+I/flutter (11543): connectTimeout: 0:00:30.000000
+I/flutter (11543): sendTimeout: 0:00:30.000000
+I/flutter (11543): receiveTimeout: 0:00:30.000000
+I/flutter (11543): receiveDataWhenStatusError: true
+I/flutter (11543): extra: {}
+I/flutter (11543): headers:
+I/flutter (11543):  Content-Type: application/json
+I/flutter (11543):  Accept: application/json
+I/flutter (11543): data:
+I/flutter (11543): null
+I/flutter (11543): 
+I/flutter (11543): *** Response ***
+I/flutter (11543): uri: https://logcams.cloud/api/cams/space/d0d258f5-3c74-457a-b17b-629f61d504d6/mood
+I/flutter (11543): statusCode: 200
+I/flutter (11543): statusMessage: OK
+I/flutter (11543): headers:
+I/flutter (11543):  connection: keep-alive
+I/flutter (11543):  alt-svc: h3=":443"; ma=86400
+I/flutter (11543):  date: Thu, 07 May 2026 14:58:29 GMT
+I/flutter (11543):  transfer-encoding: chunked
+I/flutter (11543):  content-encoding: gzip
+I/flutter (11543):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+I/flutter (11543):  cf-ray: 9f8115463974b21b-HKG
+I/flutter (11543):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=juKeLEDLUXFkqgZL9wp8%2BguaDSsicbjCT7EMCJM90G9g9POSoSYNESxmOUh3b4yah8OTxLlvV8t9G9AlQeV486p2aTukJ0lOESc6SUdNsb7EKojAmlhfFJ7fwZPUs8Wi"}]}
+I/flutter (11543):  cf-cache-status: DYNAMIC
+I/flutter (11543):  content-type: application/json; charset=utf-8
+I/flutter (11543):  server: cloudflare
+I/flutter (11543): Response Text:
+I/flutter (11543): {"isSuccess":true,"message":"Success","data":{"spaceId":"d0d258f5-3c74-457a-b17b-629f61d504d6","spaceName":"Tầng trệt","currentMood":2,"currentMoodType":2,"moodName":"Energetic","bpmMin":120,"bpmMax":140,"lastAnalyzedAtUtc":"2026-05-07T14:58:21.843383Z","isFirstCycle":false}}
+I/flutter (11543): 
+I/flutter (11543): *** Request ***
+I/flutter (11543): uri: https://logcams.cloud/api/fuzzy-music-profiles/space/d0d258f5-3c74-457a-b17b-629f61d504d6
+I/flutter (11543): method: GET
+I/flutter (11543): responseType: ResponseType.json
+I/flutter (11543): followRedirects: true
+I/flutter (11543): persistentConnection: true
+I/flutter (11543): connectTimeout: 0:00:30.000000
+I/flutter (11543): sendTimeout: 0:00:30.000000
+I/flutter (11543): receiveTimeout: 0:00:30.000000
+I/flutter (11543): receiveDataWhenStatusError: true
+I/flutter (11543): extra: {}
+I/flutter (11543): headers:
+I/flutter (11543):  Content-Type: application/json
+I/flutter (11543):  Accept: application/json
+I/flutter (11543): data:
+I/flutter (11543): null
+I/flutter (11543): 
+I/flutter (11543): *** DioException ***:
+I/flutter (11543): uri: https://logcams.cloud/api/fuzzy-music-profiles/space/d0d258f5-3c74-457a-b17b-629f61d504d6
+I/flutter (11543): DioException [bad response]: This exception was thrown because the response has a status code of 403 and RequestOptions.validateStatus was configured to throw for this status code.
+I/flutter (11543): The status code of 403 has the following meaning: "Client error - the request contains bad syntax or cannot be fulfilled"
+I/flutter (11543): Read more about status codes at https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
+I/flutter (11543): In order to resolve this exception you typically have either to verify and fix your request code or you have to fix the server code.
+I/flutter (11543): *** Response ***
+I/flutter (11543): uri: https://logcams.cloud/api/fuzzy-music-profiles/space/d0d258f5-3c74-457a-b17b-629f61d504d6
+I/flutter (11543): statusCode: 403
+I/flutter (11543): statusMessage: Forbidden
+I/flutter (11543): headers:
+I/flutter (11543):  connection: keep-alive
+I/flutter (11543):  alt-svc: h3=":443"; ma=86400
+I/flutter (11543):  date: Thu, 07 May 2026 14:58:29 GMT
+I/flutter (11543):  transfer-encoding: chunked
+I/flutter (11543):  content-encoding: gzip
+I/flutter (11543):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+I/flutter (11543):  cf-ray: 9f811546eaf6b21b-HKG
+I/flutter (11543):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=R%2B4VNzuCKMxBNgLlDreMxzjNh8zhoukjYXoSZp9nfGGXITlCk%2Fre41EI4QXwgzIuI2l4NZAepwU1shh4GHD2F%2BAbTROd8LRsIhJw6cd6zODi6EoG%2BT1agAEA%2BsPndrdX"}]}
+I/flutter (11543):  cf-cache-status: DYNAMIC
+I/flutter (11543):  content-type: application/json
+I/flutter (11543):  server: cloudflare
+I/flutter (11543): Response Text:
+I/flutter (11543): {"isSuccess":false,"message":"Insufficient permissions","errors":["Required roles: BrandManager, StoreManager","Your role: PlaybackDevice"],"errorCode":"InsufficientPermissions"}
+I/flutter (11543): 
+I/flutter (11543): 
+I/flutter (11543): *** Request ***
+I/flutter (11543): uri: https://logcams.cloud/api/fuzzy-music-profiles/store/d34ffedc-f11a-41f6-b485-efb6cf6181a5
+I/flutter (11543): method: GET
+I/flutter (11543): responseType: ResponseType.json
+I/flutter (11543): followRedirects: true
+I/flutter (11543): persistentConnection: true
+I/flutter (11543): connectTimeout: 0:00:30.000000
+I/flutter (11543): sendTimeout: 0:00:30.000000
+I/flutter (11543): receiveTimeout: 0:00:30.000000
+I/flutter (11543): receiveDataWhenStatusError: true
+I/flutter (11543): extra: {}
+I/flutter (11543): headers:
+I/flutter (11543):  Content-Type: application/json
+I/flutter (11543):  Accept: application/json
+I/flutter (11543): data:
+I/flutter (11543): null
+I/flutter (11543): 
+I/DMCodecAdapterFactory(11543): Creating an asynchronous MediaCodec adapter for track type audio
+I/CCodec  (11543): state->set(ALLOCATING)
+I/CCodec  (11543): allocate(c2.android.aac.decoder)
+D/CCodec  (11543): allocate(c2.android.aac.decoder)
+I/flutter (11543): *** DioException ***:
+I/flutter (11543): uri: https://logcams.cloud/api/fuzzy-music-profiles/store/d34ffedc-f11a-41f6-b485-efb6cf6181a5
+I/flutter (11543): DioException [bad response]: This exception was thrown because the response has a status code of 403 and RequestOptions.validateStatus was configured to throw for this status code.
+I/flutter (11543): The status code of 403 has the following meaning: "Client error - the request contains bad syntax or cannot be fulfilled"
+I/flutter (11543): Read more about status codes at https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
+I/flutter (11543): In order to resolve this exception you typically have either to verify and fix your request code or you have to fix the server code.
+I/flutter (11543): *** Response ***
+I/flutter (11543): uri: https://logcams.cloud/api/fuzzy-music-profiles/store/d34ffedc-f11a-41f6-b485-efb6cf6181a5
+I/flutter (11543): statusCode: 403
+I/flutter (11543): statusMessage: Forbidden
+I/CCodec  (11543): setting up 'default' as default (vendor) store
+I/flutter (11543): headers:
+I/flutter (11543):  connection: keep-alive
+I/flutter (11543):  alt-svc: h3=":443"; ma=86400
+I/flutter (11543):  date: Thu, 07 May 2026 14:58:29 GMT
+I/flutter (11543):  transfer-encoding: chunked
+I/flutter (11543):  content-encoding: gzip
+I/flutter (11543):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+I/flutter (11543):  cf-ray: 9f8115477c81b21b-HKG
+I/flutter (11543):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=w4kk%2Fnwb0Q38TJ8CttFnK7jYzEgdA6x1zYHPcSsMuh8slbTXc8Veo8sBHtjQ3thcE7Q2%2B5TPZuB7PjpRI6VzZL2dpFWTwQLJsFOdsI783WCeeSgVuVzlE3V6WojM%2BVaM"}]}
+I/flutter (11543):  cf-cache-status: DYNAMIC
+I/flutter (11543):  content-type: application/json
+I/flutter (11543):  server: cloudflare
+I/flutter (11543): Response Text:
+I/flutter (11543): {"isSuccess":false,"message":"Insufficient permissions","errors":["Required roles: BrandManager, StoreManager","Your role: PlaybackDevice"],"errorCode":"InsufficientPermissions"}
+I/flutter (11543): 
+I/flutter (11543): 
+I/flutter (11543): *** Request ***
+I/flutter (11543): uri: https://logcams.cloud/api/fuzzy-music-profiles/store
+I/flutter (11543): method: GET
+I/flutter (11543): responseType: ResponseType.json
+I/flutter (11543): followRedirects: true
+I/flutter (11543): persistentConnection: true
+I/flutter (11543): connectTimeout: 0:00:30.000000
+I/flutter (11543): sendTimeout: 0:00:30.000000
+I/flutter (11543): receiveTimeout: 0:00:30.000000
+I/flutter (11543): receiveDataWhenStatusError: true
+I/flutter (11543): extra: {}
+I/flutter (11543): headers:
+I/flutter (11543):  Content-Type: application/json
+I/flutter (11543):  Accept: application/json
+I/flutter (11543): data:
+I/flutter (11543): null
+I/flutter (11543): 
+D/AidlBufferPool(11543): bufferpool2 0xb4000076313b3998 : 0(0 size) total buffers - 0(0 size) used buffers - 11201/11207 (recycle/alloc) - 36/11197 (fetch/transfer)
+D/AidlBufferPool(11543): Destruction - bufferpool2 0xb4000076313b3998 cached: 0/0M, 0/0% in use; allocs: 11207, 100% recycled; transfers: 11197, 100% unfetched
+D/AidlBufferPool(11543): bufferpool2 0xb400007631446028 : 0(0 size) total buffers - 0(0 size) used buffers - 18/23 (recycle/alloc) - 5/13 (fetch/transfer)
+D/AidlBufferPool(11543): Destruction - bufferpool2 0xb400007631446028 cached: 0/0M, 0/0% in use; allocs: 23, 78% recycled; transfers: 13, 62% unfetched
+W/s_store_manager(11543): AIBinder_linkToDeath is being called with a non-null cookie and no onUnlink callback set. This might not be intended. AIBinder_DeathRecipient_setOnUnlinked should be called first.
+I/CCodec  (11543): Created component [c2.android.aac.decoder] for [c2.android.aac.decoder]
+I/CCodec  (11543): [c2.android.aac.decoder] state->set(ALLOCATED)
+D/CCodecConfig(11543): read media type: audio/mp4a-latm
+D/ReflectedParamUpdater(11543): extent() != 1 for single value type: algo.buffers.max-count.values
+D/ReflectedParamUpdater(11543): extent() != 1 for single value type: output.subscribed-indices.values
+D/ReflectedParamUpdater(11543): extent() != 1 for single value type: input.buffers.allocator-ids.values
+D/ReflectedParamUpdater(11543): extent() != 1 for single value type: output.buffers.allocator-ids.values
+D/ReflectedParamUpdater(11543): extent() != 1 for single value type: algo.buffers.allocator-ids.values
+D/ReflectedParamUpdater(11543): extent() != 1 for single value type: output.buffers.pool-ids.values
+D/ReflectedParamUpdater(11543): extent() != 1 for single value type: algo.buffers.pool-ids.values
+I/CCodec  (11543): [c2.android.aac.decoder] config->initialize() : 0
+I/CCodecConfig(11543): query failed after returning 21 values (BAD_INDEX)
+D/CCodecConfig(11543): c2 config diff is Dict {
+D/CCodecConfig(11543):   c2::u32 coded.aac-packaging.value = 0
+D/CCodecConfig(11543):   c2::u32 coded.bitrate.value = 64000
+D/CCodecConfig(11543):   c2::u32 coded.pl.level = 0
+D/CCodecConfig(11543):   c2::u32 coded.pl.profile = 8192
+D/CCodecConfig(11543):   c2::i32 coding.drc.album-mode.value = 0
+D/CCodecConfig(11543):   c2::float coding.drc.attenuation-factor.value = 1
+D/CCodecConfig(11543):   c2::float coding.drc.boost-factor.value = 1
+D/CCodecConfig(11543):   c2::i32 coding.drc.compression-mode.value = 3
+D/CCodecConfig(11543):   c2::i32 coding.drc.effect-type.value = 3
+D/CCodecConfig(11543):   c2::float coding.drc.encoded-level.value = 0.25
+D/CCodecConfig(11543):   c2::float coding.drc.reference-level.value = -16
+D/CCodecConfig(11543):   c2::u32 input.buffers.max-size.value = 8192
+D/CCodecConfig(11543):   c2::u32 input.delay.value = 0
+D/CCodecConfig(11543):   string input.media-type.value = "audio/mp4a-latm"
+D/CCodecConfig(11543):   c2::u32 output.delay.value = 2
+D/CCodecConfig(11543):   c2::float output.drc.output-loudness.value = 0.25
+D/CCodecConfig(11543):   c2::u32 output.large-frame.max-size = 0
+D/CCodecConfig(11543):   c2::u32 output.large-frame.threshold-size = 0
+D/CCodecConfig(11543):   string output.media-type.value = "audio/raw"
+D/CCodecConfig(11543):   c2::u32 raw.channel-count.value = 1
+D/CCodecConfig(11543):   c2::u32 raw.channel-mask.value = 0
+D/CCodecConfig(11543):   c2::u32 raw.max-channel-count.value = 8
+D/CCodecConfig(11543):   c2::u32 raw.sample-rate.value = 44100
+D/CCodecConfig(11543): }
+I/CCodec  (11543): [c2.android.aac.decoder] config->queryConfiguration()
+I/CCodec  (11543): [c2.android.aac.decoder] mCallback->onComponentAllocated() IN
+I/CCodec  (11543): [c2.android.aac.decoder] mCallback->onComponentAllocated() OUT
+I/MediaCodec(11543): MediaCodec will operate in async mode
+E/MediaCodec(11543): Media Quality Service not found.
+D/CCodec  (11543): [c2.android.aac.decoder] buffers are bound to CCodec for this session
+I/CCodec  (11543): appPid(11543) width(0) height(0)
+D/CCodecConfig(11543): no c2 equivalents for log-session-id
+D/CCodecConfig(11543): no c2 equivalents for importance
+D/CCodecConfig(11543): no c2 equivalents for flags
+D/CCodecConfig(11543): c2 config diff is   c2::u32 raw.channel-count.value = 2
+D/CCodec  (11543): encoding statistics level = 0
+D/CCodec  (11543): setup formats input: AMessage(what = 0x00000000) = {
+D/CCodec  (11543):   int32_t aac-drc-album-mode = 0
+D/CCodec  (11543):   int32_t aac-drc-boost-level = 127
+D/CCodec  (11543):   int32_t aac-drc-cut-level = 127
+D/CCodec  (11543):   int32_t aac-drc-effect-type = 3
+D/CCodec  (11543):   int32_t aac-encoded-target-level = -1
+D/CCodec  (11543):   int32_t aac-max-output-channel_count = 8
+D/CCodec  (11543):   int32_t aac-target-ref-level = 64
+D/CCodec  (11543):   int32_t bitrate = 64000
+D/CCodec  (11543):   int32_t channel-count = 2
+D/CCodec  (11543):   int32_t channel-mask = 0
+D/CCodec  (11543):   int32_t level = 0
+D/CCodec  (11543):   int32_t max-input-size = 8192
+D/CCodec  (11543):   int32_t max-output-channel-count = 8
+D/CCodec  (11543):   string mime = "audio/mp4a-latm"
+D/CCodec  (11543):   int32_t profile = 2
+D/CCodec  (11543):   int32_t sample-rate = 44100
+D/CCodec  (11543): }
+D/CCodec  (11543): setup formats output: AMessage(what = 0x00000000) = {
+D/CCodec  (11543):   int32_t aac-drc-album-mode = 0
+D/CCodec  (11543):   int32_t aac-drc-boost-level = 127
+D/CCodec  (11543):   int32_t aac-drc-cut-level = 127
+D/CCodec  (11543):   int32_t aac-drc-effect-type = 3
+D/CCodec  (11543):   int32_t aac-drc-output-loudness = -1
+D/CCodec  (11543):   int32_t aac-encoded-target-level = -1
+D/CCodec  (11543):   int32_t aac-max-output-channel_count = 8
+D/CCodec  (11543):   int32_t aac-target-ref-level = 64
+D/CCodec  (11543):   int32_t buffer-batch-max-output-size = 0
+D/CCodec  (11543):   int32_t buffer-batch-threshold-output-size = 0
+D/CCodec  (11543):   int32_t channel-count = 2
+D/CCodec  (11543):   int32_t channel-mask = 0
+D/CCodec  (11543):   int32_t max-output-channel-count = 8
+D/CCodec  (11543):   string mime = "audio/raw"
+D/CCodec  (11543):   int32_t sample-rate = 44100
+D/CCodec  (11543):   int32_t android._config-pcm-encoding = 2
+D/CCodec  (11543): }
+I/CCodecConfig(11543): query failed after returning 21 values (BAD_INDEX)
+E/s_store_manager(11543): Failed to query component interface for required system resources: 6
+D/MediaCodec(11543): keep callback message for reclaim
+I/CCodec  (11543): [c2.android.aac.decoder] state->set(STARTING)
+D/CCodecBufferChannel(11543): [c2.android.aac.decoder#445] Created input block pool with allocatorID 16 => poolID 22 - OK (0)
+I/CCodecBufferChannel(11543): [c2.android.aac.decoder#445] Created output block pool with allocatorID 16 => poolID 50338 - OK
+D/CCodecBufferChannel(11543): [c2.android.aac.decoder#445] Configured output block pool ids 50338 => OK
+I/CCodec  (11543): [c2.android.aac.decoder] state->set(RUNNING)
+I/CCodecBufferChannel(11543): [c2.android.aac.decoder#445] 4 initial input buffers available
+W/s_store_manager(11543): AIBinder_linkToDeath is being called with a non-null cookie and no onUnlink callback set. This might not be intended. AIBinder_DeathRecipient_setOnUnlinked should be called first.
+I/CCodec  (11543): [c2.android.aac.decoder] state->set(FLUSHING)
+I/CCodec  (11543): [c2.android.aac.decoder] state->set(FLUSHED)
+D/MediaCodec(11543): keep callback message for reclaim
+I/CCodec  (11543): [c2.android.aac.decoder] state->set(RESUMING)
+I/CCodecConfig(11543): query failed after returning 21 values (BAD_INDEX)
+I/CCodecBufferChannel(11543): [c2.android.aac.decoder#445] 4 initial input buffers available
+I/CCodec  (11543): [c2.android.aac.decoder] state->set(RUNNING)
+I/NotificationManager(11543): com.example.cams_store_manager: notify(1124, null, Notification(channel=com.example.cams_store_manager.playback_controls shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=0 color=0x00000000 category=transport actions=3 vis=PUBLIC semFlags=0x0 semPriority=0 semMissedCount=0)) as user
+I/flutter (11543): *** DioException ***:
+I/flutter (11543): uri: https://logcams.cloud/api/fuzzy-music-profiles/store
+I/flutter (11543): DioException [bad response]: This exception was thrown because the response has a status code of 403 and RequestOptions.validateStatus was configured to throw for this status code.
+I/flutter (11543): The status code of 403 has the following meaning: "Client error - the request contains bad syntax or cannot be fulfilled"
+I/flutter (11543): Read more about status codes at https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
+I/flutter (11543): In order to resolve this exception you typically have either to verify and fix your request code or you have to fix the server code.
+I/flutter (11543): *** Response ***
+I/flutter (11543): uri: https://logcams.cloud/api/fuzzy-music-profiles/store
+I/flutter (11543): statusCode: 403
+I/flutter (11543): statusMessage: Forbidden
+I/flutter (11543): headers:
+I/flutter (11543):  connection: keep-alive
+I/flutter (11543):  alt-svc: h3=":443"; ma=86400
+I/flutter (11543):  date: Thu, 07 May 2026 14:58:29 GMT
+I/flutter (11543):  transfer-encoding: chunked
+I/flutter (11543):  content-encoding: gzip
+I/flutter (11543):  nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+I/flutter (11543):  cf-ray: 9f8115485e7bb21b-HKG
+I/flutter (11543):  report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=PmA%2BzKYwcW6XIrIeu2RPl5w236h8TgYeQG6cO1cmtSInMyaJxOEkE0MXBo1k8zIN7pQCUoO9Ugam%2BhCdYInNxwgZ%2BFrLGS%2FOgFcnjaNrFAd5tEgokkxstWpoKXnv%2FBg0"}]}
+I/flutter (11543):  cf-cache-status: DYNAMIC
+I/flutter (11543):  content-type: application/json
+I/flutter (11543):  server: cloudflare
+I/flutter (11543): Response Text:
+I/flutter (11543): {"isSuccess":false,"message":"Insufficient permissions","errors":["Required roles: BrandManager, StoreManager","Your role: PlaybackDevice"],"errorCode":"InsufficientPermissions"}
+I/flutter (11543): 
+I/flutter (11543): 
+I/NotificationManager(11543): com.example.cams_store_manager: notify(1124, null, Notification(channel=com.example.cams_store_manager.playback_controls shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=0 color=0x00000000 category=transport actions=3 vis=PUBLIC semFlags=0x0 semPriority=0 semMissedCount=0)) as user
+D/CCodecConfig(11543): c2 config diff is   c2::u32 raw.channel-mask.value = 12
+D/CCodecBuffers(11543): [c2.android.aac.decoder#445:Output[N]] popFromStashAndRegister: at 1000020000000us, output format changed to AMessage(what = 0x00000000) = {
+D/CCodecBuffers(11543):   int32_t aac-drc-album-mode = 0
+D/CCodecBuffers(11543):   int32_t aac-drc-boost-level = 127
+D/CCodecBuffers(11543):   int32_t aac-drc-cut-level = 127
+D/CCodecBuffers(11543):   int32_t aac-drc-effect-type = 3
+D/CCodecBuffers(11543):   int32_t aac-drc-output-loudness = -1
+D/CCodecBuffers(11543):   int32_t aac-encoded-target-level = -1
+D/CCodecBuffers(11543):   int32_t aac-max-output-channel_count = 8
+D/CCodecBuffers(11543):   int32_t aac-target-ref-level = 64
+D/CCodecBuffers(11543):   int32_t buffer-batch-max-output-size = 0
+D/CCodecBuffers(11543):   int32_t buffer-batch-threshold-output-size = 0
+D/CCodecBuffers(11543):   int32_t channel-count = 2
+D/CCodecBuffers(11543):   int32_t channel-mask = 12
+D/CCodecBuffers(11543):   int32_t max-output-channel-count = 8
+D/CCodecBuffers(11543):   string mime = "audio/raw"
+D/CCodecBuffers(11543):   int32_t sample-rate = 44100
+D/CCodecBuffers(11543):   int32_t android._config-pcm-encoding = 2
+D/CCodecBuffers(11543): }
+D/AudioTrack(11543): setVolume(0.600000, 0.600000) pid : 11543
+I/flutter (11543): [PlaybackTrace] TRACK_JUMP_PENDING_CLEAR target=01a2f04d-6bd0-448e-a5d1-95d711220392 ageMs=19808 current=queue=01a2f04d-6bd0-448e-a5d1-95d711220392,itemStatus=1,track=Nhất tiếu giang hồ,trackId=3a29e926-f6ad-4de9-96fc-ae4d07cc3b66,hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/3a29e926-f6ad-4de9-96fc-ae4d07cc3b66/v1/nhat-tieu-giang-ho-b454b9e6e268450ea21cd2241ff58bc2.m3u8,paused=true,seek=20.00,started=2026-05-07T14:58:09.223745Z,queueCount=20
+I/flutter (11543): [PlaybackTrace] STATE_EMIT source=signalr-state-sync pendingTarget=- previous=queue=01a2f04d-6bd0-448e-a5d1-95d711220392,itemStatus=1,track=Nhất tiếu giang hồ,trackId=3a29e926-f6ad-4de9-96fc-ae4d07cc3b66,hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/3a29e926-f6ad-4de9-96fc-ae4d07cc3b66/v1/nhat-tieu-giang-ho-b454b9e6e268450ea21cd2241ff58bc2.m3u8,paused=true,seek=20.00,started=2026-05-07T14:58:09.223745Z,queueCount=20 next=queue=a4df7300-1770-4eeb-bb3d-8273b155b171,itemStatus=1,track=Shape of you,trackId=0375a513-5e9b-4e92-867c-d250a526778f,hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/0375a513-5e9b-4e92-867c-d250a526778f/v1/shade-of-you-e215bcdb1d1247738eca78c92b930aa1.m3u8,paused=true,seek=20.00,started=2026-05-07T14:58:09.255451Z,queueCount=20
+I/flutter (11543): [QueueFirstV2] emitState space=d0d258f5-3c74-457a-b17b-629f61d504d6 current=a4df7300-1770-4eeb-bb3d-8273b155b171 pending=- track=Shape of you hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/0375a513-5e9b-4e92-867c-d250a526778f/v1/shade-of-you-e215bcdb1d1247738eca78c92b930aa1.m3u8 manual=false scheduling=false paused=true queueCount=20 queue=[1:Star Boys:3 | 2:Baby:2 | 3:Thật bất ngờ:3 | 4:Smooth:3]
+I/flutter (11543): [CamsPlaybackBlocV2] runtimeState space=d0d258f5-3c74-457a-b17b-629f61d504d6 currentQueueItemId=a4df7300-1770-4eeb-bb3d-8273b155b171 pendingQueueItemId=- currentTrack=Shape of you hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/0375a513-5e9b-4e92-867c-d250a526778f/v1/shade-of-you-e215bcdb1d1247738eca78c92b930aa1.m3u8 manual=false scheduling=false queueCount=20 queue=[1:Star Boys:3 | 2:Baby:2 | 3:Thật bất ngờ:3]
+I/flutter (11543): [PlaybackTrace] BLOC_RUNTIME_STATE_APPLY spaceId=d0d258f5-3c74-457a-b17b-629f61d504d6 inFlight=- previousQueueItem=01a2f04d-6bd0-448e-a5d1-95d711220392 nextQueueItem=a4df7300-1770-4eeb-bb3d-8273b155b171 previousTrack=Nhất tiếu giang hồ nextTrack=Shape of you nextPaused=true nextSeek=20.00
+I/flutter (11543): [AppPlaybackCoordinatorV2] syncCamsState status=active commandInFlight=false inFlightCommand=- localHold=- holdSeek=- playback=space=d0d258f5-3c74-457a-b17b-629f61d504d6 current=a4df7300-1770-4eeb-bb3d-8273b155b171 pending=- track=Shape of you hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/0375a513-5e9b-4e92-867c-d250a526778f/v1/shade-of-you-e215bcdb1d1247738eca78c92b930aa1.m3u8 queueCount=20 queue=[1:Star Boys:3 | 2:Baby:2 | 3:Thật bất ngờ:3 | 4:Smooth:3] playerTrack=Nhất tiếu giang hồ playerHls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/3a29e926-f6ad-4de9-96fc-ae4d07cc3b66/v1/nhat-tieu-giang-ho-b454b9e6e268450ea21cd2241ff58bc2.m3u8
+I/flutter (11543): [AppPlaybackCoordinatorV2] hydrateQueueForPlayback queueCount=20 signature=d0d258f5-3c74-457a-b17b-629f61d504d6|a4df7300-1770-4eeb-bb3d-8273b155b171|f530009c-ed37-4756-850c-4f8bbd6f6640:764b0871-593c-48d9-b42f-b91c30ecb0e5:1:3:https://ddbdgg08nzlz.cloudfront.net/audio/tracks/764b0871-593c-48d9-b42f-b91c30ecb0e5/v1/starboy-87ba8d98ea6c4b839fccc90dcec99f78.m3u8::1|21c6f55e-e875-4d0f-9422-fe315c4c78ac:489a3b15-0ee5-461f-ab91-58596a237523:2:2:https://ddbdgg08nzlz.cloudfront.net/audio/tracks/489a3b15-0ee5-461f-ab91-58596a237523/v1/baby-18d05076331146d39b39a77f82feecf8.m3u8::1|69ee6e33-70d0-49c1-b16b-8cd38417403c:eca863f4-f641-45aa-b966-016bdfa468e1:3:3:https://ddbdgg08nzlz.cloudfront.net/audio/tracks/eca863f4-f641-45aa-b966-016bdfa468e1/v1/that-bat-ngo-truc-nhan-audio-official-truc-nhan-youtube-143fda0ea17347c4aa63dbe5cb117043.m3u8:https://logaicams-bucket.s3.ap-southeast-1.amazonaws.com/uploads/tracks/covers/download-1-a1eca34239644bf7b25f3aad25bb7519.jpg?X-Amz-Expires=3600&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz
+I/flutter (11543): [AppPlaybackCoordinatorV2] remoteDecision remoteSignature=d0d258f5-3c74-457a-b17b-629f61d504d6|a4df7300-1770-4eeb-bb3d-8273b155b171|0375a513-5e9b-4e92-867c-d250a526778f|https://ddbdgg08nzlz.cloudfront.net/audio/tracks/0375a513-5e9b-4e92-867c-d250a526778f/v1/shade-of-you-e215bcdb1d1247738eca78c92b930aa1.m3u8|1|20 lastSignature=d0d258f5-3c74-457a-b17b-629f61d504d6|01a2f04d-6bd0-448e-a5d1-95d711220392|3a29e926-f6ad-4de9-96fc-ae4d07cc3b66|https://ddbdgg08nzlz.cloudfront.net/audio/tracks/3a29e926-f6ad-4de9-96fc-ae4d07cc3b66/v1/nhat-tieu-giang-ho-b454b9e6e268450ea21cd2241ff58bc2.m3u8|1|20 epochSignature=d0d258f5-3c74-457a-b17b-629f61d504d6|a4df7300-1770-4eeb-bb3d-8273b155b171|0375a513-5e9b-4e92-867c-d250a526778f|https://ddbdgg08nzlz.cloudfront.net/audio/tracks/0375a513-5e9b-4e92-867c-d250a526778f/v1/shade-of-you-e215bcdb1d1247738eca78c92b930aa1.m3u8 lastEpoch=d0d258f5-3c74-457a-b17b-629f61d504d6|01a2f04d-6bd0-448e-a5d1-95d711220392|3a29e926-f6ad-4de9-96fc-ae4d07cc3b66|https://ddbdgg08nzlz.cloudfront.net/audio/trac
+I/flutter (11543): [AppPlaybackCoordinatorV2] active HLS snapshot -> start player queueItemId=a4df7300-1770-4eeb-bb3d-8273b155b171 trackId=0375a513-5e9b-4e92-867c-d250a526778f trackName=Shape of you hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/0375a513-5e9b-4e92-867c-d250a526778f/v1/shade-of-you-e215bcdb1d1247738eca78c92b930aa1.m3u8 epochRestart=false
+I/flutter (11543): [PlayerBlocV2] queueSeeded force=true queueCount=20 playlistName=Shape of you currentTrack=Nhất tiếu giang hồ currentQueueItemId=01a2f04d-6bd0-448e-a5d1-95d711220392
+I/flutter (11543): [PlayerBlocV2] hlsStarted hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/0375a513-5e9b-4e92-867c-d250a526778f/v1/shade-of-you-e215bcdb1d1247738eca78c92b930aa1.m3u8 trackId=0375a513-5e9b-4e92-867c-d250a526778f trackTitle=Shape of you queueItemId=a4df7300-1770-4eeb-bb3d-8273b155b171 seek=20.00 playLocally=true
+I/flutter (11543): [PlayerBlocV2] hlsDecision shouldReloadSource=true eventForceReload=false engineCompleted=false loadedUrlMatches=false stateHlsMode=true stateHlsMatches=true loadedUrl=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/3a29e926-f6ad-4de9-96fc-ae4d07cc3b66/v1/nhat-tieu-giang-ho-b454b9e6e268450ea21cd2241ff58bc2.m3u8 eventHls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/0375a513-5e9b-4e92-867c-d250a526778f/v1/shade-of-you-e215bcdb1d1247738eca78c92b930aa1.m3u8
+I/flutter (11543): [PlayerBlocV2] hlsDecision loadUrl start hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/0375a513-5e9b-4e92-867c-d250a526778f/v1/shade-of-you-e215bcdb1d1247738eca78c92b930aa1.m3u8
+I/flutter (11543): [NowPlayingArtworkDebug] change identity=01a2f04d-6bd0-448e-a5d1-95d711220392 -> a4df7300-1770-4eeb-bb3d-8273b155b171 url=https://logaicams-bucket.s3.ap-southeast-1.amazonaws.com/uploads/tracks/covers/nhat-8de0e9e77b88459b90f0bf81c20307ff.jpg?X-Amz-Expires=3600&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIATL6VKTUC2S2NFLN2%2F20260507%2Fap-southeast-1%2Fs3%2Faws4_request&X-Amz-Date=20260507T145809Z&X-Amz-SignedHeaders=host&X-Amz-Signature=d9afcd6c2b7bfdcedae111bbc6ba5f599eeb5102f2bb002522fd54ee88d1a456 -> - urlSignature=https://logaicams-bucket.s3.ap-southeast-1.amazonaws.com/uploads/tracks/covers/nhat-8de0e9e77b88459b90f0bf81c20307ff.jpg?# -> - identityChanged=true urlChanged=true placeholderChanged=false
+I/flutter (11543): [NowPlayingArtworkDebug] buildDisplayedChild type=placeholder key=a4df7300-1770-4eeb-bb3d-8273b155b171|
+I/flutter (11543): [DioClient] Preparing auth header for "/api/cams/space/d0d258f5-3c74-457a-b17b-629f61d504d6/mood": playbackScoped=false selectedToken=eyJhbGciOiJI...
+I/flutter (11543): [DioClient] [request-auth] path=/api/cams/space/d0d258f5-3c74-457a-b17b-629f61d504d6/mood activeMode=playback_device hasManagerToken=false managerExpiry=null hasDeviceAccessToken=true deviceAccessExpiry=2026-05-07T15:03:45.779989Z hasDeviceRefreshToken=true deviceSessionKeys=deviceAccessToken,deviceRefreshToken,accessTokenExpiresAt,brandId,storeId,spaceId,storeName,spaceName,deviceId,manufacturer,model,osVersion,appVersion
+I/flutter (11543): [DioClient] Preparing auth header for "/api/fuzzy-music-profiles/space/d0d258f5-3c74-457a-b17b-629f61d504d6": playbackScoped=false selectedToken=eyJhbGciOiJI...
+I/flutter (11543): [DioClient] [request-auth] path=/api/fuzzy-music-profiles/space/d0d258f5-3c74-457a-b17b-629f61d504d6 activeMode=playback_device hasManagerToken=false managerExpiry=null hasDeviceAccessToken=true deviceAccessExpiry=2026-05-07T15:03:45.779989Z hasDeviceRefreshToken=true deviceSessionKeys=deviceAccessToken,deviceRefreshToken,accessTokenExpiresAt,brandId,storeId,spaceId,storeName,spaceName,deviceId,manufacturer,model,osVersion,appVersion
+I/flutter (11543): [DioClient] Preparing auth header for "/api/fuzzy-music-profiles/store/d34ffedc-f11a-41f6-b485-efb6cf6181a5": playbackScoped=false selectedToken=eyJhbGciOiJI...
+I/flutter (11543): [DioClient] [request-auth] path=/api/fuzzy-music-profiles/store/d34ffedc-f11a-41f6-b485-efb6cf6181a5 activeMode=playback_device hasManagerToken=false managerExpiry=null hasDeviceAccessToken=true deviceAccessExpiry=2026-05-07T15:03:45.779989Z hasDeviceRefreshToken=true deviceSessionKeys=deviceAccessToken,deviceRefreshToken,accessTokenExpiresAt,brandId,storeId,spaceId,storeName,spaceName,deviceId,manufacturer,model,osVersion,appVersion
+I/flutter (11543): [DioClient] Preparing auth header for "/api/fuzzy-music-profiles/store": playbackScoped=false selectedToken=eyJhbGciOiJI...
+I/flutter (11543): [DioClient] [request-auth] path=/api/fuzzy-music-profiles/store activeMode=playback_device hasManagerToken=false managerExpiry=null hasDeviceAccessToken=true deviceAccessExpiry=2026-05-07T15:03:45.779989Z hasDeviceRefreshToken=true deviceSessionKeys=deviceAccessToken,deviceRefreshToken,accessTokenExpiresAt,brandId,storeId,spaceId,storeName,spaceName,deviceId,manufacturer,model,osVersion,appVersion
+I/flutter (11543): [PlayerBlocV2] hlsDecision loadUrl done hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/0375a513-5e9b-4e92-867c-d250a526778f/v1/shade-of-you-e215bcdb1d1247738eca78c92b930aa1.m3u8
+I/flutter (11543): [PlayerBlocV2] hlsDecision seekCheck shouldReloadSource=true current=0.0 target=20.0 drift=20.00 tolerance=0.8
+I/flutter (11543): [PlayerBlocV2] hlsDecision seek start target=20.0
+I/flutter (11543): [NowPlayingArtworkDebug] change identity=a4df7300-1770-4eeb-bb3d-8273b155b171 -> a4df7300-1770-4eeb-bb3d-8273b155b171 url=- -> - urlSignature=- -> - identityChanged=false urlChanged=false placeholderChanged=true
+I/flutter (11543): [NowPlayingArtworkDebug] buildDisplayedChild type=placeholder key=a4df7300-1770-4eeb-bb3d-8273b155b171|
+I/flutter (11543): [QueueFirstV2] emitState space=d0d258f5-3c74-457a-b17b-629f61d504d6 current=a4df7300-1770-4eeb-bb3d-8273b155b171 pending=- track=Shape of you hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/0375a513-5e9b-4e92-867c-d250a526778f/v1/shade-of-you-e215bcdb1d1247738eca78c92b930aa1.m3u8 manual=false scheduling=false paused=true queueCount=20 queue=[1:Star Boys:3 | 2:Baby:2 | 3:Thật bất ngờ:3 | 4:Smooth:3]
+I/flutter (11543): [QueueFirstV2] reconcile detected immediate state change
+I/flutter (11543): [CamsPlaybackBlocV2] runtimeState space=d0d258f5-3c74-457a-b17b-629f61d504d6 currentQueueItemId=a4df7300-1770-4eeb-bb3d-8273b155b171 pendingQueueItemId=- currentTrack=Shape of you hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/0375a513-5e9b-4e92-867c-d250a526778f/v1/shade-of-you-e215bcdb1d1247738eca78c92b930aa1.m3u8 manual=false scheduling=false queueCount=20 queue=[1:Star Boys:3 | 2:Baby:2 | 3:Thật bất ngờ:3]
+I/flutter (11543): [AppPlaybackCoordinatorV2] syncCamsState status=active commandInFlight=false inFlightCommand=- localHold=- holdSeek=- playback=space=d0d258f5-3c74-457a-b17b-629f61d504d6 current=a4df7300-1770-4eeb-bb3d-8273b155b171 pending=- track=Shape of you hls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/0375a513-5e9b-4e92-867c-d250a526778f/v1/shade-of-you-e215bcdb1d1247738eca78c92b930aa1.m3u8 queueCount=20 queue=[1:Star Boys:3 | 2:Baby:2 | 3:Thật bất ngờ:3 | 4:Smooth:3] playerTrack=Shape of you playerHls=https://ddbdgg08nzlz.cloudfront.net/audio/tracks/0375a513-5e9b-4e92-867c-d250a526778f/v1/shade-of-you-e215bcdb1d1247738eca78c92b930aa1.m3u8
+I/flutter (11543): [AppPlaybackCoordinatorV2] remoteDecision remoteSignature=d0d258f5-3c74-457a-b17b-629f61d504d6|a4df7300-1770-4eeb-bb3d-8273b155b171|0375a513-5e9b-4e92-867c-d250a526778f|https://ddbdgg08nzlz.cloudfront.net/audio/tracks/0375a513-5e9b-4e92-867c-d250a526778f/v1/shade-of-you-e215bcdb1d1247738eca78c92b930aa1.m3u8|1|20 lastSignature=d0d258f5-3c74-457a-b17b-629f61d504d6|a4df7300-1770-4eeb-bb3d-8273b155b171|0375a513-5e9b-4e92-867c-d250a526778f|https://ddbdgg08nzlz.cloudfront.net/audio/tracks/0375a513-5e9b-4e92-867c-d250a526778f/v1/shade-of-you-e215bcdb1d1247738eca78c92b930aa1.m3u8|1|20 epochSignature=d0d258f5-3c74-457a-b17b-629f61d504d6|a4df7300-1770-4eeb-bb3d-8273b155b171|0375a513-5e9b-4e92-867c-d250a526778f|https://ddbdgg08nzlz.cloudfront.net/audio/tracks/0375a513-5e9b-4e92-867c-d250a526778f/v1/shade-of-you-e215bcdb1d1247738eca78c92b930aa1.m3u8 lastEpoch=d0d258f5-3c74-457a-b17b-629f61d504d6|a4df7300-1770-4eeb-bb3d-8273b155b171|0375a513-5e9b-4e92-867c-d250a526778f|https://ddbdgg08nzlz.cloudfront.net/audio/tracks/037
+I/flutter (11543): [AppPlaybackCoordinatorV2] same remote HLS snapshot -> keep current player queueItemId=a4df7300-1770-4eeb-bb3d-8273b155b171 drift=0.00
+I/flutter (11543): [NowPlayingArtworkDebug] change identity=a4df7300-1770-4eeb-bb3d-8273b155b171 -> a4df7300-1770-4eeb-bb3d-8273b155b171 url=- -> - urlSignature=- -> - identityChanged=false urlChanged=false placeholderChanged=true
+I/flutter (11543): [NowPlayingArtworkDebug] buildDisplayedChild type=placeholder key=a4df7300-1770-4eeb-bb3d-8273b155b171|
+I/flutter (11543): [PlayerBlocV2] hlsDecision seek done target=20.0
+I/flutter (11543): [PlayerBlocV2] hlsDecision finalAction=pause
+I/VRI[MainActivity]@c8541dc(11543): call setFrameRateCategory for touch hint category=no preference, reason=boost timeout, vri=VRI[MainActivity]@c8541dc
+D/AidlBufferPool(11543): bufferpool2 0xb400007631443438 : 0(0 size) total buffers - 0(0 size) used buffers - 835/840 (recycle/alloc) - 8/831 (fetch/transfer)
+D/AidlBufferPoolAcc(11543): evictor expired: 1, evicted: 1
+D/AidlBufferPoolAcc(11543): evictor expired: 2, evicted: 0
